@@ -4,9 +4,6 @@ DEPS   = ../pico_log.h
 
 all: example1 example2 example3
 
-#picolog.o: ../picolog.c $(DEPS)
-#	$(CC) -c -o picolog.o $< $(CFLAGS)
-
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
