@@ -42,11 +42,11 @@ test_teardown ()
 }
 
 /* All assertions pass in this test. */
-PUNIT_TEST(test_passing1)
+PU_TEST(test_passing1)
 {
-    PUNIT_ASSERT(1);
-    PUNIT_ASSERT(42 == 42);
-    PUNIT_ASSERT_STREQ("towel", "towel");
+    PU_ASSERT(1);
+    PU_ASSERT(42 == 42);
+    PU_ASSERT_STREQ("towel", "towel");
 
     return true;
 }
@@ -55,29 +55,29 @@ PUNIT_TEST(test_passing1)
  * All assertions pass in this test. Checks the value of the fixture initialized
  * in the test setup function.
  */
-PUNIT_TEST(test_passing2)
+PU_TEST(test_passing2)
 {
-    PUNIT_ASSERT(42 == g_fix);
-    PUNIT_ASSERT_STREQ("frog", "frog");
+    PU_ASSERT(42 == g_fix);
+    PU_ASSERT_STREQ("frog", "frog");
 
     return true;
 }
 
 /* Test containing failing assertion. */
-PUNIT_TEST(test_failing1)
+PU_TEST(test_failing1)
 {
-    PUNIT_ASSERT(1);
-    PUNIT_ASSERT(24 == 42); /* Fails here */
-    PUNIT_ASSERT(1);        /* Never called */
+    PU_ASSERT(1);
+    PU_ASSERT(24 == 42); /* Fails here */
+    PU_ASSERT(1);        /* Never called */
 
     return true;
 }
 
 /* Another test containing a failed assertion. */
-PUNIT_TEST(test_failing2)
+PU_TEST(test_failing2)
 {
-    PUNIT_ASSERT_STREQ("frog", "butterfly"); /* Fails here */
-    PUNIT_ASSERT(true);                      /* Never called */
+    PU_ASSERT_STREQ("frog", "butterfly"); /* Fails here */
+    PU_ASSERT(true);                      /* Never called */
 
     return true;
 }
@@ -86,33 +86,33 @@ PUNIT_TEST(test_failing2)
 static void
 test_suite1 ()
 {
-    punit_setup(test_setup, test_teardown);
+    pu_setup(test_setup, test_teardown);
 
-    PUNIT_RUN_TEST(test_passing1);
-    PUNIT_RUN_TEST(test_passing2);
-    PUNIT_RUN_TEST(test_failing1);
+    PU_RUN_TEST(test_passing1);
+    PU_RUN_TEST(test_passing2);
+    PU_RUN_TEST(test_failing1);
 
-    punit_clear_setup();
+    pu_clear_setup();
 }
 
 /* A test suite containing two passing and one failing test. */
 static void
 test_suite2 ()
 {
-    PUNIT_RUN_TEST(test_passing1);
-    PUNIT_RUN_TEST(test_failing2);
-    PUNIT_RUN_TEST(test_passing1);
+    PU_RUN_TEST(test_passing1);
+    PU_RUN_TEST(test_failing2);
+    PU_RUN_TEST(test_passing1);
 }
 
 /* Run all test suites and print test statistics. */
 int
 main ()
 {
-    punit_colors_enabled(true);
-    punit_time_enabled(true);
-    PUNIT_RUN_SUITE(test_suite1);
-    PUNIT_RUN_SUITE(test_suite2);
-    punit_print_stats();
+    pu_colors_enabled(true);
+    pu_time_enabled(true);
+    PU_RUN_SUITE(test_suite1);
+    PU_RUN_SUITE(test_suite2);
+    pu_print_stats();
     return 0;
 }
 

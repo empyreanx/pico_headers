@@ -42,7 +42,7 @@ extern "C" {
  *
  * @param name The name of the test. Must be a valid C function name
  */
-#define PUNIT_TEST(name) static bool name()
+#define PU_TEST(name) static bool name()
 
 /**
  * Asserts that the given expression evaluates to `true`. If the expression
@@ -51,9 +51,9 @@ extern "C" {
  *
  * @param expr The expression to evaluate
  */
-#define PUNIT_ASSERT(expr) \
+#define PU_ASSERT(expr) \
     do  { \
-        if (!punit_assert((expr) ? true : false, (#expr), __FILE__, __LINE__)) \
+        if (!pu_assert((expr) ? true : false, (#expr), __FILE__, __LINE__)) \
             return false; \
     } while(false)
 
@@ -64,9 +64,9 @@ extern "C" {
  * @param str1 A string for comparison
  * @param str2 A string for comparison
  */
-#define PUNIT_ASSERT_STREQ(str1, str2) \
+#define PU_ASSERT_STREQ(str1, str2) \
     do  { \
-        if (!punit_assert(0 == strcmp(str1, str2), #str1 "==" #str2, __FILE__, __LINE__)) \
+        if (!pu_assert(0 == strcmp(str1, str2), #str1 "==" #str2, __FILE__, __LINE__)) \
             return false; \
     } while(false)
 
@@ -76,10 +76,12 @@ extern "C" {
  *
  * @param fp_test The test function to execute
  */
-#define PUNIT_RUN_TEST(fp_test) (punit_run_test(#fp_test, fp_test))
+#define PU_RUN_TEST(fp_test) (pu_run_test(#fp_test, fp_test))
 
-//TODO: doc
-#define PUNIT_SUITE(name) void name()
+/**
+ * Declares a test suite
+ */
+#define PU_SUITE(name) void name()
 
 /**
  * Runs a series of unit tests. The test suite function has the signature,
@@ -87,12 +89,12 @@ extern "C" {
  *
  * @param fp_suite The test suite function to run
  */
-#define PUNIT_RUN_SUITE(fp_suite) punit_run_suite(#fp_suite, fp_suite)
+#define PU_RUN_SUITE(fp_suite) pu_run_suite(#fp_suite, fp_suite)
 
 /**
  * Functions that are run before or after a number of unit tests execute.
  */
-typedef void (*punit_setup_fn)(void);
+typedef void (*pu_setup_fn)(void);
 
 /**
  * Sets the current setup and teardown functions. The setup function is called
@@ -104,42 +106,42 @@ typedef void (*punit_setup_fn)(void);
  * @param fp_teardown The teardown function
  *
  */
-void punit_setup(punit_setup_fn fp_setup, punit_setup_fn fp_teardown);
+void pu_setup(pu_setup_fn fp_setup, pu_setup_fn fp_teardown);
 
 /**
  * Disables the setup and teardown functions by setting them to `NULL`.
  */
-void punit_clear_setup(void);
+void pu_clear_setup(void);
 
 /**
  * Turns on terminal colors. NOTE: Off by default.
  */
-void punit_colors_enabled(bool b_enabled);
+void pu_colors_enabled(bool b_enabled);
 
 /**
  * Turns on time measurement. NOTE: Off by default.
  */
-void punit_time_enabled(bool b_enabled);
+void pu_time_enabled(bool b_enabled);
 
 /**
  * Prints test statistics.
  */
-void punit_print_stats(void);
+void pu_print_stats(void);
 
 /*
  * WARNING: These functions are not meant to be called directly. Use the macros
  * instead.
  */
-typedef bool (*punit_test_fn)(void);
-typedef void (*punit_suite_fn)(void);
+typedef bool (*pu_test_fn)(void);
+typedef void (*pu_suite_fn)(void);
 
-bool punit_assert(bool b_expr,
-                  const char* const p_expr,
-                  const char* const p_file,
-                  int line);
+bool pu_assert(bool b_expr,
+               const char* const p_expr,
+               const char* const p_file,
+               int line);
 
-void punit_run_test(const char* const p_name, punit_test_fn fp_test);
-void punit_run_suite(const char* const p_name, punit_suite_fn fp_suite);
+void pu_run_test(const char* const p_name, pu_test_fn fp_test);
+void pu_run_suite(const char* const p_name, pu_suite_fn fp_suite);
 
 #ifdef __cplusplus
 }
@@ -165,37 +167,37 @@ static unsigned g_num_suites   = 0;
 static bool     gb_colors      = false;
 static bool     gb_time        = false;
 
-static punit_setup_fn gfp_setup    = NULL;
-static punit_setup_fn gfp_teardown = NULL;
+static pu_setup_fn gfp_setup    = NULL;
+static pu_setup_fn gfp_teardown = NULL;
 
 void
-punit_setup (punit_setup_fn fp_setup, punit_setup_fn fp_teardown)
+pu_setup (pu_setup_fn fp_setup, pu_setup_fn fp_teardown)
 {
     gfp_setup = fp_setup;
     gfp_teardown = fp_teardown;
 }
 
 void
-punit_clear_setup (void)
+pu_clear_setup (void)
 {
     gfp_setup = NULL;
     gfp_teardown = NULL;
 }
 
 void
-punit_colors_enabled (bool b_enabled)
+pu_colors_enabled (bool b_enabled)
 {
     gb_colors = b_enabled;
 }
 
 void
-punit_time_enabled (bool b_enabled)
+pu_time_enabled (bool b_enabled)
 {
     gb_time = b_enabled;
 }
 
 bool
-punit_assert (bool b_passed,
+pu_assert (bool b_passed,
               const char* const p_expr,
               const char* const p_file,
               int line)
@@ -223,7 +225,7 @@ punit_assert (bool b_passed,
 }
 
 void
-punit_run_test (const char* const p_name, punit_test_fn fp_test)
+pu_run_test (const char* const p_name, pu_test_fn fp_test)
 {
     if (NULL != gfp_setup)
     {
@@ -283,7 +285,7 @@ punit_run_test (const char* const p_name, punit_test_fn fp_test)
 }
 
 void
-punit_run_suite (const char* const p_name, punit_suite_fn fp_suite)
+pu_run_suite (const char* const p_name, pu_suite_fn fp_suite)
 {
     printf("===============================================================\n");
 
@@ -304,7 +306,7 @@ punit_run_suite (const char* const p_name, punit_suite_fn fp_suite)
 }
 
 void
-punit_print_stats (void)
+pu_print_stats (void)
 {
     printf("===============================================================\n");
 

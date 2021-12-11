@@ -35,43 +35,42 @@
  * true.
  */
 
-PUNIT_TEST(test1)
+PU_TEST(test1)
 {
-    PUNIT_ASSERT(2 + 2 == 4);                /* Boolean assertion (ok)         */
-    PUNIT_ASSERT_STREQ("apples", "apples");  /* String equality assertion (ok) */
+    PU_ASSERT(2 + 2 == 4);                /* Boolean assertion (ok)         */
+    PU_ASSERT_STREQ("apples", "apples");  /* String equality assertion (ok) */
     return true;
 }
 
 /* Failing test */
-PUNIT_TEST(test2)
+PU_TEST(test2)
 {
-    PUNIT_ASSERT(2 + 2 != 4);                /* Boolean assertion (fails) */
-    PUNIT_ASSERT_STREQ("apples", "oranges"); /* String equality (fails */
+    PU_ASSERT(2 + 2 != 4);                /* Boolean assertion (fails) */
+    PU_ASSERT_STREQ("apples", "oranges"); /* String equality (fails */
     return true;
 }
 
 /* Mixed results */
-PUNIT_TEST(test3)
+PU_TEST(test3)
 {
-    PUNIT_ASSERT(2 + 2 == 4);                 /* Boolean assertion (ok) */
-    PUNIT_ASSERT_STREQ("apples", "oranges");  /* String equality fails */
+    PU_ASSERT(2 + 2 == 4);                 /* Boolean assertion (ok) */
+    PU_ASSERT_STREQ("apples", "oranges");  /* String equality fails */
     return true;
 }
 
 /* Test suite container function (multiple test suites can be specified. */
-static void
-test_suite ()
+static PU_SUITE(test_suite)
 {
-    PUNIT_RUN_TEST(test1);
-    PUNIT_RUN_TEST(test2);
-    PUNIT_RUN_TEST(test3);
+    PU_RUN_TEST(test1);
+    PU_RUN_TEST(test2);
+    PU_RUN_TEST(test3);
 }
 
 int
 main ()
 {
-    PUNIT_RUN_SUITE(test_suite);
-    punit_print_stats(); /* Optional */
+    PU_RUN_SUITE(test_suite);
+    pu_print_stats(); /* Optional */
     return 0;
 }
 
