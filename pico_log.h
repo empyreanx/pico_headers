@@ -172,7 +172,7 @@ void pl_set_time_fmt(pl_id_t id, const char* fmt);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_colors_enabled(pl_id_t id, bool enabled);
+void pl_display_colors(pl_id_t id, bool enabled);
 
 /**
  * Turns timestamp reporting on/off for the specified appender.
@@ -181,7 +181,7 @@ void pl_colors_enabled(pl_id_t id, bool enabled);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_timestamp_enabled(pl_id_t id, bool enabled);
+void pl_display_timestamp(pl_id_t id, bool enabled);
 
 /**
  * Turns log level reporting on/off for the specified appender.
@@ -190,7 +190,7 @@ void pl_timestamp_enabled(pl_id_t id, bool enabled);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_level_enabled(pl_id_t id, bool enabled);
+void pl_display_level(pl_id_t id, bool enabled);
 
 /**
  * Turns filename and line number reporting on/off for the specified appender.
@@ -199,7 +199,7 @@ void pl_level_enabled(pl_id_t id, bool enabled);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_file_enabled(pl_id_t id, bool enabled);
+void pl_display_file(pl_id_t id, bool enabled);
 
 /**
  * Turns function reporting on/off for the specified appender.
@@ -208,7 +208,7 @@ void pl_file_enabled(pl_id_t id, bool enabled);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_function_enabled(pl_id_t id, bool enabled);
+void pl_display_function(pl_id_t id, bool enabled);
 
 /**
  * Writes a TRACE level message to the log. Usage is similar to printf (i.e.
@@ -587,7 +587,7 @@ pl_set_time_fmt (pl_id_t id, const char* fmt)
 }
 
 void
-pl_colors_enabled (pl_id_t id, bool enabled)
+pl_display_colors (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     pl_try_init();
@@ -600,7 +600,7 @@ pl_colors_enabled (pl_id_t id, bool enabled)
 }
 
 void
-pl_timestamp_enabled (pl_id_t id, bool enabled)
+pl_display_timestamp (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     pl_try_init();
@@ -613,7 +613,7 @@ pl_timestamp_enabled (pl_id_t id, bool enabled)
 }
 
 void
-pl_level_enabled (pl_id_t id, bool enabled)
+pl_display_level (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     pl_try_init();
@@ -626,7 +626,7 @@ pl_level_enabled (pl_id_t id, bool enabled)
 }
 
 void
-pl_file_enabled (pl_id_t id, bool enabled)
+pl_display_file (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     pl_try_init();
@@ -639,7 +639,7 @@ pl_file_enabled (pl_id_t id, bool enabled)
 }
 
 void
-pl_function_enabled (pl_id_t id, bool enabled)
+pl_display_function (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     pl_try_init();
