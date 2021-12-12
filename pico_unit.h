@@ -116,12 +116,12 @@ void pu_clear_setup(void);
 /**
  * Turns on terminal colors. NOTE: Off by default.
  */
-void pu_colors_enabled(bool b_enabled);
+void pu_colors_enabled(bool enabled);
 
 /**
  * Turns on time measurement. NOTE: Off by default.
  */
-void pu_time_enabled(bool b_enabled);
+void pu_time_enabled(bool enabled);
 
 /**
  * Prints test statistics.
@@ -160,106 +160,106 @@ void pu_run_suite(const char* const p_name, pu_suite_fn fp_suite);
 #define TERM_COLOR_BOLD  "[1m"
 #define TERM_COLOR_RESET "[0m"
 
-static unsigned g_num_asserts  = 0;
-static unsigned g_num_passed   = 0;
-static unsigned g_num_failed   = 0;
-static unsigned g_num_suites   = 0;
-static bool     gb_colors      = false;
-static bool     gb_time        = false;
+static unsigned pu_num_asserts  = 0;
+static unsigned pu_num_passed   = 0;
+static unsigned pu_num_failed   = 0;
+static unsigned pu_num_suites   = 0;
+static bool     pu_colors      = false;
+static bool     pu_time        = false;
 
-static pu_setup_fn gfp_setup    = NULL;
-static pu_setup_fn gfp_teardown = NULL;
+static pu_setup_fn pu_setup_fp    = NULL;
+static pu_setup_fn pu_teardown_fp = NULL;
 
 void
 pu_setup (pu_setup_fn fp_setup, pu_setup_fn fp_teardown)
 {
-    gfp_setup = fp_setup;
-    gfp_teardown = fp_teardown;
+    pu_setup_fp = fp_setup;
+    pu_teardown_fp = fp_teardown;
 }
 
 void
 pu_clear_setup (void)
 {
-    gfp_setup = NULL;
-    gfp_teardown = NULL;
+    pu_setup_fp = NULL;
+    pu_teardown_fp = NULL;
 }
 
 void
-pu_colors_enabled (bool b_enabled)
+pu_colors_enabled (bool enabled)
 {
-    gb_colors = b_enabled;
+    pu_colors = enabled;
 }
 
 void
-pu_time_enabled (bool b_enabled)
+pu_time_enabled (bool enabled)
 {
-    gb_time = b_enabled;
+    pu_time = enabled;
 }
 
 bool
-pu_assert (bool b_passed,
-              const char* const p_expr,
-              const char* const p_file,
-              int line)
+pu_assert (bool passed,
+           const char* const expr,
+           const char* const file,
+           int line)
 {
-    g_num_asserts++;
+    pu_num_asserts++;
 
-    if (b_passed)
+    if (passed)
     {
         return true;
     }
 
-    if (gb_colors)
+    if (pu_colors)
     {
         printf("(%c%sFAILED%c%s: %s (%d): %s)\n",
                TERM_COLOR_CODE, TERM_COLOR_RED,
                TERM_COLOR_CODE, TERM_COLOR_RESET,
-               p_file, line, p_expr);
+               file, line, expr);
     }
     else
     {
-        printf("(FAILED: %s (%d): %s)\n", p_file, line, p_expr);
+        printf("(FAILED: %s (%d): %s)\n", file, line, expr);
     }
 
     return false;
 }
 
 void
-pu_run_test (const char* const p_name, pu_test_fn fp_test)
+pu_run_test (const char* const name, pu_test_fn test_fp)
 {
-    if (NULL != gfp_setup)
+    if (NULL != pu_setup_fp)
     {
-        gfp_setup();
+        pu_setup_fp();
     }
 
-    printf("Running: %s ", p_name);
+    printf("Running: %s ", name);
 
     clock_t start_time = 0;
     clock_t end_time = 0;
 
-    if (gb_time)
+    if (pu_time)
     {
         start_time = clock();
     }
 
-    if (!fp_test())
+    if (!test_fp())
     {
-        g_num_failed++;
+        pu_num_failed++;
 
-        if (NULL != gfp_teardown)
+        if (NULL != pu_teardown_fp)
         {
-            gfp_teardown();
+            pu_teardown_fp();
         }
 
         return;
     }
 
-    if (gb_time)
+    if (pu_time)
     {
         end_time = clock();
     }
 
-    if (gb_colors)
+    if (pu_colors)
     {
         printf("(%c%sOK%c%s)", TERM_COLOR_CODE, TERM_COLOR_GREEN,
                                TERM_COLOR_CODE, TERM_COLOR_RESET);
@@ -269,40 +269,40 @@ pu_run_test (const char* const p_name, pu_test_fn fp_test)
         printf("(OK)");
     }
 
-    if (gb_time)
+    if (pu_time)
     {
         printf(" (%f secs)", (double)(end_time - start_time) / CLOCKS_PER_SEC);
     }
 
     printf("\n");
 
-    g_num_passed++;
+    pu_num_passed++;
 
-    if (NULL != gfp_teardown)
+    if (NULL != pu_teardown_fp)
     {
-        gfp_teardown();
+        pu_teardown_fp();
     }
 }
 
 void
-pu_run_suite (const char* const p_name, pu_suite_fn fp_suite)
+pu_run_suite (const char* const name, pu_suite_fn suite_fp)
 {
     printf("===============================================================\n");
 
-    if (gb_colors)
+    if (pu_colors)
     {
         printf("%c%sRunning: %s%c%s\n", TERM_COLOR_CODE, TERM_COLOR_BOLD,
-                                        p_name,
+                                        name,
                                         TERM_COLOR_CODE, TERM_COLOR_RESET);
     }
     else
     {
-        printf("Running: %s\n", p_name);
+        printf("Running: %s\n", name);
     }
 
     printf("---------------------------------------------------------------\n");
-    fp_suite();
-    g_num_suites++;
+    suite_fp();
+    pu_num_suites++;
 }
 
 void
@@ -310,18 +310,18 @@ pu_print_stats (void)
 {
     printf("===============================================================\n");
 
-    if (gb_colors)
+    if (pu_colors)
     {
         printf("Summary: Passed: %c%s%u%c%s "
                "Failed: %c%s%u%c%s "
                "Total: %u Suites: %u "
                "Asserts: %u\n", \
-                TERM_COLOR_CODE, TERM_COLOR_GREEN, g_num_passed, \
+                TERM_COLOR_CODE, TERM_COLOR_GREEN, pu_num_passed, \
                 TERM_COLOR_CODE, TERM_COLOR_RESET, \
-                TERM_COLOR_CODE, TERM_COLOR_RED, g_num_failed, \
+                TERM_COLOR_CODE, TERM_COLOR_RED, pu_num_failed, \
                 TERM_COLOR_CODE, TERM_COLOR_RESET, \
-                g_num_passed + g_num_failed, \
-                g_num_suites, g_num_asserts);
+                pu_num_passed + pu_num_failed, \
+                pu_num_suites,  pu_num_asserts);
     }
     else
     {
@@ -329,10 +329,10 @@ pu_print_stats (void)
                "Failed: %u "
                "Total: %u Suites: %u "
                "Asserts: %u\n", \
-                g_num_passed, \
-                g_num_failed, \
-                g_num_passed + g_num_failed, \
-                g_num_suites, g_num_asserts);
+                pu_num_passed, \
+                pu_num_failed, \
+                pu_num_passed + pu_num_failed, \
+                pu_num_suites,  pu_num_asserts);
     }
 }
 
