@@ -25,6 +25,14 @@
 #define PUNIT_IMPLEMENTATION
 #include "../pico_unit.h"
 
+/*
+ * Used to extend PU_ASSERT
+ */
+static bool str_eq(const char* str1, const char* str2)
+{
+    return 0 == strcmp(str1, str2);
+}
+
 static unsigned g_fix = 0;
 
 /* Sets up fixture for (called before test). */
@@ -46,7 +54,7 @@ PU_TEST(test_passing1)
 {
     PU_ASSERT(1);
     PU_ASSERT(42 == 42);
-    PU_ASSERT_STREQ("towel", "towel");
+    PU_ASSERT(str_eq("towel", "towel"));
 
     return true;
 }
@@ -58,7 +66,7 @@ PU_TEST(test_passing1)
 PU_TEST(test_passing2)
 {
     PU_ASSERT(42 == g_fix);
-    PU_ASSERT_STREQ("frog", "frog");
+    PU_ASSERT(str_eq("frog", "frog"));
 
     return true;
 }
@@ -76,8 +84,8 @@ PU_TEST(test_failing1)
 /* Another test containing a failed assertion. */
 PU_TEST(test_failing2)
 {
-    PU_ASSERT_STREQ("frog", "butterfly"); /* Fails here */
-    PU_ASSERT(true);                      /* Never called */
+    PU_ASSERT(str_eq("frog", "butterfly")); /* Fails here */
+    PU_ASSERT(true);                        /* Never called */
 
     return true;
 }

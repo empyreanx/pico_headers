@@ -9,8 +9,48 @@
     ----------------------------------------------------------------------------
 
     Summary:
+    --------
 
+    The library is built around the notion of appenders. An appender writes log
+    messages to a sink. It could be a file, a network connection, or stream
+    (e.g. stdout).
 
+    Once one or more appenders are registered, macros such as pl_info will send
+    messages to the appenders.
+
+    Output can be modified in a number of ways. The most important way to affect
+    the output is to specify the log level (e.g. PL_LEVEL_INFO). If the log
+    level is set PL_LEVEL_INFO, then messages sent to pl_trace or pl_debug will
+    not be written whereas pl_info, pl_warn, pl_error, and pl_fatal will be.
+
+    Output can also be modified to show or hide various metadata. These are
+    colors, date/time, log level, filename/line number. These can be toggled
+    using the pl_display_* functions.
+
+    It is possible to synchronize appenders using `pl_set_lock`. This function
+    accepts a function pointer that takes a boolean and user data as input. When
+    this function pointer is passed true the lock is acquired and false to
+    release the lock.
+
+    To use this library in your project, use
+
+    #define PL_IMPLEMENTATION
+    #include "pico_log.h"
+
+    in a source file.
+
+    Features:
+    ---------
+
+    * Written in pure C99, and compatible with C++
+    * Single header library for easy integration into any build system
+    * Tiny memory and code footprint
+    * Simple and minimalistic API
+    * Flexible and extensible appender handling
+    * Ability to set logging level (TRACE, DEBUG, INFO, WARN, ERROR, and FATAL)
+    * Ability to toggle date/time, log level, filename/line, and function
+    * reporting individually, on a per appender basis
+    * Permissive licensing (zlib or public domain)
 */
 
 #ifndef PICO_LOG_H
@@ -30,8 +70,8 @@ extern "C" {
 #endif
 
 /**
- * These codes allow different layers of granularity when logging. See the
- * documentation of the `pl_set_level` function for more information.
+ * @brief These codes allow different layers of granularity when logging. See
+ * the documentation of the `pl_set_level` function for more information.
  */
 typedef enum
 {
@@ -45,38 +85,39 @@ typedef enum
 } pl_level_t;
 
 /**
- * Appender function definition. An appender writes a log entry to an output
- * stream. This could be the console, a file, a network connection, etc...
+ * @brief Appender function definition. An appender writes a log entry to an
+ * output stream. This could be the console, a file, a network connection, etc...
  */
 typedef void (*pl_appender_fn)(const char* entry, void* udata);
 
 /**
- *  Lock function definition. This is called during pl_write. Adapted
-    from https://github.com/rxi/log.c/blob/master/src/log.h
+ *  @brief Lock function definition. This is called during pl_write. Adapted
  */
 typedef void (*pl_lock_fn)(bool lock, void *udata);
 
 /**
- * Identifies a registered appender.
+ * @brief Identifies a registered appender.
  */
 typedef size_t pl_id_t;
 
 /**
-  * Converts a string to the corresponding log level
+  * @brief Converts a string to the corresponding log level
   */
 bool pl_str_level(const char* str, pl_level_t* level);
 
 /**
- * Enables logging. NOTE: Logging is enabled by default.
+ * @brief Enables logging. NOTE: Logging is enabled by default.
  */
 void pl_enable(void);
 
 /**
- * Disables logging.
+ * @brief Disables logging.
  */
 void pl_disable(void);
 
 /**
+ * @brief Registers an appender
+ *
  * Registers (adds appender to logger) and enables the specified appender. An
  * appender writes a log entry to an output stream. This could be a console,
  * a file, a network connection, etc...
@@ -98,7 +139,7 @@ pl_id_t pl_add_appender(pl_appender_fn appender_fp,
                         pl_level_t level, void* udata);
 
 /**
- * Registers an output stream appender.
+ * @brief Registers an output stream appender.
  *
  * @param p_stream The output stream to write to
  * @param level  The appender's log level
@@ -109,33 +150,35 @@ pl_id_t pl_add_appender(pl_appender_fn appender_fp,
 pl_id_t pl_add_stream(FILE* stream, pl_level_t level);
 
 /**
- * Unregisters appender (removes the appender from the logger).
+ * @brief Unregisters appender (removes the appender from the logger).
  *
  * @param id The appender to unregister
  */
 void pl_remove_appender(pl_id_t id);
 
 /**
- * Enables the specified appender. NOTE: Appenders are enabled by default after
- * registration.
+ * @brief Enables the specified appender. NOTE: Appenders are enabled by default
+ * after registration.
  *
  * @param id The appender to enable.
  */
 void pl_enable_appender(pl_id_t id);
 
 /**
- * Disables the specified appender.
+ * @brief Disables the specified appender.
  *
  * @param id The appender to disable
  */
 void pl_disable_appender(pl_id_t id);
 
 /**
- * Sets the locking function.
+ * @brief Sets the locking function.
  */
 void pl_set_lock(pl_id_t id, pl_lock_fn lock_fp, void* udata);
 
 /**
+ * @brief Sets the logging level.
+
  * Sets the logging level. Only those messages of equal or higher priority
  * (severity) than this value will be logged.
  *
@@ -144,6 +187,8 @@ void pl_set_lock(pl_id_t id, pl_lock_fn lock_fp, void* udata);
 void pl_set_level(pl_id_t id, pl_level_t level);
 
 /**
+ * @brief Set the appender timestamp.
+ *
  * Sets the appender timestamp format according to:
  * https://man7.org/linux/man-pages/man3/strftime.3.html
  *
@@ -153,7 +198,7 @@ void pl_set_level(pl_id_t id, pl_level_t level);
 void pl_set_time_fmt(pl_id_t id, const char* fmt);
 
 /**
- * Turns colors ouput on or off for the specified appender.
+ * @brief Turns colors ouput on or off for the specified appender.
  * NOTE: Off by default.
  *
  * @param id The appender id
@@ -162,7 +207,7 @@ void pl_set_time_fmt(pl_id_t id, const char* fmt);
 void pl_display_colors(pl_id_t id, bool enabled);
 
 /**
- * Turns timestamp reporting on/off for the specified appender.
+ * @brief Turns timestamp reporting on/off for the specified appender.
  * NOTE: Off by default
  *
  * @param id The appender id
@@ -171,7 +216,7 @@ void pl_display_colors(pl_id_t id, bool enabled);
 void pl_display_timestamp(pl_id_t id, bool enabled);
 
 /**
- * Turns log level reporting on/off for the specified appender.
+ * @brief Turns log level reporting on/off for the specified appender.
  * NOTE: On by default.
  *
  * @param id The appender id
@@ -180,7 +225,8 @@ void pl_display_timestamp(pl_id_t id, bool enabled);
 void pl_display_level(pl_id_t id, bool enabled);
 
 /**
- * Turns filename and line number reporting on/off for the specified appender.
+ * @brief Turns filename and line number reporting on/off for the specified
+ * appender.
  * NOTE: Off by default.
  *
  * @param id The appender id
@@ -189,7 +235,7 @@ void pl_display_level(pl_id_t id, bool enabled);
 void pl_display_file(pl_id_t id, bool enabled);
 
 /**
- * Turns function reporting on/off for the specified appender.
+ * @brief Turns function reporting on/off for the specified appender.
  * NOTE: Off by default.
  *
  * @param id The appender id
@@ -198,43 +244,55 @@ void pl_display_file(pl_id_t id, bool enabled);
 void pl_display_function(pl_id_t id, bool enabled);
 
 /**
- * Writes a TRACE level message to the log. Usage is similar to printf (i.e.
- * PL_TRACE(format, args...))
+ * @brief Logs a TRACE an INFO message
+ *
+ * Writes a TRACE level message to the log. Usage is similar to printf
+ * (i.e. pl_trace(format, args...))
  */
 #define pl_trace(...) \
         pl_write(PL_LEVEL_TRACE, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
+ * @brief Logs a DEBUG message
+ *
  * Writes a DEBUG level message to the log. Usage is similar to printf (i.e.
- * PL_DEBUG(format, args...))
+ * (i.e. pl_debug(format, args...))
  */
 #define pl_debug(...) \
         pl_write(PL_LEVEL_DEBUG, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
- * Writes an INFO level message to the log. Usage is similar to printf (i.e.
- * PL_INFO(format, args...))
+ * @brief Logs an INFO message
+ *
+ * Writes an INFO level message to the log. Usage is similar to printf
+ * (i.e. pl_info(format, args...))
  */
 #define pl_info(...) \
         pl_write(PL_LEVEL_INFO,  __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
+ * @brief Logs a WARN message
+ *
  * Writes a WARN level message to the log. Usage is similar to printf (i.e.
- * PL_WARN(format, args...))
+ * (i.e. pl_warn(format, args...))
  */
 #define pl_warn(...) \
         pl_write(PL_LEVEL_WARN,  __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
+ * @brief Logs an ERROR message
+ *
  * Writes a ERROR level message to the log. Usage is similar to printf (i.e.
- * PL_ERROR(format, args...))
+ * (i.e. pl_error(format, args...))
  */
 #define pl_error(...) \
         pl_write(PL_LEVEL_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
+ * @brief Logs a FATAL message
+ *
  * Writes a FATAL level message to the log.. Usage is similar to printf (i.e.
- * PL_FATAL(format, args...))
+ * (i.e. pl_fatal(format, args...))
  */
 #define pl_fatal(...) \
         pl_write(PL_LEVEL_FATAL, __FILE__, __LINE__, __func__, __VA_ARGS__)

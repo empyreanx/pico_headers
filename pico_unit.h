@@ -12,24 +12,31 @@
     Summary:
     --------
 
-    pico_unit is a minimal unit testing framework. It should compile and run on
-    just about any platform with a standard C99 compiler.
+    A minimal unit testing framework. It should compile and run on just about
+    any platform with a standard C99 compiler.
 
     Writing tests is simple: 1) Use the PU_TEST macro and define the test using
-    using PU_ASSERT to test boolean expressions. Run the test inside the body
-    of a test suite or other function (.e.g main). How you group tests and test
-    suites is completely up to you.
+    using PU_ASSERT to test boolean expressions. 2) Run the test inside the
+    body of a test suite or other function (.e.g main) using PU_RUN_TEST. How
+    you group tests and test suites is entirely up to you.
 
     Due to it's simplicity pico_unit does not have all of the features commonly
     associated with a unit testing framework. There is only a single assertion
     predicate, however practice has shown that this is sufficient in most cases.
     Additional predicates can be constructed using the existing one if needed.
 
-    Registering tests declaring test suites is not automatic and must done
+    Registering tests or declaring test suites is not automatic and must done
     inside the body of a test suite or other function. This design decision was
-    made to avoid using C constructor extensions like those found in GCC/Clang.
-    There is a danger that a unit test might be missed, but compiler warnings
-    will probably catch this.
+    made to avoid using C constructor extensions like those found in GCC/Clang
+    which reduce portability. There is a danger that a unit test might be
+    missed, but compiler warnings will probably catch this.
+
+    To use this library in your project, use
+
+    #define PUNIT_IMPLEMENTATION
+    #include "pico_unit.h"
+
+    in a source file.
 
     Features:
     ---------
@@ -44,7 +51,7 @@
     * Ability to print test statistics
     * Optional color coded output
     * Optional time measurement
-    * Permissive (zlib or public domain)
+    * Permissive licensing (zlib or public domain)
 */
 
 #ifndef PICO_UNIT_H
@@ -77,19 +84,6 @@ extern "C" {
 #define PU_ASSERT(expr) \
     do  { \
         if (!pu_assert((expr) ? true : false, (#expr), __FILE__, __LINE__)) \
-            return false; \
-    } while(false)
-
-/*/**
- * @brief Asserts that the given strings are equal. If the strings are not equal,
- * execution of the enclosing test aborts and an error message is displayed.
- *
- * @param str1 A string for comparison
- * @param str2 A string for comparison
- */
-#define PU_ASSERT_STREQ(str1, str2) \
-    do  { \
-        if (!pu_assert(0 == strcmp(str1, str2), #str1 "==" #str2, __FILE__, __LINE__)) \
             return false; \
     } while(false)
 
