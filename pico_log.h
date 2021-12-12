@@ -119,7 +119,7 @@ pl_id_t pl_add_appender(pl_appender_fn p_appender,
  * @return       An identifier for the appender. This ID is valid until the
  *               appender is unregistered.
  */
-pl_id_t pl_add_stream(FILE* p_stream, pl_level_t level);
+pl_id_t pl_add_stream(FILE* stream, pl_level_t level);
 
 /**
  * Unregisters appender (removes the appender from the logger).
@@ -172,7 +172,7 @@ void pl_set_time_fmt(pl_id_t id, const char* fmt);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_colors_enabled(pl_id_t id, bool b_enabled);
+void pl_colors_enabled(pl_id_t id, bool enabled);
 
 /**
  * Turns timestamp reporting on/off for the specified appender.
@@ -181,7 +181,7 @@ void pl_colors_enabled(pl_id_t id, bool b_enabled);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_timestamp_enabled(pl_id_t id, bool b_enabled);
+void pl_timestamp_enabled(pl_id_t id, bool enabled);
 
 /**
  * Turns log level reporting on/off for the specified appender.
@@ -190,7 +190,7 @@ void pl_timestamp_enabled(pl_id_t id, bool b_enabled);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_level_enabled(pl_id_t id, bool b_enabled);
+void pl_level_enabled(pl_id_t id, bool enabled);
 
 /**
  * Turns filename and line number reporting on/off for the specified appender.
@@ -199,7 +199,7 @@ void pl_level_enabled(pl_id_t id, bool b_enabled);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_file_enabled(pl_id_t id, bool b_enabled);
+void pl_file_enabled(pl_id_t id, bool enabled);
 
 /**
  * Turns function reporting on/off for the specified appender.
@@ -208,7 +208,7 @@ void pl_file_enabled(pl_id_t id, bool b_enabled);
  * @param id The appender id
  * @param b_enabled On if true
  */
-void pl_function_enabled(pl_id_t id, bool b_enabled);
+void pl_function_enabled(pl_id_t id, bool enabled);
 
 /**
  * Writes a TRACE level message to the log. Usage is similar to printf (i.e.
@@ -258,10 +258,10 @@ void pl_function_enabled(pl_id_t id, bool b_enabled);
  * instead.
  */
 void pl_write(pl_level_t level,
-                const char* file,
-                unsigned line,
-                const char* func,
-                const char* p_fmt, ...);
+              const char* file,
+              unsigned line,
+              const char* func,
+              const char* fmt, ...);
 
 
 #ifdef __cplusplus
@@ -316,14 +316,14 @@ void pl_write(pl_level_t level,
 #define PL_TERM_RESET "[0m"
 #define PL_TERM_GRAY  "[90m"
 
-static bool   gb_initialized   = false; // True if logger is initialized
-static bool   gb_enabled       = true;  // True if logger is enabled
-static size_t g_appender_count = 0;         // Number of appenders
+static bool   pl_initialized    = false; // True if logger is initialized
+static bool   pl_enabled        = true;  // True if logger is enabled
+static size_t pl_appender_count = 0;     // Number of appenders
 
 /*
  * Logger level strings indexed by level ID (pl_level_t).
  */
-static const char* const level_str[] =
+static const char* const pl_level_str[] =
 {
     "TRACE",
     "DEBUG",
@@ -337,7 +337,7 @@ static const char* const level_str[] =
 /*
  * Logger level strings indexed by level ID (pl_level_t).
  */
-static const char* const level_str_formatted[] =
+static const char* const pl_level_str_formatted[] =
 {
     "TRACE",
     "DEBUG",
@@ -349,7 +349,7 @@ static const char* const level_str_formatted[] =
 };
 
 // Appropriated from https://github.com/rxi/log.c (MIT licensed)
-static const char* level_color[] =
+static const char* pl_level_color[] =
 {
     "[94m", "[36m", "[32m", "[33m", "[31m", "[35m", NULL
 };
@@ -359,52 +359,52 @@ static const char* level_color[] =
  */
 typedef struct
 {
-    pl_appender_fn p_appender;
-    void*          p_udata;
-    bool           b_enabled;
-    pl_level_t     level;
-    char           p_time_fmt[PL_TIME_FMT_LEN];
-    bool           b_colors;
-    bool           b_timestamp;
-    bool           b_level;
-    bool           b_file;
-    bool           b_func;
-    pl_lock_fn     p_lock;
-    void*          p_lock_udata;
-} appender_info_t;
+    pl_appender_fn appender_fp;
+    void*          udata;
+    bool           enabled;
+    pl_level_t     log_level;
+    char           time_fmt[PL_TIME_FMT_LEN];
+    bool           colors;
+    bool           timestamp;
+    bool           level;
+    bool           file;
+    bool           func;
+    pl_lock_fn     lock;
+    void*          lock_udata;
+} pl_appender_t;
 
 /*
  * Array of appenders.
  */
-static appender_info_t gp_appenders[PL_MAX_APPENDERS];
+static pl_appender_t pl_appenders[PL_MAX_APPENDERS];
 
 /*
  * Initializes the logger provided it has not been initialized.
  */
 static void
-try_init ()
+pl_try_init ()
 {
-    if (gb_initialized)
+    if (pl_initialized)
     {
         return;
     }
 
     for (int i = 0; i < PL_MAX_APPENDERS; i++)
     {
-        gp_appenders[i].p_appender = NULL;
+        pl_appenders[i].appender_fp = NULL;
     }
 
-    gb_initialized = true;
+    pl_initialized = true;
 }
 
-static bool appender_exists(pl_id_t id)
+static bool pl_appender_exists(pl_id_t id)
 {
-    return (id < PL_MAX_APPENDERS && NULL != gp_appenders[id].p_appender);
+    return (id < PL_MAX_APPENDERS && NULL != pl_appenders[id].appender_fp);
 }
 
-static bool appender_enabled(pl_id_t id)
+static bool pl_appender_enabled(pl_id_t id)
 {
-    return appender_exists(id) && gp_appenders[id].b_enabled;
+    return pl_appender_exists(id) && pl_appenders[id].enabled;
 }
 
 bool pl_str_level(const char* str, pl_level_t* level)
@@ -412,9 +412,9 @@ bool pl_str_level(const char* str, pl_level_t* level)
     if (!level)
         return false;
 
-    for (size_t i = 0; level_str[i]; i++)
+    for (size_t i = 0; pl_level_str[i]; i++)
     {
-        if (0 == strcmp(str, level_str[i]))
+        if (0 == strcmp(str, pl_level_str[i]))
         {
             *level = (pl_level_t)i;
             return true;
@@ -427,25 +427,25 @@ bool pl_str_level(const char* str, pl_level_t* level)
 void
 pl_enable (void)
 {
-    gb_enabled = true;
+    pl_enabled = true;
 }
 
 void
 pl_disable (void)
 {
-    gb_enabled = false;
+    pl_enabled = false;
 }
 
 pl_id_t
-pl_add_appender (pl_appender_fn p_appender,
-                   pl_level_t level,
-                   void* p_udata)
+pl_add_appender (pl_appender_fn appender_fp,
+                 pl_level_t level,
+                 void* p_udata)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Check if there is space for a new appender.
-    PL_ASSERT(g_appender_count < PL_MAX_APPENDERS);
+    PL_ASSERT(pl_appender_count < PL_MAX_APPENDERS);
 
     // Ensure level is valid
     PL_ASSERT(level >= 0 && level < PL_LEVEL_COUNT);
@@ -453,25 +453,27 @@ pl_add_appender (pl_appender_fn p_appender,
     // Iterate through appender array and find an empty slot.
     for (int i = 0; i < PL_MAX_APPENDERS; i++)
     {
-        if (NULL == gp_appenders[i].p_appender)
+        if (NULL == pl_appenders[i].appender_fp)
         {
+            pl_appender_t* appender = &pl_appenders[i];
+
             // Store and enable appender
-            gp_appenders[i].p_appender   = p_appender;
-            gp_appenders[i].level        = level;
-            gp_appenders[i].p_udata      = p_udata;
-            gp_appenders[i].level        = PL_LEVEL_INFO;
-            gp_appenders[i].b_enabled    = true;
-            gp_appenders[i].b_colors     = false;
-            gp_appenders[i].b_level      = true;
-            gp_appenders[i].b_timestamp  = false;
-            gp_appenders[i].b_file       = false;
-            gp_appenders[i].b_func       = false;
-            gp_appenders[i].p_lock       = NULL;
-            gp_appenders[i].p_lock_udata = NULL;
+            appender->appender_fp = appender_fp;
+            appender->log_level   = level;
+            appender->udata       = p_udata;
+            appender->level       = PL_LEVEL_INFO;
+            appender->enabled     = true;
+            appender->colors      = false;
+            appender->level       = true;
+            appender->timestamp   = false;
+            appender->file        = false;
+            appender->func        = false;
+            appender->lock        = NULL;
+            appender->lock_udata  = NULL;
 
-            strncpy(gp_appenders[i].p_time_fmt, PL_TIME_FMT, PL_TIME_FMT_LEN);
+            strncpy(appender->time_fmt, PL_TIME_FMT, PL_TIME_FMT_LEN);
 
-            g_appender_count++;
+            pl_appender_count++;
 
             return (pl_id_t)i;
         }
@@ -483,10 +485,10 @@ pl_add_appender (pl_appender_fn p_appender,
 }
 
 static void
-stream_appender (const char* p_entry, void* p_udata)
+pl_stream_appender (const char* entry, void* udata)
 {
-    FILE* stream = (FILE*)p_udata;
-    fprintf(stream, "%s", p_entry);
+    FILE* stream = (FILE*)udata;
+    fprintf(stream, "%s", entry);
     fflush(stream);
 }
 
@@ -496,214 +498,213 @@ pl_add_stream (FILE* stream, pl_level_t level)
     // Stream must not be NULL
     PL_ASSERT(NULL != stream);
 
-    return pl_add_appender(stream_appender, level, stream);
+    return pl_add_appender(pl_stream_appender, level, stream);
 }
 
 void
 pl_remove_appender (pl_id_t id)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Reset appender with given ID
-    gp_appenders[id].p_appender = NULL;
+    pl_appenders[id].appender_fp = NULL;
 
-    g_appender_count--;
+    pl_appender_count--;
 }
 
 void
 pl_enable_appender (pl_id_t id)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Enable appender
-    gp_appenders[id].b_enabled = true;
+    pl_appenders[id].enabled = true;
 }
 
 void
 pl_disable_appender (pl_id_t id)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Disable appender
-    gp_appenders[id].b_enabled = false;
+    pl_appenders[id].enabled = false;
 }
 
-void pl_set_lock(pl_id_t id, pl_lock_fn p_lock, void* p_udata)
+void pl_set_lock(pl_id_t id, pl_lock_fn lock, void* udata)
 {
     // Ensure lock function is initialized
-    PL_ASSERT(NULL != p_lock);
+    PL_ASSERT(NULL != lock);
 
     // Ensure appender is registered
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
-    gp_appenders[id].p_lock = p_lock;
-    gp_appenders[id].p_lock_udata = p_udata;
+    pl_appenders[id].lock = lock;
+    pl_appenders[id].lock_udata = udata;
 }
-
 
 void
 pl_set_level (pl_id_t id, pl_level_t level)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Ensure level is valid
     PL_ASSERT(level >= 0 && level < PL_LEVEL_COUNT);
 
     // Set the level
-    gp_appenders[id].level = level;
+    pl_appenders[id].log_level = level;
 }
 
 void
 pl_set_time_fmt (pl_id_t id, const char* fmt)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Copy the time string
-    strncpy(gp_appenders[id].p_time_fmt, fmt, PL_TIME_FMT_LEN);
+    strncpy(pl_appenders[id].time_fmt, fmt, PL_TIME_FMT_LEN);
 }
 
 void
-pl_colors_enabled (pl_id_t id, bool b_enabled)
+pl_colors_enabled (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Disable appender
-    gp_appenders[id].b_colors = b_enabled;
+    pl_appenders[id].colors = enabled;
 }
 
 void
-pl_timestamp_enabled (pl_id_t id, bool b_enabled)
+pl_timestamp_enabled (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Turn timestamp on
-    gp_appenders[id].b_timestamp = b_enabled;
+    pl_appenders[id].timestamp = enabled;
 }
 
 void
-pl_level_enabled (pl_id_t id, bool b_enabled)
+pl_level_enabled (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Turn level reporting on
-    gp_appenders[id].b_level = b_enabled;
+    pl_appenders[id].level = enabled;
 }
 
 void
-pl_file_enabled (pl_id_t id, bool b_enabled)
+pl_file_enabled (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Turn file reporting on
-    gp_appenders[id].b_file = b_enabled;
+    pl_appenders[id].file = enabled;
 }
 
 void
-pl_function_enabled (pl_id_t id, bool b_enabled)
+pl_function_enabled (pl_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    try_init();
+    pl_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(appender_exists(id));
+    PL_ASSERT(pl_appender_exists(id));
 
     // Turn file reporting on
-    gp_appenders[id].b_func = b_enabled;
+    pl_appenders[id].func = enabled;
 }
 
 /*
  * Formats the current time as as string.
  */
 static char*
-time_str (const char* p_time_fmt, char* p_str, size_t len)
+pl_time_str (const char* time_fmt, char* str, size_t len)
 {
     time_t now = time(0);
-    size_t ret = strftime(p_str, len, p_time_fmt, localtime(&now));
+    size_t ret = strftime(str, len, time_fmt, localtime(&now));
 
     PL_ASSERT(ret > 0);
 
-    return p_str;
+    return str;
 }
 
 static void
-append_timestamp (char* p_entry_str, const char* p_time_fmt)
+pl_append_timestamp (char* entry_str, const char* time_fmt)
 {
-    char p_time_str[PL_TIMESTAMP_LEN + 1];
-    char p_tmp_str[PL_TIMESTAMP_LEN + 1];
+    char time_str[PL_TIMESTAMP_LEN + 1];
+    char tmp_str[PL_TIMESTAMP_LEN + 1];
 
-    snprintf(p_time_str, PL_TIMESTAMP_LEN, "%s ",
-             time_str(p_time_fmt, p_tmp_str, PL_TIMESTAMP_LEN));
+    snprintf(time_str, PL_TIMESTAMP_LEN, "%s ",
+             pl_time_str(time_fmt, tmp_str, PL_TIMESTAMP_LEN));
 
-    strncat(p_entry_str, p_time_str, PL_TIMESTAMP_LEN);
+    strncat(entry_str, time_str, PL_TIMESTAMP_LEN);
 }
 
 static void
-append_level (char* p_entry_str, pl_level_t level, bool b_colors)
+pl_append_level (char* entry_str, pl_level_t level, bool colors)
 {
-    char p_level_str[PL_LEVEL_LEN];
+    char level_str[PL_LEVEL_LEN];
 
-    if (b_colors)
+    if (colors)
     {
-        snprintf(p_level_str, sizeof(p_level_str), "%c%s%s %c%s",
-        PL_TERM_CODE, level_color[level],
-        level_str_formatted[level],
+        snprintf(level_str, sizeof(level_str), "%c%s%s %c%s",
+        PL_TERM_CODE, pl_level_color[level],
+        pl_level_str_formatted[level],
         PL_TERM_CODE, PL_TERM_RESET);
     }
     else
     {
-        snprintf(p_level_str, sizeof(p_level_str), "%s ", level_str[level]);
+        snprintf(level_str, sizeof(level_str), "%s ", pl_level_str[level]);
     }
 
-    strncat(p_entry_str, p_level_str, PL_LEVEL_LEN);
+    strncat(entry_str, level_str, PL_LEVEL_LEN);
 }
 
 static void
-append_file(char* p_entry_str, const char* file, unsigned line, bool b_colors)
+pl_append_file(char* entry_str, const char* file, unsigned line, bool colors)
 {
-    char p_file_str[PL_FILE_LEN];
+    char file_str[PL_FILE_LEN];
 
-    if (b_colors)
+    if (colors)
     {
-        snprintf(p_file_str, sizeof(p_file_str), "%c%s%s:%u%c%s ",
+        snprintf(file_str, sizeof(file_str), "%c%s%s:%u%c%s ",
                  PL_TERM_CODE, PL_TERM_GRAY,
                  file, line,
                  PL_TERM_CODE, PL_TERM_RESET);
@@ -711,39 +712,39 @@ append_file(char* p_entry_str, const char* file, unsigned line, bool b_colors)
     }
     else
     {
-        snprintf(p_file_str, sizeof(p_file_str), "%s:%u ", file, line);
+        snprintf(file_str, sizeof(file_str), "%s:%u ", file, line);
     }
 
-    strncat(p_entry_str, p_file_str, PL_FILE_LEN);
+    strncat(entry_str, file_str, PL_FILE_LEN);
 }
 
 static void
-append_func(char* p_entry_str, const char* func, bool b_colors)
+pl_append_func(char* entry_str, const char* func, bool colors)
 {
-   char p_func_str[PL_FUNC_LEN];
+   char func_str[PL_FUNC_LEN];
 
-    if (b_colors)
+    if (colors)
     {
-        snprintf(p_func_str, sizeof(p_func_str), "%c%s[%s] %c%s",
+        snprintf(func_str, sizeof(func_str), "%c%s[%s] %c%s",
                  PL_TERM_CODE, PL_TERM_GRAY,
                  func,
                  PL_TERM_CODE, PL_TERM_RESET);
     }
     else
     {
-        snprintf(p_func_str, sizeof(p_func_str), "[%s] ", func);
+        snprintf(func_str, sizeof(func_str), "[%s] ", func);
     }
 
-    strncat(p_entry_str, p_func_str, PL_FUNC_LEN);
+    strncat(entry_str, func_str, PL_FUNC_LEN);
 }
 
 void
 pl_write (pl_level_t level, const char* file, unsigned line,
-                                const char* func, const char* p_fmt, ...)
+                            const char* func, const char* fmt, ...)
 {
     // Only write entry if there are registered appenders and the logger is
     // enabled
-    if (0 == g_appender_count || !gb_enabled)
+    if (0 == pl_appender_count || !pl_enabled)
     {
         return;
     }
@@ -753,61 +754,65 @@ pl_write (pl_level_t level, const char* file, unsigned line,
 
     for (pl_id_t i = 0; i < PL_MAX_APPENDERS; i++)
     {
-        if (appender_enabled(i) &&
-            gp_appenders[i].level <= level)
-        {
-            char p_entry_str[PL_ENTRY_LEN + 1]; // Ensure there is space for
-                                                  // null char
+        pl_appender_t* appender = &pl_appenders[i];
 
-            p_entry_str[0] = '\0'; // Ensure the entry is null terminated
+        if (!pl_appender_enabled(i))
+            continue;
+
+        if (pl_appenders[i].level <= level)
+        {
+            char entry_str[PL_ENTRY_LEN + 1]; // Ensure there is space for
+                                              // null char
+
+            entry_str[0] = '\0'; // Ensure the entry is null terminated
 
             // Append a timestamp
-            if (gp_appenders[i].b_timestamp)
+            if (appender->timestamp)
             {
-                append_timestamp(p_entry_str, gp_appenders[i].p_time_fmt);
+                pl_append_timestamp(entry_str, appender->time_fmt);
             }
 
             // Append the logger level
-            if (gp_appenders[i].b_level)
+            if (appender->level)
             {
-                append_level(p_entry_str, level, gp_appenders[i].b_colors);
+                pl_append_level(entry_str, level, appender->colors);
             }
 
             // Append the filename/line number
-            if (gp_appenders[i].b_file)
+            if (appender->file)
             {
-                append_file(p_entry_str, file, line, gp_appenders[i].b_colors);
+                pl_append_file(entry_str, file, line, appender->colors);
             }
 
             // Append the function name
-            if (gp_appenders[i].b_func)
+            if (appender->func)
             {
-                append_func(p_entry_str, func, gp_appenders[i].b_colors);
+                pl_append_func(entry_str, func, appender->colors);
             }
 
             // Append the log message
-            char p_msg_str[PL_MSG_LEN];
+            char msg_str[PL_MSG_LEN];
 
             va_list args;
-            va_start(args, p_fmt);
-            vsnprintf(p_msg_str, sizeof(p_msg_str), p_fmt, args);
+            va_start(args, fmt);
+            vsnprintf(msg_str, sizeof(msg_str), fmt, args);
             va_end(args);
 
-            strncat(p_entry_str, p_msg_str, PL_MSG_LEN);
-            strcat(p_entry_str, "\n");
+            strncat(entry_str, msg_str, PL_MSG_LEN);
+            strcat(entry_str, "\n");
 
             // Locks the appender
-            if (NULL != gp_appenders[i].p_lock)
+            if (NULL != appender->lock)
             {
-                gp_appenders[i].p_lock(true, gp_appenders[i].p_lock_udata);
+                appender->lock(true, appender->lock_udata);
             }
 
-            gp_appenders[i].p_appender(p_entry_str, gp_appenders[i].p_udata);
+            appender->appender_fp(entry_str, appender->udata);
 
             // Unlocks the appender
-            if (NULL != gp_appenders[i].p_lock)
+            if (NULL != appender->lock)
             {
-                gp_appenders[i].p_lock(false, gp_appenders[i].p_lock_udata);
+                appender->lock(false, appender->lock_udata);
             }
         }
     }
