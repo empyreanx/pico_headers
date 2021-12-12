@@ -122,18 +122,18 @@ void pl_disable(void);
  * appender writes a log entry to an output stream. This could be a console,
  * a file, a network connection, etc...
  *
- * @param p_appender  Pointer to the appender function to register. An appender
- *                    function has the signature,
- *                    `void appender_func(const char* p_entry, void* p_udata)`
+ * @param appender Pointer to the appender function to register. An appender
+ *                 function has the signature,
+ *                 `void appender_func(const char* p_entry, void* p_udata)`
  *
- * @param level       The appender's log level
+ * @param level    The appender's log level
  *
- * @param p_udata A pointer supplied to the appender function when writing
- *                    a log entry. This pointer is not modified by the logger.
- *                    If not required, pass in NULL for this parameter.
+ * @param udata    A pointer supplied to the appender function when writing
+ *                 a log entry. This pointer is not modified by the logger.
+ *                 If not required, pass in NULL for this parameter.
  *
- * @return            An identifier for the appender. This ID is valid until the
- *                    appender is unregistered.
+ * @return         An identifier for the appender. This ID is valid until the
+ *                 appender is unregistered.
  */
 pl_id_t pl_add_appender(pl_appender_fn appender_fp,
                         pl_level_t level, void* udata);
@@ -141,7 +141,7 @@ pl_id_t pl_add_appender(pl_appender_fn appender_fp,
 /**
  * @brief Registers an output stream appender.
  *
- * @param p_stream The output stream to write to
+ * @param stream The output stream to write to
  * @param level  The appender's log level
  *
  * @return       An identifier for the appender. This ID is valid until the
@@ -182,6 +182,7 @@ void pl_set_lock(pl_id_t id, pl_lock_fn lock_fp, void* udata);
  * Sets the logging level. Only those messages of equal or higher priority
  * (severity) than this value will be logged.
  *
+ * @aaram id    The appender to hold the lock
  * @param level The new appender logging threshold.
  */
 void pl_set_level(pl_id_t id, pl_level_t level);
@@ -201,8 +202,8 @@ void pl_set_time_fmt(pl_id_t id, const char* fmt);
  * @brief Turns colors ouput on or off for the specified appender.
  * NOTE: Off by default.
  *
- * @param id The appender id
- * @param b_enabled On if true
+ * @param id      The appender id
+ * @param enabled On if true
  */
 void pl_display_colors(pl_id_t id, bool enabled);
 
@@ -210,8 +211,8 @@ void pl_display_colors(pl_id_t id, bool enabled);
  * @brief Turns timestamp reporting on/off for the specified appender.
  * NOTE: Off by default
  *
- * @param id The appender id
- * @param b_enabled On if true
+ * @param id      The appender id
+ * @param enabled On if true
  */
 void pl_display_timestamp(pl_id_t id, bool enabled);
 
@@ -219,8 +220,8 @@ void pl_display_timestamp(pl_id_t id, bool enabled);
  * @brief Turns log level reporting on/off for the specified appender.
  * NOTE: On by default.
  *
- * @param id The appender id
- * @param b_enabled On if true
+ * @param id      The appender id
+ * @param enabled On if true
  */
 void pl_display_level(pl_id_t id, bool enabled);
 
@@ -229,8 +230,8 @@ void pl_display_level(pl_id_t id, bool enabled);
  * appender.
  * NOTE: Off by default.
  *
- * @param id The appender id
- * @param b_enabled On if true
+ * @param id      The appender id
+ * @param enabled On if true
  */
 void pl_display_file(pl_id_t id, bool enabled);
 
@@ -238,8 +239,8 @@ void pl_display_file(pl_id_t id, bool enabled);
  * @brief Turns function reporting on/off for the specified appender.
  * NOTE: Off by default.
  *
- * @param id The appender id
- * @param b_enabled On if true
+ * @param id      The appender id
+ * @param enabled On if true
  */
 void pl_display_function(pl_id_t id, bool enabled);
 
