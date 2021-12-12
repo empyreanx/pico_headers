@@ -61,13 +61,13 @@ typedef enum
  * Appender function definition. An appender writes a log entry to an output
  * stream. This could be the console, a file, a network connection, etc...
  */
-typedef void (*pl_appender_fn)(const char* p_entry, void* p_udata);
+typedef void (*pl_appender_fn)(const char* entry, void* udata);
 
 /**
  *  Lock function definition. This is called during pl_write. Adapted
     from https://github.com/rxi/log.c/blob/master/src/log.h
  */
-typedef void (*pl_lock_fn)(bool lock, void *p_udata);
+typedef void (*pl_lock_fn)(bool lock, void *udata);
 
 /**
  * Identifies a registered appender.
@@ -107,8 +107,8 @@ void pl_disable(void);
  * @return            An identifier for the appender. This ID is valid until the
  *                    appender is unregistered.
  */
-pl_id_t pl_add_appender(pl_appender_fn p_appender,
-                        pl_level_t level, void* p_udata);
+pl_id_t pl_add_appender(pl_appender_fn appender_fp,
+                        pl_level_t level, void* udata);
 
 /**
  * Registers an output stream appender.
@@ -146,7 +146,7 @@ void pl_disable_appender(pl_id_t id);
 /**
  * Sets the locking function.
  */
-void pl_set_lock(pl_id_t id, pl_lock_fn p_lock, void* p_udata);
+void pl_set_lock(pl_id_t id, pl_lock_fn lock_fp, void* udata);
 
 /**
  * Sets the logging level. Only those messages of equal or higher priority
@@ -437,9 +437,7 @@ pl_disable (void)
 }
 
 pl_id_t
-pl_add_appender (pl_appender_fn appender_fp,
-                 pl_level_t level,
-                 void* p_udata)
+pl_add_appender (pl_appender_fn appender_fp, pl_level_t level, void* udata)
 {
     // Initialize logger if neccesary
     pl_try_init();
@@ -460,7 +458,7 @@ pl_add_appender (pl_appender_fn appender_fp,
             // Store and enable appender
             appender->appender_fp = appender_fp;
             appender->log_level   = level;
-            appender->udata       = p_udata;
+            appender->udata       = udata;
             appender->level       = PL_LEVEL_INFO;
             appender->enabled     = true;
             appender->colors      = false;
