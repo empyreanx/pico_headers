@@ -315,12 +315,12 @@ pu_print_stats (void)
         printf("Summary: Passed: %c%s%u%c%s "
                "Failed: %c%s%u%c%s "
                "Total: %u Suites: %u "
-               "Asserts: %u\n", \
-                TERM_COLOR_CODE, TERM_COLOR_GREEN, pu_num_passed, \
-                TERM_COLOR_CODE, TERM_COLOR_RESET, \
-                TERM_COLOR_CODE, TERM_COLOR_RED, pu_num_failed, \
-                TERM_COLOR_CODE, TERM_COLOR_RESET, \
-                pu_num_passed + pu_num_failed, \
+               "Asserts: %u\n",
+                TERM_COLOR_CODE, TERM_COLOR_GREEN, pu_num_passed,
+                TERM_COLOR_CODE, TERM_COLOR_RESET,
+                TERM_COLOR_CODE, TERM_COLOR_RED, pu_num_failed,
+                TERM_COLOR_CODE, TERM_COLOR_RESET,
+                pu_num_passed + pu_num_failed,
                 pu_num_suites,  pu_num_asserts);
     }
     else
@@ -328,10 +328,10 @@ pu_print_stats (void)
         printf("Summary: Passed: %u "
                "Failed: %u "
                "Total: %u Suites: %u "
-               "Asserts: %u\n", \
-                pu_num_passed, \
-                pu_num_failed, \
-                pu_num_passed + pu_num_failed, \
+               "Asserts: %u\n",
+                pu_num_passed,
+                pu_num_failed,
+                pu_num_passed + pu_num_failed,
                 pu_num_suites,  pu_num_asserts);
     }
 }
