@@ -29,6 +29,16 @@
 #define PUNIT_IMPLEMENTATION
 #include "../pico_unit.h"
 
+#include <string.h>  /* strcmp */
+
+/*
+ * Used to extend PU_ASSERT
+ */
+static bool str_eq(const char* str1, const char* str2)
+{
+    return 0 == strcmp(str1, str2);
+}
+
 /*
  * Passing test. Note that the test function declaration returns a boolean value
  * and that the test definition returns true. All test functions must return
@@ -38,7 +48,7 @@
 PU_TEST(test1)
 {
     PU_ASSERT(2 + 2 == 4);                /* Boolean assertion (ok)         */
-    PU_ASSERT_STREQ("apples", "apples");  /* String equality assertion (ok) */
+    PU_ASSERT(str_eq("apples", "apples"));  /* String equality assertion (ok) */
     return true;
 }
 
@@ -46,7 +56,7 @@ PU_TEST(test1)
 PU_TEST(test2)
 {
     PU_ASSERT(2 + 2 != 4);                /* Boolean assertion (fails) */
-    PU_ASSERT_STREQ("apples", "oranges"); /* String equality (fails */
+    PU_ASSERT(str_eq("apples", "oranges")); /* String equality (fails */
     return true;
 }
 
@@ -54,7 +64,7 @@ PU_TEST(test2)
 PU_TEST(test3)
 {
     PU_ASSERT(2 + 2 == 4);                 /* Boolean assertion (ok) */
-    PU_ASSERT_STREQ("apples", "oranges");  /* String equality fails */
+    PU_ASSERT(str_eq("apples", "oranges"));  /* String equality fails */
     return true;
 }
 

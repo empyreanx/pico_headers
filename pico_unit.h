@@ -1,30 +1,51 @@
-/** @file pico_unit.h
- * picounit is a minimal, yet powerful unit testing framework written in C99.
- */
+/**
+    @file pico_unit.h
+    @brief pico_unit is a minimal, yet powerful unit testing framework
+    written in C99.
+*/
 
-/*=============================================================================
- * MIT License
- *
- * Copyright (c) 2020 James McLean
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
-=============================================================================*/
+/*
+    ----------------------------------------------------------------------------
+    Licensing information available at end of file.
+    ----------------------------------------------------------------------------
+
+    Summary:
+    --------
+
+    pico_unit is a minimal unit testing framework. It should compile and run on
+    just about any platform with a standard C99 compiler.
+
+    Writing tests is simple: 1) Use the PU_TEST macro and define the test using
+    using PU_ASSERT to test boolean expressions. Run the test inside the body
+    of a test suite or other function (.e.g main). How you group tests and test
+    suites is completely up to you.
+
+    Due to it's simplicity pico_unit does not have all of the features commonly
+    associated with a unit testing framework. There is only a single assertion
+    predicate, however practice has shown that this is sufficient in most cases.
+    Additional predicates can be constructed using the existing one if needed.
+
+    Registering tests declaring test suites is not automatic and must done
+    inside the body of a test suite or other function. This design decision was
+    made to avoid using C constructor extensions like those found in GCC/Clang.
+    There is a danger that a unit test might be missed, but compiler warnings
+    will probably catch this.
+
+    Features:
+    ---------
+
+    * Written in C99 and compatible with C++
+    * Single-header for easy integration into any build system
+    * Tiny memory and code footprint
+    * Simple and minimalistic API
+    * All unit tests are run during execution and failures are indicated
+    * On demand setup and teardown function support
+    * Ability to group tests into test suites
+    * Ability to print test statistics
+    * Optional color coded output
+    * Optional time measurement
+    * Permissive (zlib or public domain)
+*/
 
 #ifndef PICO_UNIT_H
 #define PICO_UNIT_H
@@ -38,13 +59,15 @@ extern "C" {
 #endif
 
 /**
- * Defines a unit test.
+ * @brief Defines a unit test.
  *
  * @param name The name of the test. Must be a valid C function name
  */
 #define PU_TEST(name) static bool name()
 
 /**
+ * @brief Asserts that a condition is true
+
  * Asserts that the given expression evaluates to `true`. If the expression
  * evalutes to `false`, execution of the current test aborts and an error
  * message is displayed.
@@ -57,8 +80,8 @@ extern "C" {
             return false; \
     } while(false)
 
-/**
- * Asserts that the given strings are equal. If the strings are not equal,
+/*/**
+ * @brief Asserts that the given strings are equal. If the strings are not equal,
  * execution of the enclosing test aborts and an error message is displayed.
  *
  * @param str1 A string for comparison
@@ -71,20 +94,24 @@ extern "C" {
     } while(false)
 
 /**
- * Runs a unit test function. IMPORTANT: The function `fp_test` must return
- * `true`. The test function has the signature, `bool test_func(void)`.
+ * @brief Runs a unit test function.
  *
- * @param fp_test The test function to execute
+ * IMPORTANT: The function `test_fp` must return `true`. The test function has
+ * the signature, `bool test_func(void)`.
+ *
+ * @param test_fp The test function to execute
  */
 #define PU_RUN_TEST(test_fp) (pu_run_test(#test_fp, test_fp))
 
 /**
- * Declares a test suite
+ * @brief Declares a test suite
+ *
+ * @param name The name of the test suite
  */
 #define PU_SUITE(name) void name()
 
 /**
- * Runs a series of unit tests. The test suite function has the signature,
+ * @brief Runs a series of unit tests. The test suite function has the signature,
  * `void suite_func(void)`.
  *
  * @param fp_suite The test suite function to run
@@ -92,39 +119,40 @@ extern "C" {
 #define PU_RUN_SUITE(suite_fp) pu_run_suite(#suite_fp, suite_fp)
 
 /**
- * Functions that are run before or after a number of unit tests execute.
+ * @brief  Functions that are run before or after a number of unit tests execute.
  */
 typedef void (*pu_setup_fn)(void);
 
 /**
+ * @brief Sets the current setup and teardown functions.
+ *
  * Sets the current setup and teardown functions. The setup function is called
  * prior to each unit test and the teardown function after. Either of these
  * functions can be `NULL`. The setup and teardown functions have the signature,
  * `void func(void)`.
  *
- * @param fp_setup The setup function
- * @param fp_teardown The teardown function
- *
+ * @param setup_fp The setup function
+ * @param teardown_fp The teardown function
  */
-void pu_setup(pu_setup_fn fp_setup, pu_setup_fn fp_teardown);
+void pu_setup(pu_setup_fn setup_fp, pu_setup_fn teardown_fp);
 
 /**
- * Disables the setup and teardown functions by setting them to `NULL`.
+ * @brief Disables the setup and teardown functions by setting them to `NULL`.
  */
 void pu_clear_setup(void);
 
 /**
- * Turns on terminal colors. NOTE: Off by default.
+ * @brief Turns on terminal colors. NOTE: Off by default.
  */
 void pu_display_colors(bool enabled);
 
 /**
- * Turns on time measurement. NOTE: Off by default.
+ * @brief Turns on time measurement. NOTE: Off by default.
  */
 void pu_display_time(bool enabled);
 
 /**
- * Prints test statistics.
+ * @brief Prints test statistics.
  */
 void pu_print_stats(void);
 
@@ -135,13 +163,23 @@ void pu_print_stats(void);
 typedef bool (*pu_test_fn)(void);
 typedef void (*pu_suite_fn)(void);
 
-bool pu_assert(bool b_expr,
-               const char* const p_expr,
-               const char* const p_file,
+/**
+ * @brief Used internally
+ */
+bool pu_assert(bool passed,
+               const char* const expr,
+               const char* const file,
                int line);
 
-void pu_run_test(const char* const p_name, pu_test_fn fp_test);
-void pu_run_suite(const char* const p_name, pu_suite_fn fp_suite);
+/**
+ * @brief Used internally
+ */
+void pu_run_test(const char* const name, pu_test_fn test_fp);
+
+/**
+ * @brief Used internally
+ */
+void pu_run_suite(const char* const name, pu_suite_fn suite_fp);
 
 #ifdef __cplusplus
 }
@@ -339,4 +377,56 @@ pu_print_stats (void)
 
 #endif // PUNIT_IMPLEMENTATION
 
-/* EoF */
+/*  ----------------------------------------------------------------------------
+    This software is available under two licenses (A) or (B). You may choose
+    either one as you wish:
+    ----------------------------------------------------------------------------
+
+    (A) The zlib License
+
+    Copyright (c) 2021 James McLean
+
+    This software is provided 'as-is', without any express or implied warranty.
+    In no event will the authors be held liable for any damages arising from the
+    use of this software.
+
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+
+    1. The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software in a
+    product, an acknowledgment in the product documentation would be appreciated
+    but is not required.
+
+    2. Altered source versions must be plainly marked as such, and must not be
+    misrepresented as being the original software.
+
+    3. This notice may not be removed or altered from any source distribution.
+
+    ----------------------------------------------------------------------------
+
+    (B) Public Domain (www.unlicense.org)
+
+    This is free and unencumbered software released into the public domain.
+
+    Anyone is free to copy, modify, publish, use, compile, sell, or distribute
+    this software, either in source code form or as a compiled binary, for any
+    purpose, commercial or non-commercial, and by any means.
+
+    In jurisdictions that recognize copyright laws, the author or authors of
+    this software dedicate any and all copyright interest in the software to the
+    public domain. We make this dedication for the benefit of the public at
+    large and to the detriment of our heirs and successors. We intend this
+    dedication to be an overt act of relinquishment in perpetuity of all present
+    and future rights to this software under copyright law.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+    ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+// EoF
