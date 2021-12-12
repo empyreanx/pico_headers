@@ -759,7 +759,7 @@ pl_write (pl_level_t level, const char* file, unsigned line,
         if (!pl_appender_enabled(i))
             continue;
 
-        if (pl_appenders[i].level <= level)
+        if (pl_appenders[i].log_level <= level)
         {
             char entry_str[PL_ENTRY_LEN + 1]; // Ensure there is space for
                                               // null char
