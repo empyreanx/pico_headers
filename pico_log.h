@@ -369,7 +369,7 @@ typedef struct
     bool           level;
     bool           file;
     bool           func;
-    pl_lock_fn     lock;
+    pl_lock_fn     lock_fp;
     void*          lock_udata;
 } pl_appender_t;
 
@@ -468,7 +468,7 @@ pl_add_appender (pl_appender_fn appender_fp,
             appender->timestamp   = false;
             appender->file        = false;
             appender->func        = false;
-            appender->lock        = NULL;
+            appender->lock_fp     = NULL;
             appender->lock_udata  = NULL;
 
             strncpy(appender->time_fmt, PL_TIME_FMT, PL_TIME_FMT_LEN);
@@ -542,10 +542,10 @@ pl_disable_appender (pl_id_t id)
     pl_appenders[id].enabled = false;
 }
 
-void pl_set_lock(pl_id_t id, pl_lock_fn lock, void* udata)
+void pl_set_lock(pl_id_t id, pl_lock_fn lock_fp, void* udata)
 {
     // Ensure lock function is initialized
-    PL_ASSERT(NULL != lock);
+    PL_ASSERT(NULL != lock_fp);
 
     // Ensure appender is registered
     pl_try_init();
@@ -553,7 +553,7 @@ void pl_set_lock(pl_id_t id, pl_lock_fn lock, void* udata)
     // Ensure appender is registered
     PL_ASSERT(pl_appender_exists(id));
 
-    pl_appenders[id].lock = lock;
+    pl_appenders[id].lock_fp = lock_fp;
     pl_appenders[id].lock_udata = udata;
 }
 
@@ -802,17 +802,17 @@ pl_write (pl_level_t level, const char* file, unsigned line,
             strcat(entry_str, "\n");
 
             // Locks the appender
-            if (NULL != appender->lock)
+            if (NULL != appender->lock_fp)
             {
-                appender->lock(true, appender->lock_udata);
+                appender->lock_fp(true, appender->lock_udata);
             }
 
             appender->appender_fp(entry_str, appender->udata);
 
             // Unlocks the appender
-            if (NULL != appender->lock)
+            if (NULL != appender->lock_fp)
             {
-                appender->lock(false, appender->lock_udata);
+                appender->lock_fp(false, appender->lock_udata);
             }
         }
     }
