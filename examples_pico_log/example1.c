@@ -41,9 +41,9 @@ int main(int argc, char** argv)
 
     pl_id_t id = pl_add_appender(appender, PL_LEVEL_INFO, NULL);
 
-    pl_timestamp_enabled(id, true);
-    pl_file_enabled(id, true);
-    pl_function_enabled(id, true);
+    pl_display_timestamp(id, true);
+    pl_display_file(id, true);
+    pl_display_function(id, true);
 
     // Default log level is INFO
 

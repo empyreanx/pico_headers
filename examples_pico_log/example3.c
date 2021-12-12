@@ -33,13 +33,13 @@ int main(int argc, char** argv)
     (void)argv;
 
     pl_id_t id = pl_add_stream(stdout, PL_LEVEL_TRACE);
-    pl_colors_enabled(id, true);
 
     pl_set_level(id, PL_LEVEL_TRACE);
 
     pl_set_time_fmt(id, "%H:%M:%S");
-    pl_timestamp_enabled(id, true);
-    pl_file_enabled(id, true);
+    pl_display_colors(id, true);
+    pl_display_timestamp(id, true);
+    pl_display_file(id, true);
 
     // Default log level is INFO
 

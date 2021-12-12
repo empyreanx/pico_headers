@@ -73,8 +73,8 @@ int main(int argc, char** argv)
 
     printf("================== Level Off ==================\n");
 
-    pl_level_enabled(id1, false);
-    pl_level_enabled(id2, false);
+    pl_display_level(id1, false);
+    pl_display_level(id2, false);
 
     log_all();
 
@@ -82,8 +82,8 @@ int main(int argc, char** argv)
 
     pl_enable_appender(id1);
 
-    pl_level_enabled(id1, true);
-    pl_level_enabled(id2, true);
+    pl_display_level(id1, true);
+    pl_display_level(id2, true);
 
     pl_set_level(id1, PL_LEVEL_INFO);
     pl_set_level(id2, PL_LEVEL_INFO);
@@ -96,22 +96,22 @@ int main(int argc, char** argv)
 
     id2 = pl_add_appender(appender2, PL_LEVEL_INFO, NULL);
 
-    pl_timestamp_enabled(id1, true);
-    pl_timestamp_enabled(id2, true);
+    pl_display_timestamp(id1, true);
+    pl_display_timestamp(id2, true);
 
     log_all();
 
     printf("================== File ==================\n");
 
-    pl_file_enabled(id1, true);
-    pl_file_enabled(id2, true);
+    pl_display_file(id1, true);
+    pl_display_file(id2, true);
 
     log_all();
 
-    printf("================== Func ==================\n");
+    printf("================== Function ==================\n");
 
-    pl_function_enabled(id1, true);
-    pl_function_enabled(id2, true);
+    pl_display_function(id1, true);
+    pl_display_function(id2, true);
 
     log_all();
 
