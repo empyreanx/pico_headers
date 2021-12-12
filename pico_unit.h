@@ -76,7 +76,7 @@ extern "C" {
  *
  * @param fp_test The test function to execute
  */
-#define PU_RUN_TEST(fp_test) (pu_run_test(#fp_test, fp_test))
+#define PU_RUN_TEST(test_fp) (pu_run_test(#test_fp, test_fp))
 
 /**
  * Declares a test suite
@@ -89,7 +89,7 @@ extern "C" {
  *
  * @param fp_suite The test suite function to run
  */
-#define PU_RUN_SUITE(fp_suite) pu_run_suite(#fp_suite, fp_suite)
+#define PU_RUN_SUITE(suite_fp) pu_run_suite(#suite_fp, suite_fp)
 
 /**
  * Functions that are run before or after a number of unit tests execute.
@@ -116,12 +116,12 @@ void pu_clear_setup(void);
 /**
  * Turns on terminal colors. NOTE: Off by default.
  */
-void pu_colors_enabled(bool enabled);
+void pu_display_colors(bool enabled);
 
 /**
  * Turns on time measurement. NOTE: Off by default.
  */
-void pu_time_enabled(bool enabled);
+void pu_display_time(bool enabled);
 
 /**
  * Prints test statistics.
@@ -185,13 +185,13 @@ pu_clear_setup (void)
 }
 
 void
-pu_colors_enabled (bool enabled)
+pu_display_colors (bool enabled)
 {
     pu_colors = enabled;
 }
 
 void
-pu_time_enabled (bool enabled)
+pu_display_time (bool enabled)
 {
     pu_time = enabled;
 }

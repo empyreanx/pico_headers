@@ -108,8 +108,8 @@ test_suite2 ()
 int
 main ()
 {
-    pu_colors_enabled(true);
-    pu_time_enabled(true);
+    pu_display_colors(true);
+    pu_display_time(true);
     PU_RUN_SUITE(test_suite1);
     PU_RUN_SUITE(test_suite2);
     pu_print_stats();
