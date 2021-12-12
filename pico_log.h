@@ -1,4 +1,4 @@
-/** @file picolog.h
+/** @file pico_log.h
  * picolog is a minimal, yet flexible logging framework written in C99.
  */
 

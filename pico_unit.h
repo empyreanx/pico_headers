@@ -1,4 +1,4 @@
-/** @file picounit.h
+/** @file pico_unit.h
  * picounit is a minimal, yet powerful unit testing framework written in C99.
  */
 
