@@ -1,4 +1,4 @@
-#define PUNIT_IMPLEMENTATION
+#define PU_IMPLEMENTATION
 #include "../pico_unit.h"
 
 /*

@@ -29,11 +29,11 @@
     inside the body of a test suite or other function. This design decision was
     made to avoid using C constructor extensions like those found in GCC/Clang
     which reduce portability. There is a danger that a unit test might be
-    missed, but compiler warnings will probably catch this.
+    missed, but compiler warnings will usually catch this.
 
     To use this library in your project, use
 
-    #define PUNIT_IMPLEMENTATION
+    #define PU_IMPLEMENTATION
     #include "pico_unit.h"
 
     in a source file.
@@ -181,7 +181,7 @@ void pu_run_suite(const char* const name, pu_suite_fn suite_fp);
 
 #endif // PICO_UNIT_H
 
-#ifdef PUNIT_IMPLEMENTATION
+#ifdef PU_IMPLEMENTATION
 
 #include <stdio.h> /* printf */
 #include <time.h>  /* clock_t, clock */
@@ -369,7 +369,7 @@ pu_print_stats (void)
 }
 
 
-#endif // PUNIT_IMPLEMENTATION
+#endif // PU_IMPLEMENTATION
 
 /*  ----------------------------------------------------------------------------
     This software is available under two licenses (A) or (B). You may choose

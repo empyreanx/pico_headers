@@ -62,7 +62,7 @@
 
 #include <stdarg.h>  // ...
 #include <stdbool.h> // bool, true, false
-#include <stddef.h>  // NULL, size_t
+#include <stddef.h>  // NULL
 #include <stdio.h>   // FILE
 
 #ifdef __cplusplus
@@ -98,7 +98,7 @@ typedef void (*pl_lock_fn)(bool lock, void *udata);
 /**
  * @brief Identifies a registered appender.
  */
-typedef size_t pl_id_t;
+typedef int pl_id_t;
 
 /**
   * @brief Converts a string to the corresponding log level
@@ -362,9 +362,9 @@ void pl_write(pl_level_t level,
 #define PL_TERM_RESET "[0m"
 #define PL_TERM_GRAY  "[90m"
 
-static bool   pl_initialized    = false; // True if logger is initialized
-static bool   pl_enabled        = true;  // True if logger is enabled
-static size_t pl_appender_count = 0;     // Number of appenders
+static bool pl_initialized    = false; // True if logger is initialized
+static bool pl_enabled        = true;  // True if logger is enabled
+static int  pl_appender_count = 0;     // Number of appenders
 
 /*
  * Logger level strings indexed by level ID (pl_level_t).
@@ -458,7 +458,7 @@ bool pl_str_level(const char* str, pl_level_t* level)
     if (!level)
         return false;
 
-    for (size_t i = 0; pl_level_str[i]; i++)
+    for (int i = 0; pl_level_str[i]; i++)
     {
         if (0 == strcmp(str, pl_level_str[i]))
         {
@@ -699,10 +699,10 @@ pl_display_function (pl_id_t id, bool enabled)
  * Formats the current time as as string.
  */
 static char*
-pl_time_str (const char* time_fmt, char* str, size_t len)
+pl_time_str (const char* time_fmt, char* str, int len)
 {
     time_t now = time(0);
-    size_t ret = strftime(str, len, time_fmt, localtime(&now));
+    int ret = strftime(str, len, time_fmt, localtime(&now));
 
     PL_ASSERT(ret > 0);
 

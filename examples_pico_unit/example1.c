@@ -2,7 +2,7 @@
  * For a more complete demonstration, see example2.c
  */
 
-#define PUNIT_IMPLEMENTATION
+#define PU_IMPLEMENTATION
 #include "../pico_unit.h"
 
 #include <string.h>  /* strcmp */
