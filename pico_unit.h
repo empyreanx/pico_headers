@@ -184,7 +184,10 @@ void pu_run_suite(const char* const name, pu_suite_fn suite_fp);
 #ifdef PU_IMPLEMENTATION
 
 #include <stdio.h> /* printf */
+
+#ifndef PU_NO_CLOCK
 #include <time.h>  /* clock_t, clock */
+#endif // PU_NO_CLOCK
 
 #define TERM_COLOR_CODE   0x1B
 #define TERM_COLOR_RED   "[1;31m"
@@ -266,6 +269,8 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
 
     printf("Running: %s ", name);
 
+    #ifndef PU_NO_CLOCK
+
     clock_t start_time = 0;
     clock_t end_time = 0;
 
@@ -273,6 +278,8 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
     {
         start_time = clock();
     }
+
+    #endif // PU_NO_CLOCK
 
     if (!test_fp())
     {
@@ -286,10 +293,14 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
         return;
     }
 
+    #ifndef PU_NO_CLOCK
+
     if (pu_time)
     {
         end_time = clock();
     }
+
+    #endif // PU_NO_CLOCK
 
     if (pu_colors)
     {
@@ -301,10 +312,14 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
         printf("(OK)");
     }
 
+    #ifndef PU_NO_CLOCK
+
     if (pu_time)
     {
         printf(" (%f secs)", (double)(end_time - start_time) / CLOCKS_PER_SEC);
     }
+
+    #endif // PU_NO_CLOCK
 
     printf("\n");
 
