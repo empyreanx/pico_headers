@@ -6,7 +6,7 @@
 
 /*
     ----------------------------------------------------------------------------
-    Licensing information available at end of file.
+    Licensing information at end of file.
     ----------------------------------------------------------------------------
 
     Summary:
@@ -31,12 +31,12 @@
     which reduce portability. There is a danger that a unit test might be
     missed, but compiler warnings will usually catch this.
 
-    To use this library in your project, use
+    To use this library in your project, add
 
     #define PU_IMPLEMENTATION
     #include "pico_unit.h"
 
-    in a source file.
+    to a source file.
 
     Features:
     ---------

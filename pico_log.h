@@ -5,7 +5,7 @@
 
 /*
     ----------------------------------------------------------------------------
-    Licensing information available at end of file.
+    Licensing information at end of file.
     ----------------------------------------------------------------------------
 
     Summary:
@@ -32,12 +32,12 @@
     this function pointer is passed true the lock is acquired and false to
     release the lock.
 
-    To use this library in your project, use
+    To use this library in your project, add
 
     #define PL_IMPLEMENTATION
     #include "pico_log.h"
 
-    in a source file.
+    to a source file.
 
     Features:
     ---------
