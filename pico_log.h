@@ -1,11 +1,9 @@
 /**
     @file pico_log.h
-    @brief pico_log is a minimal, yet flexible logging framework written in C99.
-*/
+    @brief PicoLog is a minimal, yet flexible logging framework written in C99.
 
-/*
     ----------------------------------------------------------------------------
-    Licensing information at end of file.
+    Licensing information at end of header
     ----------------------------------------------------------------------------
 
     Summary:
@@ -43,15 +41,15 @@
     Features:
     ---------
 
-    * Written in pure C99, and compatible with C++
-    * Single header library for easy integration into any build system
-    * Tiny memory and code footprint
-    * Simple and minimalistic API
-    * Flexible and extensible appender handling
-    * Ability to set logging level (TRACE, DEBUG, INFO, WARN, ERROR, and FATAL)
-    * Ability to toggle date/time, log level, filename/line, and function
-    * reporting individually, on a per appender basis
-    * Permissive licensing (zlib or public domain)
+    - Written in pure C99, and compatible with C++
+    - Single header library for easy integration into any build system
+    - Tiny memory and code footprint
+    - Simple and minimalistic API
+    - Flexible and extensible appender handling
+    - Ability to set logging level (TRACE, DEBUG, INFO, WARN, ERROR, and FATAL)
+    - Ability to toggle date/time, log level, filename/line, and function
+    - reporting individually, on a per appender basis
+    - Permissive licensing (zlib or public domain)
 */
 
 #ifndef PICO_LOG_H
