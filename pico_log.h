@@ -1,6 +1,6 @@
 /**
     @file pico_log.h
-    @brief PicoLog is a minimal, yet flexible logging framework written in C99.
+    @brief A minimal, yet flexible logging framework written in C99.
 
     ----------------------------------------------------------------------------
     Licensing information at end of header

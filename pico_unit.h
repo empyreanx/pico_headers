@@ -1,12 +1,9 @@
 /**
     @file pico_unit.h
-    @brief pico_unit is a minimal, yet powerful unit testing framework
-    written in C99.
-*/
+    @brief A minimal, yet powerful unit testing framework written in C99.
 
-/*
     ----------------------------------------------------------------------------
-    Licensing information at end of file.
+    Licensing information at end of header
     ----------------------------------------------------------------------------
 
     Summary:
