@@ -9,7 +9,7 @@
     Summary:
     --------
 
-    The library is built around the notion of appenders. An appender writes log
+    This library is built around the notion of appenders. An appender writes log
     messages to a sink. It could be a file, a network connection, or stream
     (e.g. stdout).
 
@@ -22,9 +22,9 @@
     not be written whereas pl_info, pl_warn, pl_error, and pl_fatal will be.
 
     Output can also be modified to show or hide various metadata. These are
-    date/time, log level, filename/line number, and function. They can be
-    toggled using the pl_display* functions. There is also an option to enable
-    color output.
+    date/time, log level, filename/line number, and calling function. They can
+    be toggled using the pl_display* functions. There is also an option to
+    enable color output.
 
     It is possible to synchronize appenders using `pl_set_lock`. This function
     accepts a function pointer that takes a boolean and user data as input. When
