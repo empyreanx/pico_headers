@@ -1,4 +1,4 @@
-/// @mainpage Pico Headers
+/// @mainpage Main
 
 Test
 ----
