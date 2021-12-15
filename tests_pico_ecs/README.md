@@ -1,5 +1,0 @@
-Test plan:
-====================
-
-* Comment tests
-
