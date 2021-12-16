@@ -31,6 +31,8 @@
     this function pointer is passed true the lock is acquired and false to
     release the lock.
 
+    Please see the examples for more details.
+
     To use this library in your project, add
 
     #define PL_IMPLEMENTATION
