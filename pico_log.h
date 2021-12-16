@@ -864,7 +864,8 @@ pl_write (pl_level_t level, const char* file, unsigned line,
 #endif // PL_IMPLEMENTATION
 
 
-/*  ----------------------------------------------------------------------------
+/*
+    ----------------------------------------------------------------------------
     This software is available under two licenses (A) or (B). You may choose
     either one as you wish:
     ----------------------------------------------------------------------------

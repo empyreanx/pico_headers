@@ -993,7 +993,8 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
 
 #endif // ECS_IMPLEMENTATION
 
-/*  ----------------------------------------------------------------------------
+/*
+    ----------------------------------------------------------------------------
     This software is available under two licenses (A) or (B). You may choose
     either one as you wish:
     ----------------------------------------------------------------------------

@@ -17,16 +17,16 @@
     body of a test suite or other function (.e.g main) using PU_RUN_TEST. How
     you group tests and test suites is entirely up to you.
 
-    Due to it's simplicity pico_unit does not have all of the features commonly
-    associated with a unit testing framework. There is only a single assertion
-    predicate, however practice has shown that this is sufficient in most cases.
-    Additional predicates can be constructed using the existing one if needed.
+    In order to keep the library portable and nimble, certain features were
+    dispensed with, namely automatic test registration and complex predicates.
 
-    Registering tests or declaring test suites is not automatic and must done
-    inside the body of a test suite or other function. This design decision was
-    made to avoid using C constructor extensions like those found in GCC/Clang
-    which reduce portability. There is a danger that a unit test might be
-    missed, but compiler warnings will usually catch this.
+    Automatic test registration relies on constructor extensions that may not
+    exist on all targets. Most compilers will raise a warning if a static
+    function is not used within a file.
+
+    Practice has shown that in most cases predicates more complex than PU_ASSERT
+    are simply unnecessary. If such functionality is required predicates can be
+    constructed by extending PU_ASSERT.
 
     To use this library in your project, add
 
@@ -383,7 +383,8 @@ pu_print_stats (void)
 
 #endif // PU_IMPLEMENTATION
 
-/*  ----------------------------------------------------------------------------
+/*
+    ----------------------------------------------------------------------------
     This software is available under two licenses (A) or (B). You may choose
     either one as you wish:
     ----------------------------------------------------------------------------
