@@ -33,6 +33,8 @@
     An ECS solves these problems while also granting more flexibility in
     general.
 
+    Please see the examples and unit tests for more details.
+
     To use this library in your project, add
 
     #define ECS_IMPLEMENTATION
