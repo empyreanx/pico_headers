@@ -1,0 +1,26 @@
+#CC     = gcc
+#CFLAGS = -std=c11 -Wall -Wextra -pedantic -I ..
+
+CC     = clang
+CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I .. #-Weverything
+
+#CC = g++
+#CFLAGS = -std=c++11 -Wall -Wextra -pedantic -I ..
+
+SRCS   = main.c scalar.c b2.c t2.c v2.c rng.c
+
+DEPS   = ../pico-ml.h
+OBJS   = $(SRCS:.c=.o)
+
+all: tests
+
+%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+tests: $(OBJS)
+	$(CC) -o tests $(OBJS) -lm
+
+.PHONY: clean
+
+clean:
+	rm tests *.o
