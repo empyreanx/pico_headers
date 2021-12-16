@@ -1,4 +1,4 @@
-/// @mainpage Main
+/// @mainpage
 
 Test
 ----

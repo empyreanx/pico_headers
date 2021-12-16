@@ -9,24 +9,29 @@
     Summary:
     --------
 
-    A minimal unit testing framework. It should compile and run on just about
-    any platform with a standard C99 compiler.
+    This library is a minimal unit testing framework. It should compile and run
+    on just about any platform with a standard C99 compiler.
 
     Writing tests is simple: 1) Use the PU_TEST macro and define the test using
-    using PU_ASSERT to test boolean expressions. 2) Run the test inside the
-    body of a test suite or other function (.e.g main) using PU_RUN_TEST. How
+    using PU_ASSERT to test boolean expressions; 2) Run the test inside the
+    body of a test suite or other function (e.g. main) using PU_RUN_TEST. How
     you group tests and test suites is entirely up to you.
 
     In order to keep the library portable and nimble, certain features were
-    dispensed with, namely automatic test registration and complex predicates.
+    dispensed with, namely automatic test registration and predicates more
+    complex than PU_ASSERT. Experience has shown these are not serious defects.
 
-    Automatic test registration relies on constructor extensions that may not
-    exist on all targets. Most compilers will raise a warning if a static
-    function is not used within a file.
+    There are a number of display options available: color coded output, test
+    elapsed time (unless PU_NO_CLOCK is defined), and printing test statistics.
 
-    Practice has shown that in most cases predicates more complex than PU_ASSERT
-    are simply unnecessary. If such functionality is required predicates can be
-    constructed by extending PU_ASSERT.
+    A test suite is simply a group of tests. These contain calls to PU_RUN_TEST.
+    The advantage of using test suites is that it divides unit tests into
+    logical groups. There are helper macros for declaring and defining test
+    suites. Test suites help with formatting the output and the number of suites
+    shows up in the test statistics. There is also the option to flexibly define
+    setup and teardown functions for groups of tests.
+
+    Please see the examples for more details.
 
     To use this library in your project, add
 
