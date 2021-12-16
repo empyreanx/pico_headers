@@ -6,6 +6,15 @@
     Licensing information at end of header
     ----------------------------------------------------------------------------
 
+    Features:
+    ---------
+    - Written in C99
+    - Single header library for easy build system integration
+    - Excellent performance
+    - Pure ECS design (strict separation between data and logic)
+    - Simple and concise API
+    - Permissive license (zlib or public domain)
+
     Summary:
     --------
 
@@ -41,15 +50,6 @@
     #include "pico_ecs.h"
 
     to a source file.
-
-    Features:
-    ---------
-    - Written in C99
-    - Single header library for easy build system integration
-    - Excellent performance
-    - Pure ECS design (strict separation between data and logic)
-    - Simple and concise API
-    - Permissive license (zlib or public domain)
 */
 
 #ifndef PICO_ECS_H

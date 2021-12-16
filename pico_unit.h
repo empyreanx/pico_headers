@@ -6,6 +6,21 @@
     Licensing information at end of header
     ----------------------------------------------------------------------------
 
+    Features:
+    ---------
+
+    * Written in C99 and compatible with C++
+    * Single-header for easy integration into any build system
+    * Tiny memory and code footprint
+    * Simple and minimalistic API
+    * All unit tests are run during execution and failures are indicated
+    * On demand setup and teardown function support
+    * Ability to group tests into test suites
+    * Ability to print test statistics
+    * Optional color coded output
+    * Optional time measurement
+    * Permissive licensing (zlib or public domain)
+
     Summary:
     --------
 
@@ -39,21 +54,6 @@
     #include "pico_unit.h"
 
     to a source file.
-
-    Features:
-    ---------
-
-    * Written in C99 and compatible with C++
-    * Single-header for easy integration into any build system
-    * Tiny memory and code footprint
-    * Simple and minimalistic API
-    * All unit tests are run during execution and failures are indicated
-    * On demand setup and teardown function support
-    * Ability to group tests into test suites
-    * Ability to print test statistics
-    * Optional color coded output
-    * Optional time measurement
-    * Permissive licensing (zlib or public domain)
 */
 
 #ifndef PICO_UNIT_H
