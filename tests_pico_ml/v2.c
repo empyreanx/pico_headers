@@ -24,7 +24,7 @@ PU_TEST(test_v2_add)
     pm_v2 v2  = pm_v2_make(3, 4);
     pm_v2 exp = pm_v2_make(1 + 3, 2 + 4);
 
-    pm_v2 res = pm_v2_add(&v1, &v2);
+    pm_v2 res = pm_v2_add(v1, v2);
 
     PU_ASSERT(pm_v2_equal(&res, &exp));
 
@@ -36,7 +36,7 @@ PU_TEST(test_v2_scale)
     pm_v2 v   = pm_v2_make(1, 1);
     pm_v2 exp = pm_v2_make(2, 2);
 
-    pm_v2 res = pm_v2_scale(&v, 2);
+    pm_v2 res = pm_v2_scale(v, 2);
 
     PU_ASSERT(pm_v2_equal(&res, &exp));
 
@@ -49,7 +49,7 @@ PU_TEST(test_v2_sub)
     pm_v2 v2  = pm_v2_make(3, 4);
     pm_v2 exp = pm_v2_make(1 - 3, 2 - 4);
 
-    pm_v2 res = pm_v2_sub(&v1, &v2);
+    pm_v2 res = pm_v2_sub(v1, v2);
 
     PU_ASSERT(pm_v2_equal(&res, &exp));
 

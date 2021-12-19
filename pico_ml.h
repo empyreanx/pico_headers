@@ -267,9 +267,9 @@ PM_INLINE bool pm_v2_equal(const pm_v2* v1, const pm_v2* v2)
  * @param v1 First vector
  * @param v2 Second vector
  */
-PM_INLINE pm_v2 pm_v2_add(const pm_v2* v1, const pm_v2* v2)
+PM_INLINE pm_v2 pm_v2_add(pm_v2 v1, pm_v2 v2)
 {
-    return pm_v2_make(v1->x + v2->x, v1->y + v2->y);
+    return pm_v2_make(v1.x + v2.x, v1.y + v2.y);
 }
 
 /**
@@ -277,9 +277,9 @@ PM_INLINE pm_v2 pm_v2_add(const pm_v2* v1, const pm_v2* v2)
  * @param v1 First vector
  * @param v2 Second vector
  */
-PM_INLINE pm_v2 pm_v2_sub(const pm_v2* v1, const pm_v2* v2)
+PM_INLINE pm_v2 pm_v2_sub(pm_v2 v1, pm_v2 v2)
 {
-    return pm_v2_make(v1->x - v2->x, v1->y - v2->y);
+    return pm_v2_make(v1.x - v2.x, v1.y - v2.y);
 }
 
 /**
@@ -287,9 +287,9 @@ PM_INLINE pm_v2 pm_v2_sub(const pm_v2* v1, const pm_v2* v2)
  * @param v Vector to scale
  * @param c The scale factor
  */
-PM_INLINE pm_v2 pm_v2_scale(const pm_v2* v, pm_flt c)
+PM_INLINE pm_v2 pm_v2_scale(pm_v2 v, pm_flt c)
 {
-    return pm_v2_make(v->x * c, v->y * c);
+    return pm_v2_make(v.x * c, v.y * c);
 }
 
 /**
@@ -328,7 +328,7 @@ PM_INLINE void pm_v2_normalize(pm_v2* v)
     if (c < PM_EPSILON)
         *v = pm_v2_make(0.0f, 0.0f);
     else
-        *v = pm_v2_scale(v, 1.0f / c);
+        *v = pm_v2_scale(*v, 1.0f / c);
 }
 
 /**
@@ -367,7 +367,7 @@ PM_INLINE pm_flt pm_v2_angle(const pm_v2* v)
 PM_INLINE pm_v2 pm_v2_proj(const pm_v2* v1, const pm_v2* v2)
 {
     pm_flt d = pm_v2_dot(v1, v2) / pm_v2_dot(v2, v2);
-    return pm_v2_scale(v2, d);
+    return pm_v2_scale(*v2, d);
 }
 
 /**
@@ -375,7 +375,7 @@ PM_INLINE pm_v2 pm_v2_proj(const pm_v2* v1, const pm_v2* v2)
  */
 PM_INLINE pm_flt pm_v2_dist(const pm_v2* v1, const pm_v2* v2)
 {
-    pm_v2 v = pm_v2_sub(v1, v2);
+    pm_v2 v = pm_v2_sub(*v1, *v2);
     return pm_v2_len(&v);
 }
 
