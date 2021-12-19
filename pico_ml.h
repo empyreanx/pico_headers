@@ -693,7 +693,7 @@ pm_flt pm_random_float(pm_rng_t* rng);
 #ifdef PM_IMPLEMENTATION
 
 
-pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
+/*pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
 {
     angle1 = pm_normalize_angle(angle1);
     angle2 = pm_normalize_angle(angle2);
@@ -707,6 +707,39 @@ pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
         pm_flt angle = (angle2 + (PM_PI2 - angle1)) * alpha;
         return pm_normalize_angle(angle1 + angle);
     }
+}*/
+
+pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
+{
+    const pm_v2 v1 = pm_v2_make(pm_cos(angle1), pm_sin(angle1));
+    const pm_v2 v2 = pm_v2_make(pm_cos(angle2), pm_sin(angle2));
+
+    // Calculuate cosine of angle between the two vectors
+    pm_flt dot = pm_clamp(pm_v2_dot(&v1, &v2), -1.0f, 1.0f);
+
+    // LERP if the cosine is too close to its limits
+    if (pm_equal(dot, 1.0f) || pm_equal(dot, -1.0f))
+    {
+        pm_v2 tmp = pm_v2_lerp(&v1, &v2, alpha);
+        return pm_normalize_angle(pm_atan2(tmp.y, tmp.x));
+    }
+
+   // Calculate angle
+    pm_flt angle = pm_acos(dot) * alpha;
+
+    // Gram–Schmidt (construct a new vector 'v0' that is orthogonal to v1)
+    pm_v2 tmp = pm_v2_scale(&v1, dot);
+    pm_v2 v0  = pm_v2_sub(&v2, &tmp);
+    pm_v2_normalize(&v0);
+
+    // Calcuate vector in new coordinate system
+    pm_v2 tmp1 = pm_v2_scale(&v1, pm_cos(angle));
+    pm_v2 tmp2 = pm_v2_scale(&v0, pm_sin(angle));
+
+    tmp = pm_v2_add(&tmp1, &tmp2);
+
+    // Calculate new angle
+    return pm_normalize_angle(pm_atan2(tmp.y, tmp.x));
 }
 
 bool pm_t2_equal(const pm_t2* t1, const pm_t2* t2)
