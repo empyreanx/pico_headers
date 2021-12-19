@@ -256,6 +256,19 @@ PU_TEST(test_t2_lerp)
     return true;
 }
 
+PU_TEST(test_t2_lerp_identity)
+{
+    pm_t2 t1 = pm_t2_identity();
+    pm_t2 t2 = pm_t2_identity();
+
+    pm_t2 res = pm_t2_lerp(&t1, &t2, 0.3f);
+    pm_t2 exp = pm_t2_identity();
+
+    PU_ASSERT(pm_t2_equal(&res, &exp));
+
+    return true;
+}
+
 PU_SUITE(suite_t2)
 {
     PU_RUN_TEST(test_t2_equal);
@@ -269,4 +282,5 @@ PU_SUITE(suite_t2)
     PU_RUN_TEST(test_t2_mult);
     PU_RUN_TEST(test_t2_inv);
     PU_RUN_TEST(test_t2_lerp);
+    PU_RUN_TEST(test_t2_lerp_identity);
 }
