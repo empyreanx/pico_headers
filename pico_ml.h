@@ -698,7 +698,7 @@ pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
     angle1 = pm_normalize_angle(angle1);
     angle2 = pm_normalize_angle(angle2);
 
-    if (angle1 < angle2)
+    if (angle1 <= angle2)
     {
         return pm_lerp(angle1, angle2, alpha);
     }
