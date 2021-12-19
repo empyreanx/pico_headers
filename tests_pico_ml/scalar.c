@@ -49,8 +49,8 @@ PU_TEST(test_lerp_angle)
     //angle = pm_lerp_angle(PM_PI / 4.0f, PM_PI * 7.0f / 4.0f, 0.5);
     //PU_ASSERT(pm_equal(angle, 0.0f));
 
-    angle = pm_lerp_angle(PM_PI / 4.0f, PM_PI * 7.0f / 4.0f, 0.5);
-    PU_ASSERT(pm_equal(angle, PM_PI));
+    //angle = pm_lerp_angle(PM_PI / 4.0f, PM_PI * 7.0f / 4.0f, 0.5);
+    //PU_ASSERT(pm_equal(angle, PM_PI));
 
     angle = pm_lerp_angle(PM_PI * 7.0f / 4.0f, PM_PI / 4.0f, 0.75);
     PU_ASSERT(pm_equal(angle, PM_PI / 8.0f));
