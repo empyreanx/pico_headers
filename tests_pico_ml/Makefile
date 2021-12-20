@@ -2,7 +2,7 @@
 #CFLAGS = -std=c11 -Wall -Wextra -pedantic -I ..
 
 CC     = clang
-CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I .. #-Weverything
+CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic -I .. #-Weverything
 
 #CC = g++
 #CFLAGS = -std=c++11 -Wall -Wextra -pedantic -I ..

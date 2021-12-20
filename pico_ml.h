@@ -126,24 +126,14 @@ extern "C" {
     #define pm_log2  log2f
 #endif
 
-typedef union
+typedef struct
 {
-    struct
-    {
-        pm_flt x, y;
-    };
-
-    pm_flt data[2];
+    pm_flt x, y;
 } pm_v2;
 
-typedef union
+typedef struct
 {
-    struct
-    {
-        pm_flt t00, t10, t01, t11, tx, ty;
-    };
-
-    pm_flt data[6];
+    pm_flt t00, t10, t01, t11, tx, ty;
 } pm_t2;
 
 typedef struct
