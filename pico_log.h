@@ -48,8 +48,8 @@
 
     To use this library in your project, add
 
-    #define PL_IMPLEMENTATION
-    #include "pico_log.h"
+    > #define PL_IMPLEMENTATION
+    > #include "pico_log.h"
 
     to a source file.
 */

@@ -50,8 +50,8 @@
 
     To use this library in your project, add
 
-    #define PU_IMPLEMENTATION
-    #include "pico_unit.h"
+    > #define PU_IMPLEMENTATION
+    > #include "pico_unit.h"
 
     to a source file.
 */

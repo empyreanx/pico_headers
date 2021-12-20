@@ -25,7 +25,9 @@
 
     The library aims to strike a balance between performance and simplicity.
     Most functions return by value, whereas most arguments are passed by
-    pointer. There is no dynamic memory allocation.
+    pointer. The exception to this are vector arithmetic functions (add, sub,
+    scale), and transform functions (translate and scale) which have arguments
+    passed by value. There is no dynamic memory allocation.
 
     Vector functions comprise basic vector creation and manipulation.Transforms,
     on the other hand, are more advanced. The functions provided are sufficient
@@ -42,14 +44,15 @@
     computing the minimum enclosing AABB for a set of points.
 
     The random number generator uses the Mersenne Twister algorithm, which is
-    substantially better than rand(), whilst still achieving solid performance.
+    substantially better than `rand()` in terms of the quality of its output.
+    It is slower than `rand()` but still has pretty decent performance.
 
     Please see the unit tests for some concrete examples.
 
     To use this library in your project, add
 
-    #define PM_IMPLEMENTATION
-    #include "pico_ml.h"
+    > #define PM_IMPLEMENTATION
+    > #include "pico_ml.h"
 
     to a source file.
 */
@@ -693,22 +696,6 @@ pm_flt pm_random_float(pm_rng_t* rng);
 #ifdef PM_IMPLEMENTATION
 
 
-/*pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
-{
-    angle1 = pm_normalize_angle(angle1);
-    angle2 = pm_normalize_angle(angle2);
-
-    if (angle1 <= angle2)
-    {
-        return pm_lerp(angle1, angle2, alpha);
-    }
-    else
-    {
-        pm_flt angle = (angle2 + (PM_PI2 - angle1)) * alpha;
-        return pm_normalize_angle(angle1 + angle);
-    }
-}*/
-
 pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
 {
     const pm_v2 v1 = pm_v2_make(pm_cos(angle1), pm_sin(angle1));
@@ -728,15 +715,14 @@ pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
     pm_flt angle = pm_acos(dot) * alpha;
 
     // Gram–Schmidt (construct a new vector 'v0' that is orthogonal to v1)
-    pm_v2 tmp = pm_v2_scale(v1, dot);
-    pm_v2 v0  = pm_v2_sub(v2, tmp);
+    pm_v2 v0  = pm_v2_sub(v2, pm_v2_scale(v1, dot));
     pm_v2_normalize(&v0);
 
     // Calcuate vector in new coordinate system
     pm_v2 tmp1 = pm_v2_scale(v1, pm_cos(angle));
     pm_v2 tmp2 = pm_v2_scale(v0, pm_sin(angle));
 
-    tmp = pm_v2_add(tmp1, tmp2);
+    pm_v2 tmp = pm_v2_add(tmp1, tmp2);
 
     // Calculate new angle
     return pm_normalize_angle(pm_atan2(tmp.y, tmp.x));

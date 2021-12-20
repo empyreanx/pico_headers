@@ -46,8 +46,8 @@
 
     To use this library in your project, add
 
-    #define ECS_IMPLEMENTATION
-    #include "pico_ecs.h"
+    > #define ECS_IMPLEMENTATION<
+    > #include "pico_ecs.h"
 
     to a source file.
 */
