@@ -80,6 +80,7 @@ extern "C" {
 // Types
 
 #ifdef PM_USE_DOUBLE
+    // @brief A double precision floating point number
     typedef double pm_flt;
 
     #define PM_EPSILON 1e-7
@@ -103,6 +104,7 @@ extern "C" {
     #define pm_log2  log2
 
 #else
+    // @brief A single precision floating point number
     typedef float pm_flt;
 
     #define PM_EPSILON 1e-5f
@@ -126,16 +128,25 @@ extern "C" {
     #define pm_log2  log2f
 #endif
 
+/*
+ * @brief A 2D vector
+ */
 typedef struct
 {
     pm_flt x, y;
 } pm_v2;
 
+/*
+ * @brief A 2D transform
+ */
 typedef struct
 {
     pm_flt t00, t10, t01, t11, tx, ty;
 } pm_t2;
 
+/*
+ * @brief A 2D axis-aligned-bounding-box (AABB)
+ */
 typedef struct
 {
     pm_flt x, y, w, h;
