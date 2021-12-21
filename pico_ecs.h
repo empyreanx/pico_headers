@@ -52,7 +52,7 @@
     > #define ECS_IMPLEMENTATION
     > #include "pico_ecs.h"
 
-    to a source file (once). Afterwards, include the header normally.
+    to a source file (once). Now include the header normally.
 
     Todo:
     -----
