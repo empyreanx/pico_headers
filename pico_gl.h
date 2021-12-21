@@ -1,6 +1,11 @@
+///=============================================================================
+/// WARNING: This file was automatically generated on 21/12/2021 09:55:13.
+/// DO NOT EDIT!
+///============================================================================
+
 /**
     @file pico_gl.h
-    @brief A 2D graphics library based on OpenGL.
+    @brief A powerful 2D graphics library written in C99.
 
     ----------------------------------------------------------------------------
     Licensing information at end of header
@@ -659,7 +664,7 @@ void pgl_pop_state(pgl_ctx_t* ctx);
 void pgl_clear_stack(pgl_ctx_t* ctx);
 
 /**
- * Sets a boolean uniform
+ * @brief Sets a boolean uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -668,7 +673,7 @@ void pgl_clear_stack(pgl_ctx_t* ctx);
 void pgl_set_bool(pgl_shader_t* shader, const char* name, bool value);
 
 /**
- * Sets an integer uniform
+ * @brief Sets an integer uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -677,7 +682,7 @@ void pgl_set_bool(pgl_shader_t* shader, const char* name, bool value);
 void pgl_set_1i(pgl_shader_t* shader, const char* name, int32_t a);
 
 /**
- * Sets a 2D integer uniform
+ * @brief Sets a 2D integer uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -687,7 +692,7 @@ void pgl_set_1i(pgl_shader_t* shader, const char* name, int32_t a);
 void pgl_set_2i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b);
 
 /**
- * Sets a 3D integer uniform
+ * @brief Sets a 3D integer uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -698,7 +703,7 @@ void pgl_set_2i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b);
 void pgl_set_3i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b, int32_t c);
 
 /**
- * Sets a 4D integer uniform
+ * @brief Sets a 4D integer uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -710,7 +715,7 @@ void pgl_set_3i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b, in
 void pgl_set_4i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
                                                         int32_t c, int32_t d);
 /**
- * Sets a 2D integer uniform by vector
+ * @brief Sets a 2D integer uniform by vector
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -719,7 +724,7 @@ void pgl_set_4i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
 void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i vec);
 
 /**
- * Sets a 3D integer uniform by vector
+ * @brief Sets a 3D integer uniform by vector
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -728,7 +733,7 @@ void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i vec);
 void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i vec);
 
 /**
- * Sets a 4D integer uniform by vector
+ * @brief Sets a 4D integer uniform by vector
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -737,7 +742,7 @@ void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i vec);
 void pgl_set_v4i(pgl_shader_t* shader, const char* name, const pgl_v4i vec);
 
 /**
- * Sets an floating point uniform
+ * @brief Sets an floating point uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -746,7 +751,7 @@ void pgl_set_v4i(pgl_shader_t* shader, const char* name, const pgl_v4i vec);
 void pgl_set_1f(pgl_shader_t* shader, const char* name, float x);
 
 /**
- * Sets a 2D floating point uniform
+ * @brief Sets a 2D floating point uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -756,7 +761,7 @@ void pgl_set_1f(pgl_shader_t* shader, const char* name, float x);
 void pgl_set_2f(pgl_shader_t* shader, const char* name, float x, float y);
 
 /**
- * Sets a 3D floating point uniform
+ * @brief Sets a 3D floating point uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -767,7 +772,7 @@ void pgl_set_2f(pgl_shader_t* shader, const char* name, float x, float y);
 void pgl_set_3f(pgl_shader_t* shader, const char* name, float x, float y, float z);
 
 /**
- * Sets a 4D floating point uniform
+ * @brief Sets a 4D floating point uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -780,7 +785,7 @@ void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
                                                         float z, float w);
 
 /**
- * Sets a 2D floating point uniform by vector
+ * @brief Sets a 2D floating point uniform by vector
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -789,7 +794,7 @@ void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
 void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f vec);
 
 /**
- * Sets a 3D floating point uniform by vector
+ * @brief Sets a 3D floating point uniform by vector
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -798,7 +803,7 @@ void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f vec);
 void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f vec);
 
 /**
- * Sets a 4D floating point uniform by vector
+ * @brief Sets a 4D floating point uniform by vector
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -807,7 +812,7 @@ void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f vec);
 void pgl_set_v4f(pgl_shader_t* shader, const char* name, const pgl_v4f vec);
 
 /**
- * Sends an array of floating point numbers
+ * @brief Sends an array of floating point numbers
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -820,7 +825,7 @@ void pgl_set_a1f(pgl_shader_t* shader,
                  pgl_size_t count);
 
 /**
- * Sends an array of 2D floating point vectors
+ * @brief Sends an array of 2D floating point vectors
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -833,7 +838,7 @@ void pgl_set_a2f(pgl_shader_t* shader,
                  pgl_size_t count);
 
 /**
- * Sends an array of 3D floating point vectors
+ * @brief Sends an array of 3D floating point vectors
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -846,7 +851,7 @@ void pgl_set_a3f(pgl_shader_t* shader,
                  pgl_size_t count);
 
 /**
- * Sends an array of 4D floating point vectors
+ * @brief Sends an array of 4D floating point vectors
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -859,7 +864,7 @@ void pgl_set_a4f(pgl_shader_t* shader,
                  pgl_size_t count);
 
 /**
- * Sets a 2x2 floating point matrix
+ * @brief Sets a 2x2 floating point matrix
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -868,7 +873,7 @@ void pgl_set_a4f(pgl_shader_t* shader,
 void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2 matrix);
 
 /**
- * Sets a 3x3 floating point matrix
+ * @brief Sets a 3x3 floating point matrix
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -877,7 +882,7 @@ void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2 matrix);
 void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3 matrix);
 
 /**
- * Sets a 4x4 floating point matrix
+ * @brief Sets a 4x4 floating point matrix
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -886,7 +891,7 @@ void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3 matrix);
 void pgl_set_m4(pgl_shader_t* shader, const char* name, const pgl_m4 matrix);
 
 /**
- * Sets a 2D sampler uniform
+ * @brief Sets a 2D sampler uniform
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
@@ -911,7 +916,7 @@ void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value);
     APIs: gl=3.0, gles2=3.0
     Profile: core
     Extensions:
-
+        
     Loader: True
     Local files: True
     Omit khrplatform: False
@@ -4704,7 +4709,7 @@ static pgl_hash_t pgl_hash_str(const char* str)
     APIs: gl=3.0, gles2=3.0
     Profile: core
     Extensions:
-
+        
     Loader: True
     Local files: True
     Omit khrplatform: False

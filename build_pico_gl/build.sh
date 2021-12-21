@@ -18,7 +18,7 @@ header="$header/// WARNING: This file was automatically generated on $dt.\n"
 header="$header/// DO NOT EDIT!\n"
 header="$header///============================================================================\n"
 
-echo -e $header > ./pico_gl.h
+echo -e $header > ../pico_gl.h
 cat ./tmp/pico_gl4.h >> ../pico_gl.h
 
 rm -rf ./tmp
