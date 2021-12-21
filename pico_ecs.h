@@ -66,16 +66,28 @@
 extern "C" {
 #endif
 
+/**
+ * @brief ECS context
+ */
 typedef struct ecs_s ecs_t; /*!< ECS context */
-typedef uint32_t  ecs_id_t; /*!< 32-bit ID used for entity and components */
-typedef int8_t   ecs_ret_t; /*!< Return code for update callback and calling
-                                 functions */
 
-// Invalid entity/component ID
+/**
+ * @brief ID used for entity and components
+ */
+typedef uint32_t ecs_id_t; /*!< 32-bit ID used for entity and components */
+
+/**
+ * @brief Return code for update callback and calling functions
+ */
+typedef int8_t ecs_ret_t;
+
+/**
+ * @brief Invalid entity/component ID
+ */
 static const ecs_id_t ECS_NULL = (ecs_id_t)-1;
 
-/*
- * Determine floating point type
+/**
+ * @brief Determine floating point type
  */
 #ifdef ECS_FLOAT
     typedef float  ecs_dt_t;
@@ -84,8 +96,10 @@ static const ecs_id_t ECS_NULL = (ecs_id_t)-1;
 #endif
 
 /**
- * Determines which entities are added to a system according to what
- * components an entity has, and which components a system requires.
+ * @brief System matching criteria
+ *
+ * Determines which entities are added to a system according to what components
+ * an entity has, and which components a system requires.
  */
 typedef enum
 {
