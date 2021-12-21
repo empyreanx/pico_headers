@@ -11,7 +11,7 @@ Library | Docs | Description | Version
 **[pico_ml](pico_ml.h)**     | **[docs](https://empyreanx.github.io/docs/ph/pico__ml_8h.html)**   | A 2D math library for games              | 0.1
 **[pico_unit](pico_unit.h)** | **[docs](https://empyreanx.github.io/docs/ph/pico__unit_8h.html)** | A bare-bones unit testing framework      | 0.1
 
-These libraries are as-is, however, suggestions for improvements or bug fixes are wecome. Please raise an issue before submitting a PR.
+These libraries are as-is, however, suggestions for improvements or bug fixes are welcome. Please raise an issue before submitting a PR.
 
 All libraries are licensed under your choice of zlib or the public domain.
 
