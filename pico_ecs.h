@@ -69,12 +69,12 @@ extern "C" {
 /**
  * @brief ECS context
  */
-typedef struct ecs_s ecs_t; /*!< ECS context */
+typedef struct ecs_s ecs_t;
 
 /**
  * @brief ID used for entity and components
  */
-typedef uint32_t ecs_id_t; /*!< 32-bit ID used for entity and components */
+typedef uint32_t ecs_id_t;
 
 /**
  * @brief Return code for update callback and calling functions
@@ -89,7 +89,7 @@ static const ecs_id_t ECS_NULL = (ecs_id_t)-1;
 /**
  * @brief Determine floating point type
  */
-#ifdef ECS_FLOAT
+#ifdef ECS_USE_FLOAT
     typedef float  ecs_dt_t;
 #else
     typedef double ecs_dt_t;
