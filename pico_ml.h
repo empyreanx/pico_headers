@@ -25,7 +25,7 @@
 
     The library aims to strike a balance between performance and simplicity.
     Most functions return by value, whereas most arguments are passed by
-    pointer. The exception to this are vector arithmetic functions (add, sub,
+    pointer. An exception to this are vector arithmetic functions (add, sub,
     scale), and transform functions (translate and scale) which have arguments
     passed by value. There is no dynamic memory allocation.
 

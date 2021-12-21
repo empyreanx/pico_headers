@@ -1,5 +1,5 @@
 #CC     = gcc
-#CFLAGS = -std=c11 -Wall -Wextra -pedantic -I ..
+#CFLAGS = -std=c99 -Wall -Wextra -pedantic -I ..
 
 CC     = clang
 CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic -I .. #-Weverything
