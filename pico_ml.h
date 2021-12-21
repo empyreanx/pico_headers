@@ -662,7 +662,7 @@ pm_b2 pm_b2_min(const pm_v2* vertices, int count);
 #define PM_STATE_VECTOR_LEN 624
 
 /**
- * The pseudo random number generator (RNG) state
+ * @brief The pseudo random number generator (RNG) state
  */
 typedef struct
 {
