@@ -1,6 +1,6 @@
 /**
     @file pico_gl.h
-    @brief A powerful 2D graphics library written in C99.
+    @brief A 2D graphics library based on OpenGL.
 
     ----------------------------------------------------------------------------
     Licensing information at end of header
@@ -911,7 +911,7 @@ void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value);
     APIs: gl=3.0, gles2=3.0
     Profile: core
     Extensions:
-        
+
     Loader: True
     Local files: True
     Omit khrplatform: False
@@ -4704,7 +4704,7 @@ static pgl_hash_t pgl_hash_str(const char* str)
     APIs: gl=3.0, gles2=3.0
     Profile: core
     Extensions:
-        
+
     Loader: True
     Local files: True
     Omit khrplatform: False

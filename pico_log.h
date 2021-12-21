@@ -1,6 +1,6 @@
 /**
     @file pico_log.h
-    @brief A minimal, yet flexible logging framework written in C99.
+    @brief A minimal and flexible logging framework written in C99.
 
     ----------------------------------------------------------------------------
     Licensing information at end of header
