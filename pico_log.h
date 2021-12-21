@@ -46,12 +46,15 @@
 
     Please see the examples for more details.
 
-    To use this library in your project, add
+    Usage:
+    ------
+
+    To use this library in your project, add the following
 
     > #define PL_IMPLEMENTATION
     > #include "pico_log.h"
 
-    to a source file.
+    to a source file (once). Afterwards, include the header normally.
 */
 
 #ifndef PICO_LOG_H

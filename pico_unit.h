@@ -48,12 +48,15 @@
 
     Please see the examples for more details.
 
-    To use this library in your project, add
+    Usage:
+    ------
+
+    To use this library in your project, add the following
 
     > #define PU_IMPLEMENTATION
     > #include "pico_unit.h"
 
-    to a source file.
+    to a source file (once). Afterwards, include the header normally.
 */
 
 #ifndef PICO_UNIT_H

@@ -44,12 +44,15 @@
 
     Please see the examples and unit tests for more details.
 
-    To use this library in your project, add
+    Usage:
+    ------
+
+    To use this library in your project, add the following
 
     > #define ECS_IMPLEMENTATION
     > #include "pico_ecs.h"
 
-    to a source file.
+    to a source file (once). Afterwards, include the header normally.
 
     Todo:
     -----
