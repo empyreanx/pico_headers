@@ -15,5 +15,4 @@ These libraries are as-is, however, suggestions for improvements or bug fixes ar
 
 All libraries are licensed under your choice of zlib or the public domain.
 
-
-
+I give my thanks to [Randy Gaul](https://github.com/RandyGaul) for inspiration and the template for this project.
