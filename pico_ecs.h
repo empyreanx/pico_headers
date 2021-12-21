@@ -36,7 +36,7 @@
     If the state specified by the class changes this could ripple through the
     class, and perhaps subclasses as well. It could well be that the class no
     longer belongs in the existing class hierarchy forcing even more revisions.
-    If could also be true that a class doesn't neatly fix into the inheritance
+    If could even be true that a class doesn't neatly fit into the inheritance
     tree at all.
 
     An ECS solves these problems while also granting more flexibility in
@@ -46,7 +46,7 @@
 
     To use this library in your project, add
 
-    > #define ECS_IMPLEMENTATION<
+    > #define ECS_IMPLEMENTATION
     > #include "pico_ecs.h"
 
     to a source file.

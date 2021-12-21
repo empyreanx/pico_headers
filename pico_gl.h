@@ -29,7 +29,7 @@
     --------
 
     This library is an advanced 2D renderer built on top of OpenGL. It currently
-    support OpenGL 3.0+ and OpenGL ES 3+ as well.
+    supports OpenGL 3.0+ and OpenGL ES 3+.
 
     The basic workflow is to initialize the library, create a context, load any
     shaders and/or textures needed, specify some geometry (vertices) and draw
@@ -916,7 +916,7 @@ void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value);
     APIs: gl=3.0, gles2=3.0
     Profile: core
     Extensions:
-        
+
     Loader: True
     Local files: True
     Omit khrplatform: False
@@ -4709,7 +4709,7 @@ static pgl_hash_t pgl_hash_str(const char* str)
     APIs: gl=3.0, gles2=3.0
     Profile: core
     Extensions:
-        
+
     Loader: True
     Local files: True
     Omit khrplatform: False
