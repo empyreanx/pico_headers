@@ -54,7 +54,7 @@
     > #define PL_IMPLEMENTATION
     > #include "pico_log.h"
 
-    to a source file (once). Now include the header normally.
+    to a source file (once), then simply include the header normally.
 */
 
 #ifndef PICO_LOG_H
