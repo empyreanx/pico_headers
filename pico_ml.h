@@ -8,7 +8,7 @@
 
     Features:
     ---------
-    - Written in C11
+    - Written in C99
     - Single header library for easy build system integration
     - Arithmetic for 2D vectors, transforms, and AABBs
     - Functions for creating and manipulating affine transformations
@@ -41,7 +41,7 @@
     Bounding box functions provide tests for intersection of AABBs and
     determnining if a point is contained within a given AABB. There are
     functions for computing unions and intersections of AABBs as well as
-    computing the minimum enclosing AABB for a set of points.
+    for computing the minimum enclosing AABB for a set of points.
 
     The random number generator uses the Mersenne Twister algorithm, which is
     substantially better than `rand()` in terms of the quality of its output.
