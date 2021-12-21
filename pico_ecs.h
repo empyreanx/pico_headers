@@ -50,6 +50,10 @@
     > #include "pico_ecs.h"
 
     to a source file.
+
+    Todo:
+    -----
+    - Better default assertion macro
 */
 
 #ifndef PICO_ECS_H
