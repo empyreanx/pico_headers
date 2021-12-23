@@ -483,10 +483,10 @@ int main()
     // Release resources
     sg_free(sg);
 
-    app_shutdown(app);
-
     pgl_destroy_shader(shader);
     pgl_destroy_context(ctx);
+
+    app_shutdown(app);
 
     return 0;
 }
