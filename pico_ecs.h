@@ -57,6 +57,7 @@
     Todo:
     -----
     - Better default assertion macro
+    - Use ECS_MATCH_ANY for player system. Logic to collect chests.
 */
 
 #ifndef PICO_ECS_H
