@@ -37,7 +37,7 @@
     Output can also be modified to show or hide various metadata. These are
     date/time, log level, filename/line number, and calling function. They can
     be toggled using the pl_display* functions. There is also an option to
-    enable color output.
+    enable color coded output.
 
     It is possible to synchronize appenders using `pl_set_lock`. This function
     accepts a function pointer that takes a boolean and user data as input. When
@@ -55,6 +55,14 @@
     > #include "pico_log.h"
 
     to a source file (once), then simply include the header normally.
+
+    Constants:
+    --------
+
+    - PL_MAX_APPENDERS (default: 16)
+    - PL_MAX_MSG_LENGTH (default: 1024)
+
+    Must be defined before PL_IMPLEMENTATION
 */
 
 #ifndef PICO_LOG_H
@@ -353,11 +361,11 @@ void pl_write(pl_level_t level,
 #define PL_BREAK_LEN     1
 
 #define PL_ENTRY_LEN (PL_TIMESTAMP_LEN  + \
-                        PL_LEVEL_LEN      + \
-                        PL_FILE_LEN       + \
-                        PL_FUNC_LEN       + \
-                        PL_MSG_LEN        + \
-                        PL_BREAK_LEN)
+                      PL_LEVEL_LEN      + \
+                      PL_FILE_LEN       + \
+                      PL_FUNC_LEN       + \
+                      PL_MSG_LEN        + \
+                      PL_BREAK_LEN)
 
 #define PL_TIME_FMT_LEN 32
 #define PL_TIME_FMT     "%d/%m/%g %H:%M:%S"
