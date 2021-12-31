@@ -24,7 +24,7 @@
     --------
 
     This library is an advanced 2D renderer built on top of OpenGL. It currently
-    support OpenGL 3.0+ and OpenGL ES 3+ as well.
+    supports OpenGL 3.0+ and OpenGL ES 3+ as well.
 
     The basic workflow is to initialize the library, create a context, load any
     shaders and/or textures needed, specify some geometry (vertices) and draw
@@ -55,6 +55,15 @@
     > #include "pico_gl.h"
 
     to a source file.
+
+    Constants:
+    --------
+
+    - PGL_UNIFORM_NAME_LENGTH (default: 32)
+    - PGL_MAX_UNIFORMS (default: 32)
+    - PGL_MAX_STATES (default: 32)
+
+    Must be defined before PGL_IMPLEMENTATION
 
     Todo:
     -----
@@ -500,7 +509,7 @@ void pgl_clear(float r, float g, float b, float a);
  *
  * @param ctx The relevant context
  * @param primitive The primitives type (@see pgl_primitive_t)
- * @param vertices An array points having a 2D position, color, an uv coordinates
+ * @param vertices A vertex array
  * @param count The number of vertices
  * @param texture The texture to draw from (can be `NULL`)
  * @param shader The shader used to draw the array (cannot be `NULL`)
@@ -518,7 +527,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
  *
  * @param ctx The relevant context
  * @param primitive The primitives type (@see pgl_primitive_t)
- * @param vertices An array points having a 2D position, color, an uv coordinates
+ * @param vertices A vertex array
  * @param count The number of vertices
  *
  * @returns A pointer to the buffer or `NULL` on error
@@ -538,6 +547,8 @@ void pgl_destroy_buffer(pgl_buffer_t* buffer);
  *
  * @param ctx The relevant context
  * @param buffer The buffer to draw
+ * @param start The base vertex index
+ * @param count The number of vertices to draw from `start`
  * @param texture The texture to draw from (can be `NULL`)
  * @param shader The shader used to draw the array (cannot be `NULL`)
  */
@@ -551,7 +562,6 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
  * @brief Turns matrix transposition on/off
  */
 void pgl_set_transpose(pgl_ctx_t* ctx, bool enabled);
-
 
 /**
  * @brief Set the blending mode
