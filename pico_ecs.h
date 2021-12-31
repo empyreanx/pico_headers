@@ -54,6 +54,15 @@
 
     to a source file (once), then simply include the header normally.
 
+    Options:
+    --------
+
+    - ECS_MAX_COMPONENTS (default: 16)
+    - ECS_MAX_ENTITIES (default: 8*1024)
+    - ECS_MAX_SYSTEMS (default: 16)
+
+    Must be defined before ECS_IMPLEMENTATION
+
     Todo:
     -----
     - Better default assertion macro
@@ -63,8 +72,8 @@
 #ifndef PICO_ECS_H
 #define PICO_ECS_H
 
-#include <stdbool.h> // true, false
-#include <stdint.h>  // uint32_t, uint32_t
+#include <stdbool.h> // bool, true, false
+#include <stdint.h>  // uint32_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -149,21 +158,20 @@ ecs_t* ecs_new(void* mem_ctx);
 void ecs_free(ecs_t* ecs);
 
 /**
- * @brief Removes all entities from the ECS, preserving systems, and components.
+ * @brief Removes all entities from the ECS, preserving systems and components.
  */
 void ecs_reset(ecs_t* ecs);
 
 /**
  * @brief Registers a component
  *
- * Registers a component with the user specfied component ID. Components define
-'* the game state (usually contained within structs) and are manipulated by
- * systems.
+ * Registers a component with the specfied component ID. Components define the
+ * game state (usually contained within structs) and are manipulated by systems.
  *
- * @param ecs     The ECS instance
- * @param comp_id The component ID to use (must be less than
- *                ECS_MAX_COMPONENTS)
- * @param type    The concrete type of the component (e.g. my_t)
+ * @param ecs       The ECS instance
+ * @param comp_id   The component ID to use (must be less than
+ *                  ECS_MAX_COMPONENTS)
+ * @param num_bytes The number of bytes to allocate for each component instance
  */
 void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
 
@@ -176,7 +184,7 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
  * @param ecs       The ECS instance
  * @param sys_id    The system ID to use (must be less than ECS_MAX_SYSTEMS)
  * @param update_cb Callback that is fired every update
- * @param udata     The user data passed to update callbacks
+ * @param udata     The user data passed to the update callback
  */
 void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
@@ -236,7 +244,7 @@ bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id);
 void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id);
 
 /**
- * @brief Queues an entity for destruction
+ * @brief Queues an entity for destruction at the end of system execution
  *
  * Queued entities are destroyed after the curent iteration.
  *
@@ -296,7 +304,8 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
 void ecs_sync(ecs_t* ecs, ecs_id_t entity_id);
 
 /**
- * @brief Queues a sync call on the specified entity
+ * @brief Queues a sync call on the specified entity at the end of system
+ * execution
  *
  * Queued entities are synced after the curent iteration.
  *
