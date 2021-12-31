@@ -54,7 +54,7 @@
 
     to a source file (once), then simply include the header normally.
 
-    Options:
+    Constants:
     --------
 
     - ECS_MAX_COMPONENTS (default: 16)
