@@ -416,7 +416,7 @@ PM_INLINE pm_v2 pm_v2_polar(pm_flt len, pm_flt angle)
  * @brief Constructs a 2D transform
  */
 PM_INLINE pm_t2 pm_t2_make(pm_flt t00, pm_flt t01, pm_flt tx,
-                              pm_flt t10, pm_flt t11, pm_flt ty)
+                           pm_flt t10, pm_flt t11, pm_flt ty)
 {
     pm_t2 out;
     out.t00 = t00; out.t01 = t01; out.tx  = tx;

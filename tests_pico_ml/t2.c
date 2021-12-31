@@ -205,8 +205,10 @@ PU_TEST(test_t2_inv)
 
     PU_ASSERT(pm_t2_equal(&res, &exp));
 
+    t1 = pm_t2_translation(pm_v2_make(1, 2));
     t2 = pm_t2_scaling(pm_v2_make(2, 2));
     t3 = pm_t2_mult(&t3, &t2);
+    t3 = pm_t2_mult(&t3, &t1);
     inv = pm_t2_inv(&t3);
     res = pm_t2_mult(&t3, &inv);
 
