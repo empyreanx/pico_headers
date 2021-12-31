@@ -806,11 +806,11 @@ pm_t2 pm_t2_inv(const pm_t2* t)
 
     pm_t2 out;
 
-    out.t00 =  t->t11; out.t01 = -t->t01; out.tx = t->t01 * t->ty - t->t11 * t->tx;
-    out.t10 = -t->t10; out.t11 =  t->t00; out.ty = t->t10 * t->tx - t->t00 * t->ty;
+    out.t00 =  t->t11 * inv_det; out.t01 = -t->t01 * inv_det;
+    out.t10 = -t->t10 * inv_det; out.t11 =  t->t00 * inv_det;
 
-    out.t00 *= inv_det; out.t01 *= inv_det; out.tx *= inv_det;
-    out.t10 *= inv_det; out.t11 *= inv_det; out.ty *= inv_det;
+    out.tx = (t->t01 * t->ty - t->t11 * t->tx) * inv_det;
+    out.ty = (t->t10 * t->tx - t->t00 * t->ty) * inv_det;
 
     return out;
 }
