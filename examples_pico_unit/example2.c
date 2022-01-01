@@ -19,7 +19,7 @@ test_setup ()
 }
 
 /* Resets fixture (called after test). */
-void static
+static void
 test_teardown ()
 {
     g_fix = 0;

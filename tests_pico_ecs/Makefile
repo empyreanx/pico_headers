@@ -1,12 +1,12 @@
 CC     = gcc
-CFLAGS = -std=c99 -g -Wall -pedantic -I ..
+CFLAGS = -std=c99 -g -Wall -Wextra -Wpedantic
 
 #CC     = clang
-#CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic -I .. #-Weverything
+#CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic #-Weverything
 
 SRCS   = main.c
 
-#DEPS   = ../pico_ht.h
+#DEPS   = ../pico_ecs.h
 OBJS   = $(SRCS:.c=.o)
 
 all: tests

@@ -24,7 +24,7 @@
  * For more information, please refer to <http://unlicense.org/>
  *============================================================================*/
 
-#include "pico_ecs.h"
+#include "../pico_ecs.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -462,5 +462,5 @@ int main()
 
 //#define ECS_DEBUG
 #define ECS_IMPLEMENTATION
-#include "pico_ecs.h"
+#include "../pico_ecs.h"
 

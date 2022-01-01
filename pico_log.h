@@ -368,7 +368,7 @@ void pl_write(pl_level_t level,
                       PL_BREAK_LEN)
 
 #define PL_TIME_FMT_LEN 32
-#define PL_TIME_FMT     "%d/%m/%g %H:%M:%S"
+#define PL_TIME_FMT     "%d/%m/%Y %H:%M:%S"
 
 #define PL_TERM_CODE  0x1B
 #define PL_TERM_RESET "[0m"

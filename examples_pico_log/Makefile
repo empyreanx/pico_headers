@@ -1,5 +1,9 @@
-CC     = clang
-CFLAGS = -std=c99 -Wall -Wextra  -Wpedantic -I .. #-Weverything
+#CC     = clang
+#CFLAGS = -std=c99 -Wall -Wextra  -Wpedantic -I .. #-Weverything
+
+CC     = gcc
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic
+
 DEPS   = ../pico_log.h
 
 all: example1 example2 example3

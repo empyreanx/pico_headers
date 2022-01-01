@@ -1,11 +1,8 @@
-#CC     = gcc
-#CFLAGS = -std=c99 -Wall -Wextra -pedantic -I ..
+CC     = gcc
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic
 
-CC     = clang
-CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic -I .. #-Weverything
-
-#CC = g++
-#CFLAGS = -std=c++11 -Wall -Wextra -pedantic -I ..
+#CC     = clang
+#CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic #-Weverything
 
 SRCS   = main.c scalar.c b2.c t2.c v2.c rng.c
 
