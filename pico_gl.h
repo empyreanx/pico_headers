@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 01/01/2022 18:52:06.
+/// WARNING: This file was automatically generated on 01/01/2022 18:57:55.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -3176,10 +3176,6 @@ static bool pgl_str_equal(const char* str1, const char* str2);
  * Internal constants
  *============================================================================*/
 
-static const GLchar* PGL_POS_NAME   = "a_pos";
-static const GLchar* PGL_COLOR_NAME = "a_color";
-static const GLchar* PGL_UV_NAME    = "a_uv";
-
 // 64-bit FNV1a Constants
 //static const pgl_hash_t PGL_OFFSET_BASIS = 0xCBF29CE484222325;
 //static const pgl_hash_t PGL_PRIME = 0x100000001B3;
@@ -3294,6 +3290,7 @@ struct pgl_texture_t
 struct pgl_buffer_t
 {
     GLenum  primitive;
+    GLuint  vao;
     GLuint  vbo;
     GLsizei count;
 };
@@ -3333,11 +3330,11 @@ void pgl_print_info()
     const unsigned char* gl_version = glGetString(GL_VERSION);
     const unsigned char* glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    PGL_LOG("OpenGL info:\n");
-    PGL_LOG("Vendor: %s\n", vendor);
-    PGL_LOG("Renderer: %s\n", renderer);
-    PGL_LOG("GL Version: %s\n", gl_version);
-    PGL_LOG("GLSL Version: %s\n", glsl_version);
+    PGL_LOG("OpenGL info:");
+    PGL_LOG("Vendor: %s", vendor);
+    PGL_LOG("Renderer: %s", renderer);
+    PGL_LOG("GL Version: %s", gl_version);
+    PGL_LOG("GLSL Version: %s", glsl_version);
 }
 
 const char* pgl_get_error_str(pgl_error_t code)
@@ -3420,9 +3417,9 @@ pgl_ctx_t* pgl_create_context(uint32_t w,
 
     PGL_CHECK(glGenVertexArrays(1, &ctx->vao));
     PGL_CHECK(glGenFramebuffers(1, &ctx->fbo));
+    PGL_CHECK(glGenBuffers(1, &ctx->vbo));
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
-    PGL_CHECK(glGenBuffers(1, &ctx->vbo));
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_DYNAMIC_DRAW));
     pgl_bind_attributes();
@@ -3881,10 +3878,14 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
 
     buffer->primitive = pgl_primitive_map[primitive];
 
+    PGL_CHECK(glGenVertexArrays(1, &buffer->vao));
     PGL_CHECK(glGenBuffers(1, &buffer->vbo));
+
+    PGL_CHECK(glBindVertexArray(buffer->vao));
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
-    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
+    pgl_bind_attributes();
+    PGL_CHECK(glBindVertexArray(0));
 
     buffer->count = count;
 
@@ -3909,10 +3910,7 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
 
     pgl_before_draw(ctx, texture, shader);
 
-    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
-
-    //pgl_enable_attributes(shader);
-
+    PGL_CHECK(glBindVertexArray(buffer->vao));
     PGL_CHECK(glDrawArrays(buffer->primitive, start, count));
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
 
