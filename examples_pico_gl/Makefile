@@ -1,6 +1,20 @@
-CC      = gcc
-#CC     = clang
-CFLAGS = -g -pg -std=c11 -Wall -Wextra -Wpedantic -I .. -I /usr/include/SDL2/ #-Weverything
+ifeq ($(OS),Windows_NT)
+    CC     = gcc
+    CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -I /mingw64/include/SDL2 -L /mingw64/lib
+    CLIBS  = -lmingw32 -lSDL2 -lm
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        CC     = gcc
+        CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -I /usr/include/SDL2
+        CLIBS  = -lSDL2 -ldl -lm
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        CC     = clang
+        CFLAGS = -std=c11 -Wall -Wextra -Wpedantic
+        CLIBS  = -lSDL2 -ldl -lm
+    endif
+endif
 
 DEPS   = ../pico_gl.h
 
@@ -10,10 +24,10 @@ all: quad sg
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 quad: quad.o $(DEPS)
-	$(CC) -o quad quad.o -lSDL2 -ldl -lm -pg
+	$(CC) -o quad quad.o $(CLIBS)
 
 sg: sg.o $(DEPS)
-	$(CC) -o sg sg.o -lSDL2 -ldl -lm -pg
+	$(CC) -o sg sg.o $(CLIBS)
 
 .PHONY: clean
 

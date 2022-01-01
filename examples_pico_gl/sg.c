@@ -27,6 +27,7 @@
      * More docs
 */
 
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 
 #define PM_IMPLEMENTATION
@@ -377,8 +378,11 @@ double time_now()
            (double)SDL_GetPerformanceFrequency();
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    (void)argc;
+    (void)argv;
+
     // Application initialization
     app_t* app = app_startup();
 

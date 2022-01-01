@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <stdio.h>
 
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -28,8 +29,11 @@
 #define PGL_IMPLEMENTATION
 #include "../pico_gl.h"
 
-int main()
+int main(int argc, char *argv[])
 {
+    (void)argc;
+    (void)argv;
+
     printf("Quad rendering demo\n");
 
     stbi_set_flip_vertically_on_load(true);
