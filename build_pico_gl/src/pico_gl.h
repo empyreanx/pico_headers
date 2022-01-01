@@ -1103,12 +1103,9 @@ static void pgl_apply_viewport(pgl_ctx_t* ctx, const pgl_viewport_t* viewport);
 static void pgl_before_draw(pgl_ctx_t* ctx, pgl_texture_t* texture, pgl_shader_t* shader);
 static void pgl_after_draw(pgl_ctx_t* ctx);
 
-//static int pgl_load_attributes(pgl_shader_t* shader);
 static int pgl_load_uniforms(pgl_shader_t* shader);
 static const pgl_uniform_t* pgl_find_uniform(const pgl_shader_t* shader, const char* name);
 
-//static void pgl_enable_attribute(pgl_attribute_t* attr);
-//static void pgl_enable_attributes(pgl_shader_t* shader);
 static void pgl_bind_attributes();
 
 static void pgl_log(const char* fmt, ...);
@@ -1120,10 +1117,6 @@ static bool pgl_str_equal(const char* str1, const char* str2);
 /*=============================================================================
  * Internal constants
  *============================================================================*/
-
-static const GLchar* PGL_POS_NAME   = "a_pos";
-static const GLchar* PGL_COLOR_NAME = "a_color";
-static const GLchar* PGL_UV_NAME    = "a_uv";
 
 // 64-bit FNV1a Constants
 //static const pgl_hash_t PGL_OFFSET_BASIS = 0xCBF29CE484222325;
@@ -1278,11 +1271,11 @@ void pgl_print_info()
     const unsigned char* gl_version = glGetString(GL_VERSION);
     const unsigned char* glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    printf("OpenGL info:\n");
-    printf("Vendor: %s\n", vendor);
-    printf("Renderer: %s\n", renderer);
-    printf("GL Version: %s\n", gl_version);
-    printf("GLSL Version: %s\n", glsl_version);
+    PGL_LOG("OpenGL info:\n");
+    PGL_LOG("Vendor: %s\n", vendor);
+    PGL_LOG("Renderer: %s\n", renderer);
+    PGL_LOG("GL Version: %s\n", gl_version);
+    PGL_LOG("GLSL Version: %s\n", glsl_version);
 }
 
 const char* pgl_get_error_str(pgl_error_t code)
@@ -2491,57 +2484,6 @@ static void pgl_after_draw(pgl_ctx_t* ctx)
     pgl_restore_gl_state(ctx);
 }
 
-/*int pgl_load_attributes(pgl_shader_t* shader)
-{
-    GLint attr_count = 0;
-
-    glGetProgramiv(shader->program, GL_ACTIVE_ATTRIBUTES, &attr_count);
-
-    PGL_ASSERT(attr_count > 0);
-
-    if (attr_count <= 0)
-    {
-        PGL_LOG("Number of attributes must be positive");
-        pgl_set_error(shader->ctx, PGL_INVALID_ATTRIBUTE_COUNT);
-        return -1;
-    }
-
-    GLint location = 0;
-
-    PGL_CHECK(location = glGetAttribLocation(shader->program, PGL_POS_NAME));
-
-    if (location >= 0)
-    {
-        shader->pos.active = true;
-        shader->pos.location = location;
-        shader->pos.size = 2;
-        shader->pos.offset = (GLvoid*)offsetof(pgl_vertex_t, pos);
-    }
-
-    PGL_CHECK(location = glGetAttribLocation(shader->program, PGL_COLOR_NAME));
-
-    if (location >= 0)
-    {
-        shader->color.active = true;
-        shader->color.location = location;
-        shader->color.size = 4;
-        shader->color.offset = (GLvoid*)offsetof(pgl_vertex_t, color);
-    }
-
-    PGL_CHECK(location = glGetAttribLocation(shader->program, PGL_UV_NAME));
-
-    if (location >= 0)
-    {
-        shader->uv.active = true;
-        shader->uv.location = location;
-        shader->uv.size = 2;
-        shader->uv.offset = (GLvoid*)offsetof(pgl_vertex_t, uv);
-    }
-
-    return 0;
-}*/
-
-
 static int pgl_load_uniforms(pgl_shader_t* shader)
 {
     PGL_ASSERT(NULL != shader);
@@ -2610,35 +2552,13 @@ static const pgl_uniform_t* pgl_find_uniform(const pgl_shader_t* shader, const c
     return NULL;
 }
 
-/*static void pgl_enable_attribute(pgl_attribute_t* attr)
-{
-    PGL_CHECK(glEnableVertexAttribArray(attr->location));
-
-    PGL_CHECK(glVertexAttribPointer(attr->location,
-                                    attr->size,
-                                    GL_FLOAT, GL_FALSE,
-                                    sizeof(pgl_vertex_t),
-                                    attr->offset));
-}
-
-static void pgl_enable_attributes(pgl_shader_t* shader)
-{
-    if (shader->pos.active)
-        pgl_enable_attribute(&shader->pos);
-
-    if (shader->color.active)
-        pgl_enable_attribute(&shader->color);
-
-    if (shader->uv.active)
-        pgl_enable_attribute(&shader->uv);
-}*/
-
 static void pgl_bind_attributes()
 {
     // Position
     PGL_CHECK(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
                                     sizeof(pgl_vertex_t),
                                     (GLvoid*)offsetof(pgl_vertex_t, pos)));
+
     PGL_CHECK(glEnableVertexAttribArray(0));
 
     // Color
