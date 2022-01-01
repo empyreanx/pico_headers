@@ -8,12 +8,16 @@
 
 #include <assert.h>
 #include <curses.h>
-#include <linux/limits.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <time.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
 
 #define PLAYER_KEY_LEFT  KEY_LEFT
 #define PLAYER_KEY_RIGHT KEY_RIGHT
