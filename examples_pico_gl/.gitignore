@@ -3,3 +3,4 @@ sg
 *.o
 *.trace
 gmon.out
+*.exe

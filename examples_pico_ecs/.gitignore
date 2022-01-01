@@ -2,3 +2,4 @@ benchmark
 example
 *.o
 gmon.out
+*.exe

@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 21/12/2021 09:55:13.
+/// WARNING: This file was automatically generated on 31/12/2021 21:57:12.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -29,7 +29,7 @@
     --------
 
     This library is an advanced 2D renderer built on top of OpenGL. It currently
-    supports OpenGL 3.0+ and OpenGL ES 3+.
+    supports OpenGL 3.0+ and OpenGL ES 3+ as well.
 
     The basic workflow is to initialize the library, create a context, load any
     shaders and/or textures needed, specify some geometry (vertices) and draw
@@ -54,15 +54,21 @@
 
     Please see the examples for more details.
 
-    Usage:
-    ------
-
-    To use this library in your project, add the following
+    To use this library in your project, add
 
     > #define PGL_IMPLEMENTATION
     > #include "pico_gl.h"
 
-    to a source file (once), then simply include the header normally.
+    to a source file.
+
+    Constants:
+    --------
+
+    - PGL_UNIFORM_NAME_LENGTH (default: 32)
+    - PGL_MAX_UNIFORMS (default: 32)
+    - PGL_MAX_STATES (default: 32)
+
+    Must be defined before PGL_IMPLEMENTATION
 
     Todo:
     -----
@@ -508,7 +514,7 @@ void pgl_clear(float r, float g, float b, float a);
  *
  * @param ctx The relevant context
  * @param primitive The primitives type (@see pgl_primitive_t)
- * @param vertices An array points having a 2D position, color, an uv coordinates
+ * @param vertices A vertex array
  * @param count The number of vertices
  * @param texture The texture to draw from (can be `NULL`)
  * @param shader The shader used to draw the array (cannot be `NULL`)
@@ -526,7 +532,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
  *
  * @param ctx The relevant context
  * @param primitive The primitives type (@see pgl_primitive_t)
- * @param vertices An array points having a 2D position, color, an uv coordinates
+ * @param vertices A vertex array
  * @param count The number of vertices
  *
  * @returns A pointer to the buffer or `NULL` on error
@@ -546,6 +552,8 @@ void pgl_destroy_buffer(pgl_buffer_t* buffer);
  *
  * @param ctx The relevant context
  * @param buffer The buffer to draw
+ * @param start The base vertex index
+ * @param count The number of vertices to draw from `start`
  * @param texture The texture to draw from (can be `NULL`)
  * @param shader The shader used to draw the array (cannot be `NULL`)
  */
@@ -559,7 +567,6 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
  * @brief Turns matrix transposition on/off
  */
 void pgl_set_transpose(pgl_ctx_t* ctx, bool enabled);
-
 
 /**
  * @brief Set the blending mode
@@ -919,7 +926,7 @@ void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value);
     APIs: gl=3.0, gles2=3.0
     Profile: core
     Extensions:
-
+        
     Loader: True
     Local files: True
     Omit khrplatform: False
@@ -4712,7 +4719,7 @@ static pgl_hash_t pgl_hash_str(const char* str)
     APIs: gl=3.0, gles2=3.0
     Profile: core
     Extensions:
-
+        
     Loader: True
     Local files: True
     Omit khrplatform: False

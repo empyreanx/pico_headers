@@ -105,6 +105,9 @@ static ecs_ret_t comp_update(ecs_t* ecs,
                              ecs_dt_t dt,
                              void* udata)
 {
+	(void)dt;
+	(void)udata;
+
     for (int i = 0; i < entity_count; i++)
     {
         ecs_id_t id = entities[i];
@@ -330,6 +333,9 @@ static ecs_ret_t sync_update(ecs_t* ecs,
                              ecs_dt_t dt,
                              void* udata)
 {
+	(void)dt;
+	(void)udata;
+
     for (int i = 0; i < entity_count; i++)
     {
         ecs_id_t id = entities[i];
@@ -369,6 +375,9 @@ static ecs_ret_t destroy_update(ecs_t* ecs,
                                 ecs_dt_t dt,
                                 void* udata)
 {
+    (void)dt;
+    (void)udata;
+
     for (int i = 0; i < entity_count; i++)
     {
         ecs_id_t id = entities[i];
