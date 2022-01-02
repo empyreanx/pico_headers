@@ -67,6 +67,7 @@
     -----
     - Better default assertion macro
     - Use ECS_MATCH_ANY for player system. Logic to collect chests.
+    - Port Rogue demo to Windows
 */
 
 #ifndef PICO_ECS_H
