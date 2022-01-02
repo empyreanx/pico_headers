@@ -21,7 +21,7 @@
 #include <stdio.h>
 
 #define SDL_MAIN_HANDLED
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"

@@ -1,4 +1,3 @@
-#CC     = clang
 CC      = gcc
 MAKE   = make
 CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic -I ../.. #-Weverything
@@ -12,6 +11,11 @@ SRCS   = game.c       \
          math.c       \
          files.c      \
          hud.c
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    CC = clang
+endif
 
 OBJS   = $(SRCS:.c=.o)
 

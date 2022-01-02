@@ -1,8 +1,10 @@
-#CC     = clang
-#CFLAGS = -std=c99 -Wall -Wextra  -Wpedantic -I .. #-Weverything
-
 CC     = gcc
 CFLAGS = -std=c99 -Wall -Wextra -Wpedantic
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    CC = clang
+endif
 
 DEPS   = ../pico_log.h
 

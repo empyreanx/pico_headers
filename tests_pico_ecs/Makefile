@@ -1,8 +1,10 @@
 CC     = gcc
 CFLAGS = -std=c99 -g -Wall -Wextra -Wpedantic
 
-#CC     = clang
-#CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic #-Weverything
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    CC = clang
+endif
 
 SRCS   = main.c
 

@@ -6,12 +6,12 @@ else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
         CC     = gcc
-        CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I /usr/include/SDL2
+        CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic
         CLIBS  = -lSDL2 -ldl -lm
     endif
     ifeq ($(UNAME_S),Darwin)
         CC     = clang
-        CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I/usr/local/include/SDL2
+        CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic
         CLIBS  = -lSDL2 -ldl -lm
     endif
 endif
