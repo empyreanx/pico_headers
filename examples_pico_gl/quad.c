@@ -29,10 +29,31 @@
 #define PGL_IMPLEMENTATION
 #include "../pico_gl.h"
 
+bool gles = false;
+void* handle = NULL;
+
+void gles_open()
+{
+    handle = SDL_LoadObject("libGL.so");
+}
+
+void gles_close()
+{
+    SDL_UnloadObject(handle);
+}
+
+void* gles_proc(const char* name)
+{
+    return SDL_LoadFunction(handle, name);
+}
+
 int main(int argc, char *argv[])
 {
     (void)argc;
     (void)argv;
+
+    if (argc > 1 && 0 == strcmp(argv[1], "-gles"))
+        gles = true;
 
     printf("Quad rendering demo\n");
 
@@ -49,10 +70,21 @@ int main(int argc, char *argv[])
 
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-    SDL_GL_CONTEXT_PROFILE_CORE);
+
+    if (gles)
+    {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+        SDL_GL_CONTEXT_PROFILE_ES);
+    }
+    else
+    {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+        SDL_GL_CONTEXT_PROFILE_CORE);
+    }
 
     SDL_Window* window = SDL_CreateWindow("Quad Example",
                                           SDL_WINDOWPOS_CENTERED,
@@ -66,9 +98,20 @@ int main(int argc, char *argv[])
     SDL_GL_SetSwapInterval(1);
     SDL_GLContext context = SDL_GL_CreateContext(window);
 
-    // This function must be called AFTER OpenGL context creation, but BEFORE
-    // PGL context creation
-    pgl_global_init(NULL, false);
+    if (gles)
+    {
+        gles_open();
+        // This function must be called AFTER OpenGL context creation, but
+        // BEFORE PGL context creation
+        pgl_global_init((pgl_loader_fn)gles_proc, true);
+    }
+    else
+    {
+        // This function must be called AFTER OpenGL context creation, but
+        // BEFORE PGL context creation
+        pgl_global_init(NULL, false);
+    }
+
     pgl_print_info();
 
     pgl_ctx_t* ctx = pgl_create_context(screen_w, screen_h, 0, false, NULL);
@@ -139,6 +182,9 @@ int main(int argc, char *argv[])
     SDL_DestroyWindow(window);
 
     SDL_Quit();
+
+    if (gles)
+        gles_close();
 
     return 0;
 }
