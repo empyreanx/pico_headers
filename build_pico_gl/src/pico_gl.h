@@ -67,13 +67,12 @@
 
     Todo:
     -----
-    - Test on Windows and MacOS
+    - MSAA flag for examples
+    - Better version handling
+    - Shader examples
+    - Scissor
     - Indexed arrays/buffers
     - Multiple texture units
-    - Scissor
-    - Shader examples
-    - OpenGL 4 default shaders
-    - OpenGL 2.1 support if possible and desired
 */
 #ifndef PICO_GL_H
 #define PICO_GL_H
