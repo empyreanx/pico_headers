@@ -1133,7 +1133,7 @@ static const pgl_hash_t PGL_PRIME = 0x1000193;
 "#version 330 core\n"
 
 #define PGL_GLES_HDR "" \
-"#version 300 es\n"
+"#version 310 es\n"
 
 #define PGL_GL_VERT_BODY "" \
 "layout (location = 0) in vec2 a_pos;\n" \
@@ -1250,10 +1250,10 @@ pgl_version_t pgl_get_version()
         return PGL_VERSION_UNSUPPORTED;
     }
 
-    if (GLAD_GL_VERSION_3_0)
+    if (GLAD_GL_VERSION_3_3)
         return PGL_GL3;
 
-    if (GLAD_GL_ES_VERSION_3_0)
+    if (GLAD_GL_ES_VERSION_3_1)
         return PGL_GLES3;
 
     return PGL_VERSION_UNSUPPORTED;
