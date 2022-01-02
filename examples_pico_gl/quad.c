@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     (void)argc;
     (void)argv;
 
-    if (argc > 1 && 0 == strcmp(argv[1], "-gles"))
+    if (argc > 1 && 0 == strcmp(argv[1], "--gles"))
         gles = true;
 
     printf("Quad rendering demo\n");
