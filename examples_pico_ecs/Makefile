@@ -6,9 +6,6 @@ ifeq ($(UNAME_S),Darwin)
     CC = clang
 endif
 
-#CC     = clang
-#CFLAGS = -std=c99 -Wall -Wextra -Wpedantic #-Weverything
-
 DEPS   = ../pico_ecs.h
 
 all: benchmark example

@@ -1,7 +1,7 @@
 ifeq ($(OS),Windows_NT)
     CC     = gcc
-    CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I /mingw64/include/SDL2 -L /mingw64/lib
-    CLIBS  = -lmingw32 -lSDL2 -lm
+    CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic
+    CLIBS  = -lSDL2 -lm
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
