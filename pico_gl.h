@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 02/01/2022 14:32:52.
+/// WARNING: This file was automatically generated on 02/01/2022 18:12:23.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -3756,7 +3756,7 @@ static const pgl_hash_t PGL_PRIME = 0x1000193;
 #define PGL_GLES_HDR "" \
 "#version 310 es\n"
 
-/*#define PGL_GL_VERT_BODY "" \
+#define PGL_GL_VERT_BODY "" \
 "layout (location = 0) in vec2 a_pos;\n" \
 "layout (location = 1) in vec4 a_color;\n" \
 "layout (location = 2) in vec2 a_uv;\n" \
@@ -3793,42 +3793,6 @@ static const pgl_hash_t PGL_PRIME = 0x1000193;
 "void main()\n" \
 "{\n" \
 "   frag_color = texture(u_tex, uv) * color;\n" \
-"}\n"*/
-
-#define PGL_GL_VERT_BODY "" \
-"layout (location = 0) in vec2 a_pos;\n" \
-"layout (location = 1) in vec4 a_color;\n" \
-"layout (location = 2) in vec2 a_uv;\n" \
-"\n" \
-"out vec2 uv;\n" \
-"\n" \
-"uniform mat3 u_tr;\n" \
-"uniform mat3 u_proj;\n" \
-"\n" \
-"void main()\n" \
-"{\n" \
-"   vec3 pos = u_proj * u_tr * vec3(a_pos, 1);\n" \
-"   gl_Position = vec4(pos.xy, 0, 1);\n" \
-"   uv = a_uv;\n" \
-"}\n"
-
-#define PGL_GL_FRAG_BODY "" \
-"#ifdef GL_ES\n" \
-"#ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
-"   precision highp float;\n" \
-"#else\n" \
-"   precision mediump float;\n" \
-"#endif\n" \
-"#endif\n" \
-"out vec4 frag_color;\n" \
-"\n" \
-"in vec2 uv;\n" \
-"\n" \
-"uniform sampler2D u_tex;\n" \
-"\n" \
-"void main()\n" \
-"{\n" \
-"   frag_color = texture(u_tex, uv);\n" \
 "}\n"
 
 static const GLchar* PGL_GL_VERT_SRC = PGL_GL_HDR PGL_GL_VERT_BODY;
