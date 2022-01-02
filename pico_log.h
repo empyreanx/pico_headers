@@ -385,8 +385,8 @@ static const char* const pl_level_str[] =
 {
     "TRACE",
     "DEBUG",
-    "INFO",
-    "WARN",
+    "INFO ",
+    "WARN ",
     "ERROR",
     "FATAL",
     0
@@ -757,7 +757,7 @@ static void
 pl_append_file(char* entry_str, const char* file, unsigned line)
 {
     char file_str[PL_FILE_LEN];
-    snprintf(file_str, sizeof(file_str), "%s:%u ", file, line);
+    snprintf(file_str, sizeof(file_str), "[%s:%u] ", file, line);
     strncat(entry_str, file_str, PL_FILE_LEN);
 }
 
