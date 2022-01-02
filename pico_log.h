@@ -754,23 +754,10 @@ pl_append_level (char* entry_str, pl_level_t level, bool colors)
 }
 
 static void
-pl_append_file(char* entry_str, const char* file, unsigned line, bool colors)
+pl_append_file(char* entry_str, const char* file, unsigned line)
 {
     char file_str[PL_FILE_LEN];
-
-    if (colors)
-    {
-        snprintf(file_str, sizeof(file_str), "%c%s%s:%u%c%s ",
-                 PL_TERM_CODE, PL_TERM_GRAY,
-                 file, line,
-                 PL_TERM_CODE, PL_TERM_RESET);
-
-    }
-    else
-    {
-        snprintf(file_str, sizeof(file_str), "%s:%u ", file, line);
-    }
-
+    snprintf(file_str, sizeof(file_str), "%s:%u ", file, line);
     strncat(entry_str, file_str, PL_FILE_LEN);
 }
 
@@ -837,7 +824,7 @@ pl_write (pl_level_t level, const char* file, unsigned line,
             // Append the filename/line number
             if (appender->file)
             {
-                pl_append_file(entry_str, file, line, appender->colors);
+                pl_append_file(entry_str, file, line);
             }
 
             // Append the function name
