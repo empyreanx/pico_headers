@@ -11,7 +11,7 @@ else
     endif
     ifeq ($(UNAME_S),Darwin)
         CC     = clang
-        CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic
+        CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I/usr/local/include/SDL2
         CLIBS  = -lSDL2 -ldl -lm
     endif
 endif
