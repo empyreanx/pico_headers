@@ -35,6 +35,7 @@ void* handle = NULL;
 void gles_open()
 {
     handle = SDL_LoadObject("libGL.so");
+    assert(handle);
 }
 
 void gles_close()
