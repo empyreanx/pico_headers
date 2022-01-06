@@ -380,7 +380,7 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
  *============================================================================*/
 
 #define ECS_BITSET_WIDTH 32
-#define ECS_BITSET_SIZE  (((ECS_MAX_COMPONENTS - 1) / ECS_BITSET_WIDTH) + 1) //FIXME?
+#define ECS_BITSET_SIZE (((ECS_MAX_COMPONENTS - 1) / ECS_BITSET_WIDTH) + 1) //FIXME?
 
 typedef struct
 {
