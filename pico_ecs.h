@@ -462,11 +462,11 @@ static void ecs_flush_destroyed(ecs_t* ecs);
 /*=============================================================================
  * Internal bit set functions
  *============================================================================*/
-static bitset_t bitset_flip(bitset_t set, int bit, bool on);
-static bitset_t bitset_and(bitset_t set1, bitset_t set2);
-static bool     bitset_test(bitset_t set, int bit);
-static bool     bitset_equal(bitset_t set1, bitset_t set2);
-static bool     bitset_true(bitset_t set);
+static inline bitset_t bitset_flip(bitset_t set, int bit, bool on);
+static inline bitset_t bitset_and(bitset_t set1, bitset_t set2);
+static inline bool     bitset_test(bitset_t set, int bit);
+static inline bool     bitset_equal(bitset_t set1, bitset_t set2);
+static inline bool     bitset_true(bitset_t set);
 
 /*=============================================================================
  * Internal sparse set functions
@@ -862,7 +862,7 @@ static void ecs_flush_destroyed(ecs_t* ecs)
  * Internal bitset functions
  *============================================================================*/
 
-static bitset_t bitset_flip(bitset_t set, int bit, bool on)
+static inline bitset_t bitset_flip(bitset_t set, int bit, bool on)
 {
     int index = bit / BITSET_WIDTH;
 
@@ -874,7 +874,7 @@ static bitset_t bitset_flip(bitset_t set, int bit, bool on)
     return set;
 }
 
-static bitset_t bitset_and(bitset_t set1, bitset_t set2)
+static inline bitset_t bitset_and(bitset_t set1, bitset_t set2)
 {
     bitset_t set;
 
@@ -886,13 +886,13 @@ static bitset_t bitset_and(bitset_t set1, bitset_t set2)
     return set;
 }
 
-static bool bitset_test(bitset_t set, int bit)
+static inline bool bitset_test(bitset_t set, int bit)
 {
     int index = bit / BITSET_WIDTH;
     return set.array[index] & (1 << bit % BITSET_WIDTH);
 }
 
-static bool bitset_equal(bitset_t set1, bitset_t set2)
+static inline bool bitset_equal(bitset_t set1, bitset_t set2)
 {
     for (int i = 0; i < BITSET_SIZE; i++)
     {
@@ -905,7 +905,7 @@ static bool bitset_equal(bitset_t set1, bitset_t set2)
     return true;
 }
 
-static bool bitset_true(bitset_t set)
+static inline bool bitset_true(bitset_t set)
 {
     for (int i = 0; i < BITSET_SIZE; i++)
     {
