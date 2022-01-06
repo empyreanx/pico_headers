@@ -379,13 +379,21 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
  * Internal data structures
  *============================================================================*/
 
-#if ECS_MAX_COMPONENTS <= 32
+/*#if ECS_MAX_COMPONENTS <= 32
    typedef uint32_t ecs_bitset_t;
 #elif ECS_MAX_COMPONENTS <= 64
    typedef uint64_t ecs_bitset_t;
 #else
     #error "Too many components"
-#endif
+#endif*/
+
+#define BITSET_WIDTH 32
+#define BITSET_SIZE  (ECS_MAX_COMPONENTS / BITSET_WIDTH) + 1
+
+typedef struct
+{
+    uint32_t array[BITSET_SIZE];
+} bitset_t;
 
 // Data-structure for a packed array implementation that provides O(1) functions
 // for adding, removing, and accessing entity IDs
@@ -406,15 +414,15 @@ typedef struct
 
 typedef struct
 {
-    ecs_bitset_t comp_bits;
-    bool         ready;
+    bitset_t comp_bits;
+    bool     ready;
 } ecs_entity_t;
 
 typedef struct
 {
-    void*  array;
-    int size;
-    bool   ready;
+    void* array;
+    int   size;
+    bool  ready;
 } ecs_comp_t;
 
 typedef struct
@@ -424,7 +432,7 @@ typedef struct
     ecs_sparse_set_t entity_ids;
     ecs_update_fn    update_cb;
     ecs_match_t      match;
-    ecs_bitset_t     comp_bits;
+    bitset_t         comp_bits;
     void*            udata;
 } ecs_sys_t;
 
@@ -448,8 +456,17 @@ static void ecs_flush_destroyed(ecs_t* ecs);
 /*=============================================================================
  * Internal bit set functions
  *============================================================================*/
-static ecs_bitset_t ecs_bitset_flip(ecs_bitset_t set, int bit, bool on);
-static bool         ecs_bitset_test(ecs_bitset_t set, int bit);
+//static ecs_bitset_t ecs_bitset_flip(ecs_bitset_t set, int bit, bool on);
+//static bool         ecs_bitset_test(ecs_bitset_t set, int bit);
+
+/*=============================================================================
+ * Internal bit set functions
+ *============================================================================*/
+static bitset_t bitset_flip(bitset_t set, int bit, bool on);
+static bitset_t bitset_and(bitset_t set1, bitset_t set2);
+static bool     bitset_test(bitset_t set, int bit);
+static bool     bitset_equal(bitset_t set1, bitset_t set2);
+static bool     bitset_true(bitset_t set);
 
 /*=============================================================================
  * Internal sparse set functions
@@ -463,8 +480,8 @@ static void     ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
  * Internal system entity add/remove functions
  *============================================================================*/
 static bool ecs_entity_system_test(ecs_match_t match,
-                                   ecs_bitset_t sys_bits,
-                                   ecs_bitset_t entity_bits);
+                                   bitset_t sys_bits,
+                                   bitset_t entity_bits);
 
 static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id);
 
@@ -595,7 +612,7 @@ void ecs_match_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id)
     ecs_sys_t* sys = &ecs->systems[sys_id];
 
     // Set system component bit for the specified component
-    sys->comp_bits = ecs_bitset_flip(sys->comp_bits, comp_id, true);
+    sys->comp_bits = bitset_flip(sys->comp_bits, comp_id, true);
 }
 
 void ecs_enable_system(ecs_t* ecs, ecs_id_t sys_id)
@@ -686,7 +703,7 @@ bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
     // Return true if the component belongs to the entity
-    return ecs_bitset_test(entity->comp_bits, comp_id);
+    return bitset_test(entity->comp_bits, comp_id);
 }
 
 void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
@@ -716,7 +733,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 
     // Set entity component bit that determines which systems this entity
     // belongs to
-    entity->comp_bits = ecs_bitset_flip(entity->comp_bits, comp_id, true);
+    entity->comp_bits = bitset_flip(entity->comp_bits, comp_id, true);
 
     // Return pointer to component
     return ecs_get(ecs, entity_id, comp_id);
@@ -734,7 +751,7 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
     // Reset the relevant component mask bit
-    entity->comp_bits = ecs_bitset_flip(entity->comp_bits, comp_id, false);
+    entity->comp_bits = bitset_flip(entity->comp_bits, comp_id, false);
 }
 
 void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)
@@ -743,7 +760,7 @@ void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)
     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
-    ecs_bitset_t entity_bits = ecs->entities[entity_id].comp_bits;
+    bitset_t entity_bits = ecs->entities[entity_id].comp_bits;
 
     for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
     {
@@ -845,21 +862,59 @@ static void ecs_flush_destroyed(ecs_t* ecs)
  * Internal bitset functions
  *============================================================================*/
 
-static ecs_bitset_t ecs_bitset_flip(ecs_bitset_t set, int bit, bool on)
+static bitset_t bitset_flip(bitset_t set, int bit, bool on)
 {
+    int index = bit / BITSET_WIDTH;
+
     if (on)
-        set |=  (1 << bit);
+        set.array[index] |=  (1 << bit % BITSET_WIDTH);
     else
-        set &= ~(1 << bit);
+        set.array[index] &= ~(1 << bit % BITSET_WIDTH);
 
     return set;
 }
 
-static bool ecs_bitset_test(ecs_bitset_t set, int bit)
+static bitset_t bitset_and(bitset_t set1, bitset_t set2)
 {
-    return set & (1 << bit);
+    bitset_t set;
+
+    for (int i = 0; i < BITSET_SIZE; i++)
+    {
+        set.array[i] = set1.array[i] & set2.array[i];
+    }
+
+    return set;
 }
 
+static bool bitset_test(bitset_t set, int bit)
+{
+    int index = bit / BITSET_WIDTH;
+    return set.array[index] & (1 << bit % BITSET_WIDTH);
+}
+
+static bool bitset_equal(bitset_t set1, bitset_t set2)
+{
+    for (int i = 0; i < BITSET_SIZE; i++)
+    {
+        if (set1.array[i] != set2.array[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool bitset_true(bitset_t set)
+{
+    for (int i = 0; i < BITSET_SIZE; i++)
+    {
+        if (set.array[i])
+            return true;
+    }
+
+    return false;
+}
 /*=============================================================================
  * Internal sparse set functions
  *============================================================================*/
@@ -919,8 +974,8 @@ static void ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
  *============================================================================*/
 
 inline static bool ecs_entity_system_test(ecs_match_t match,
-                                          ecs_bitset_t sys_bits,
-                                          ecs_bitset_t entity_bits)
+                                          bitset_t sys_bits,
+                                          bitset_t entity_bits)
 {
     switch (match)
     {
@@ -931,18 +986,19 @@ inline static bool ecs_entity_system_test(ecs_match_t match,
             return true;
 
         case ECS_MATCH_ANY:
-            return sys_bits & entity_bits;
+            return bitset_true(bitset_and(sys_bits, entity_bits));
 
         case ECS_MATCH_REQUIRED:
-            return sys_bits == (sys_bits & entity_bits);
+            return bitset_equal(sys_bits, bitset_and(sys_bits, entity_bits));
 
         case ECS_MATCH_EXACT:
-            return sys_bits == entity_bits;
+            return bitset_equal(sys_bits, entity_bits);
 
         default:
             ECS_ASSERT(false);
-            return false;
     }
+
+    return false;
 }
 
 static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)
@@ -955,7 +1011,7 @@ static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)
             continue;
 
         ecs_sys_t* sys = &ecs->systems[sys_id];
-        ecs_bitset_t entity_bits = ecs->entities[entity_id].comp_bits;
+        bitset_t entity_bits = ecs->entities[entity_id].comp_bits;
 
         if (ecs_entity_system_test(sys->match, sys->comp_bits, entity_bits))
             ecs_sparse_set_remove(&sys->entity_ids, entity_id);
