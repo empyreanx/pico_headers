@@ -407,7 +407,7 @@ typedef struct
 typedef struct
 {
     ecs_bitset_t comp_bits;
-    bool     ready;
+    bool         ready;
 } ecs_entity_t;
 
 typedef struct
@@ -424,7 +424,7 @@ typedef struct
     ecs_sparse_set_t entity_ids;
     ecs_update_fn    update_cb;
     ecs_match_t      match;
-    ecs_bitset_t         comp_bits;
+    ecs_bitset_t     comp_bits;
     void*            udata;
 } ecs_sys_t;
 
@@ -448,11 +448,11 @@ static void ecs_flush_destroyed(ecs_t* ecs);
 /*=============================================================================
  * Internal bit set functions
  *============================================================================*/
-static inline void     ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on);
-static inline bool     ecs_bitset_test(ecs_bitset_t* set, int bit);
+static inline void  ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on);
+static inline bool  ecs_bitset_test(ecs_bitset_t* set, int bit);
 static inline ecs_bitset_t ecs_bitset_and(ecs_bitset_t* set1, ecs_bitset_t* set2);
-static inline bool     ecs_bitset_equal(ecs_bitset_t* set1, ecs_bitset_t* set2);
-static inline bool     ecs_bitset_true(ecs_bitset_t* set);
+static inline bool  ecs_bitset_equal(ecs_bitset_t* set1, ecs_bitset_t* set2);
+static inline bool  ecs_bitset_true(ecs_bitset_t* set);
 
 /*=============================================================================
  * Internal sparse set functions
