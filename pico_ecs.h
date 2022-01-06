@@ -379,14 +379,6 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
  * Internal data structures
  *============================================================================*/
 
-/*#if ECS_MAX_COMPONENTS <= 32
-   typedef uint32_t ecs_bitset_t;
-#elif ECS_MAX_COMPONENTS <= 64
-   typedef uint64_t ecs_bitset_t;
-#else
-    #error "Too many components"
-#endif*/
-
 #define BITSET_WIDTH 32
 #define BITSET_SIZE  ((ECS_MAX_COMPONENTS / BITSET_WIDTH) + 1)
 
@@ -458,7 +450,6 @@ static void ecs_flush_destroyed(ecs_t* ecs);
  *============================================================================*/
 static inline void     bitset_flip(bitset_t* set, int bit, bool on);
 static inline bool     bitset_test(bitset_t* set, int bit);
-
 static inline bitset_t bitset_and(bitset_t* set1, bitset_t* set2);
 static inline bool     bitset_equal(bitset_t* set1, bitset_t* set2);
 static inline bool     bitset_true(bitset_t* set);
@@ -765,9 +756,13 @@ void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)
         ecs_sys_t* sys = &ecs->systems[sys_id];
 
         if (ecs_entity_system_test(sys->match, &sys->comp_bits, entity_bits))
+        {
             ecs_sparse_set_add(&sys->entity_ids, entity_id);
+        }
         else
+        {
             ecs_sparse_set_remove(&sys->entity_ids, entity_id);
+        }
     }
 }
 
@@ -970,8 +965,6 @@ inline static bool ecs_entity_system_test(ecs_match_t match,
                                           bitset_t* sys_bits,
                                           bitset_t* entity_bits)
 {
-    bitset_t tmp;
-
     switch (match)
     {
         case ECS_MATCH_NONE:
@@ -981,21 +974,24 @@ inline static bool ecs_entity_system_test(ecs_match_t match,
             return true;
 
         case ECS_MATCH_ANY:
-            tmp = bitset_and(sys_bits, entity_bits);
+        {
+            bitset_t tmp = bitset_and(sys_bits, entity_bits);
             return bitset_true(&tmp);
+        }
 
         case ECS_MATCH_REQUIRED:
-            tmp = bitset_and(sys_bits, entity_bits);
+        {
+            bitset_t tmp = bitset_and(sys_bits, entity_bits);
             return bitset_equal(sys_bits, &tmp);
+        }
 
         case ECS_MATCH_EXACT:
             return bitset_equal(sys_bits, entity_bits);
 
         default:
             ECS_ASSERT(false);
+            return false;
     }
-
-    return false;
 }
 
 static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)
@@ -1008,10 +1004,10 @@ static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)
             continue;
 
         ecs_sys_t* sys = &ecs->systems[sys_id];
-        bitset_t* entity_bits = &ecs->entities[entity_id].comp_bits;
 
-        if (ecs_entity_system_test(sys->match, &sys->comp_bits, entity_bits))
-            ecs_sparse_set_remove(&sys->entity_ids, entity_id);
+        // Just attempting to remove the entity from the sparse set is faster
+        // than calling ecs_entity_system_test
+        ecs_sparse_set_remove(&sys->entity_ids, entity_id);
     }
 }
 
