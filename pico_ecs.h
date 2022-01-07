@@ -380,17 +380,17 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
  *============================================================================*/
 
 #if ECS_MAX_COMPONENTS <= 32
-    typedef uint32_t ecs_bitset_t;
+typedef uint32_t ecs_bitset_t;
 #elif ECS_MAX_COMPONENTS <= 64
-    typedef uint64_t ecs_bitset_t;
+typedef uint64_t ecs_bitset_t;
 #else
-    #define ECS_BITSET_WIDTH 32
-    #define ECS_BITSET_SIZE (((ECS_MAX_COMPONENTS - 1) / ECS_BITSET_WIDTH) + 1)
+#define ECS_BITSET_WIDTH 32
+#define ECS_BITSET_SIZE (((ECS_MAX_COMPONENTS - 1) / ECS_BITSET_WIDTH) + 1)
 
-    typedef struct
-    {
-        uint32_t array[ECS_BITSET_SIZE];
-    } ecs_bitset_t;
+typedef struct
+{
+    uint32_t array[ECS_BITSET_SIZE];
+} ecs_bitset_t;
 #endif // ECS_MAX_COMPONENTS
 
 // Data-structure for a packed array implementation that provides O(1) functions
