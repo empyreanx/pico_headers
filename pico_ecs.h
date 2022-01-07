@@ -379,13 +379,19 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
  * Internal data structures
  *============================================================================*/
 
-#define ECS_BITSET_WIDTH 32
-#define ECS_BITSET_SIZE (((ECS_MAX_COMPONENTS - 1) / ECS_BITSET_WIDTH) + 1) //FIXME?
+#if ECS_MAX_COMPONENTS <= 32
+    typedef uint32_t ecs_bitset_t;
+#elif ECS_MAX_COMPONENTS <= 64
+    typedef uint64_t ecs_bitset_t;
+#else
+    #define ECS_BITSET_WIDTH 32
+    #define ECS_BITSET_SIZE (((ECS_MAX_COMPONENTS - 1) / ECS_BITSET_WIDTH) + 1)
 
-typedef struct
-{
-    uint32_t array[ECS_BITSET_SIZE];
-} ecs_bitset_t;
+    typedef struct
+    {
+        uint32_t array[ECS_BITSET_SIZE];
+    } ecs_bitset_t;
+#endif // ECS_MAX_COMPONENTS
 
 // Data-structure for a packed array implementation that provides O(1) functions
 // for adding, removing, and accessing entity IDs
@@ -852,6 +858,38 @@ static void ecs_flush_destroyed(ecs_t* ecs)
  * Internal bitset functions
  *============================================================================*/
 
+#if ECS_MAX_COMPONENTS <= 64
+
+static inline void ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on)
+{
+    if (on)
+        *set |=  (1 << bit);
+    else
+        *set &= ~(1 << bit);
+}
+
+static inline bool ecs_bitset_test(ecs_bitset_t* set, int bit)
+{
+    return *set & (1 << bit);
+}
+
+static inline ecs_bitset_t ecs_bitset_and(ecs_bitset_t* set1, ecs_bitset_t* set2)
+{
+    return *set1 & *set2;
+}
+
+static inline bool ecs_bitset_equal(ecs_bitset_t* set1, ecs_bitset_t* set2)
+{
+    return *set1 == *set2;
+}
+
+static inline bool ecs_bitset_true(ecs_bitset_t* set)
+{
+    return *set;
+}
+
+#else // ECS_MAX_COMPONENTS
+
 static inline void ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on)
 {
     int index = bit / ECS_BITSET_WIDTH;
@@ -903,6 +941,9 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set)
 
     return false;
 }
+
+#endif // ECS_MAX_COMPONENTS
+
 /*=============================================================================
  * Internal sparse set functions
  *============================================================================*/
