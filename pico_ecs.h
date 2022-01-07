@@ -384,12 +384,12 @@ typedef uint32_t ecs_bitset_t;
 #elif ECS_MAX_COMPONENTS <= 64
 typedef uint64_t ecs_bitset_t;
 #else
-#define ECS_BITSET_WIDTH 32
+#define ECS_BITSET_WIDTH 64
 #define ECS_BITSET_SIZE (((ECS_MAX_COMPONENTS - 1) / ECS_BITSET_WIDTH) + 1)
 
 typedef struct
 {
-    uint32_t array[ECS_BITSET_SIZE];
+    uint64_t array[ECS_BITSET_SIZE];
 } ecs_bitset_t;
 #endif // ECS_MAX_COMPONENTS
 
