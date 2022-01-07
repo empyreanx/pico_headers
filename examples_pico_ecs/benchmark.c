@@ -461,6 +461,7 @@ int main()
 }
 
 //#define ECS_DEBUG
+#define ECS_MAX_COMPONENTS 64
 #define ECS_IMPLEMENTATION
 #include "../pico_ecs.h"
 
