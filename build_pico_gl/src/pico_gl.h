@@ -216,47 +216,47 @@ typedef struct
 /**
  * @brief 2D floating point vector
  */
-typedef float pgl_v2f[2];
+typedef float pgl_v2f_t[2];
 
 /**
  * @brief 3D floating point vector
  */
-typedef float pgl_v3f[3];
+typedef float pgl_v3f_t[3];
 
 /**
  * @brief 4D floating point vector
  */
-typedef float pgl_v4f[4];
+typedef float pgl_v4f_t[4];
 
 /**
  * @brief 2D integer vector
  */
-typedef int32_t pgl_v2i[2];
+typedef int32_t pgl_v2i_t[2];
 
 /**
  * @brief 3D integer vector
  */
-typedef int32_t pgl_v3i[3];
+typedef int32_t pgl_v3i_t[3];
 
 /**
  * @brief 4D integer vector
  */
-typedef int32_t pgl_v4i[4];
+typedef int32_t pgl_v4i_t[4];
 
 /**
  * @brief 2x2 floating point matrix
  */
-typedef float pgl_m2[4];
+typedef float pgl_m2_t[4];
 
 /**
  * @brief 3x3 floating point matrix
  */
-typedef float pgl_m3[9];
+typedef float pgl_m3_t[9];
 
 /**
  * @brief 4x4 floating point matrix
  */
-typedef float pgl_m4[16];
+typedef float pgl_m4_t[16];
 
 /**
  * @brief Contains core data/state for an instance of the renderer
@@ -583,7 +583,7 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx);
  * @param ctx The relevant context
  * @param transform The global transform matrix
  */
-void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m3 matrix);
+void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix);
 
 /**
  * @brief Resets the context's transform to the identity matrix
@@ -598,7 +598,7 @@ void pgl_reset_transform(pgl_ctx_t* ctx);
  * @param ctx The relevant context
  * @param transform The global projection matrix
  */
-void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m3 matrix);
+void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix);
 
 /**
  * @brief Resets the context's project to the identity matrix
@@ -725,7 +725,7 @@ void pgl_set_4i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
  * @param name The name of the uniform
  * @param vec The vector
  */
-void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i vec);
+void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i_t vec);
 
 /**
  * @brief Sets a 3D integer uniform by vector
@@ -734,7 +734,7 @@ void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i vec);
  * @param name The name of the uniform
  * @param vec The vector
  */
-void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i vec);
+void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i_t vec);
 
 /**
  * @brief Sets a 4D integer uniform by vector
@@ -743,7 +743,7 @@ void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i vec);
  * @param name The name of the uniform
  * @param vec The vector
  */
-void pgl_set_v4i(pgl_shader_t* shader, const char* name, const pgl_v4i vec);
+void pgl_set_v4i(pgl_shader_t* shader, const char* name, const pgl_v4i_t vec);
 
 /**
  * @brief Sets an floating point uniform
@@ -795,7 +795,7 @@ void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
  * @param name The name of the uniform
  * @param vec The vector
  */
-void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f vec);
+void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f_t vec);
 
 /**
  * @brief Sets a 3D floating point uniform by vector
@@ -804,7 +804,7 @@ void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f vec);
  * @param name The name of the uniform
  * @param vec The vector
  */
-void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f vec);
+void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f_t vec);
 
 /**
  * @brief Sets a 4D floating point uniform by vector
@@ -813,7 +813,7 @@ void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f vec);
  * @param name The name of the uniform
  * @param vec The vector
  */
-void pgl_set_v4f(pgl_shader_t* shader, const char* name, const pgl_v4f vec);
+void pgl_set_v4f(pgl_shader_t* shader, const char* name, const pgl_v4f_t vec);
 
 /**
  * @brief Sends an array of floating point numbers
@@ -838,7 +838,7 @@ void pgl_set_a1f(pgl_shader_t* shader,
  */
 void pgl_set_a2f(pgl_shader_t* shader,
                  const char* name,
-                 const pgl_v2f array[],
+                 const pgl_v2f_t array[],
                  pgl_size_t count);
 
 /**
@@ -851,7 +851,7 @@ void pgl_set_a2f(pgl_shader_t* shader,
  */
 void pgl_set_a3f(pgl_shader_t* shader,
                  const char* name,
-                 const pgl_v3f array[],
+                 const pgl_v3f_t array[],
                  pgl_size_t count);
 
 /**
@@ -864,7 +864,7 @@ void pgl_set_a3f(pgl_shader_t* shader,
  */
 void pgl_set_a4f(pgl_shader_t* shader,
                  const char* name,
-                 const pgl_v4f array[],
+                 const pgl_v4f_t array[],
                  pgl_size_t count);
 
 /**
@@ -874,7 +874,7 @@ void pgl_set_a4f(pgl_shader_t* shader,
  * @param name The name of the uniform
  * @param matrix The matrix
  */
-void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2 matrix);
+void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2_t matrix);
 
 /**
  * @brief Sets a 3x3 floating point matrix
@@ -883,7 +883,7 @@ void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2 matrix);
  * @param name The name of the uniform
  * @param matrix The matrix
  */
-void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3 matrix);
+void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3_t matrix);
 
 /**
  * @brief Sets a 4x4 floating point matrix
@@ -892,7 +892,7 @@ void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3 matrix);
  * @param name The name of the uniform
  * @param matrix The matrix
  */
-void pgl_set_m4(pgl_shader_t* shader, const char* name, const pgl_m4 matrix);
+void pgl_set_m4(pgl_shader_t* shader, const char* name, const pgl_m4_t matrix);
 
 /**
  * @brief Sets a 2D sampler uniform
@@ -1059,8 +1059,8 @@ typedef struct
 typedef struct
 {
     pgl_blend_mode_t blend_mode;
-    pgl_m3           transform;
-    pgl_m3           projection;
+    pgl_m3_t         transform;
+    pgl_m3_t         projection;
     pgl_viewport_t   viewport;
     float            line_width;
 } pgl_state_t;
@@ -1095,8 +1095,8 @@ static pgl_state_t* pgl_get_active_state(pgl_ctx_t* ctx);
 static void pgl_reset_last_state(pgl_ctx_t* ctx);
 
 static void pgl_apply_blend(pgl_ctx_t* ctx, const pgl_blend_mode_t* mode);
-static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m3 matrix);
-static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m3 matrix);
+static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix);
+static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix);
 static void pgl_apply_viewport(pgl_ctx_t* ctx, const pgl_viewport_t* viewport);
 
 static void pgl_before_draw(pgl_ctx_t* ctx, pgl_texture_t* texture, pgl_shader_t* shader);
@@ -1885,44 +1885,44 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx)
     state->blend_mode = mode;
 }
 
-void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m3 matrix)
+void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 {
     pgl_state_t* state = pgl_get_active_state(ctx);
-    memcpy(state->transform, matrix, sizeof(pgl_m3));
+    memcpy(state->transform, matrix, sizeof(pgl_m3_t));
 }
 
 void pgl_reset_transform(pgl_ctx_t* ctx)
 {
     pgl_state_t* state = pgl_get_active_state(ctx);
 
-    const pgl_m3 matrix =
+    const pgl_m3_t matrix =
     {
         1.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f
     };
 
-    memcpy(state->transform, matrix, sizeof(pgl_m3));
+    memcpy(state->transform, matrix, sizeof(pgl_m3_t));
 }
 
-void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m3 matrix)
+void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 {
     pgl_state_t* state = pgl_get_active_state(ctx);
-    memcpy(state->projection, matrix, sizeof(pgl_m3));
+    memcpy(state->projection, matrix, sizeof(pgl_m3_t));
 }
 
 void pgl_reset_projection(pgl_ctx_t* ctx)
 {
     pgl_state_t* state = pgl_get_active_state(ctx);
 
-    const pgl_m3 matrix =
+    const pgl_m3_t matrix =
     {
         1.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f
     };
 
-    memcpy(state->projection, matrix, sizeof(pgl_m3));
+    memcpy(state->projection, matrix, sizeof(pgl_m3_t));
 }
 
 void pgl_set_viewport(pgl_ctx_t* ctx, int32_t x, int32_t y,
@@ -2051,20 +2051,20 @@ void pgl_set_4i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
     PGL_CHECK(glUniform4i(uniform->location, a, b, c, d));
 }
 
-void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i vec)
+void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i_t vec)
 {
     PGL_ASSERT(NULL != shader);
     pgl_set_2i(shader, name, vec[0], vec[1]);
 }
 
-void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i vec)
+void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i_t vec)
 {
     PGL_ASSERT(NULL != shader);
     pgl_set_3i(shader, name, vec[0], vec[1], vec[2]);
 }
 
 
-void pgl_set_v4i(pgl_shader_t* shader, const char* name, const pgl_v4i vec)
+void pgl_set_v4i(pgl_shader_t* shader, const char* name, const pgl_v4i_t vec)
 {
     PGL_ASSERT(NULL != shader);
     pgl_set_4i(shader, name, vec[0], vec[1], vec[2], vec[3]);
@@ -2123,19 +2123,19 @@ void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
     PGL_CHECK(glUniform4f(uniform->location, x, y, z, w));
 }
 
-void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f vec)
+void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f_t vec)
 {
     PGL_ASSERT(NULL != shader);
     pgl_set_2f(shader, name, vec[0], vec[1]);
 }
 
-void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f vec)
+void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f_t vec)
 {
     PGL_ASSERT(NULL != shader);
     pgl_set_3f(shader, name, vec[0], vec[1], vec[2]);
 }
 
-void pgl_set_v4f(pgl_shader_t* shader, const char* name, const pgl_v4f vec)
+void pgl_set_v4f(pgl_shader_t* shader, const char* name, const pgl_v4f_t vec)
 {
     PGL_ASSERT(NULL != shader);
     pgl_set_4f(shader, name, vec[0], vec[1], vec[2], vec[3]);
@@ -2159,7 +2159,7 @@ void pgl_set_a1f(pgl_shader_t* shader,
 
 void pgl_set_a2f(pgl_shader_t* shader,
                 const char* name,
-                const pgl_v2f* vec,
+                const pgl_v2f_t* vec,
                 pgl_size_t count)
 {
     PGL_ASSERT(NULL != shader);
@@ -2184,7 +2184,7 @@ void pgl_set_a2f(pgl_shader_t* shader,
 
 void pgl_set_a3f(pgl_shader_t* shader,
                 const char* name,
-                const pgl_v3f* vec,
+                const pgl_v3f_t* vec,
                 pgl_size_t count)
 {
     PGL_ASSERT(NULL != shader);
@@ -2209,7 +2209,7 @@ void pgl_set_a3f(pgl_shader_t* shader,
 
 void pgl_set_a4f(pgl_shader_t* shader,
                 const char* name,
-                const pgl_v4f* vec,
+                const pgl_v4f_t* vec,
                 pgl_size_t count)
 {
     PGL_ASSERT(NULL != shader);
@@ -2233,7 +2233,7 @@ void pgl_set_a4f(pgl_shader_t* shader,
     PGL_CHECK(glUniform4fv(uniform->location, count, values));
 }
 
-void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2 matrix)
+void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2_t matrix)
 {
     PGL_ASSERT(NULL != shader);
 
@@ -2246,7 +2246,7 @@ void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2 matrix)
     PGL_CHECK(glUniformMatrix2fv(uniform->location, uniform->size, shader->ctx->transpose, (float*)matrix));
 }
 
-void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3 matrix)
+void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3_t matrix)
 {
     PGL_ASSERT(NULL != shader);
 
@@ -2259,7 +2259,7 @@ void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3 matrix)
     PGL_CHECK(glUniformMatrix3fv(uniform->location, uniform->size, shader->ctx->transpose, (float*)matrix));
 }
 
-void pgl_set_m4(pgl_shader_t* shader, const char* name, const pgl_m4 matrix)
+void pgl_set_m4(pgl_shader_t* shader, const char* name, const pgl_m4_t matrix)
 {
     PGL_ASSERT(NULL != shader);
 
@@ -2374,21 +2374,21 @@ static void pgl_apply_blend(pgl_ctx_t* ctx, const pgl_blend_mode_t* mode)
                                       pgl_blend_eq_map[mode->alpha_eq]));
 }
 
-static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m3 matrix)
+static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 {
     PGL_ASSERT(NULL != ctx);
 
-    if (0 == memcmp(matrix, ctx->last_state.transform, sizeof(pgl_m3)))
+    if (0 == memcmp(matrix, ctx->last_state.transform, sizeof(pgl_m3_t)))
         return;
 
     pgl_set_m3(ctx->shader, "u_tr", matrix);
 }
 
-static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m3 matrix)
+static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 {
     PGL_ASSERT(NULL != ctx);
 
-    if (0 == memcmp(matrix, &ctx->last_state.projection, sizeof(pgl_m3)))
+    if (0 == memcmp(matrix, &ctx->last_state.projection, sizeof(pgl_m3_t)))
         return;
 
     pgl_set_m3(ctx->shader, "u_proj", matrix);

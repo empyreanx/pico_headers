@@ -175,7 +175,7 @@ void node_render(node_t* node, double alpha)
         pm_t2 render = pm_t2_lerp(&last, &world, alpha);
 
         // Update model-view
-        pgl_set_m3(shader, "u_tr", (pgl_m3)
+        pgl_set_m3(shader, "u_tr", (pgl_m3_t)
         {
             render.t00, render.t01, render.tx,
             render.t10, render.t11, render.ty,
@@ -406,7 +406,7 @@ int main(int argc, char *argv[])
     int w = app->screen_w;
     int h = app->screen_h;
 
-    pgl_set_projection(ctx, (pgl_m3)
+    pgl_set_projection(ctx, (pgl_m3_t)
     {
         2.0f / w, 0.0f,   -1.0f,
         0.0f,    -2.0 / h, 1.0f,
