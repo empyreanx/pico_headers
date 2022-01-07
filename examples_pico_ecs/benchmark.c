@@ -70,7 +70,7 @@ static void bench_end()
     teardown_fp();
 
 /*=============================================================================
- * Benchmarking function implementations
+ * Systems/components
  *============================================================================*/
 
 // System IDs
@@ -82,12 +82,6 @@ enum
     MovementSystem,
     ComflabSystem
 };
-
-/*enum
-{
-    MovementSystem,
-    ComflabSystem
-};*/
 
 // Component IDs
 enum {
@@ -116,6 +110,34 @@ typedef struct
     int dingy;
 } comflab_t;
 
+/*=============================================================================
+ * Setup / teardown functions
+ *============================================================================*/
+
+ecs_ret_t movement_update(ecs_t* ecs, ecs_id_t* entities,
+                          int entity_count, ecs_dt_t dt,
+                          void* udata);
+
+ecs_ret_t comflab_update(ecs_t* ecs, ecs_id_t* entities,
+                         int entity_count, ecs_dt_t dt,
+                         void* udata);
+
+ecs_ret_t movement_update(ecs_t* ecs, ecs_id_t* entities,
+                          int entity_count, ecs_dt_t dt,
+                          void* udata);
+
+ecs_ret_t iterate_assign_update(ecs_t* ecs, ecs_id_t* entities,
+                                int entity_count, ecs_dt_t dt,
+                                void* udata);
+
+ecs_ret_t queue_sync_update(ecs_t* ecs, ecs_id_t* entities,
+                            int entity_count, ecs_dt_t dt,
+                            void* udata);
+
+ecs_ret_t queue_destroy_update(ecs_t* ecs, ecs_id_t* entities,
+                               int entity_count, ecs_dt_t dt,
+                               void* udata);
+
 static void setup()
 {
     // Create ECS instance
@@ -126,6 +148,96 @@ static void setup()
     ecs_register_component(ecs, RectComponent, sizeof(rect_t));
 }
 
+static void setup_abeimler()
+{
+    ecs = ecs_new(NULL);
+
+    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
+    ecs_register_component(ecs, DirComponent, sizeof(v2d_t));
+    ecs_register_component(ecs, ComflabComponent, sizeof(comflab_t));
+
+    ecs_register_system(ecs, MovementSystem, movement_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_match_component(ecs, MovementSystem, PosComponent);
+    ecs_match_component(ecs, MovementSystem, DirComponent);
+
+    ecs_register_system(ecs, ComflabSystem, comflab_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_match_component(ecs, ComflabSystem, ComflabComponent);
+
+    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
+    {
+        // Create entity
+        ecs_id_t id = ecs_create(ecs);
+
+        // Add components
+        v2d_t* pos = ecs_add(ecs, id, PosComponent);
+        v2d_t* dir = ecs_add(ecs, id, DirComponent);
+
+        if (i % 2 == 0)
+        {
+            comflab_t* comflab = ecs_add(ecs, id, ComflabComponent);
+            *comflab = (comflab_t){ 0 };
+        }
+
+        // Set concrete component values
+        *pos  = (v2d_t) { 0 };
+        *dir  = (v2d_t) { 0 };
+
+        // Adds entity to systems
+        ecs_sync(ecs, id);
+    }
+}
+
+// Runs after benchmark function
+static void teardown()
+{
+    // Destroy ECS instance
+    ecs_free(ecs);
+    ecs = NULL;
+}
+
+// Runs before benchmark function
+static void setup_with_entities()
+{
+    // Create ECS instance
+    ecs = ecs_new(NULL);
+
+    // Register two new components
+    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
+    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
+
+    ecs_register_system(ecs, IterateSystem, iterate_assign_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_match_component(ecs, IterateSystem, PosComponent);
+    ecs_match_component(ecs, IterateSystem, RectComponent);
+
+    ecs_register_system(ecs, QueueSyncSystem, queue_sync_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_match_component(ecs, QueueSyncSystem, PosComponent);
+    ecs_match_component(ecs, QueueSyncSystem, RectComponent);
+
+    ecs_register_system(ecs, QueueDestroySystem, queue_destroy_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_match_component(ecs, QueueDestroySystem, PosComponent);
+    ecs_match_component(ecs, QueueDestroySystem, RectComponent);
+
+    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
+    {
+        // Create entity
+        ecs_id_t id = ecs_create(ecs);
+
+        // Add components
+        v2d_t*  pos  = (v2d_t*)ecs_add(ecs, id, PosComponent);
+        rect_t* rect = (rect_t*)ecs_add(ecs, id, RectComponent);
+
+        // Set concrete component values
+        *pos  = (v2d_t) { 1, 2 };
+        *rect = (rect_t){ 1, 2, 3, 4 };
+
+        // Adds entity to systems
+        ecs_sync(ecs, id);
+    }
+}
+
+/*=============================================================================
+ * Update function callbacks
+ *============================================================================*/
 
 // System update function that iterates over the entities and assigns values to
 // their components
@@ -191,46 +303,6 @@ ecs_ret_t queue_destroy_update(ecs_t* ecs,
     return 0;
 }
 
-// Runs before benchmark function
-static void setup_with_entities()
-{
-    // Create ECS instance
-    ecs = ecs_new(NULL);
-
-    // Register two new components
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
-    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
-
-    ecs_register_system(ecs, IterateSystem, iterate_assign_update, ECS_MATCH_REQUIRED, NULL);
-    ecs_match_component(ecs, IterateSystem, PosComponent);
-    ecs_match_component(ecs, IterateSystem, RectComponent);
-
-    ecs_register_system(ecs, QueueSyncSystem, queue_sync_update, ECS_MATCH_REQUIRED, NULL);
-    ecs_match_component(ecs, QueueSyncSystem, PosComponent);
-    ecs_match_component(ecs, QueueSyncSystem, RectComponent);
-
-    ecs_register_system(ecs, QueueDestroySystem, queue_destroy_update, ECS_MATCH_REQUIRED, NULL);
-    ecs_match_component(ecs, QueueDestroySystem, PosComponent);
-    ecs_match_component(ecs, QueueDestroySystem, RectComponent);
-
-    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
-    {
-        // Create entity
-        ecs_id_t id = ecs_create(ecs);
-
-        // Add components
-        v2d_t*  pos  = (v2d_t*)ecs_add(ecs, id, PosComponent);
-        rect_t* rect = (rect_t*)ecs_add(ecs, id, RectComponent);
-
-        // Set concrete component values
-        *pos  = (v2d_t) { 1, 2 };
-        *rect = (rect_t){ 1, 2, 3, 4 };
-
-        // Adds entity to systems
-        ecs_sync(ecs, id);
-    }
-}
-
 ecs_ret_t movement_update(ecs_t* ecs,
                           ecs_id_t* entities,
                           int entity_count,
@@ -277,53 +349,9 @@ ecs_ret_t comflab_update(ecs_t* ecs,
     return 0;
 }
 
-
-static void setup_abeimler()
-{
-    ecs = ecs_new(NULL);
-
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
-    ecs_register_component(ecs, DirComponent, sizeof(v2d_t));
-    ecs_register_component(ecs, ComflabComponent, sizeof(comflab_t));
-
-    ecs_register_system(ecs, MovementSystem, movement_update, ECS_MATCH_REQUIRED, NULL);
-    ecs_match_component(ecs, MovementSystem, PosComponent);
-    ecs_match_component(ecs, MovementSystem, DirComponent);
-
-    ecs_register_system(ecs, ComflabSystem, comflab_update, ECS_MATCH_REQUIRED, NULL);
-    ecs_match_component(ecs, ComflabSystem, ComflabComponent);
-
-    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
-    {
-        // Create entity
-        ecs_id_t id = ecs_create(ecs);
-
-        // Add components
-        v2d_t* pos = ecs_add(ecs, id, PosComponent);
-        v2d_t* dir = ecs_add(ecs, id, DirComponent);
-
-        if (i % 2 == 0)
-        {
-            comflab_t* comflab = ecs_add(ecs, id, ComflabComponent);
-            *comflab = (comflab_t){ 0 };
-        }
-
-        // Set concrete component values
-        *pos  = (v2d_t) { 0 };
-        *dir  = (v2d_t) { 0 };
-
-        // Adds entity to systems
-        ecs_sync(ecs, id);
-    }
-}
-
-// Runs after benchmark function
-static void teardown()
-{
-    // Destroy ECS instance
-    ecs_free(ecs);
-    ecs = NULL;
-}
+/*=============================================================================
+ * Benchmark functions
+ *============================================================================*/
 
 // Creates entity IDs as fast as possible
 static void bench_create()
@@ -461,6 +489,7 @@ int main()
 }
 
 //#define ECS_DEBUG
+#define ECS_MAX_COMPONENTS 64
 #define ECS_IMPLEMENTATION
 #include "../pico_ecs.h"
 
