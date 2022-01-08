@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 07/01/2022 12:13:52.
+/// WARNING: This file was automatically generated on 08/01/2022 13:32:45.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -106,8 +106,6 @@ typedef enum
     PGL_INVALID_ENUM,                  //!< Invalid enumeration value
     PGL_INVALID_VALUE,                 //!< Invalid value
     PGL_INVALID_OPERATION,             //!< Invalid operation
-    //PGL_STACK_OVERFLOW,                //!< Stack overflow
-    //PGL_STACK_UNDERFLOW,               //!< Stack underflow
     PGL_OUT_OF_MEMORY,                 //!< Out of memory
     PGL_INVALID_FRAMEBUFFER_OPERATION, //!< Invalid framebuffer operation
     PGL_FRAMEBUFFER_INCOMPLETE,        //!< Framebuffer is incomplete
@@ -3589,8 +3587,6 @@ static const char* pgl_error_msg_map[] =
     "Invalid enumeration value",
     "Invalid value",
     "Invalid operation",
-    //"Stack overflow",
-    //"Stack underflow",
     "Out of memory",
     "Invalid framebuffer operation",
     "Framebuffer is incomplete",
@@ -5229,8 +5225,6 @@ static pgl_error_t pgl_map_error(GLenum id)
         case GL_INVALID_ENUM:      return PGL_INVALID_ENUM;
         case GL_INVALID_VALUE:     return PGL_INVALID_VALUE;
         case GL_INVALID_OPERATION: return PGL_INVALID_OPERATION;
-        //case GL_STACK_OVERFLOW:    return PGL_STACK_OVERFLOW;
-        //case GL_STACK_UNDERFLOW:   return PGL_STACK_UNDERFLOW;
         case GL_OUT_OF_MEMORY:     return PGL_OUT_OF_MEMORY;
         case GL_INVALID_FRAMEBUFFER_OPERATION:
         return PGL_INVALID_FRAMEBUFFER_OPERATION;
