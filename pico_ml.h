@@ -715,10 +715,10 @@ pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
         return pm_normalize_angle(pm_atan2(tmp.y, tmp.x));
     }
 
-   // Calculate angle
+    // Calculate angle
     pm_flt angle = pm_acos(dot) * alpha;
 
-    //Gram-Schmidt(construct a new vector 'v0' that is orthogonal to v1)
+    // Gram-Schmidt(construct a new vector 'v0' that is orthogonal to 'v1')
     pm_v2 v0  = pm_v2_sub(v2, pm_v2_scale(v1, dot));
     pm_v2_normalize(&v0);
 
