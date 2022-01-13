@@ -1,5 +1,5 @@
 /**
-    @file pico_ml.h
+    @file pico_math.h
     @brief A 2D math library for games
 
     ----------------------------------------------------------------------------

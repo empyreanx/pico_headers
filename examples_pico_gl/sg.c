@@ -31,7 +31,7 @@
 #include <SDL2/SDL.h>
 
 #define PM_IMPLEMENTATION
-#include "../pico_ml.h"
+#include "../pico_math.h"
 
 #define PGL_IMPLEMENTATION
 #include "../pico_gl.h"
