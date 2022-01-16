@@ -58,7 +58,16 @@
     > #include "pico_ml.h"
 
     to a source file (once), then simply include the header normally.
+
+    Todo:
+    -----
+    - pm_b2_zero
+    - pm_b2_transform
+    - pm_v2_floor/pm_v2_ceil
+    - pm_v2_min/pm_v2_max
+    - pm_t2_make2(pos, angle, scale)
 */
+
 #ifndef PICO_ML_H
 #define PICO_ML_H
 
@@ -904,6 +913,7 @@ pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
     return out;
 }
 
+// TODO: optimize this function (pm_v2_min/pm_2_max)
 pm_b2 pm_b2_min(const pm_v2* vertices, int count)
 {
     if (0 == count)
@@ -914,12 +924,12 @@ pm_b2 pm_b2_min(const pm_v2* vertices, int count)
     pm_flt max_x = vertices[0].x;
     pm_flt max_y = vertices[0].y;
 
-    for (int i = 0; i < count; i++)
+    for (int i = 1; i < count; i++)
     {
         if (vertices[i].x < min_x)
             min_x = vertices[i].x;
 
-        if (vertices[i].y < min_x)
+        if (vertices[i].y < min_y)
             min_y = vertices[i].y;
 
         if (vertices[i].x > max_x)
