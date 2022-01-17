@@ -732,7 +732,9 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     void* ptr = ecs_get(ecs, entity_id, comp_id);
 
     // Zero component
+    #ifndef ECS_NO_ZERO_COMPONENT
     memset(ptr, 0, ecs->comps[comp_id].size);
+    #endif
 
     // Return component
     return ptr;
