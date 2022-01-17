@@ -728,8 +728,14 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     // belongs to
     ecs_bitset_flip(&entity->comp_bits, comp_id, true);
 
-    // Return pointer to component
-    return ecs_get(ecs, entity_id, comp_id);
+    // Get pointer to component
+    void* ptr = ecs_get(ecs, entity_id, comp_id);
+
+    // Zero component
+    memset(ptr, 0, ecs->comps[comp_id].size);
+
+    // Return component
+    return ptr;
 }
 
 void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
