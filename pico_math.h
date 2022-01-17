@@ -162,7 +162,7 @@ typedef struct
  */
 typedef struct
 {
-    pm_flt x, y, w, h;
+    pm_v2 min, max;
 } pm_b2;
 
 /*==============================================================================
@@ -418,6 +418,21 @@ PM_INLINE pm_v2 pm_v2_polar(pm_flt len, pm_flt angle)
     return pm_v2_make(len * pm_cos(angle), len * pm_sin(angle));
 }
 
+PM_INLINE pm_v2 pm_v2_min(const pm_v2* v1, const pm_v2* v2)
+{
+    return pm_v2_make(pm_min(v1->x, v2->x), pm_min(v1->y, v2->y));
+}
+
+PM_INLINE pm_v2 pm_v2_ceil(const pm_v2* v)
+{
+    return pm_v2_make((v->x), pm_ceil(v->y));
+}
+
+PM_INLINE pm_v2 pm_v2_floor(const pm_v2* v)
+{
+    return pm_v2_make(pm_floor(v->x), pm_floor(v->y));
+}
+
 /*==============================================================================
  * 2D Affine Transforms
  *============================================================================*/
@@ -601,15 +616,23 @@ PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
  * 2D Box (Rectangle)
  *============================================================================*/
 
+
+PM_INLINE pm_b2 pm_b2_make_raw(pm_v2* min, pm_v2* max)
+{
+    pm_b2 out;
+    out.min = *min;
+    out.max = *max;
+    return out;
+}
+
 /**
  * @brief Constructs a 2D box (rectangle)
  */
 PM_INLINE pm_b2 pm_b2_make(pm_flt x, pm_flt y, pm_flt w, pm_flt h)
 {
-    pm_b2 out;
-    out.x = x; out.y = y;
-    out.w = w; out.h = h;
-    return out;
+    pm_v2 min = { x, y};
+    pm_v2 max = { x + w, y + h };
+    return pm_b2_make_raw(&min, &max);
 }
 
 /**
@@ -627,10 +650,15 @@ pm_b2 pm_b2_union(const pm_b2* b1, const pm_b2* b2);
  */
 PM_INLINE bool pm_b2_intersects(const pm_b2* b1, const pm_b2* b2)
 {
-    return b1->x + b1->w >= b2->x && // x + w
+    return b1->max.x >= b2->min.x &&
+           b1->max.y >= b2->min.y &&
+           b2->max.x >= b1->min.x &&
+           b2->max.y >= b1->min.y; // <-- might not be correct
+
+    /*return b1->x + b1->w >= b2->x && // x + w
            b1->y + b1->h >= b2->y && // y + h
            b2->x + b2->w >= b1->x && // x + w
-           b2->y + b2->h >= b2->y;   // y + h
+           b2->y + b2->h >= b2->y;   // y + h*/
 }
 
 /**
@@ -646,7 +674,10 @@ PM_INLINE bool pm_b2_contains(const pm_b2* b, pm_v2 v)
     pm_flt x = v.x;
     pm_flt y = v.y;
 
-    return x > b->x && y > b->y && x < b->x + b->w && y < b->y + b->h;
+    return x > b->min.x &&
+           y > b->min.y &&
+           x < b->max.x &&
+           y < b->max.y;
 }
 
 /**
@@ -654,7 +685,7 @@ PM_INLINE bool pm_b2_contains(const pm_b2* b, pm_v2 v)
  */
 PM_INLINE pm_flt pm_b2_area(const pm_b2* b)
 {
-    return b->w * b->h;
+    return (b->max.x - b->min.x) * (b->max.y - b->min.y);
 }
 
 /**
@@ -662,7 +693,8 @@ PM_INLINE pm_flt pm_b2_area(const pm_b2* b)
  */
 PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
 {
-    return pm_v2_make(b->x + b->w / 2.0f, b->y + b->h / 2.0f);
+    pm_v2 dim = pm_v2_scale(pm_v2_sub(b->max, b->min), 1.0f / 2.0f);
+    return pm_v2_add(dim, b->min);
 }
 
 /**
@@ -875,15 +907,13 @@ pm_t2 pm_t2_lerp(const pm_t2* t1, const pm_t2* t2, pm_flt alpha)
 
 bool pm_b2_equal(const pm_b2* b1, const pm_b2* b2)
 {
-    return pm_equal(b1->x, b2->x) &&
-           pm_equal(b1->y, b2->y) &&
-           pm_equal(b1->w, b2->w) &&
-           pm_equal(b1->h, b2->h);
+    return pm_v2_equal(&b1->min, &b2->min) && pm_v2_equal(&b1->max, &b2->max);
 }
 
 pm_b2 pm_b2_union(const pm_b2* b1, const pm_b2* b2)
 {
-    pm_flt x1 = pm_min(b1->x,  b2->x); // x
+
+/*    pm_flt x1 = pm_min(b1->x,  b2->x); // x
     pm_flt y1 = pm_min(b1->y,  b2->y); // y
     pm_flt x2 = pm_max(b1->x + b1->w, b2->x + b2->w); // x + w
     pm_flt y2 = pm_max(b1->y + b1->h, b2->y + b2->h); // y + h
@@ -894,6 +924,10 @@ pm_b2 pm_b2_union(const pm_b2* b1, const pm_b2* b2)
     out.w = x2 - x1;
     out.h = y2 - y1;
     return out;
+*/
+    pm_v2 min = pm_v2_min(&b1->min, &b2->min);
+    pm_v2 max = pm_v2_min(&b1->max, &b2->max);
+    return pm_b2_make_raw(&min, &max);
 }
 
 pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
@@ -901,7 +935,7 @@ pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
     if (!pm_b2_intersects(b1, b2))
         return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
 
-    pm_flt x1 = pm_max(b1->x,  b2->x); // x
+/*    pm_flt x1 = pm_max(b1->x,  b2->x); // x
     pm_flt y1 = pm_max(b1->y,  b2->y); // y
     pm_flt x2 = pm_min(b1->x + b1->w, b2->x + b2->w); // x + w
     pm_flt y2 = pm_min(b1->y + b1->h, b2->y + b2->h); // y + h
@@ -911,7 +945,12 @@ pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
     out.y = y1;
     out.w = x2 - x1;
     out.h = y2 - y1;
-    return out;
+
+    return out;*/
+
+    pm_v2 max = pm_v2_min(&b1->min, &b2->min);
+    pm_v2 min = pm_v2_min(&b1->max, &b2->max);
+    return pm_b2_make_raw(&min, &max);
 }
 
 // TODO: optimize this function (pm_v2_min/pm_2_max)
@@ -941,10 +980,10 @@ pm_b2 pm_b2_min(const pm_v2* vertices, int count)
     }
 
     pm_b2 out;
-    out.x = min_x;
+/*    out.x = min_x;
     out.y = min_y;
     out.w = pm_abs(max_x - min_x);
-    out.h = pm_abs(max_y - min_y);
+    out.h = pm_abs(max_y - min_y);*/
     return out;
 }
 
