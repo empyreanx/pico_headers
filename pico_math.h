@@ -435,19 +435,19 @@ PM_INLINE pm_v2 pm_v2_max(const pm_v2* v1, const pm_v2* v2)
 }
 
 /**
- * @brief Computes the component-wise ceiling of two vectors
- */
-PM_INLINE pm_v2 pm_v2_ceil(const pm_v2* v)
-{
-    return pm_v2_make(pm_ceil(v->x), pm_ceil(v->y));
-}
-
-/**
- * @brief Computes the component-wise floor of two vectors
+ * @brief Computes the component-wise floor of the specified vector
  */
 PM_INLINE pm_v2 pm_v2_floor(const pm_v2* v)
 {
     return pm_v2_make(pm_floor(v->x), pm_floor(v->y));
+}
+
+/**
+ * @brief Computes the component-wise ceiling of the specified vector
+ */
+PM_INLINE pm_v2 pm_v2_ceil(const pm_v2* v)
+{
+    return pm_v2_make(pm_ceil(v->x), pm_ceil(v->y));
 }
 
 /*==============================================================================
