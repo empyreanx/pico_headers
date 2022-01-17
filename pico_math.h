@@ -423,6 +423,12 @@ PM_INLINE pm_v2 pm_v2_min(const pm_v2* v1, const pm_v2* v2)
     return pm_v2_make(pm_min(v1->x, v2->x), pm_min(v1->y, v2->y));
 }
 
+PM_INLINE pm_v2 pm_v2_max(const pm_v2* v1, const pm_v2* v2)
+{
+    return pm_v2_make(pm_max(v1->x, v2->x), pm_max(v1->y, v2->y));
+}
+
+
 PM_INLINE pm_v2 pm_v2_ceil(const pm_v2* v)
 {
     return pm_v2_make((v->x), pm_ceil(v->y));
@@ -926,7 +932,7 @@ pm_b2 pm_b2_union(const pm_b2* b1, const pm_b2* b2)
     return out;
 */
     pm_v2 min = pm_v2_min(&b1->min, &b2->min);
-    pm_v2 max = pm_v2_min(&b1->max, &b2->max);
+    pm_v2 max = pm_v2_max(&b1->max, &b2->max);
     return pm_b2_make_raw(&min, &max);
 }
 
@@ -948,8 +954,8 @@ pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
 
     return out;*/
 
-    pm_v2 max = pm_v2_min(&b1->min, &b2->min);
-    pm_v2 min = pm_v2_min(&b1->max, &b2->max);
+    pm_v2 min = pm_v2_max(&b1->min, &b2->min);
+    pm_v2 max = pm_v2_min(&b1->max, &b2->max);
     return pm_b2_make_raw(&min, &max);
 }
 
