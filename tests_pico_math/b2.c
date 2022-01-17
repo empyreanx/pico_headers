@@ -140,12 +140,12 @@ PU_TEST(test_b2_transform)
     pm_b2 b = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
 
     pm_t2 t = pm_t2_identity();
-    pm_t2_translate(&t, pm_v2_make(-0.5, -0.5));
+    pm_t2_translate(&t, pm_v2_make(-0.5f, -0.5f));
     pm_t2_rotate(&t, -PM_PI / 4.0f);
 
     pm_b2 res = pm_b2_transform(&b, &t);
     pm_flt len = pm_sin(PM_PI / 4.0f);
-    pm_b2 exp = pm_b2_make(-len, -len, 2.0 * len, 2.0 * len);
+    pm_b2 exp = pm_b2_make(-len, -len, 2.0f * len, 2.0f * len);
 
     PU_ASSERT(pm_b2_equal(&res, &exp));
 

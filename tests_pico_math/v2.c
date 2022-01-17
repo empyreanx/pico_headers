@@ -197,6 +197,56 @@ PU_TEST(test_v2_polar)
     return true;
 }
 
+PU_TEST(test_v2_min)
+{
+    pm_v2 v1 = pm_v2_make(1.0f, 4.0f);
+    pm_v2 v2 = pm_v2_make(2.0f, 3.0f);
+
+    pm_v2 res = pm_v2_min(&v1, &v2);
+    pm_v2 exp = pm_v2_make(1.0f, 3.0f);
+
+    PU_ASSERT(pm_v2_equal(&res, &exp));
+
+    return true;
+}
+
+PU_TEST(test_v2_max)
+{
+    pm_v2 v1 = pm_v2_make(1.0f, 4.0f);
+    pm_v2 v2 = pm_v2_make(2.0f, 3.0f);
+
+    pm_v2 res = pm_v2_max(&v1, &v2);
+    pm_v2 exp = pm_v2_make(2.0f, 4.0f);
+
+    PU_ASSERT(pm_v2_equal(&res, &exp));
+
+    return true;
+}
+
+PU_TEST(test_v2_floor)
+{
+    pm_v2 v = pm_v2_make(1.2f, -4.5f);
+
+    pm_v2 res = pm_v2_floor(&v);
+    pm_v2 exp = pm_v2_make(1.0f, -5.0f);
+
+    PU_ASSERT(pm_v2_equal(&res, &exp));
+
+    return true;
+}
+
+PU_TEST(test_v2_ceil)
+{
+    pm_v2 v = pm_v2_make(1.2f, -4.5f);
+
+    pm_v2 res = pm_v2_ceil(&v);
+    pm_v2 exp = pm_v2_make(2.0f, -4.0f);
+
+    PU_ASSERT(pm_v2_equal(&res, &exp));
+
+    return true;
+}
+
 PU_SUITE(suite_v2)
 {
     PU_RUN_TEST(test_v2_equal);
@@ -213,4 +263,8 @@ PU_SUITE(suite_v2)
     PU_RUN_TEST(test_v2_dist);
     PU_RUN_TEST(test_v2_lerp);
     PU_RUN_TEST(test_v2_polar);
+    PU_RUN_TEST(test_v2_min);
+    PU_RUN_TEST(test_v2_max);
+    PU_RUN_TEST(test_v2_floor);
+    PU_RUN_TEST(test_v2_ceil);
 }

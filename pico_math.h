@@ -439,7 +439,7 @@ PM_INLINE pm_v2 pm_v2_max(const pm_v2* v1, const pm_v2* v2)
  */
 PM_INLINE pm_v2 pm_v2_ceil(const pm_v2* v)
 {
-    return pm_v2_make((v->x), pm_ceil(v->y));
+    return pm_v2_make(pm_ceil(v->x), pm_ceil(v->y));
 }
 
 /**
