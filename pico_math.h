@@ -61,14 +61,12 @@
 
     Todo:
     -----
-    - pm_b2_zero
-    - pm_b2_transform
-    - Test coverage for new code
-    - Docs for new code
+    - test coverage for new code
+    - docs for new code
 */
 
-#ifndef PICO_ML_H
-#define PICO_ML_H
+#ifndef PICO_MATH_H
+#define PICO_MATH_H
 
 #include <math.h>    // sqrt(f), cos(f), sin(f), atan2(f)...
 #include <stdbool.h> // bool, true, false
@@ -639,6 +637,21 @@ PM_INLINE pm_b2 pm_b2_make(pm_flt x, pm_flt y, pm_flt w, pm_flt h)
     return pm_b2_make_raw(&min, &max);
 }
 
+PM_INLINE pm_b2 pm_b2_zero()
+{
+    return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
+}
+
+PM_INLINE pm_v2 pm_b2_pos(const pm_b2* b)
+{
+    return b->min;
+}
+
+PM_INLINE pm_v2 pm_b2_size(const pm_b2* b)
+{
+    return pm_v2_sub(b->max, b->min);
+}
+
 /**
  * @brief Returns `true` if the bounding boxes are equal (within epsilon)
  */
@@ -703,6 +716,16 @@ PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
  */
 pm_b2 pm_b2_min(const pm_v2 verts[], int count);
 
+PM_INLINE pm_b2 pm_b2_transform(const pm_b2* b, const pm_t2* t)
+{
+    pm_b2 out;
+    out.min = pm_t2_map(t, b->min);
+    out.max = pm_t2_map(t, b->max);
+    return out;
+}
+
+
+
 #define PM_STATE_VECTOR_LEN 624
 
 /**
@@ -736,7 +759,7 @@ pm_flt pm_random_float(pm_rng_t* rng);
 }
 #endif
 
-#endif // PICO_ML_H
+#endif // PICO_MATH_H
 
 #ifdef PM_IMPLEMENTATION
 
