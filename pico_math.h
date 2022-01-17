@@ -61,8 +61,12 @@
 
     Todo:
     -----
-    - test coverage for new code
-    - docs for new code
+    - test/docs:
+    - pm_b2_min
+    - pm_b2_transform,
+    - pm_b2_pos/size,
+    - pm_v2_min/max
+    - pm_v2_floor/ceil
 */
 
 #ifndef PICO_MATH_H
@@ -414,22 +418,33 @@ PM_INLINE pm_v2 pm_v2_polar(pm_flt len, pm_flt angle)
     return pm_v2_make(len * pm_cos(angle), len * pm_sin(angle));
 }
 
+/**
+ * @brief Computes the component-wise minimum of two vectors
+ */
 PM_INLINE pm_v2 pm_v2_min(const pm_v2* v1, const pm_v2* v2)
 {
     return pm_v2_make(pm_min(v1->x, v2->x), pm_min(v1->y, v2->y));
 }
 
+/**
+ * @brief Computes the component-wise maximum of two vectors
+ */
 PM_INLINE pm_v2 pm_v2_max(const pm_v2* v1, const pm_v2* v2)
 {
     return pm_v2_make(pm_max(v1->x, v2->x), pm_max(v1->y, v2->y));
 }
 
-
+/**
+ * @brief Computes the component-wise ceiling of two vectors
+ */
 PM_INLINE pm_v2 pm_v2_ceil(const pm_v2* v)
 {
     return pm_v2_make((v->x), pm_ceil(v->y));
 }
 
+/**
+ * @brief Computes the component-wise floor of two vectors
+ */
 PM_INLINE pm_v2 pm_v2_floor(const pm_v2* v)
 {
     return pm_v2_make(pm_floor(v->x), pm_floor(v->y));
@@ -516,11 +531,11 @@ void pm_t2_set_angle(pm_t2* t, pm_flt angle);
  * @param t The transform
  * @param v The vector to be transformed
  */
-PM_INLINE pm_v2 pm_t2_map(const pm_t2* t, pm_v2 v)
+PM_INLINE pm_v2 pm_t2_map(const pm_t2* t, const pm_v2* v)
 {
     pm_v2 out;
-    out.x = t->t00 * v.x + t->t01 * v.y + t->tx;
-    out.y = t->t10 * v.x + t->t11 * v.y + t->ty;
+    out.x = t->t00 * v->x + t->t01 * v->y + t->tx;
+    out.y = t->t10 * v->x + t->t11 * v->y + t->ty;
     return out;
 }
 
@@ -615,9 +630,8 @@ PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
 }
 
 /*==============================================================================
- * 2D Box (Rectangle)
+ * 2D Box (AABB)
  *============================================================================*/
-
 
 PM_INLINE pm_b2 pm_b2_make_raw(pm_v2* min, pm_v2* max)
 {
@@ -637,16 +651,25 @@ PM_INLINE pm_b2 pm_b2_make(pm_flt x, pm_flt y, pm_flt w, pm_flt h)
     return pm_b2_make_raw(&min, &max);
 }
 
+/**
+ * @brief Returns an AABB that has zero size and coordinates
+ */
 PM_INLINE pm_b2 pm_b2_zero()
 {
     return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
+/**
+ * brief Returns the position of an AABB
+ */
 PM_INLINE pm_v2 pm_b2_pos(const pm_b2* b)
 {
     return b->min;
 }
 
+/**
+ * brief Returns the dimensions of an AABB
+ */
 PM_INLINE pm_v2 pm_b2_size(const pm_b2* b)
 {
     return pm_v2_sub(b->max, b->min);
@@ -716,16 +739,15 @@ PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
  */
 pm_b2 pm_b2_min(const pm_v2 verts[], int count);
 
-PM_INLINE pm_b2 pm_b2_transform(const pm_b2* b, const pm_t2* t)
-{
-    pm_b2 out;
-    out.min = pm_t2_map(t, b->min);
-    out.max = pm_t2_map(t, b->max);
-    return out;
-}
+/**
+ * @brief Computes the minimum AABB obtained by transforming the vertices of
+ * the specified AABB
+ */
+pm_b2 pm_b2_transform(const pm_b2* b, const pm_t2* t);
 
-
-
+/*
+ * MT state vector length (internal)
+ */
 #define PM_STATE_VECTOR_LEN 624
 
 /**
@@ -966,6 +988,28 @@ pm_b2 pm_b2_min(const pm_v2 verts[], int count)
     return pm_b2_make_raw(&min, &max);
 }
 
+pm_b2 pm_b2_transform(const pm_b2* b, const pm_t2* t)
+{
+    pm_v2 pos  = pm_b2_pos(b);
+    pm_v2 size = pm_b2_size(b);
+
+    pm_flt w = size.x;
+    pm_flt h = size.y;
+
+    pm_v2 verts[4];
+
+    verts[0] = pos;
+    verts[1] = pm_v2_make(pos.x,     pos.y + h);
+    verts[2] = pm_v2_make(pos.x + w, pos.y + h);
+    verts[3] = pm_v2_make(pos.x + w, pos.y);
+
+    verts[0] = pm_t2_map(t, &verts[0]);
+    verts[1] = pm_t2_map(t, &verts[1]);
+    verts[2] = pm_t2_map(t, &verts[2]);
+    verts[3] = pm_t2_map(t, &verts[3]);
+
+    return pm_b2_min(verts, 4);
+}
 
 /*
  * Mersenne Twister random number generator. Based on
