@@ -659,12 +659,7 @@ PM_INLINE bool pm_b2_intersects(const pm_b2* b1, const pm_b2* b2)
     return b1->max.x >= b2->min.x &&
            b1->max.y >= b2->min.y &&
            b2->max.x >= b1->min.x &&
-           b2->max.y >= b1->min.y; // <-- might not be correct
-
-    /*return b1->x + b1->w >= b2->x && // x + w
-           b1->y + b1->h >= b2->y && // y + h
-           b2->x + b2->w >= b1->x && // x + w
-           b2->y + b2->h >= b2->y;   // y + h*/
+           b2->max.y >= b1->min.y;
 }
 
 /**
@@ -699,8 +694,8 @@ PM_INLINE pm_flt pm_b2_area(const pm_b2* b)
  */
 PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
 {
-    pm_v2 dim = pm_v2_scale(pm_v2_sub(b->max, b->min), 1.0f / 2.0f);
-    return pm_v2_add(dim, b->min);
+    pm_v2 offset = pm_v2_scale(pm_v2_sub(b->max, b->min), 1.0f / 2.0f);
+    return pm_v2_add(offset, b->min);
 }
 
 /**
@@ -918,19 +913,6 @@ bool pm_b2_equal(const pm_b2* b1, const pm_b2* b2)
 
 pm_b2 pm_b2_union(const pm_b2* b1, const pm_b2* b2)
 {
-
-/*    pm_flt x1 = pm_min(b1->x,  b2->x); // x
-    pm_flt y1 = pm_min(b1->y,  b2->y); // y
-    pm_flt x2 = pm_max(b1->x + b1->w, b2->x + b2->w); // x + w
-    pm_flt y2 = pm_max(b1->y + b1->h, b2->y + b2->h); // y + h
-
-    pm_b2 out;
-    out.x = x1;
-    out.y = y1;
-    out.w = x2 - x1;
-    out.h = y2 - y1;
-    return out;
-*/
     pm_v2 min = pm_v2_min(&b1->min, &b2->min);
     pm_v2 max = pm_v2_max(&b1->max, &b2->max);
     return pm_b2_make_raw(&min, &max);
@@ -941,56 +923,26 @@ pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
     if (!pm_b2_intersects(b1, b2))
         return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
 
-/*    pm_flt x1 = pm_max(b1->x,  b2->x); // x
-    pm_flt y1 = pm_max(b1->y,  b2->y); // y
-    pm_flt x2 = pm_min(b1->x + b1->w, b2->x + b2->w); // x + w
-    pm_flt y2 = pm_min(b1->y + b1->h, b2->y + b2->h); // y + h
-
-    pm_b2 out;
-    out.x = x1;
-    out.y = y1;
-    out.w = x2 - x1;
-    out.h = y2 - y1;
-
-    return out;*/
-
     pm_v2 min = pm_v2_max(&b1->min, &b2->min);
     pm_v2 max = pm_v2_min(&b1->max, &b2->max);
     return pm_b2_make_raw(&min, &max);
 }
 
-// TODO: optimize this function (pm_v2_min/pm_2_max)
-pm_b2 pm_b2_min(const pm_v2* vertices, int count)
+pm_b2 pm_b2_min(const pm_v2* verts, int count)
 {
     if (0 == count)
         return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
 
-    pm_flt min_x = vertices[0].x;
-    pm_flt min_y = vertices[0].y;
-    pm_flt max_x = vertices[0].x;
-    pm_flt max_y = vertices[0].y;
+    pm_v2 min = verts[0];
+    pm_v2 max = verts[0];
 
     for (int i = 1; i < count; i++)
     {
-        if (vertices[i].x < min_x)
-            min_x = vertices[i].x;
-
-        if (vertices[i].y < min_y)
-            min_y = vertices[i].y;
-
-        if (vertices[i].x > max_x)
-            max_x = vertices[i].x;
-
-        if (vertices[i].y > max_y)
-            max_y = vertices[i].y;
+        min = pm_v2_min(&min, &verts[i]);
+        max = pm_v2_max(&max, &verts[i]);
     }
 
-    pm_b2 out;
-/*    out.x = min_x;
-    out.y = min_y;
-    out.w = pm_abs(max_x - min_x);
-    out.h = pm_abs(max_y - min_y);*/
-    return out;
+    return pm_b2_make_raw(&min, &max);
 }
 
 
