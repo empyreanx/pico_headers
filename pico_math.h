@@ -61,12 +61,10 @@
 
     Todo:
     -----
-    - pm_b2_t { pm_v2 min, pm_v2 max }
     - pm_b2_zero
     - pm_b2_transform
-    - pm_v2_floor/pm_v2_ceil
-    - pm_v2_min/pm_v2_max
-    - pm_t2_make2(pos, angle, scale)
+    - Test coverage for new code
+    - Docs for new code
 */
 
 #ifndef PICO_ML_H
@@ -703,7 +701,7 @@ PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
  * @param vertices The vertices
  * @param count The number of vertices
  */
-pm_b2 pm_b2_min(const pm_v2* vertices, int count);
+pm_b2 pm_b2_min(const pm_v2 verts[], int count);
 
 #define PM_STATE_VECTOR_LEN 624
 
@@ -928,7 +926,7 @@ pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
     return pm_b2_make_raw(&min, &max);
 }
 
-pm_b2 pm_b2_min(const pm_v2* verts, int count)
+pm_b2 pm_b2_min(const pm_v2 verts[], int count)
 {
     if (0 == count)
         return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
