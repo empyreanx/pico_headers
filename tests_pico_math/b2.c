@@ -1,6 +1,30 @@
 #include "../pico_math.h"
 #include "../pico_unit.h"
 
+PU_TEST(test_b2_pos)
+{
+    pm_b2 b = pm_b2_make(1.0f, 2.0f, 3.0f, 4.0f);
+
+    pm_v2 res = pm_b2_pos(&b);
+    pm_v2 exp = pm_v2_make(1.0f, 2.0f);
+
+    PU_ASSERT(pm_v2_equal(&res, &exp));
+
+    return true;
+}
+
+PU_TEST(test_b2_size)
+{
+    pm_b2 b = pm_b2_make(1.0f, 2.0f, 3.0f, 4.0f);
+
+    pm_v2 res = pm_b2_size(&b);
+    pm_v2 exp = pm_v2_make(3.0f, 4.0f);
+
+    PU_ASSERT(pm_v2_equal(&res, &exp));
+
+    return true;
+}
+
 PU_TEST(test_b2_equal)
 {
     { // Should be true
@@ -95,11 +119,25 @@ PU_TEST(test_b2_contains)
     return true;
 }
 
+PU_TEST(test_b2_min)
+{
+    return true;
+}
+
+PU_TEST(test_b2_transform)
+{
+    return true;
+}
+
 PU_SUITE(suite_b2)
 {
+    PU_RUN_TEST(test_b2_pos);
+    PU_RUN_TEST(test_b2_size);
     PU_RUN_TEST(test_b2_equal);
     PU_RUN_TEST(test_b2_union);
     PU_RUN_TEST(test_b2_intersects);
     PU_RUN_TEST(test_b2_intersection);
     PU_RUN_TEST(test_b2_contains);
+    PU_RUN_TEST(test_b2_min);
+    PU_RUN_TEST(test_b2_transform);
 }

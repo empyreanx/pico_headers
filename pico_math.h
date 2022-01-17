@@ -61,7 +61,7 @@
 
     Todo:
     -----
-    - test/docs:
+    - tests:
     - pm_b2_min
     - pm_b2_transform,
     - pm_b2_pos/size,
