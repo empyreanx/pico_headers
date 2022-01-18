@@ -65,7 +65,6 @@
 
     Todo:
     -----
-    - Call memset(0) upon ecs_add
     - Better default assertion macro
     - Use ECS_MATCH_ANY for player system. Logic to collect chests.
     - Port Rogue demo to Windows

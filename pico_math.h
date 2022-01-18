@@ -61,12 +61,6 @@
 
     Todo:
     -----
-    - tests:
-    - pm_b2_min
-    - pm_b2_transform,
-    - pm_b2_pos/size,
-    - pm_v2_min/max
-    - pm_v2_floor/ceil
 */
 
 #ifndef PICO_MATH_H
