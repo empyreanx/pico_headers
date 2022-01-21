@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 08/01/2022 13:32:45.
+/// WARNING: This file was automatically generated on 21/01/2022 14:44:46.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4121,7 +4121,6 @@ pgl_shader_t* pgl_create_shader(pgl_ctx_t* ctx, const char* vert_src,
     shader->ctx = ctx;
 
     pgl_bind_shader(ctx, shader);
-    //pgl_load_attributes(shader);
     pgl_load_uniforms(shader);
 
     return shader;
@@ -4418,6 +4417,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     PGL_CHECK(glBindVertexArray(ctx->vao));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_DYNAMIC_DRAW));
     PGL_CHECK(glDrawArrays(pgl_primitive_map[primitive], 0, count));
+    PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);
 }
@@ -4471,7 +4471,7 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
 
     PGL_CHECK(glBindVertexArray(buffer->vao));
     PGL_CHECK(glDrawArrays(buffer->primitive, start, count));
-    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
+    PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);
 }
