@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 21/01/2022 14:44:46.
+/// WARNING: This file was automatically generated on 28/01/2022 14:48:30.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4221,10 +4221,10 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx ,
 }
 
 pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
-                                              pgl_format_t fmt,
-                                              int32_t w, int32_t h,
-                                              bool smooth, bool repeat,
-                                              const unsigned char* bitmap)
+                                       pgl_format_t fmt,
+                                       int32_t w, int32_t h,
+                                       bool smooth, bool repeat,
+                                       const unsigned char* bitmap)
 {
     pgl_texture_t* tex = pgl_create_texture(ctx, fmt, w, h, smooth, repeat);
 
@@ -4255,8 +4255,8 @@ int pgl_upload_texture(pgl_ctx_t* ctx,
         return -1;
     }
 
-    PGL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, pgl_format_map[fmt], w, h, 0,
-                                             GL_RGBA,
+    PGL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0,
+                                             pgl_format_map[fmt],
                                              GL_UNSIGNED_BYTE, bitmap));
 
     return 0;
