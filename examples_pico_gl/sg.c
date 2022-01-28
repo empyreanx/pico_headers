@@ -200,7 +200,8 @@ pgl_texture_t* load_texture(const char* file, int* w, int* h)
     unsigned char* bitmap = stbi_load(file, w, h, &c, 0);
     assert(bitmap);
 
-    pgl_texture_t* tex = pgl_texture_from_bitmap(ctx, PGL_RGBA, *w, *h,
+    pgl_texture_t* tex = pgl_texture_from_bitmap(ctx, PGL_RGBA, false,
+                                                 *w, *h,
                                                  false, false, bitmap);
 
     assert(tex);

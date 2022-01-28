@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
                                                       &image_c, 0);
     assert(bitmap);
 
-    pgl_texture_t* tex = pgl_texture_from_bitmap(ctx, PGL_RGBA,
+    pgl_texture_t* tex = pgl_texture_from_bitmap(ctx, PGL_RGBA, false,
                                                  image_w, image_h,
                                                  false, false, bitmap);
     assert(tex);
