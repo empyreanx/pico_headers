@@ -57,7 +57,7 @@
     Constants:
     --------
 
-    - ECS_MAX_COMPONENTS (default: 16)
+    - ECS_MAX_COMPONENTS (default: 32)
     - ECS_MAX_ENTITIES (default: 8*1024)
     - ECS_MAX_SYSTEMS (default: 16)
 
