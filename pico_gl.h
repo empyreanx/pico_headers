@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 28/01/2022 16:08:34.
+/// WARNING: This file was automatically generated on 28/01/2022 16:14:19.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -140,8 +140,6 @@ typedef enum
     PGL_RGBA,        //!< (red, green, blue, alpha)
     PGL_BGR,         //!< (blue, green, red, 1)
     PGL_BGRA,        //!< (blue, green, red, alpha)
-//    PGL_SRGB,        //!< sRGB
-//    PGL_SRGBA,       //!< sRGBA with alpha
     PGL_FORMAT_COUNT
 } pgl_format_t;
 
@@ -3610,9 +3608,7 @@ static const GLenum pgl_format_map[] =
     GL_RGB,
     GL_RGBA,
     GL_BGR,
-    GL_BGRA,
-    //GL_SRGB8,
-    //GL_SRGB8_ALPHA8
+    GL_BGRA
 };
 
 static const GLenum pgl_blend_factor_map[] =

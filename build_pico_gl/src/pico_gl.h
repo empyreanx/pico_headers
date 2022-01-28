@@ -986,7 +986,7 @@ static const GLenum pgl_format_map[] =
     GL_RGB,
     GL_RGBA,
     GL_BGR,
-    GL_BGRA,
+    GL_BGRA
 };
 
 static const GLenum pgl_blend_factor_map[] =
