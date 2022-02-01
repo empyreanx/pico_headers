@@ -144,6 +144,10 @@ typedef ecs_ret_t (*ecs_update_fn)(ecs_t* ecs,
                                    int entity_count,
                                    ecs_dt_t dt,
                                    void* udata);
+
+typedef void (*ecs_construct_fn)(void* ptr);
+typedef void (*ecs_destruct_fn)(void* ptr);
+
 /**
  * @brief Creates an ECS instance.
  *
@@ -174,7 +178,11 @@ void ecs_reset(ecs_t* ecs);
  *                  ECS_MAX_COMPONENTS)
  * @param num_bytes The number of bytes to allocate for each component instance
  */
-void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
+void ecs_register_component(ecs_t* ecs,
+                            ecs_id_t comp_id,
+                            int num_bytes,
+                            ecs_construct_fn construct,
+                            ecs_destruct_fn destruct);
 
 /**
  * @brief Registers a system
@@ -421,6 +429,8 @@ typedef struct
     void* array;
     int   size;
     bool  ready;
+    ecs_construct_fn construct;
+    ecs_destruct_fn  destruct;
 } ecs_comp_t;
 
 typedef struct
@@ -527,8 +537,18 @@ void ecs_free(ecs_t* ecs)
 
     for (ecs_id_t comp_id = 0; comp_id < ECS_MAX_COMPONENTS; comp_id++)
     {
-        if (NULL != ecs->comps[comp_id].array)
+        ecs_comp_t* comp = &ecs->comps[comp_id];
+
+        if (NULL != comp->array)
         {
+            if (comp->destruct)
+            {
+                for (ecs_id_t entity_id = 0;  entity_id < ECS_MAX_ENTITIES; entity_id++)
+                {
+                    comp->destruct(ecs_get(ecs, entity_id, comp_id));
+                }
+            }
+
             ECS_FREE(ecs->comps[comp_id].array, ecs->mem_ctx);
         }
     }
@@ -557,7 +577,11 @@ void ecs_reset(ecs_t* ecs)
     }
 }
 
-void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes)
+void ecs_register_component(ecs_t* ecs,
+                            ecs_id_t comp_id,
+                            int num_bytes,
+                            ecs_construct_fn construct,
+                            ecs_destruct_fn  destruct)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
@@ -567,7 +591,11 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes)
 
     comp->array = ECS_MALLOC(ECS_MAX_ENTITIES * num_bytes, ecs->mem_ctx);
     comp->size  = num_bytes;
+    comp->construct = construct;
+    comp->destruct = destruct;
     comp->ready = true;
+
+    memset(comp->array, 0, ECS_MAX_ENTITIES * num_bytes);
 }
 
 void ecs_register_system(ecs_t* ecs,
@@ -722,6 +750,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 
     // Load entity
     ecs_entity_t* entity = &ecs->entities[entity_id];
+    ecs_comp_t* comp = &ecs->comps[comp_id];
 
     // Set entity component bit that determines which systems this entity
     // belongs to
@@ -730,10 +759,11 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     // Get pointer to component
     void* ptr = ecs_get(ecs, entity_id, comp_id);
 
-    // Zero component
-    #ifndef ECS_NO_ZERO_COMPONENT
-    memset(ptr, 0, ecs->comps[comp_id].size);
-    #endif
+    // Creates or resets component
+    if (comp->construct)
+    {
+        comp->construct(ptr);
+    }
 
     // Return component
     return ptr;

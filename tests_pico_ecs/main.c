@@ -31,8 +31,8 @@ void setup()
 {
     ecs = ecs_new(NULL);
 
-    ecs_register_component(ecs, Comp1, sizeof(comp_t));
-    ecs_register_component(ecs, Comp2, sizeof(comp_t));
+    ecs_register_component(ecs, Comp1, sizeof(comp_t), NULL, NULL);
+    ecs_register_component(ecs, Comp2, sizeof(comp_t), NULL, NULL);
     //ecs_register_component(ecs, Comp3, sizeof(comp_t));
 }
 
