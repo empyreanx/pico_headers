@@ -146,18 +146,22 @@ typedef ecs_ret_t (*ecs_update_fn)(ecs_t* ecs,
                                    void* udata);
 
 /**
- * @brief Constructs or resets a component
+ * @brief Function pointer to component constructor/reset function
  *
- * Intended to permit the use of component elements the require dynamic memory
- * allocation.
+ * Allows component elements to use dynamic memory allocation. The function is
+ * only called by `ecs_add`.
+ *
+ * @param comp A pointer to the component's location in memory
  */
 typedef void (*ecs_construct_fn)(void* comp);
 
 /**
- * @brief Destructs a component
+ * @brief Function pointer to component destructor function
  *
- * Intended to release all resources held by the component. This function is
+ * Intended to release all resources held by the component. The function is
  * only called by `ecs_free`.
+ *
+ * @param comp A pointer to the component's location in memory
  */
 typedef void (*ecs_destruct_fn)(void* comp);
 
