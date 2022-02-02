@@ -145,8 +145,21 @@ typedef ecs_ret_t (*ecs_update_fn)(ecs_t* ecs,
                                    ecs_dt_t dt,
                                    void* udata);
 
-typedef void (*ecs_construct_fn)(void* ptr);
-typedef void (*ecs_destruct_fn)(void* ptr);
+/**
+ * @brief Constructs or resets a component
+ *
+ * Intended to permit the use of component elements the require dynamic memory
+ * allocation.
+ */
+typedef void (*ecs_construct_fn)(void* comp);
+
+/**
+ * @brief Destructs a component
+ *
+ * Intended to release all resources held by the component. This function is
+ * only called by `ecs_free`.
+ */
+typedef void (*ecs_destruct_fn)(void* comp);
 
 /**
  * @brief Creates an ECS instance.
@@ -177,6 +190,8 @@ void ecs_reset(ecs_t* ecs);
  * @param comp_id   The component ID to use (must be less than
  *                  ECS_MAX_COMPONENTS)
  * @param num_bytes The number of bytes to allocate for each component instance
+ * @param construct Component constructor/reset function (can be NULL)
+ * @param destruct  Component destructor function (can be NULL)
  */
 void ecs_register_component(ecs_t* ecs,
                             ecs_id_t comp_id,
