@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 28/01/2022 16:14:19.
+/// WARNING: This file was automatically generated on 03/02/2022 13:59:16.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -434,16 +434,35 @@ pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
  *
  * @param ctx The relevant context
  * @param texture The target texture
- * @param fmt The texture's pixel format
+ * @param fmt The bitmap's pixel format
  * @param w The texture's width
  * @param h The texture's height
- * @param bitmap Bitmap data corresponding to the specified format
+ * @param bitmap The pixel data
  */
 int pgl_upload_texture(pgl_ctx_t* ctx,
                        pgl_texture_t* texture,
                        pgl_format_t fmt,
                        bool srgb,
                        int32_t w, int32_t h,
+                       const uint8_t* bitmap);
+
+/**
+ * @brief Updates a region of an existing texture
+ *
+ * @param ctx The relevant context
+ * @param texture The texture to update
+ * @param fmt The bitmap's pixel format
+ * @param x The x offset of the region
+ * @param y The y offset of the region
+ * @param w The width of the region
+ * @param h The height of the region
+ * @param bitmap The pixel data
+ */
+void pgl_update_texture(pgl_ctx_t* ctx,
+                       pgl_texture_t* texture,
+                       pgl_format_t fmt,
+                       int x, int y,
+                       int w, int h,
                        const uint8_t* bitmap);
 
 /**
@@ -468,6 +487,22 @@ int pgl_generate_mipmap(pgl_texture_t* texture, bool linear);
 void pgl_destroy_texture(pgl_texture_t* texture);
 
 /**
+ * @brief Gets texture size
+ *
+ * @param w Pointer to width
+ * @param h Pointer to height
+ */
+void pgl_get_texture_size(const pgl_texture_t* texture, int* w, int* h);
+
+/**
+ * Gets maximum texture size as reported by OpenGL
+ *
+ * @param w Pointer to width
+ * @param h Poineter to height
+ */
+void pgl_get_max_texture_size(int* w, int* h);
+
+/**
  * @brief Return the implementation specific texture ID
  *
  * @param texture The target texture
@@ -475,6 +510,7 @@ void pgl_destroy_texture(pgl_texture_t* texture);
  * @returns An unsigned 64-bit ID value
  */
 uint64_t pgl_get_texture_id(const pgl_texture_t* texture);
+
 
 /**
  * @brief Activates a shader program for rendering
@@ -4265,6 +4301,19 @@ int pgl_upload_texture(pgl_ctx_t* ctx,
     return 0;
 }
 
+void pgl_update_texture(pgl_ctx_t* ctx,
+                       pgl_texture_t* texture,
+                       pgl_format_t fmt,
+                       int x, int y,
+                       int w, int h,
+                       const uint8_t* bitmap)
+{
+    pgl_bind_texture(ctx, texture);
+
+    PGL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, pgl_format_map[fmt],
+                              GL_UNSIGNED_BYTE, bitmap));
+}
+
 int pgl_generate_mipmap(pgl_texture_t* texture, bool linear)
 {
     if (texture->mipmap) // TODO: Return error? void?
@@ -4297,6 +4346,21 @@ void pgl_destroy_texture(pgl_texture_t* texture)
     pgl_bind_texture(texture->ctx, NULL);
     PGL_CHECK(glDeleteTextures(1, &texture->id));
     PGL_FREE(texture, texture->ctx->mem_ctx);
+}
+
+void pgl_get_texture_size(const pgl_texture_t* texture, int* w, int* h)
+{
+    if (w) *w = texture->w;
+    if (h) *h = texture->h;
+}
+
+void pgl_get_max_texture_size(int* w, int* h)
+{
+    int max_size = 0;
+    PGL_CHECK(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size));
+
+    if (w) *w = max_size;
+    if (h) *h = max_size;
 }
 
 uint64_t pgl_get_texture_id(const pgl_texture_t* texture)
