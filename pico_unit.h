@@ -113,12 +113,12 @@ extern "C" {
  * @brief Runs a series of unit tests. The test suite function has the signature,
  * `void suite_func(void)`.
  *
- * @param fp_suite The test suite function to run
+ * @param suite_fp The test suite function to run
  */
 #define PU_RUN_SUITE(suite_fp) pu_run_suite(#suite_fp, suite_fp)
 
 /**
- * @brief  Functions that are run before or after a number of unit tests execute.
+ * @brief Functions that are run before or after a number of unit tests execute.
  */
 typedef void (*pu_setup_fn)(void);
 

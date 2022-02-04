@@ -134,18 +134,18 @@ void pl_disable(void);
  * appender writes a log entry to an output stream. This could be a console,
  * a file, a network connection, etc...
  *
- * @param appender Pointer to the appender function to register. An appender
- *                 function has the signature,
- *                 `void appender_func(const char* p_entry, void* p_udata)`
+ * @param appender_fp Pointer to the appender function to register. An appender
+ *                    function has the signature,
+ *                    `void appender_func(const char* p_entry, void* p_udata)`
  *
- * @param level    The appender's log level
+ * @param level       The appender's log level
  *
- * @param udata    A pointer supplied to the appender function when writing
- *                 a log entry. This pointer is not modified by the logger.
- *                 If not required, pass in NULL for this parameter.
+ * @param udata       A pointer supplied to the appender function when writing
+ *                    a log entry. This pointer is not modified by the logger.
+ *                    If not required, pass in NULL for this parameter.
  *
- * @return         An identifier for the appender. This ID is valid until the
- *                 appender is unregistered.
+ * @return            An identifier for the appender. This ID is valid until the
+ *                    appender is unregistered.
  */
 pl_id_t pl_add_appender(pl_appender_fn appender_fp,
                         pl_level_t level, void* udata);
@@ -189,12 +189,12 @@ void pl_disable_appender(pl_id_t id);
 void pl_set_lock(pl_id_t id, pl_lock_fn lock_fp, void* udata);
 
 /**
- * @brief Sets the logging level.
+ * @brief Sets the logging level
 
  * Sets the logging level. Only those messages of equal or higher priority
  * (severity) than this value will be logged.
  *
- * @aaram id    The appender to hold the lock
+ * @param id    The appender to hold the lock
  * @param level The new appender logging threshold.
  */
 void pl_set_level(pl_id_t id, pl_level_t level);

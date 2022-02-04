@@ -392,7 +392,7 @@ PM_INLINE pm_flt pm_v2_dist(const pm_v2* v1, const pm_v2* v2)
 
 /**
  * @brief Linearly interpolates between two vectors
- * @poram v1 The first endpoint
+ * @param v1 The first endpoint
  * @param v2 The second endpoint
  * @param alpha The normalized distance between v1 and v2
  */
@@ -728,7 +728,7 @@ PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
 
 /**
  * @brief Computes the minimum box containing all of the vertices
- * @param vertices The vertices
+ * @param verts The vertices
  * @param count The number of vertices
  */
 pm_b2 pm_b2_min(const pm_v2 verts[], int count);

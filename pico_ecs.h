@@ -213,6 +213,7 @@ void ecs_register_component(ecs_t* ecs,
  * @param sys_id    The system ID to use (must be less than ECS_MAX_SYSTEMS)
  * @param update_cb Callback that is fired every update
  * @param udata     The user data passed to the update callback
+ * @param match     The system/component matching criteria
  */
 void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,

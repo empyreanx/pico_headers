@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 03/02/2022 13:59:16.
+/// WARNING: This file was automatically generated on 03/02/2022 19:09:17.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -400,6 +400,7 @@ uint64_t pgl_get_shader_id(const pgl_shader_t* shader);
  *
  * @param ctx The relevant context
  * @param fmt The texture pixel format
+ * @param srgb True is the internal format is sRGB
  * @param w The texture's width
  * @param h The texture's height
  * @param smooth High (true) or low (false) quality filtering
@@ -416,6 +417,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
  *
  * @param ctx The relevant context
  * @param fmt The texture's pixel format
+ * @param srgb True is the internal format is sRGB
  * @param w The texture's width
  * @param h The texture's height
  * @param smooth High (true) or low (false) quality filtering
@@ -435,6 +437,7 @@ pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
  * @param ctx The relevant context
  * @param texture The target texture
  * @param fmt The bitmap's pixel format
+ * @param srgb True is the internal format is sRGB
  * @param w The texture's width
  * @param h The texture's height
  * @param bitmap The pixel data
@@ -459,11 +462,11 @@ int pgl_upload_texture(pgl_ctx_t* ctx,
  * @param bitmap The pixel data
  */
 void pgl_update_texture(pgl_ctx_t* ctx,
-                       pgl_texture_t* texture,
-                       pgl_format_t fmt,
-                       int x, int y,
-                       int w, int h,
-                       const uint8_t* bitmap);
+                        pgl_texture_t* texture,
+                        pgl_format_t fmt,
+                        int x, int y,
+                        int w, int h,
+                        const uint8_t* bitmap);
 
 /**
  * @brief Generate mipmaps for the specified texture
@@ -489,16 +492,17 @@ void pgl_destroy_texture(pgl_texture_t* texture);
 /**
  * @brief Gets texture size
  *
- * @param w Pointer to width
- * @param h Pointer to height
+ * @param texture The texture
+ * @param w Pointer to width (output)
+ * @param h Pointer to height (output)
  */
 void pgl_get_texture_size(const pgl_texture_t* texture, int* w, int* h);
 
 /**
  * Gets maximum texture size as reported by OpenGL
  *
- * @param w Pointer to width
- * @param h Poineter to height
+ * @param w Pointer to width (output)
+ * @param h Poineter to height (output)
  */
 void pgl_get_max_texture_size(int* w, int* h);
 
@@ -621,7 +625,7 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx);
  * @brief Sets the context's global tranformation matrix
  *
  * @param ctx The relevant context
- * @param transform The global transform matrix
+ * @param matrix The global transform matrix
  */
 void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix);
 
@@ -636,7 +640,7 @@ void pgl_reset_transform(pgl_ctx_t* ctx);
  * @brief Sets a context's global projecton matrix
  *
  * @param ctx The relevant context
- * @param transform The global projection matrix
+ * @param matrix The global projection matrix
  */
 void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix);
 
@@ -822,7 +826,7 @@ void pgl_set_3f(pgl_shader_t* shader, const char* name, float x, float y, float 
  * @param name The name of the uniform
  * @param x The first value
  * @param y The second value
- * @param z The third value
+ * @param w The third value
  * @param z The fourth value
  */
 void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
@@ -860,7 +864,7 @@ void pgl_set_v4f(pgl_shader_t* shader, const char* name, const pgl_v4f_t vec);
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
- * @param vec The array of floats
+ * @param array The array of floats
  * @param count The size of the array
  */
 void pgl_set_a1f(pgl_shader_t* shader,
@@ -873,7 +877,7 @@ void pgl_set_a1f(pgl_shader_t* shader,
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
- * @param vec The array of vectors
+ * @param array The array of vectors
  * @param count The size of the array
  */
 void pgl_set_a2f(pgl_shader_t* shader,
@@ -886,7 +890,7 @@ void pgl_set_a2f(pgl_shader_t* shader,
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
- * @param vec The array of vectors
+ * @param array The array of vectors
  * @param count The size of the array
  */
 void pgl_set_a3f(pgl_shader_t* shader,
@@ -899,7 +903,7 @@ void pgl_set_a3f(pgl_shader_t* shader,
  *
  * @param shader The uniform's shader program
  * @param name The name of the uniform
- * @param vec The array of vectors
+ * @param array The array of vectors
  * @param count The size of the array
  */
 void pgl_set_a4f(pgl_shader_t* shader,
