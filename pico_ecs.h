@@ -153,16 +153,16 @@ typedef ecs_ret_t (*ecs_update_fn)(ecs_t* ecs,
  * @param entity_id The enitty being added
  * @param udata     The user data passed to the callback
  */
-typedef void (*ecs_add_fn)(ecs_t* ecs, ecs_id_t entity_id, void * udata);
+typedef void (*ecs_entity_added_fn)(ecs_t* ecs, ecs_id_t entity_id, void * udata);
 
 /**
- * @brief Called when an entity is removed from a  a system
+ * @brief Called when an entity is removed from a system
  *
  * @param ecs       The ECS instance
  * @param entity_id The enitty being removed
  * @param udata     The user data passed to the callback
  */
-typedef void (*ecs_remove_fn)(ecs_t* ecs, ecs_id_t entity_id, void *udata);
+typedef void (*ecs_entity_removed_fn)(ecs_t* ecs, ecs_id_t entity_id, void *udata);
 
 /**
  * @brief Creates an ECS instance.
@@ -214,8 +214,8 @@ void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
                          ecs_match_t match,
                          ecs_update_fn update_cb,
-                         ecs_add_fn add_cb,
-                         ecs_remove_fn remove_cb,
+                         ecs_entity_added_fn add_cb,
+                         ecs_entity_removed_fn remove_cb,
                          void* udata);
 /**
  * @brief Determines which components are available to the specified system.
@@ -450,15 +450,15 @@ typedef struct
 
 typedef struct
 {
-    bool             ready;
-    bool             active;
-    ecs_sparse_set_t entity_ids;
-    ecs_update_fn    update_cb;
-    ecs_match_t      match;
-    ecs_add_fn     add_cb;
-    ecs_remove_fn   remove_cb;
-    ecs_bitset_t     comp_bits;
-    void*            udata;
+    bool                  ready;
+    bool                  active;
+    ecs_sparse_set_t      entity_ids;
+    ecs_update_fn         update_cb;
+    ecs_match_t           match;
+    ecs_entity_added_fn   add_cb;
+    ecs_entity_removed_fn remove_cb;
+    ecs_bitset_t          comp_bits;
+    void*                 udata;
 } ecs_sys_t;
 
 struct ecs_s
@@ -605,8 +605,8 @@ void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
                          ecs_match_t match,
                          ecs_update_fn update_cb,
-                         ecs_add_fn add_cb,
-                         ecs_remove_fn remove_cb,
+                         ecs_entity_added_fn add_cb,
+                         ecs_entity_removed_fn remove_cb,
 
                          void* udata)
 {
