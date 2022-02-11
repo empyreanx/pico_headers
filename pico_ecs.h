@@ -146,26 +146,6 @@ typedef ecs_ret_t (*ecs_update_fn)(ecs_t* ecs,
                                    void* udata);
 
 /**
- * @brief Function pointer to component constructor/reset function
- *
- * Allows component elements to use dynamic memory allocation. The function is
- * only called by `ecs_add`.
- *
- * @param comp A pointer to the component's location in memory
- */
-typedef void (*ecs_construct_fn)(void* comp);
-
-/**
- * @brief Function pointer to component destructor function
- *
- * Intended to release all resources held by the component. The function is
- * only called by `ecs_free`.
- *
- * @param comp A pointer to the component's location in memory
- */
-typedef void (*ecs_destruct_fn)(void* comp);
-
-/**
  * @brief Creates an ECS instance.
  *
  * @returns An ECS instance or NULL if out of memory
@@ -194,14 +174,8 @@ void ecs_reset(ecs_t* ecs);
  * @param comp_id   The component ID to use (must be less than
  *                  ECS_MAX_COMPONENTS)
  * @param num_bytes The number of bytes to allocate for each component instance
- * @param construct Component constructor/reset function (can be NULL)
- * @param destruct  Component destructor function (can be NULL)
  */
-void ecs_register_component(ecs_t* ecs,
-                            ecs_id_t comp_id,
-                            int num_bytes,
-                            ecs_construct_fn construct,
-                            ecs_destruct_fn destruct);
+void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
 
 /**
  * @brief Registers a system
@@ -449,8 +423,6 @@ typedef struct
     void* array;
     int   size;
     bool  ready;
-    ecs_construct_fn construct;
-    ecs_destruct_fn  destruct;
 } ecs_comp_t;
 
 typedef struct
@@ -561,14 +533,6 @@ void ecs_free(ecs_t* ecs)
 
         if (NULL != comp->array)
         {
-            if (comp->destruct)
-            {
-                for (ecs_id_t entity_id = 0;  entity_id < ECS_MAX_ENTITIES; entity_id++)
-                {
-                    comp->destruct(ecs_get(ecs, entity_id, comp_id));
-                }
-            }
-
             ECS_FREE(ecs->comps[comp_id].array, ecs->mem_ctx);
         }
     }
@@ -597,11 +561,7 @@ void ecs_reset(ecs_t* ecs)
     }
 }
 
-void ecs_register_component(ecs_t* ecs,
-                            ecs_id_t comp_id,
-                            int num_bytes,
-                            ecs_construct_fn construct,
-                            ecs_destruct_fn  destruct)
+void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
@@ -611,8 +571,6 @@ void ecs_register_component(ecs_t* ecs,
 
     comp->array = ECS_MALLOC(ECS_MAX_ENTITIES * num_bytes, ecs->mem_ctx);
     comp->size  = num_bytes;
-    comp->construct = construct;
-    comp->destruct = destruct;
     comp->ready = true;
 
     memset(comp->array, 0, ECS_MAX_ENTITIES * num_bytes);
@@ -779,11 +737,8 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     // Get pointer to component
     void* ptr = ecs_get(ecs, entity_id, comp_id);
 
-    // Creates or resets component
-    if (comp->construct)
-    {
-        comp->construct(ptr);
-    }
+    // Reset component
+    memset(ptr, 0, comp->size);
 
     // Return component
     return ptr;
