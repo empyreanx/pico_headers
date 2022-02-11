@@ -165,7 +165,7 @@ PU_TEST(test_t2_map)
     pm_v2 v = pm_v2_make(1, 0);
 
     pm_v2 exp = pm_v2_make(pm_sqrt(2), pm_sqrt(2));
-    pm_v2 res = pm_t2_map(&t3, &v);
+    pm_v2 res = pm_t2_map(&t3, v);
 
     PU_ASSERT(pm_v2_equal(&res, &exp));
 

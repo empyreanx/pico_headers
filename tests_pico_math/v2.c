@@ -189,7 +189,7 @@ PU_TEST(test_v2_lerp)
 
 PU_TEST(test_v2_polar)
 {
-    pm_v2 v = pm_v2_polar(3, PM_PI / 8);
+    pm_v2 v = pm_v2_polar(PM_PI / 8, 3);
 
     PU_ASSERT(pm_equal(3, pm_v2_len(&v)));
     PU_ASSERT(pm_equal(PM_PI / 8, pm_v2_angle(&v)));
