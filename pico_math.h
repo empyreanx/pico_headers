@@ -631,23 +631,6 @@ PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
     *t = pm_t2_mult(&translation, t);
 }
 
-/**
- * @brief Constructs a composite affine transform
- *
- * Applies the following primitives in order: translation, scaling, and
- * rotation.
- */
-PM_INLINE pm_t2 pm_t2_transform(const pm_v2* translation,
-                                const pm_v2* scale,
-                                const pm_flt angle)
-{
-    pm_t2 t = pm_t2_identity();
-    pm_t2_translate(&t, *translation);
-    pm_t2_scale(&t, *scale);
-    pm_t2_rotate(&t, angle);
-    return t;
-}
-
 /*==============================================================================
  * 2D Box (AABB)
  *============================================================================*/
