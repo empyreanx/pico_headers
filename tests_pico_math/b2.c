@@ -119,7 +119,7 @@ PU_TEST(test_b2_contains)
     return true;
 }
 
-PU_TEST(test_b2_min)
+PU_TEST(test_b2_min_aabb)
 {
     pm_v2 verts[4];
     verts[0] = pm_v2_make(1.0f, 2.0f);
@@ -127,7 +127,7 @@ PU_TEST(test_b2_min)
     verts[2] = pm_v2_make(1.0f + 3.0f, 2.0f + 4.0f);
     verts[3] = pm_v2_make(1.0f + 3.0f, 4.0f);
 
-    pm_b2 res = pm_b2_min(verts, 4);
+    pm_b2 res = pm_b2_min_aabb(verts, 4);
     pm_b2 exp = pm_b2_make(1.0f, 2.0f, 3.0f, 4.0f);
 
     PU_ASSERT(pm_b2_equal(&res, &exp));
@@ -143,7 +143,7 @@ PU_TEST(test_b2_transform)
     pm_t2_translate(&t, pm_v2_make(-0.5f, -0.5f));
     pm_t2_rotate(&t, -PM_PI / 4.0f);
 
-    pm_b2 res = pm_b2_transform(&b, &t);
+    pm_b2 res = pm_b2_transform(&t, &b);
     pm_flt len = pm_sin(PM_PI / 4.0f);
     pm_b2 exp = pm_b2_make(-len, -len, 2.0f * len, 2.0f * len);
 
@@ -161,6 +161,6 @@ PU_SUITE(suite_b2)
     PU_RUN_TEST(test_b2_intersects);
     PU_RUN_TEST(test_b2_intersection);
     PU_RUN_TEST(test_b2_contains);
-    PU_RUN_TEST(test_b2_min);
+    PU_RUN_TEST(test_b2_min_aabb);
     PU_RUN_TEST(test_b2_transform);
 }

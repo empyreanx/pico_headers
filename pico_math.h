@@ -405,9 +405,17 @@ PM_INLINE pm_v2 pm_v2_lerp(const pm_v2* v1, const pm_v2* v2, pm_flt alpha)
 }
 
 /**
+ * @brief Returns the zero vector
+ */
+PM_INLINE pm_v2 pm_v2_zero()
+{
+    return pm_v2_make(0.0f, 0.0f);
+}
+
+/**
  * @brief Contructs a vector in polar coordinates
  */
-PM_INLINE pm_v2 pm_v2_polar(pm_flt len, pm_flt angle)
+PM_INLINE pm_v2 pm_v2_polar(pm_flt angle, pm_flt len)
 {
     return pm_v2_make(len * pm_cos(angle), len * pm_sin(angle));
 }
@@ -525,11 +533,11 @@ void pm_t2_set_angle(pm_t2* t, pm_flt angle);
  * @param t The transform
  * @param v The vector to be transformed
  */
-PM_INLINE pm_v2 pm_t2_map(const pm_t2* t, const pm_v2* v)
+PM_INLINE pm_v2 pm_t2_map(const pm_t2* t, const pm_v2 v)
 {
     pm_v2 out;
-    out.x = t->t00 * v->x + t->t01 * v->y + t->tx;
-    out.y = t->t10 * v->x + t->t11 * v->y + t->ty;
+    out.x = t->t00 * v.x + t->t01 * v.y + t->tx;
+    out.y = t->t10 * v.x + t->t11 * v.y + t->ty;
     return out;
 }
 
@@ -627,7 +635,7 @@ PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
  * 2D Box (AABB)
  *============================================================================*/
 
-PM_INLINE pm_b2 pm_b2_make_raw(pm_v2* min, pm_v2* max)
+PM_INLINE pm_b2 pm_b2_make_minmax(pm_v2* min, pm_v2* max)
 {
     pm_b2 out;
     out.min = *min;
@@ -642,7 +650,7 @@ PM_INLINE pm_b2 pm_b2_make(pm_flt x, pm_flt y, pm_flt w, pm_flt h)
 {
     pm_v2 min = { x, y};
     pm_v2 max = { x + w, y + h };
-    return pm_b2_make_raw(&min, &max);
+    return pm_b2_make_minmax(&min, &max);
 }
 
 /**
@@ -731,13 +739,13 @@ PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
  * @param verts The vertices
  * @param count The number of vertices
  */
-pm_b2 pm_b2_min(const pm_v2 verts[], int count);
+pm_b2 pm_b2_min_aabb(const pm_v2 verts[], int count);
 
 /**
  * @brief Computes the minimum AABB obtained by transforming the vertices of
  * the specified AABB
  */
-pm_b2 pm_b2_transform(const pm_b2* b, const pm_t2* t);
+pm_b2 pm_b2_transform(const pm_t2* t, const pm_b2* b);
 
 /*
  * MT state vector length (internal)
@@ -952,7 +960,7 @@ pm_b2 pm_b2_union(const pm_b2* b1, const pm_b2* b2)
 {
     pm_v2 min = pm_v2_min(&b1->min, &b2->min);
     pm_v2 max = pm_v2_max(&b1->max, &b2->max);
-    return pm_b2_make_raw(&min, &max);
+    return pm_b2_make_minmax(&min, &max);
 }
 
 pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
@@ -962,10 +970,10 @@ pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
 
     pm_v2 min = pm_v2_max(&b1->min, &b2->min);
     pm_v2 max = pm_v2_min(&b1->max, &b2->max);
-    return pm_b2_make_raw(&min, &max);
+    return pm_b2_make_minmax(&min, &max);
 }
 
-pm_b2 pm_b2_min(const pm_v2 verts[], int count)
+pm_b2 pm_b2_min_aabb(const pm_v2 verts[], int count)
 {
     if (0 == count)
         return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
@@ -979,10 +987,10 @@ pm_b2 pm_b2_min(const pm_v2 verts[], int count)
         max = pm_v2_max(&max, &verts[i]);
     }
 
-    return pm_b2_make_raw(&min, &max);
+    return pm_b2_make_minmax(&min, &max);
 }
 
-pm_b2 pm_b2_transform(const pm_b2* b, const pm_t2* t)
+pm_b2 pm_b2_transform(const pm_t2* t, const pm_b2* b)
 {
     pm_v2 pos  = pm_b2_pos(b);
     pm_v2 size = pm_b2_size(b);
@@ -997,12 +1005,12 @@ pm_b2 pm_b2_transform(const pm_b2* b, const pm_t2* t)
     verts[2] = pm_v2_make(pos.x + w, pos.y + h);
     verts[3] = pm_v2_make(pos.x + w, pos.y);
 
-    verts[0] = pm_t2_map(t, &verts[0]);
-    verts[1] = pm_t2_map(t, &verts[1]);
-    verts[2] = pm_t2_map(t, &verts[2]);
-    verts[3] = pm_t2_map(t, &verts[3]);
+    verts[0] = pm_t2_map(t, verts[0]);
+    verts[1] = pm_t2_map(t, verts[1]);
+    verts[2] = pm_t2_map(t, verts[2]);
+    verts[3] = pm_t2_map(t, verts[3]);
 
-    return pm_b2_min(verts, 4);
+    return pm_b2_min_aabb(verts, 4);
 }
 
 /*
