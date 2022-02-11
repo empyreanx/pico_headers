@@ -74,9 +74,9 @@ enum
 // Register components
 void register_components(ecs_t* ecs)
 {
-    ecs_register_component(ecs, PosComp,  sizeof(pos_t), NULL, NULL);
-    ecs_register_component(ecs, VelComp,  sizeof(vel_t), NULL, NULL);
-    ecs_register_component(ecs, RectComp, sizeof(rect_t), NULL, NULL);
+    ecs_register_component(ecs, PosComp,  sizeof(pos_t));
+    ecs_register_component(ecs, VelComp,  sizeof(vel_t));
+    ecs_register_component(ecs, RectComp, sizeof(rect_t));
 }
 
 // System that prints the entity IDs of entities associated with this system

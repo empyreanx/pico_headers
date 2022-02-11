@@ -144,17 +144,17 @@ static void setup()
     ecs = ecs_new(NULL);
 
     // Register two new components
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t), NULL, NULL);
-    ecs_register_component(ecs, RectComponent, sizeof(rect_t), NULL, NULL);
+    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
+    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
 }
 
 static void setup_abeimler()
 {
     ecs = ecs_new(NULL);
 
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t), NULL, NULL);
-    ecs_register_component(ecs, DirComponent, sizeof(v2d_t), NULL, NULL);
-    ecs_register_component(ecs, ComflabComponent, sizeof(comflab_t), NULL, NULL);
+    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
+    ecs_register_component(ecs, DirComponent, sizeof(v2d_t));
+    ecs_register_component(ecs, ComflabComponent, sizeof(comflab_t));
 
     ecs_register_system(ecs, MovementSystem, movement_update, ECS_MATCH_REQUIRED, NULL);
     ecs_match_component(ecs, MovementSystem, PosComponent);
@@ -202,8 +202,8 @@ static void setup_with_entities()
     ecs = ecs_new(NULL);
 
     // Register two new components
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t), NULL, NULL);
-    ecs_register_component(ecs, RectComponent, sizeof(rect_t), NULL, NULL);
+    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
+    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
 
     ecs_register_system(ecs, IterateSystem, iterate_assign_update, ECS_MATCH_REQUIRED, NULL);
     ecs_match_component(ecs, IterateSystem, PosComponent);
