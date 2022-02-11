@@ -156,11 +156,11 @@ static void setup_abeimler()
     ecs_register_component(ecs, DirComponent, sizeof(v2d_t));
     ecs_register_component(ecs, ComflabComponent, sizeof(comflab_t));
 
-    ecs_register_system(ecs, MovementSystem, movement_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, MovementSystem, ECS_MATCH_REQUIRED, movement_update, NULL, NULL, NULL);
     ecs_match_component(ecs, MovementSystem, PosComponent);
     ecs_match_component(ecs, MovementSystem, DirComponent);
 
-    ecs_register_system(ecs, ComflabSystem, comflab_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, ComflabSystem, ECS_MATCH_REQUIRED, comflab_update, NULL, NULL, NULL);
     ecs_match_component(ecs, ComflabSystem, ComflabComponent);
 
     for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
@@ -205,15 +205,15 @@ static void setup_with_entities()
     ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
     ecs_register_component(ecs, RectComponent, sizeof(rect_t));
 
-    ecs_register_system(ecs, IterateSystem, iterate_assign_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, IterateSystem, ECS_MATCH_REQUIRED, iterate_assign_update, NULL, NULL , NULL);
     ecs_match_component(ecs, IterateSystem, PosComponent);
     ecs_match_component(ecs, IterateSystem, RectComponent);
 
-    ecs_register_system(ecs, QueueSyncSystem, queue_sync_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, QueueSyncSystem, ECS_MATCH_REQUIRED, queue_sync_update, NULL, NULL , NULL);
     ecs_match_component(ecs, QueueSyncSystem, PosComponent);
     ecs_match_component(ecs, QueueSyncSystem, RectComponent);
 
-    ecs_register_system(ecs, QueueDestroySystem, queue_destroy_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, QueueDestroySystem, ECS_MATCH_REQUIRED, queue_destroy_update, NULL, NULL, NULL);
     ecs_match_component(ecs, QueueDestroySystem, PosComponent);
     ecs_match_component(ecs, QueueDestroySystem, RectComponent);
 

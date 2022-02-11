@@ -106,7 +106,7 @@ void register_systems(ecs_t* ecs)
     // Register systems
     for (ecs_id_t id = 0; id < SystemCount; id++)
     {
-        ecs_register_system(ecs, id, system_update, ECS_MATCH_REQUIRED, NULL);
+        ecs_register_system(ecs, id, ECS_MATCH_REQUIRED, system_update, NULL, NULL, NULL);
     }
 
     // System1 requires PosComp compnents

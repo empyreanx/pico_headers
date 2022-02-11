@@ -137,10 +137,10 @@ static ecs_ret_t comp_update(ecs_t* ecs,
 PU_TEST(test_sync)
 {
     // Set up systems
-    ecs_register_system(ecs, Sys1, comp_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, Sys1, ECS_MATCH_REQUIRED, comp_update, NULL, NULL, NULL);
     ecs_match_component(ecs, Sys1, Comp1); // Entities must have component 1
 
-    ecs_register_system(ecs, Sys2, comp_update, ECS_MATCH_ANY, NULL);
+    ecs_register_system(ecs, Sys2, ECS_MATCH_ANY, comp_update, NULL, NULL, NULL);
     ecs_match_component(ecs, Sys2, Comp1); // Entities must have either
     ecs_match_component(ecs, Sys2, Comp2); // component 1 and/or component 2
 
@@ -184,7 +184,7 @@ PU_TEST(test_sync)
 PU_TEST(test_remove)
 {
     // Set up system
-    ecs_register_system(ecs, Sys1, comp_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, Sys1, ECS_MATCH_REQUIRED, comp_update, NULL, NULL, NULL);
     ecs_match_component(ecs, Sys1, Comp1); // Entity must have at least
     ecs_match_component(ecs, Sys1, Comp2); // component 1 and 2 to match
 
@@ -231,7 +231,7 @@ PU_TEST(test_remove)
 PU_TEST(test_destroy)
 {
     // Set up system
-    ecs_register_system(ecs, Sys1, comp_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, Sys1, ECS_MATCH_REQUIRED, comp_update, NULL, NULL, NULL);
     ecs_match_component(ecs, Sys1, Comp1);
     ecs_match_component(ecs, Sys1, Comp2);
 
@@ -282,7 +282,7 @@ PU_TEST(test_destroy)
 PU_TEST(test_enable_disable)
 {
     // Set up system
-    ecs_register_system(ecs, Sys1, comp_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, Sys1, ECS_MATCH_REQUIRED, comp_update, NULL, NULL, NULL);
     ecs_match_component(ecs, Sys1, Comp1);
 
     // Create entity
@@ -349,7 +349,7 @@ static ecs_ret_t sync_update(ecs_t* ecs,
 PU_TEST(test_queue_sync)
 {
     // Set up the system
-    ecs_register_system(ecs, Sys1, sync_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, Sys1, ECS_MATCH_REQUIRED, sync_update, NULL, NULL, NULL);
     ecs_match_component(ecs, Sys1, Comp1);
 
     // Create an entity
@@ -390,7 +390,7 @@ static ecs_ret_t destroy_update(ecs_t* ecs,
 PU_TEST(test_queue_destroy)
 {
     // Set up system
-    ecs_register_system(ecs, Sys1, destroy_update, ECS_MATCH_REQUIRED, NULL);
+    ecs_register_system(ecs, Sys1, ECS_MATCH_REQUIRED, destroy_update, NULL, NULL, NULL);
     ecs_match_component(ecs, Sys1, Comp1);
 
     // Create an entity
