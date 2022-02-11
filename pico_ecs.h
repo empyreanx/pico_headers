@@ -145,7 +145,23 @@ typedef ecs_ret_t (*ecs_update_fn)(ecs_t* ecs,
                                    ecs_dt_t dt,
                                    void* udata);
 
+
+/**
+ * @brief Called when an entity is added to a system
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The enitty being added
+ * @param udata     The user data passed to the callback
+ */
 typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_id_t entity_id, void * udata);
+
+/**
+ * @brief Called when an entity is removed from a  a system
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The enitty being removed
+ * @param udata     The user data passed to the callback
+ */
 typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_id_t entity_id, void *udata);
 
 /**
@@ -186,18 +202,20 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
  * Registers a system with the user specified system ID. Systems contain the
  * core logic of a game by manipulating game state as defined by components.
  *
- * @param ecs       The ECS instance
- * @param sys_id    The system ID to use (must be less than ECS_MAX_SYSTEMS)
- * @param update_cb Callback that is fired every update
- * @param udata     The user data passed to the update callback
- * @param match     The system/component matching criteria
+ * @param ecs          The ECS instance
+ * @param sys_id       The system ID to use (must be less than ECS_MAX_SYSTEMS)
+ * @param match        The system/component matching criteria
+ * @param update_cb    Callback that is fired every update
+ * @param on_add_cb    Called when an entity is added to the system
+ * @param on_remove_cb Called when an entity is removed from the system
+ * @param udata        The user data passed to the update callback
  */
 void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
                          ecs_match_t match,
                          ecs_update_fn update_cb,
-                         ecs_added_fn on_added_cb,
-                         ecs_removed_fn on_removed_cb,
+                         ecs_added_fn on_add_cb,
+                         ecs_removed_fn on_remove_cb,
                          void* udata);
 /**
  * @brief Determines which components are available to the specified system.
@@ -437,8 +455,8 @@ typedef struct
     ecs_sparse_set_t entity_ids;
     ecs_update_fn    update_cb;
     ecs_match_t      match;
-    ecs_added_fn     on_added_cb;
-    ecs_removed_fn   on_removed_cb;
+    ecs_added_fn     on_add_cb;
+    ecs_removed_fn   on_remove_cb;
     ecs_bitset_t     comp_bits;
     void*            udata;
 } ecs_sys_t;
@@ -587,8 +605,8 @@ void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
                          ecs_match_t match,
                          ecs_update_fn update_cb,
-                         ecs_added_fn on_added_cb,
-                         ecs_removed_fn on_removed_cb,
+                         ecs_added_fn on_add_cb,
+                         ecs_removed_fn on_remove_cb,
 
                          void* udata)
 {
@@ -605,8 +623,8 @@ void ecs_register_system(ecs_t* ecs,
     sys->active = true;
     sys->update_cb = update_cb;
     sys->match = match;
-    sys->on_added_cb = on_added_cb;
-    sys->on_removed_cb = on_removed_cb;
+    sys->on_add_cb = on_add_cb;
+    sys->on_remove_cb = on_remove_cb;
     sys->udata = udata;
 }
 
@@ -790,16 +808,16 @@ void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)
         {
             if (ecs_sparse_set_add(&sys->entity_ids, entity_id))
             {
-                if (sys->on_added_cb)
-                    sys->on_added_cb(ecs, entity_id, sys->udata);
+                if (sys->on_add_cb)
+                    sys->on_add_cb(ecs, entity_id, sys->udata);
             }
         }
         else
         {
             if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
             {
-                if (sys->on_removed_cb)
-                    sys->on_removed_cb(ecs, entity_id, sys->udata);
+                if (sys->on_remove_cb)
+                    sys->on_remove_cb(ecs, entity_id, sys->udata);
             }
         }
     }
@@ -1087,8 +1105,8 @@ static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)
         // than calling ecs_entity_system_test
         if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
         {
-            if (sys->on_removed_cb)
-                sys->on_removed_cb(ecs, entity_id, sys->udata);
+            if (sys->on_remove_cb)
+                sys->on_remove_cb(ecs, entity_id, sys->udata);
         }
     }
 }
