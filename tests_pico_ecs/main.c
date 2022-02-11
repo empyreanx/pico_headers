@@ -409,6 +409,59 @@ PU_TEST(test_queue_destroy)
     return true;
 }
 
+static bool added = false;
+static bool removed = false;
+
+static ecs_ret_t empty_update(ecs_t* ecs,
+                              ecs_id_t* entities,
+                              int entity_count,
+                              ecs_dt_t dt,
+                              void* udata)
+{
+    (void)ecs;
+    (void)entities;
+    (void)entity_count;
+    (void)dt;
+    (void)udata;
+    return 0;
+}
+
+static void on_add(ecs_t* ecs, ecs_id_t entity_id, void* udata)
+{
+    (void)ecs;
+    (void)entity_id;
+    (void)udata;
+    added = true;
+}
+
+static void on_remove(ecs_t* ecs, ecs_id_t entity_id, void* udata)
+{
+    (void)ecs;
+    (void)entity_id;
+    (void)udata;
+    removed = true;
+}
+
+PU_TEST(test_add_remove_callbacks)
+{
+    ecs_register_system(ecs, Sys1, ECS_MATCH_REQUIRED, empty_update,
+                        on_add, on_remove, NULL);
+
+    ecs_match_component(ecs, Sys1, Comp1);
+
+    ecs_update_system(ecs, Sys1, 0.0);
+
+    ecs_id_t entity_id = ecs_create(ecs);
+    ecs_add(ecs, entity_id, Comp1);
+    ecs_sync(ecs, entity_id);
+    ecs_destroy(ecs, entity_id);
+
+    PU_ASSERT(added);
+    PU_ASSERT(removed);
+
+    return true;
+}
+
 static PU_SUITE(suite_ecs)
 {
     PU_RUN_TEST(test_create_destroy);
@@ -419,6 +472,7 @@ static PU_SUITE(suite_ecs)
     PU_RUN_TEST(test_enable_disable);
     PU_RUN_TEST(test_queue_sync);
     PU_RUN_TEST(test_queue_destroy);
+    PU_RUN_TEST(test_add_remove_callbacks);
 }
 
 int main ()
