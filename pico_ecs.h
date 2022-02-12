@@ -145,6 +145,25 @@ typedef ecs_ret_t (*ecs_update_fn)(ecs_t* ecs,
                                    ecs_dt_t dt,
                                    void* udata);
 
+
+/**
+ * @brief Called when an entity is added to a system
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The enitty being added
+ * @param udata     The user data passed to the callback
+ */
+typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_id_t entity_id, void * udata);
+
+/**
+ * @brief Called when an entity is removed from a system
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The enitty being removed
+ * @param udata     The user data passed to the callback
+ */
+typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_id_t entity_id, void *udata);
+
 /**
  * @brief Creates an ECS instance.
  *
@@ -185,14 +204,18 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
  *
  * @param ecs       The ECS instance
  * @param sys_id    The system ID to use (must be less than ECS_MAX_SYSTEMS)
- * @param update_cb Callback that is fired every update
- * @param udata     The user data passed to the update callback
  * @param match     The system/component matching criteria
+ * @param update_cb Callback that is fired every update
+ * @param add_cb    Called when an entity is added to the system (can be NULL)
+ * @param remove_cb Called when an entity is removed from the system (can be NULL)
+ * @param udata     The user data passed to the callbacks
  */
 void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
-                         ecs_update_fn update_cb,
                          ecs_match_t match,
+                         ecs_update_fn update_cb,
+                         ecs_added_fn add_cb,
+                         ecs_removed_fn remove_cb,
                          void* udata);
 /**
  * @brief Determines which components are available to the specified system.
@@ -432,6 +455,8 @@ typedef struct
     ecs_sparse_set_t entity_ids;
     ecs_update_fn    update_cb;
     ecs_match_t      match;
+    ecs_added_fn     add_cb;
+    ecs_removed_fn   remove_cb;
     ecs_bitset_t     comp_bits;
     void*            udata;
 } ecs_sys_t;
@@ -467,8 +492,8 @@ static inline bool  ecs_bitset_true(ecs_bitset_t* set);
  *============================================================================*/
 static void     ecs_sparse_set_init(ecs_sparse_set_t* set);
 static ecs_id_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id);
-static void     ecs_sparse_set_add(ecs_sparse_set_t* set, ecs_id_t id);
-static void     ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
+static bool     ecs_sparse_set_add(ecs_sparse_set_t* set, ecs_id_t id);
+static bool     ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
 
 /*=============================================================================
  * Internal system entity add/remove functions
@@ -578,8 +603,11 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes)
 
 void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
-                         ecs_update_fn update_cb,
                          ecs_match_t match,
+                         ecs_update_fn update_cb,
+                         ecs_added_fn add_cb,
+                         ecs_removed_fn remove_cb,
+
                          void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
@@ -595,6 +623,8 @@ void ecs_register_system(ecs_t* ecs,
     sys->active = true;
     sys->update_cb = update_cb;
     sys->match = match;
+    sys->add_cb = add_cb;
+    sys->remove_cb = remove_cb;
     sys->udata = udata;
 }
 
@@ -776,11 +806,19 @@ void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)
 
         if (ecs_entity_system_test(sys->match, &sys->comp_bits, entity_bits))
         {
-            ecs_sparse_set_add(&sys->entity_ids, entity_id);
+            if (ecs_sparse_set_add(&sys->entity_ids, entity_id))
+            {
+                if (sys->add_cb)
+                    sys->add_cb(ecs, entity_id, sys->udata);
+            }
         }
         else
         {
-            ecs_sparse_set_remove(&sys->entity_ids, entity_id);
+            if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+            {
+                if (sys->remove_cb)
+                    sys->remove_cb(ecs, entity_id, sys->udata);
+            }
         }
     }
 }
@@ -983,25 +1021,27 @@ static ecs_id_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id)
         return ECS_NULL;
 }
 
-static void ecs_sparse_set_add(ecs_sparse_set_t* set, ecs_id_t id)
+static bool ecs_sparse_set_add(ecs_sparse_set_t* set, ecs_id_t id)
 {
     ECS_ASSERT(is_not_null(set));
 
     if (ECS_NULL != ecs_sparse_set_find(set, id))
-        return;
+        return false;
 
     set->dense[set->size] = id;
     set->sparse[id] = set->size;
 
     set->size++;
+
+    return true;
 }
 
-static void ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
+static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
 {
     ECS_ASSERT(is_not_null(set));
 
     if (ECS_NULL == ecs_sparse_set_find(set, id))
-        return;
+        return false;
 
     // Swap and remove (changes order of array)
     ecs_id_t tmp = set->dense[set->size - 1];
@@ -1009,6 +1049,8 @@ static void ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
     set->sparse[tmp] = set->sparse[id];
 
     set->size--;
+
+    return true;
 }
 
 /*=============================================================================
@@ -1061,7 +1103,11 @@ static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)
 
         // Just attempting to remove the entity from the sparse set is faster
         // than calling ecs_entity_system_test
-        ecs_sparse_set_remove(&sys->entity_ids, entity_id);
+        if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+        {
+            if (sys->remove_cb)
+                sys->remove_cb(ecs, entity_id, sys->udata);
+        }
     }
 }
 

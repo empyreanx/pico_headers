@@ -388,8 +388,9 @@ void register_systems(game_t* game)
     // Player turn system
     ecs_register_system(game->ecs,
                         SYS_PLAYER,
-                        player_sys,
                         ECS_MATCH_REQUIRED,
+                        player_sys,
+                        NULL, NULL,
                         game);
 
     ecs_match_component(game->ecs, SYS_PLAYER, COMP_POS);
@@ -400,8 +401,9 @@ void register_systems(game_t* game)
     // Monster's turns
     ecs_register_system(game->ecs,
                         SYS_MONSTER,
-                        monster_sys,
                         ECS_MATCH_REQUIRED,
+                        monster_sys,
+                        NULL, NULL,
                         game);
 
     ecs_match_component(game->ecs, SYS_MONSTER, COMP_POS);
@@ -412,8 +414,9 @@ void register_systems(game_t* game)
     // Draw system
     ecs_register_system(game->ecs,
                         SYS_CHEST,
-                        chest_sys,
                         ECS_MATCH_REQUIRED,
+                        chest_sys,
+                        NULL, NULL,
                         game);
 
     ecs_match_component(game->ecs, SYS_CHEST, COMP_CHEST);
@@ -422,8 +425,9 @@ void register_systems(game_t* game)
 
     ecs_register_system(game->ecs,
                         SYS_DRAWABLE,
-                        draw_sys,
                         ECS_MATCH_REQUIRED,
+                        draw_sys,
+                        NULL, NULL,
                         game);
 
     ecs_match_component(game->ecs, SYS_DRAWABLE, COMP_POS);
