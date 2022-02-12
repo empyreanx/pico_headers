@@ -688,6 +688,11 @@ bool pm_b2_equal(const pm_b2* b1, const pm_b2* b2);
 pm_b2 pm_b2_union(const pm_b2* b1, const pm_b2* b2);
 
 /**
+ * @brief Computes the intersection of `b1` and `b2`
+ */
+pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2);
+
+/**
  * @brief Return `true` if the two bounding boxes intersect
  */
 PM_INLINE bool pm_b2_intersects(const pm_b2* b1, const pm_b2* b2)
@@ -697,11 +702,6 @@ PM_INLINE bool pm_b2_intersects(const pm_b2* b1, const pm_b2* b2)
            b2->max.x >= b1->min.x &&
            b2->max.y >= b1->min.y;
 }
-
-/**
- * @brief Computes the intersection of `b1` and `b2`
- */
-pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2);
 
 /**
  * @brief Returns `true` if the box contains the point `v`
