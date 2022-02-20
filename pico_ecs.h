@@ -66,7 +66,6 @@
     Todo:
     -----
     - Better default assertion macro
-    - Use ECS_MATCH_ANY for player system. Logic to collect chests.
     - Port Rogue demo to Windows
 */
 
@@ -108,24 +107,6 @@ static const ecs_id_t ECS_NULL = (ecs_id_t)-1;
 #else
     typedef double ecs_dt_t;
 #endif
-
-/**
- * @brief System matching criteria
- *
- * Determines which entities are added to a system according to what components
- * an entity has, and which components a system requires.
- */
-typedef enum
-{
-    ECS_MATCH_NONE,     /*!< No entities match */
-    ECS_MATCH_ALL,      /*!< All entities match */
-    ECS_MATCH_ANY,      /*!< Matches entities having any of the components
-                             assigned to the system */
-    ECS_MATCH_REQUIRED, /*!< Matches entities that have a superset of the
-                             components assigned to the system */
-    ECS_MATCH_EXACT     /*!< Matches entities must have extactly the same
-                             components as those assigned to the system */
-} ecs_match_t;
 
 /**
  * @brief System update callback
@@ -204,7 +185,6 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
  *
  * @param ecs       The ECS instance
  * @param sys_id    The system ID to use (must be less than ECS_MAX_SYSTEMS)
- * @param match     The system/component matching criteria
  * @param update_cb Callback that is fired every update
  * @param add_cb    Called when an entity is added to the system (can be NULL)
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
@@ -212,7 +192,6 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
  */
 void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
-                         ecs_match_t match,
                          ecs_update_fn update_cb,
                          ecs_added_fn add_cb,
                          ecs_removed_fn remove_cb,
@@ -224,7 +203,7 @@ void ecs_register_system(ecs_t* ecs,
  * @param sys_id  The target system ID
  * @param comp_id The component ID
  */
-void ecs_match_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id);
+void ecs_require_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id);
 
 /**
  * @brief Enables a system
@@ -454,7 +433,6 @@ typedef struct
     bool             active;
     ecs_sparse_set_t entity_ids;
     ecs_update_fn    update_cb;
-    ecs_match_t      match;
     ecs_added_fn     add_cb;
     ecs_removed_fn   remove_cb;
     ecs_bitset_t     comp_bits;
@@ -498,8 +476,7 @@ static bool     ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
 /*=============================================================================
  * Internal system entity add/remove functions
  *============================================================================*/
-static bool ecs_entity_system_test(ecs_match_t match,
-                                   ecs_bitset_t* sys_bits,
+static bool ecs_entity_system_test(ecs_bitset_t* sys_bits,
                                    ecs_bitset_t* entity_bits);
 
 static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id);
@@ -603,7 +580,6 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes)
 
 void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
-                         ecs_match_t match,
                          ecs_update_fn update_cb,
                          ecs_added_fn add_cb,
                          ecs_removed_fn remove_cb,
@@ -622,13 +598,12 @@ void ecs_register_system(ecs_t* ecs,
     sys->ready = true;
     sys->active = true;
     sys->update_cb = update_cb;
-    sys->match = match;
     sys->add_cb = add_cb;
     sys->remove_cb = remove_cb;
     sys->udata = udata;
 }
 
-void ecs_match_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id)
+void ecs_require_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys_id));
@@ -804,7 +779,7 @@ void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)
 
         ecs_sys_t* sys = &ecs->systems[sys_id];
 
-        if (ecs_entity_system_test(sys->match, &sys->comp_bits, entity_bits))
+        if (ecs_entity_system_test(&sys->comp_bits, entity_bits))
         {
             if (ecs_sparse_set_add(&sys->entity_ids, entity_id))
             {
@@ -1057,37 +1032,11 @@ static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
  * Internal system entity add/remove functions
  *============================================================================*/
 
-inline static bool ecs_entity_system_test(ecs_match_t match,
-                                          ecs_bitset_t* sys_bits,
+inline static bool ecs_entity_system_test(ecs_bitset_t* sys_bits,
                                           ecs_bitset_t* entity_bits)
 {
-    switch (match)
-    {
-        case ECS_MATCH_NONE:
-            return false;
-
-        case ECS_MATCH_ALL:
-            return true;
-
-        case ECS_MATCH_ANY:
-        {
-            ecs_bitset_t tmp = ecs_bitset_and(sys_bits, entity_bits);
-            return ecs_bitset_true(&tmp);
-        }
-
-        case ECS_MATCH_REQUIRED:
-        {
-            ecs_bitset_t tmp = ecs_bitset_and(sys_bits, entity_bits);
-            return ecs_bitset_equal(sys_bits, &tmp);
-        }
-
-        case ECS_MATCH_EXACT:
-            return ecs_bitset_equal(sys_bits, entity_bits);
-
-        default:
-            ECS_ASSERT(false);
-            return false;
-    }
+    ecs_bitset_t tmp = ecs_bitset_and(sys_bits, entity_bits);
+    return ecs_bitset_equal(sys_bits, &tmp);
 }
 
 static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)

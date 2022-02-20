@@ -388,50 +388,46 @@ void register_systems(game_t* game)
     // Player turn system
     ecs_register_system(game->ecs,
                         SYS_PLAYER,
-                        ECS_MATCH_REQUIRED,
                         player_sys,
                         NULL, NULL,
                         game);
 
-    ecs_match_component(game->ecs, SYS_PLAYER, COMP_POS);
-    ecs_match_component(game->ecs, SYS_PLAYER, COMP_DRAWABLE);
-    ecs_match_component(game->ecs, SYS_PLAYER, COMP_STATS);
-    ecs_match_component(game->ecs, SYS_PLAYER, COMP_MONSTER);
+    ecs_require_component(game->ecs, SYS_PLAYER, COMP_POS);
+    ecs_require_component(game->ecs, SYS_PLAYER, COMP_DRAWABLE);
+    ecs_require_component(game->ecs, SYS_PLAYER, COMP_STATS);
+    ecs_require_component(game->ecs, SYS_PLAYER, COMP_MONSTER);
 
     // Monster's turns
     ecs_register_system(game->ecs,
                         SYS_MONSTER,
-                        ECS_MATCH_REQUIRED,
                         monster_sys,
                         NULL, NULL,
                         game);
 
-    ecs_match_component(game->ecs, SYS_MONSTER, COMP_POS);
-    ecs_match_component(game->ecs, SYS_MONSTER, COMP_DRAWABLE);
-    ecs_match_component(game->ecs, SYS_MONSTER, COMP_STATS);
-    ecs_match_component(game->ecs, SYS_MONSTER, COMP_MONSTER);
+    ecs_require_component(game->ecs, SYS_MONSTER, COMP_POS);
+    ecs_require_component(game->ecs, SYS_MONSTER, COMP_DRAWABLE);
+    ecs_require_component(game->ecs, SYS_MONSTER, COMP_STATS);
+    ecs_require_component(game->ecs, SYS_MONSTER, COMP_MONSTER);
 
     // Draw system
     ecs_register_system(game->ecs,
                         SYS_CHEST,
-                        ECS_MATCH_REQUIRED,
                         chest_sys,
                         NULL, NULL,
                         game);
 
-    ecs_match_component(game->ecs, SYS_CHEST, COMP_CHEST);
-    ecs_match_component(game->ecs, SYS_PLAYER, COMP_POS);
-    ecs_match_component(game->ecs, SYS_PLAYER, COMP_DRAWABLE);
+    ecs_require_component(game->ecs, SYS_CHEST,  COMP_CHEST);
+    ecs_require_component(game->ecs, SYS_PLAYER, COMP_POS);
+    ecs_require_component(game->ecs, SYS_PLAYER, COMP_DRAWABLE);
 
     ecs_register_system(game->ecs,
                         SYS_DRAWABLE,
-                        ECS_MATCH_REQUIRED,
                         draw_sys,
                         NULL, NULL,
                         game);
 
-    ecs_match_component(game->ecs, SYS_DRAWABLE, COMP_POS);
-    ecs_match_component(game->ecs, SYS_DRAWABLE, COMP_DRAWABLE);
+    ecs_require_component(game->ecs, SYS_DRAWABLE, COMP_POS);
+    ecs_require_component(game->ecs, SYS_DRAWABLE, COMP_DRAWABLE);
 
 }
 
