@@ -20,7 +20,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
 #define STB_IMAGE_IMPLEMENTATION
