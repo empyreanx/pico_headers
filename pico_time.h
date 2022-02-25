@@ -37,15 +37,54 @@ ptime_t pt_from_sec(double sec);
 	#define PT_PLATFORM PT_MAC
 #else
 	#define PT_PLATFORM PT_UNIX
-
 #endif
 
 #if PT_PLATFORM == PT_WINDOWS
+#include <windows.h>
 
+ptime_t pt_now()
+{
+    static LARGE_INTEGER freq;
+    static bool first = true;
 
+    if (first)
+    {
+        QueryPerformanceFrequency(&freq);
+        first = false;
+    }
+
+    LARGE_INTEGER ticks;
+    QueryPerformanceCounter(&ticks);
+
+    return 1000000UL * ticks.QuadPart / freq.QuadPart;
+}
+
+void pt_sleep(ptime_t duration)
+{
+    TIMECAPS tc;
+    timeGetDevCaps(&tc, sizeof(TIMECAPS));
+
+    timeBeginPeriod(tc.wPeriodMin);
+
+    Sleep(pt_to_msec(duration));
+
+    timeEndPeriod(tc.wPeriodMin);
+}
 
 #elif PT_PLATFORM == PT_MACOS
 
+#include <mach/mach_time.h>
+
+ptime_t pt_now()
+{
+    static mach_timebase_info_data_t freq = { 0, 0 };
+
+    if (freq.denom == 0)
+        mach_timebase_info(&freq);
+
+    uint64_t nsec = mach_absolute_time() * freq.numer / freq.denom;
+    return nsec / 1000;
+}
 
 #elif PT_PLATFORM == PT_UNIX
 
@@ -59,6 +98,8 @@ ptime_t pt_now()
     return ti.tv_sec * 1000000UL + ti.tv_nsec / 1000;
 }
 
+#elif PT_PLATFORM == PT_UNIX || PT_PLATFORM == PT_MACOS
+
 void pt_sleep(ptime_t duration)
 {
     struct timespec ti;
@@ -67,6 +108,8 @@ void pt_sleep(ptime_t duration)
 
     while ((nanosleep(&ti, &ti) == -1) && (errno == EINTR));
 }
+
+#endif // PT_PLATFORM
 
 int64_t pt_to_usec(ptime_t time)
 {
@@ -97,8 +140,6 @@ ptime_t pt_from_sec(double sec)
 {
     return (ptime_t)(sec * 1000000.0);
 }
-
-#endif // PT_PLATFORM
 
 #endif // PT_IMPLEMENTATION
 
