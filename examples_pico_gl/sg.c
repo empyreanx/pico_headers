@@ -26,8 +26,9 @@
      * Toggle full screen, interpolation
      * More docs
 */
+#define PT_IMPLEMENTATION
+#include "../pico_time.h"
 
-#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
 #define PM_IMPLEMENTATION
@@ -425,15 +426,14 @@ int main(int argc, char *argv[])
     // Main Loop
     bool done = false;
 
-    double now, delta;
-    double accumulator = 0.0;
-    double last = time_now();
+    double delta, accumulator = 0.0;
+    ptime_t now, last = pt_now();
 
     while (!done)
     {
         // Calculate delta
-        now = time_now();
-        delta = now - last;
+        now = pt_now();
+        delta = pt_to_sec(now - last);
         last = now;
 
         // Update last world transforms for interpolation
