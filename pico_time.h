@@ -17,10 +17,12 @@ typedef uint64_t ptime_t;
 ptime_t pt_now();
 void pt_sleep(ptime_t duration);
 
+int64_t pt_to_nsec(ptime_t time);
 int64_t pt_to_usec(ptime_t time);
 int32_t pt_to_msec(ptime_t time);
 double  pt_to_sec(ptime_t time);
 
+ptime_t pt_from_nsec(int64_t nsec);
 ptime_t pt_from_usec(int64_t usec);
 ptime_t pt_from_msec(int32_t msec);
 ptime_t pt_from_sec(double sec);
@@ -98,6 +100,9 @@ ptime_t pt_now()
 
 #elif PT_PLATFORM == PT_UNIX || PT_PLATFORM == PT_MACOS
 
+#include <errno.h>
+#include <time.h>
+
 void pt_sleep(ptime_t duration)
 {
     struct timespec ti;
@@ -108,6 +113,11 @@ void pt_sleep(ptime_t duration)
 }
 
 #endif // PT_PLATFORM
+
+int64_t pt_to_nsec(ptime_t time)
+{
+    return time * 1000;
+}
 
 int64_t pt_to_usec(ptime_t time)
 {
@@ -122,6 +132,11 @@ int32_t pt_to_msec(ptime_t time)
 double pt_to_sec(ptime_t time)
 {
     return time / 1000000.0;
+}
+
+ptime_t pt_from_nsec(int64_t nsec)
+{
+    return nsec / 1000;
 }
 
 ptime_t pt_from_usec(int64_t usec)
