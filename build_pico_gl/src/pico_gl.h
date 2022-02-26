@@ -2569,7 +2569,7 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
     }
 
     for (GLint i = 0; i < uniform_count; i++)
-	{
+    {
 	    pgl_uniform_t uniform;
 		GLsizei name_length;
 
@@ -2592,7 +2592,7 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
 		uniform.hash = pgl_hash_str(uniform.name);
 
 		shader->uniforms[i] = uniform;
-	}
+    }
 
 	return 0;
 }
