@@ -2557,7 +2557,7 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
     PGL_ASSERT(NULL != shader);
 
     GLint uniform_count;
-	glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &uniform_count);
+    glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &uniform_count);
     shader->uniform_count = uniform_count;
 
     PGL_ASSERT(uniform_count < PGL_MAX_UNIFORMS);
