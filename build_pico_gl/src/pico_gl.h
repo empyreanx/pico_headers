@@ -2570,17 +2570,17 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
 
     for (GLint i = 0; i < uniform_count; i++)
     {
-	    pgl_uniform_t uniform;
-		GLsizei name_length;
+        pgl_uniform_t uniform;
+        GLsizei name_length;
 
         GLint index = i;
 
-		PGL_CHECK(glGetActiveUniform(shader->program, index,
-		                             PGL_UNIFORM_NAME_LENGTH, &name_length,
-		                             &uniform.size, &uniform.type,
-		                             uniform.name));
+        PGL_CHECK(glGetActiveUniform(shader->program, index,
+                                     PGL_UNIFORM_NAME_LENGTH, &name_length,
+                                     &uniform.size, &uniform.type,
+                                     uniform.name));
 
-		PGL_ASSERT(name_length <= PGL_UNIFORM_NAME_LENGTH);
+        PGL_ASSERT(name_length <= PGL_UNIFORM_NAME_LENGTH);
 
         if (name_length > PGL_UNIFORM_NAME_LENGTH)
         {
@@ -2588,10 +2588,10 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
             return -1;
         }
 
-		uniform.location = glGetUniformLocation(shader->program, uniform.name);
-		uniform.hash = pgl_hash_str(uniform.name);
+        uniform.location = glGetUniformLocation(shader->program, uniform.name);
+        uniform.hash = pgl_hash_str(uniform.name);
 
-		shader->uniforms[i] = uniform;
+        shader->uniforms[i] = uniform;
     }
 
 	return 0;
