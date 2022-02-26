@@ -1,6 +1,8 @@
 /**
     @file pico_time.h
     @brief A simple time management library
+
+    TODO:
 */
 
 #ifndef PICO_TIME_H
@@ -31,12 +33,14 @@ ptime_t pt_from_sec(double sec);
 #define PT_MAC     2
 #define PT_UNIX    3
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN64)
 	#define PT_PLATFORM PT_WINDOWS
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && defined(__MACH__)
 	#define PT_PLATFORM PT_MAC
-#else
+#elif defined(__linux__) || defined(__unix__) || defined(__unix)
 	#define PT_PLATFORM PT_UNIX
+#else
+    #error "Unsupported platform"
 #endif
 
 #if PT_PLATFORM == PT_WINDOWS
@@ -44,19 +48,15 @@ ptime_t pt_from_sec(double sec);
 
 ptime_t pt_now()
 {
-    static LARGE_INTEGER freq;
-    static bool first = true;
+    static LARGE_INTEGER freq = 0;
 
-    if (first)
-    {
+    if (freq == 0)
         QueryPerformanceFrequency(&freq);
-        first = false;
-    }
 
     LARGE_INTEGER ticks;
     QueryPerformanceCounter(&ticks);
 
-    return 1000000UL * ticks.QuadPart / freq.QuadPart;
+    return (1000000UL * ticks.QuadPart) / freq.QuadPart;
 }
 
 void pt_sleep(ptime_t duration)
@@ -65,9 +65,7 @@ void pt_sleep(ptime_t duration)
     timeGetDevCaps(&tc, sizeof(TIMECAPS));
 
     timeBeginPeriod(tc.wPeriodMin);
-
     Sleep(pt_to_msec(duration));
-
     timeEndPeriod(tc.wPeriodMin);
 }
 
@@ -82,7 +80,7 @@ ptime_t pt_now()
     if (freq.denom == 0)
         mach_timebase_info(&freq);
 
-    uint64_t nsec = mach_absolute_time() * freq.numer / freq.denom;
+    uint64_t nsec = (mach_absolute_time() * freq.numer) / freq.denom;
     return nsec / 1000;
 }
 
