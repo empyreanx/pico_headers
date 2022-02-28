@@ -98,10 +98,7 @@ ptime_t pt_now()
     return ti.tv_sec * 1000000UL + ti.tv_nsec / 1000;
 }
 
-#elif PT_PLATFORM == PT_UNIX || PT_PLATFORM == PT_MACOS
-
-#include <errno.h>
-#include <time.h>
+#if PT_PLATFORM == PT_UNIX || PT_PLATFORM == PT_MACOS
 
 void pt_sleep(ptime_t duration)
 {
@@ -112,6 +109,7 @@ void pt_sleep(ptime_t duration)
     while ((nanosleep(&ti, &ti) == -1) && (errno == EINTR));
 }
 
+#endif
 #endif // PT_PLATFORM
 
 int64_t pt_to_nsec(ptime_t time)
