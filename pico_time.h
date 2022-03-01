@@ -3,7 +3,6 @@
     @brief A simple time management library
 
     TODO:
-    - Possibly use nanoseconds internally
     - Time conversion tests
     - Docs
 */
@@ -38,7 +37,7 @@ ptime_t pt_from_sec(double sec);
 #define PT_MAC     2
 #define PT_UNIX    3
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64) || defined (__CYGWIN__)
 	#define PT_PLATFORM PT_WINDOWS
 #elif defined(__APPLE__) && defined(__MACH__)
 	#define PT_PLATFORM PT_MAC
@@ -53,9 +52,9 @@ ptime_t pt_from_sec(double sec);
 
 ptime_t pt_now()
 {
-    static LARGE_INTEGER freq = 0;
+    static LARGE_INTEGER freq = { 0 };
 
-    if (freq == 0)
+    if (freq.QuadPart == 0)
         QueryPerformanceFrequency(&freq);
 
     LARGE_INTEGER ticks;
