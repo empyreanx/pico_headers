@@ -34,20 +34,21 @@ ptime_t pt_from_sec(double sec);
 #ifdef PT_IMPLEMENTATION
 
 #define PT_WINDOWS 1
-#define PT_MACOS   2
+#define PT_APPLE   2
 #define PT_UNIX    3
 
 #if defined(_WIN32) || defined(_WIN64) || defined (__CYGWIN__)
 	#define PT_PLATFORM PT_WINDOWS
 #elif defined(__APPLE__) && defined(__MACH__)
-	#define PT_PLATFORM PT_MACOS
-#elif defined(__linux__) || defined(__unix__) || defined(__unix)
+	#define PT_PLATFORM PT_APPLE
+#elif defined(__unix__)
 	#define PT_PLATFORM PT_UNIX
 #else
     #error "Unsupported platform"
 #endif
 
 #if PT_PLATFORM == PT_WINDOWS
+
 #include <windows.h>
 
 ptime_t pt_now()
@@ -73,7 +74,7 @@ void pt_sleep(ptime_t duration)
     timeEndPeriod(tc.wPeriodMin);
 }
 
-#elif PT_PLATFORM == PT_MACOS
+#elif PT_PLATFORM == PT_APPLE
 
 #include <mach/mach_time.h>
 
@@ -102,7 +103,7 @@ ptime_t pt_now()
 
 #endif // PT_PLATFORM
 
-#if PT_PLATFORM == PT_UNIX || PT_PLATFORM == PT_MACOS
+#if PT_PLATFORM == PT_UNIX || PT_PLATFORM == PT_APPLE
 
 #include <errno.h>
 #include <time.h>
