@@ -2,9 +2,8 @@
     @file pico_time.h
     @brief A simple time management library
 
-    TODO:
-    - Time conversion tests
-    - Docs
+    This library provides high-res time and sleep functions, as well as unit
+    conversions functions.
 */
 
 #ifndef PICO_TIME_H
@@ -14,19 +13,62 @@
 
 #include <stdint.h>
 
+/**
+ * @brief Time value
+ */
 typedef uint64_t ptime_t;
 
+/**
+ * @brief Returns the present high-res clock time
+ */
 ptime_t pt_now();
+
+/**
+ * @brief Sleeps for at least the specified duration
+ *
+ * Note: On most platforms this function has microsecond resolution, except on
+ * Windows where it only has millisecond resoultion.
+ */
 void pt_sleep(ptime_t duration);
 
+/**
+ * @brief Converts time to nanoseconds
+ */
 int64_t pt_to_nsec(ptime_t time);
+
+/**
+ * @brief Converts time to microseconds
+ */
 int64_t pt_to_usec(ptime_t time);
+
+/**
+ * @brief Converts time to milliseconds
+ */
 int32_t pt_to_msec(ptime_t time);
+
+/**
+ * @brief Converts time to seconds
+ */
 double  pt_to_sec(ptime_t time);
 
+/**
+ * @brief Make time from nanoseconds
+ */
 ptime_t pt_from_nsec(int64_t nsec);
+
+/**
+ * @brief Make time from microseconds
+ */
 ptime_t pt_from_usec(int64_t usec);
+
+/**
+ * @brief Make time from miliseconds
+ */
 ptime_t pt_from_msec(int32_t msec);
+
+/**
+ * @brief Time from miliseconds
+ */
 ptime_t pt_from_sec(double sec);
 
 #endif // PICO_TIME_H
