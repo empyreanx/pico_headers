@@ -17,6 +17,7 @@ PU_TEST(test_sleep)
 
 PU_TEST(test_nsec)
 {
+    PU_ASSERT(pt_to_nsec(pt_from_nsec(1000)) == 1000);
     PU_ASSERT(pt_to_usec(pt_from_nsec(1000000)) == 1000);
     PU_ASSERT(pt_to_msec(pt_from_nsec(1000000000)) == 1000);
     PU_ASSERT(pt_to_sec(pt_from_nsec(1000000000000.0)) == 1000);
@@ -31,7 +32,14 @@ PU_TEST(test_nsec)
 
 PU_TEST(test_usec)
 {
-    PU_ASSERT(pt_from_usec(pt_to_usec(1)) == 1);
+    PU_ASSERT(pt_to_nsec(pt_from_usec(1)) == 1000);
+    PU_ASSERT(pt_to_usec(pt_from_usec(1000)) == 1000);
+    PU_ASSERT(pt_to_msec(pt_from_usec(1000000)) == 1000);
+    PU_ASSERT(pt_to_sec(pt_from_usec(1000000000.0)) == 1000);
+
+    PU_ASSERT(pt_from_nsec(1) == pt_from_usec(0));
+    PU_ASSERT(pt_from_usec(1) == pt_from_usec(1));
+    PU_ASSERT(pt_from_msec(1) == pt_from_usec(1000));
     PU_ASSERT(pt_from_sec(1.0) == pt_from_usec(1000000));
 
     return true;
@@ -39,7 +47,14 @@ PU_TEST(test_usec)
 
 PU_TEST(test_msec)
 {
-    PU_ASSERT(pt_from_msec(pt_to_msec(1)) == 1);
+    PU_ASSERT(pt_to_nsec(pt_from_msec(1)) == 1000000);
+    PU_ASSERT(pt_to_usec(pt_from_msec(1)) == 1000);
+    PU_ASSERT(pt_to_msec(pt_from_msec(1)) == 1);
+    PU_ASSERT(pt_to_sec(pt_from_msec(1000000.0)) == 1000);
+
+    PU_ASSERT(pt_from_nsec(1) == pt_from_msec(0));
+    PU_ASSERT(pt_from_usec(1000) == pt_from_msec(1));
+    PU_ASSERT(pt_from_msec(1) == pt_from_msec(1));
     PU_ASSERT(pt_from_sec(1.0) == pt_from_msec(1000));
 
     return true;
@@ -47,7 +62,16 @@ PU_TEST(test_msec)
 
 PU_TEST(test_sec)
 {
-    PU_ASSERT(pt_from_sec(pt_to_sec(1.0)) == 1.0);
+    PU_ASSERT(pt_to_nsec(pt_from_sec(1.0)) == 1000000000);
+    PU_ASSERT(pt_to_usec(pt_from_sec(1.0)) == 1000000);
+    PU_ASSERT(pt_to_msec(pt_from_sec(1.0)) == 1000);
+    PU_ASSERT(pt_to_sec(pt_from_sec(1.0)) == 1.0);
+
+    PU_ASSERT(pt_from_nsec(1) == pt_from_sec(0.0));
+    PU_ASSERT(pt_from_usec(1) == pt_from_sec(0.000001));
+    PU_ASSERT(pt_from_msec(1) == pt_from_sec(0.001));
+    PU_ASSERT(pt_from_sec(1.0) == pt_from_sec(1.0));
+
     return true;
 }
 
