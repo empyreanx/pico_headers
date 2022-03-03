@@ -31,6 +31,10 @@
 
     IMPORTANT: On POSIX systems, this library must be included before all other
     headers, or `_POSIX_C_SOURCE 199309L` must be defined by the build system.
+
+    Todo:
+    - Consider removing nanosecond conversion
+    - Consider removing microsecond conversion
 */
 
 #ifndef PICO_TIME_H
