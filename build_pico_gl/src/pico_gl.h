@@ -1950,6 +1950,8 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx)
     };
 
     state->blend_mode = mode;
+
+    glEnable(GL_BLEND);
 }
 
 void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix)
@@ -2484,55 +2486,9 @@ static void pgl_apply_line_width(pgl_ctx_t* ctx, float line_width)
     PGL_CHECK(glLineWidth(line_width));
 }
 
-static void pgl_store_gl_state(pgl_ctx_t* ctx)
-{
-    pgl_gl_state_t* state = &ctx->gl_state;
-
-    PGL_CHECK(glGetBooleanv(GL_CULL_FACE, &state->cull_face));
-    PGL_CHECK(glGetBooleanv(GL_DEPTH_TEST, &state->depth_test));
-    PGL_CHECK(glGetBooleanv(GL_SCISSOR_TEST, &state->scissor_test));
-    PGL_CHECK(glGetBooleanv(GL_BLEND, &state->blend));
-}
-
-static void pgl_restore_gl_state(pgl_ctx_t* ctx)
-{
-    pgl_gl_state_t* state = &ctx->gl_state;
-
-    // Cull face
-    if (state->cull_face)
-        glEnable(GL_CULL_FACE);
-    else
-        glDisable(GL_CULL_FACE);
-
-    // Depth test
-    if (state->depth_test)
-        glEnable(GL_DEPTH_TEST);
-    else
-        glDisable(GL_DEPTH_TEST);
-
-    // Scissor test
-    if (state->scissor_test)
-        glEnable(GL_SCISSOR_TEST);
-    else
-        glDisable(GL_SCISSOR_TEST);
-
-    // Blending
-    if (state->blend)
-        glEnable(GL_BLEND);
-    else
-        glDisable(GL_BLEND);
-}
-
 static void pgl_before_draw(pgl_ctx_t* ctx, pgl_texture_t* texture, pgl_shader_t* shader)
 {
-    pgl_store_gl_state(ctx);
-
-    PGL_CHECK(glDisable(GL_CULL_FACE));
-    PGL_CHECK(glDisable(GL_DEPTH_TEST));
-    PGL_CHECK(glDisable(GL_SCISSOR_TEST));
-    PGL_CHECK(glEnable(GL_BLEND));
-
-    PGL_ASSERT(NULL != shader); //TODO: Possibly return -1
+    PGL_ASSERT(NULL != shader);
 
     pgl_bind_texture(ctx, texture);
     pgl_bind_shader(ctx, shader);
@@ -2549,7 +2505,6 @@ static void pgl_before_draw(pgl_ctx_t* ctx, pgl_texture_t* texture, pgl_shader_t
 static void pgl_after_draw(pgl_ctx_t* ctx)
 {
     ctx->last_state = *pgl_get_active_state(ctx);
-    pgl_restore_gl_state(ctx);
 }
 
 static int pgl_load_uniforms(pgl_shader_t* shader)
