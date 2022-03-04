@@ -33,8 +33,9 @@
 
     to a source file (once).
 
-    IMPORTANT: On POSIX systems, this library must be included before all other
-    headers, or `_POSIX_C_SOURCE 199309L` must be defined by the build system.
+    IMPORTANT: On POSIX systems, when defining PT_IMPLEMENTATION, this library
+    must be included before all other headers. Otherwise `_POSIX_C_SOURCE 199309L`
+    should be defined by the build system.
 */
 
 #define _POSIX_C_SOURCE 199309L
