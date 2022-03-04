@@ -1,7 +1,7 @@
 pico_headers
 --------------------------------------------------------------------------------
-
 A collection of cross-platform single header libraries written in C. 
+
 
 Library | Docs | Description | Version
 ------- | -----| ------------| -------
