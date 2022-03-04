@@ -1420,6 +1420,8 @@ pgl_ctx_t* pgl_create_context(uint32_t w,
         PGL_CHECK(glGenRenderbuffers(1, &ctx->rbo_msaa));
     }
 
+    glEnable(GL_BLEND);
+
     pgl_clear_stack(ctx);
     pgl_reset_state(ctx);
 
@@ -1950,8 +1952,6 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx)
     };
 
     state->blend_mode = mode;
-
-    glEnable(GL_BLEND);
 }
 
 void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix)
