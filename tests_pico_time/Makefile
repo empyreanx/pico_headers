@@ -2,9 +2,9 @@ CC     = gcc
 CFLAGS = -std=c99 -g -Wall -Wextra -Wpedantic #-D_POSIX_C_SOURCE=199309L
 
 ifeq ($(OS),Windows_NT)
-    LIBS = -lmingw32 -lwinmm
+    CLIBS = -lmingw32 -lwinmm
 else
-    LIBS =
+    CLIBS =
 endif
 
 UNAME_S := $(shell uname -s)
@@ -24,7 +24,7 @@ all: tests
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 tests: $(OBJS)
-	$(CC) -o tests $(OBJS) $(LIBS)
+	$(CC) -o tests $(OBJS) $(CLIBS)
 
 .PHONY: clean
 
