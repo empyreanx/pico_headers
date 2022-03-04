@@ -31,16 +31,12 @@
 
     IMPORTANT: On POSIX systems, this library must be included before all other
     headers, or `_POSIX_C_SOURCE 199309L` must be defined by the build system.
-
-    Todo:
-    - Consider removing nanosecond conversion
-    - Consider removing microsecond conversion
 */
+
+#define _POSIX_C_SOURCE 199309L
 
 #ifndef PICO_TIME_H
 #define PICO_TIME_H
-
-#define _POSIX_C_SOURCE 199309L
 
 #include <stdint.h>
 
@@ -63,11 +59,6 @@ ptime_t pt_now();
 void pt_sleep(ptime_t duration);
 
 /**
- * @brief Converts time to nanoseconds
- */
-int64_t pt_to_nsec(ptime_t time);
-
-/**
  * @brief Converts time to microseconds
  */
 int64_t pt_to_usec(ptime_t time);
@@ -81,11 +72,6 @@ int32_t pt_to_msec(ptime_t time);
  * @brief Converts time to seconds
  */
 double  pt_to_sec(ptime_t time);
-
-/**
- * @brief Make time from nanoseconds
- */
-ptime_t pt_from_nsec(int64_t nsec);
 
 /**
  * @brief Make time from microseconds
@@ -192,11 +178,6 @@ void pt_sleep(ptime_t duration)
 
 #endif // PT_PLATFORM
 
-int64_t pt_to_nsec(ptime_t time)
-{
-    return time * 1000;
-}
-
 int64_t pt_to_usec(ptime_t time)
 {
     return time;
@@ -210,11 +191,6 @@ int32_t pt_to_msec(ptime_t time)
 double pt_to_sec(ptime_t time)
 {
     return time / 1000000.0;
-}
-
-ptime_t pt_from_nsec(int64_t nsec)
-{
-    return nsec / 1000;
 }
 
 ptime_t pt_from_usec(int64_t usec)
