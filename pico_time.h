@@ -20,8 +20,8 @@
     conversions functions.
 
     Even though `ptime_t` is expressed in microseconds, it is still recommended
-    to use the `pt_to_usec` and `pt_from_usec` functions in case this ever
-    changes.
+    that you use the `pt_to_usec` and `pt_from_usec` functions should this ever
+    change.
 
     Usage:
     ------
