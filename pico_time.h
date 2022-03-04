@@ -19,6 +19,10 @@
     This library provides high-res time and sleep functions, as well as unit
     conversions functions.
 
+    Even though `ptime_t` is expressed in microseconds, it is still recommended
+    to use the `pt_to_usec` and `pt_from_usec` functions in case this ever
+    changes.
+
     Usage:
     ------
 
@@ -27,7 +31,7 @@
     > #define PT_IMPLEMENTATION
     > #include "pico_time.h"
 
-    to a source file (once), then simply include the header normally.
+    to a source file (once).
 
     IMPORTANT: On POSIX systems, this library must be included before all other
     headers, or `_POSIX_C_SOURCE 199309L` must be defined by the build system.
@@ -41,7 +45,7 @@
 #include <stdint.h>
 
 /**
- * @brief Time value
+ * @brief Time value expressed in microseconds
  */
 typedef uint64_t ptime_t;
 
@@ -84,7 +88,7 @@ ptime_t pt_from_usec(int64_t usec);
 ptime_t pt_from_msec(int32_t msec);
 
 /**
- * @brief Time from miliseconds
+ * @brief Make time from seconds
  */
 ptime_t pt_from_sec(double sec);
 
