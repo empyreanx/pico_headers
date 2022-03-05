@@ -1147,6 +1147,7 @@ static void pgl_log_error(const char* file, unsigned line, const char* expr);
 static pgl_error_t pgl_map_error(GLenum id);
 static pgl_hash_t pgl_hash_str(const char* str);
 static bool pgl_str_equal(const char* str1, const char* str2);
+static bool pgl_mem_equal(const void* ptr1, const void* ptr2, size_t size);
 
 /*=============================================================================
  * Internal constants
@@ -2431,7 +2432,7 @@ static void pgl_apply_blend(pgl_ctx_t* ctx, const pgl_blend_mode_t* mode)
 {
     PGL_ASSERT(NULL != ctx);
 
-    if (0 == memcmp(mode, &ctx->last_state.blend_mode, sizeof(pgl_blend_mode_t)))
+    if (pgl_mem_equal(mode, &ctx->last_state.blend_mode, sizeof(pgl_blend_mode_t)))
         return;
 
     PGL_CHECK(glBlendFuncSeparate(pgl_blend_factor_map[mode->color_src],
@@ -2447,7 +2448,7 @@ static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 {
     PGL_ASSERT(NULL != ctx);
 
-    if (0 == memcmp(matrix, ctx->last_state.transform, sizeof(pgl_m3_t)))
+    if (pgl_mem_equal(matrix, ctx->last_state.transform, sizeof(pgl_m3_t)))
         return;
 
     pgl_set_m3(ctx->shader, "u_tr", matrix);
@@ -2457,7 +2458,7 @@ static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 {
     PGL_ASSERT(NULL != ctx);
 
-    if (0 == memcmp(matrix, &ctx->last_state.projection, sizeof(pgl_m3_t)))
+    if (pgl_mem_equal(matrix, &ctx->last_state.projection, sizeof(pgl_m3_t)))
         return;
 
     pgl_set_m3(ctx->shader, "u_proj", matrix);
@@ -2470,7 +2471,7 @@ static void pgl_apply_viewport(pgl_ctx_t* ctx, const pgl_viewport_t* viewport)
     if (viewport->w <= 0 && viewport->h <= 0)
         return;
 
-    if (0 == memcmp(viewport, &ctx->last_state.viewport, sizeof(pgl_viewport_t)))
+    if (pgl_mem_equal(viewport, &ctx->last_state.viewport, sizeof(pgl_viewport_t)))
         return;
 
     PGL_CHECK(glViewport(viewport->x, viewport->y, viewport->w, viewport->h));
@@ -2639,6 +2640,11 @@ static pgl_error_t pgl_map_error(GLenum id)
 static bool pgl_str_equal(const char* str1, const char* str2)
 {
     return (0 == strcmp(str1, str2));
+}
+
+static bool pgl_mem_equal(const void* ptr1, const void* ptr2, size_t size)
+{
+    return (0 == memcmp(ptr1, ptr2, size));
 }
 
 // FNV-1a
