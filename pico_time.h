@@ -102,11 +102,11 @@ ptime_t pt_from_sec(double sec);
 #define PT_UNIX    3
 
 #if defined(_WIN32) || defined(_WIN64) || defined (__CYGWIN__)
-	#define PT_PLATFORM PT_WINDOWS
+    #define PT_PLATFORM PT_WINDOWS
 #elif defined(__APPLE__) && defined(__MACH__)
-	#define PT_PLATFORM PT_APPLE
+    #define PT_PLATFORM PT_APPLE
 #elif defined(__unix__)
-	#define PT_PLATFORM PT_UNIX
+    #define PT_PLATFORM PT_UNIX
 #else
     #error "Unsupported platform"
 #endif
