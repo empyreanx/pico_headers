@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 09/03/2022 15:24:29.
+/// WARNING: This file was automatically generated on 09/03/2022 15:48:45.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4037,6 +4037,12 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
     {
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
+        PGL_LOG("Enabled depth test");
+    }
+    else
+    {
+        glDisable(GL_DEPTH_TEST);
+        PGL_LOG("Disabled depth test");
     }
 
     pgl_clear_stack(ctx);

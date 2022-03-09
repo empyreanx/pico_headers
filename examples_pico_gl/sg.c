@@ -300,7 +300,7 @@ sg_t* sg_build(int scene_w, int scene_h)
     pgl_texture_t* bg_tex = load_texture("./space.png", &w, &h);
 
     // New sprite
-    sg->bg_sprite = sprite_new(scene_w, scene_h, 0.75, bg_tex);
+    sg->bg_sprite = sprite_new(scene_w, scene_h, 0.0f, bg_tex);
 
     // Create a new node that uses this sprite. In theory more than one node
     // could have the same sprite.
@@ -399,7 +399,7 @@ int main(int argc, char *argv[])
     PGL_LOG("Max texture size: %ix%i", tex_w, tex_h);
 
     // Create global PGL context
-    ctx = pgl_create_context(app->screen_w, app->screen_h, true, 0, false, NULL);
+    ctx = pgl_create_context(app->screen_w, app->screen_h, false, 0, false, NULL);
     pgl_set_viewport(ctx, 0, 0, app->screen_w, app->screen_h);
 
     // Make sure matrices are row-major order
