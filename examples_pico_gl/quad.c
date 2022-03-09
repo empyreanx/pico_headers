@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     pgl_get_max_texture_size(&tex_w, &tex_h);
     PGL_LOG("Max texture size: %ix%i", tex_w, tex_h);
 
-    pgl_ctx_t* ctx = pgl_create_context(screen_w, screen_h, 0, false, NULL);
+    pgl_ctx_t* ctx = pgl_create_context(screen_w, screen_h, false, 0, false, NULL);
     assert(ctx);
 
     pgl_set_viewport(ctx, 0, 0, screen_w, screen_h);

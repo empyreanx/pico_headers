@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 09/03/2022 15:00:23.
+/// WARNING: This file was automatically generated on 09/03/2022 15:24:29.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -340,7 +340,7 @@ const char* pgl_get_error_str(pgl_error_t code);
  *
  * @returns The context pointer or \em NULL on error
  */
-pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h,
+pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
                               uint32_t samples, bool srgb,
                               void* mem_ctx);
 
@@ -3980,11 +3980,8 @@ int pgl_global_init(pgl_loader_fn load_proc, bool gles)
     return 0;
 }
 
-pgl_ctx_t* pgl_create_context(uint32_t w,
-                              uint32_t h,
-                              uint32_t samples,
-                              bool srgb,
-                              void* mem_ctx)
+pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
+                              uint32_t samples, bool srgb, void* mem_ctx)
 {
     if (!pgl_initialized)
     {
@@ -4035,6 +4032,12 @@ pgl_ctx_t* pgl_create_context(uint32_t w,
     }
 
     glEnable(GL_BLEND);
+
+    if (depth)
+    {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+    }
 
     pgl_clear_stack(ctx);
     pgl_reset_state(ctx);
@@ -4467,7 +4470,7 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
 void pgl_clear(float r, float g, float b, float a)
 {
     PGL_CHECK(glClearColor(r, g, b, a));
-    PGL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void pgl_draw_array(pgl_ctx_t* ctx,
