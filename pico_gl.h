@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 05/03/2022 14:07:10.
+/// WARNING: This file was automatically generated on 09/03/2022 15:00:23.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -209,7 +209,7 @@ typedef enum
  */
 typedef struct
 {
-    float pos[2];
+    float pos[3];
     float color[4];
     float uv[2];
 } pgl_vertex_t;
@@ -3729,14 +3729,6 @@ typedef struct
     pgl_state_t array[PGL_MAX_STATES];
 } pgl_state_stack_t;
 
-typedef struct
-{
-    GLboolean cull_face;
-    GLboolean depth_test;
-    GLboolean scissor_test;
-    GLboolean blend;
-} pgl_gl_state_t;
-
 /*=============================================================================
  * Internal function declarations
  *============================================================================*/
@@ -3793,7 +3785,7 @@ static const pgl_hash_t PGL_PRIME = 0x1000193;
 "#version 310 es\n"
 
 #define PGL_GL_VERT_BODY "" \
-"layout (location = 0) in vec2 a_pos;\n" \
+"layout (location = 0) in vec3 a_pos;\n" \
 "layout (location = 1) in vec4 a_color;\n" \
 "layout (location = 2) in vec2 a_uv;\n" \
 "\n" \
@@ -3805,8 +3797,8 @@ static const pgl_hash_t PGL_PRIME = 0x1000193;
 "\n" \
 "void main()\n" \
 "{\n" \
-"   vec3 pos = u_proj * u_tr * vec3(a_pos, 1);\n" \
-"   gl_Position = vec4(pos.xy, 0, 1);\n" \
+"   vec3 pos = u_proj * u_tr * vec3(a_pos.xy, 1);\n" \
+"   gl_Position = vec4(pos.xy, a_pos.z, 1);\n" \
 "   color = a_color;\n" \
 "   uv = a_uv;\n" \
 "}\n"
@@ -3850,7 +3842,6 @@ struct pgl_ctx_t
     pgl_state_t       last_state;
     pgl_state_stack_t stack;
     pgl_state_stack_t target_stack;
-    pgl_gl_state_t    gl_state;
     GLuint            vao;
     GLuint            vbo;
     GLuint            fbo;
@@ -5201,7 +5192,7 @@ static const pgl_uniform_t* pgl_find_uniform(const pgl_shader_t* shader, const c
 static void pgl_bind_attributes()
 {
     // Position
-    PGL_CHECK(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+    PGL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                                     sizeof(pgl_vertex_t),
                                     (GLvoid*)offsetof(pgl_vertex_t, pos)));
 
