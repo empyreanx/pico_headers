@@ -177,11 +177,12 @@ void node_render(node_t* node, double alpha)
 
         // Update model-vie
 
-        pgl_set_transform(ctx, (pgl_m3_t)
+        pgl_set_transform(ctx, (pgl_m4_t)
         {
-            render.t00, render.t01, render.tx,
-            render.t10, render.t11, render.ty,
-            0.0f,       0.0f,       1.0f
+            render.t00, render.t01, 0.0f, render.tx,
+            render.t10, render.t11, 0.0f, render.ty,
+            0.0f,       0.0f,       1.0f, 0.0f,
+            0.0f,       0.0f,       0.0f, 1.0f
         });
 
         // Draw vertices
@@ -414,11 +415,12 @@ int main(int argc, char *argv[])
     int w = app->screen_w;
     int h = app->screen_h;
 
-    pgl_set_projection(ctx, (pgl_m3_t)
+    pgl_set_projection(ctx, (pgl_m4_t)
     {
-        2.0f / w, 0.0f,   -1.0f,
-        0.0f,    -2.0 / h, 1.0f,
-        0.0f,     0.0f,    1.0f
+        2.0f / w, 0.0f,    0.0f, -1.0f,
+        0.0f,    -2.0 / h, 0.0f,  1.0f,
+        0.0f,     0.0f,    0.0f,  0.0f,
+        0.0f,     0.0f,    0.0f,  1.0f
     });
 
     // Build scene graph
