@@ -302,7 +302,7 @@ sg_t* sg_build(int scene_w, int scene_h)
     pgl_texture_t* bg_tex = load_texture("./space.png", &w, &h);
 
     // New sprite
-    sg->bg_sprite = sprite_new(scene_w, scene_h, 0.0f, bg_tex);
+    sg->bg_sprite = sprite_new(scene_w, scene_h, 10.0f, bg_tex);
 
     // Create a new node that uses this sprite. In theory more than one node
     // could have the same sprite.
@@ -342,7 +342,7 @@ sg_t* sg_build(int scene_w, int scene_h)
 
     int ship_w = w;
 
-    sg->ship_sprite = sprite_new(w, h, 0.0f, ship_tex);
+    sg->ship_sprite = sprite_new(w, h, 5.0f, ship_tex);
     node_t* ship_node = node_new(sg->ship_sprite);
 
     pm_t2_translate(&ship_node->local, pm_v2_make(-w / 2, -h / 2));
@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
     PGL_LOG("Max texture size: %ix%i", tex_w, tex_h);
 
     // Create global PGL context
-    ctx = pgl_create_context(app->screen_w, app->screen_h, false, 0, false, NULL);
+    ctx = pgl_create_context(app->screen_w, app->screen_h, true, 0, false, NULL);
     pgl_set_viewport(ctx, 0, 0, app->screen_w, app->screen_h);
 
     // Make sure matrices are row-major order
@@ -417,10 +417,10 @@ int main(int argc, char *argv[])
 
     pgl_set_projection(ctx, (pgl_m4_t)
     {
-        2.0f / w, 0.0f,    0.0f, -1.0f,
-        0.0f,    -2.0 / h, 0.0f,  1.0f,
-        0.0f,     0.0f,    0.0f,  0.0f,
-        0.0f,     0.0f,    0.0f,  1.0f
+        2.0f / w, 0.0f,     0.0f,      -1.0f,
+        0.0f,    -2.0f / h, 0.0f,       1.0f,
+        0.0f,     0.0f,     2.0f / 256, 0.0f,
+        0.0f,     0.0f,     0.0f,       1.0f
     });
 
     // Build scene graph
