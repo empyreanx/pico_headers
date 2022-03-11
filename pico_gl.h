@@ -1,11 +1,11 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 05/03/2022 14:07:10.
+/// WARNING: This file was automatically generated on 11/03/2022 14:02:20.
 /// DO NOT EDIT!
 ///============================================================================
 
 /**
     @file pico_gl.h
-    @brief A powerful 2D graphics library written in C99.
+    @brief A powerful OpenGL-based graphics library written in C99.
 
     ----------------------------------------------------------------------------
     Licensing information at end of header

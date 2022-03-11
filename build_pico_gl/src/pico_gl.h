@@ -1,6 +1,6 @@
 /**
     @file pico_gl.h
-    @brief A powerful 2D graphics library written in C99.
+    @brief A powerful OpenGL-based graphics library written in C99.
 
     ----------------------------------------------------------------------------
     Licensing information at end of header
