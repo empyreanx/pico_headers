@@ -204,7 +204,7 @@ typedef enum
  */
 typedef struct
 {
-    float pos[2];
+    float pos[3];
     float color[4];
     float uv[2];
 } pgl_vertex_t;
@@ -335,7 +335,7 @@ const char* pgl_get_error_str(pgl_error_t code);
  *
  * @returns The context pointer or \em NULL on error
  */
-pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h,
+pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
                               uint32_t samples, bool srgb,
                               void* mem_ctx);
 
@@ -622,7 +622,7 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx);
  * @param ctx The relevant context
  * @param matrix The global transform matrix
  */
-void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix);
+void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix);
 
 /**
  * @brief Resets the context's transform to the identity matrix
@@ -637,7 +637,7 @@ void pgl_reset_transform(pgl_ctx_t* ctx);
  * @param ctx The relevant context
  * @param matrix The global projection matrix
  */
-void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix);
+void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix);
 
 /**
  * @brief Resets the context's project to the identity matrix
@@ -1094,8 +1094,8 @@ typedef struct
 typedef struct
 {
     pgl_blend_mode_t blend_mode;
-    pgl_m3_t         transform;
-    pgl_m3_t         projection;
+    pgl_m4_t         transform;
+    pgl_m4_t         projection;
     pgl_viewport_t   viewport;
     float            line_width;
 } pgl_state_t;
@@ -1106,14 +1106,6 @@ typedef struct
     pgl_state_t state;
     pgl_state_t array[PGL_MAX_STATES];
 } pgl_state_stack_t;
-
-typedef struct
-{
-    GLboolean cull_face;
-    GLboolean depth_test;
-    GLboolean scissor_test;
-    GLboolean blend;
-} pgl_gl_state_t;
 
 /*=============================================================================
  * Internal function declarations
@@ -1130,8 +1122,8 @@ static pgl_state_t* pgl_get_active_state(pgl_ctx_t* ctx);
 static void pgl_reset_last_state(pgl_ctx_t* ctx);
 
 static void pgl_apply_blend(pgl_ctx_t* ctx, const pgl_blend_mode_t* mode);
-static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix);
-static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix);
+static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix);
+static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix);
 static void pgl_apply_viewport(pgl_ctx_t* ctx, const pgl_viewport_t* viewport);
 
 static void pgl_before_draw(pgl_ctx_t* ctx, pgl_texture_t* texture, pgl_shader_t* shader);
@@ -1171,20 +1163,19 @@ static const pgl_hash_t PGL_PRIME = 0x1000193;
 "#version 310 es\n"
 
 #define PGL_GL_VERT_BODY "" \
-"layout (location = 0) in vec2 a_pos;\n" \
+"layout (location = 0) in vec3 a_pos;\n" \
 "layout (location = 1) in vec4 a_color;\n" \
 "layout (location = 2) in vec2 a_uv;\n" \
 "\n" \
 "out vec4 color;\n" \
 "out vec2 uv;\n" \
 "\n" \
-"uniform mat3 u_tr;\n" \
-"uniform mat3 u_proj;\n" \
+"uniform mat4 u_transform;\n" \
+"uniform mat4 u_projection;\n" \
 "\n" \
 "void main()\n" \
 "{\n" \
-"   vec3 pos = u_proj * u_tr * vec3(a_pos, 1);\n" \
-"   gl_Position = vec4(pos.xy, 0, 1);\n" \
+"   gl_Position = u_projection * u_transform * vec4(a_pos, 1);\n" \
 "   color = a_color;\n" \
 "   uv = a_uv;\n" \
 "}\n"
@@ -1228,7 +1219,6 @@ struct pgl_ctx_t
     pgl_state_t       last_state;
     pgl_state_stack_t stack;
     pgl_state_stack_t target_stack;
-    pgl_gl_state_t    gl_state;
     GLuint            vao;
     GLuint            vbo;
     GLuint            fbo;
@@ -1367,11 +1357,8 @@ int pgl_global_init(pgl_loader_fn load_proc, bool gles)
     return 0;
 }
 
-pgl_ctx_t* pgl_create_context(uint32_t w,
-                              uint32_t h,
-                              uint32_t samples,
-                              bool srgb,
-                              void* mem_ctx)
+pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
+                              uint32_t samples, bool srgb, void* mem_ctx)
 {
     if (!pgl_initialized)
     {
@@ -1422,6 +1409,18 @@ pgl_ctx_t* pgl_create_context(uint32_t w,
     }
 
     glEnable(GL_BLEND);
+
+    if (depth)
+    {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        PGL_LOG("Enabled depth test");
+    }
+    else
+    {
+        glDisable(GL_DEPTH_TEST);
+        PGL_LOG("Disabled depth test");
+    }
 
     pgl_clear_stack(ctx);
     pgl_reset_state(ctx);
@@ -1854,7 +1853,7 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
 void pgl_clear(float r, float g, float b, float a)
 {
     PGL_CHECK(glClearColor(r, g, b, a));
-    PGL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void pgl_draw_array(pgl_ctx_t* ctx,
@@ -1955,44 +1954,46 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx)
     state->blend_mode = mode;
 }
 
-void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix)
+void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 {
     pgl_state_t* state = pgl_get_active_state(ctx);
-    memcpy(state->transform, matrix, sizeof(pgl_m3_t));
+    memcpy(state->transform, matrix, sizeof(pgl_m4_t));
 }
 
 void pgl_reset_transform(pgl_ctx_t* ctx)
 {
     pgl_state_t* state = pgl_get_active_state(ctx);
 
-    const pgl_m3_t matrix =
+    const pgl_m4_t matrix =
     {
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
     };
 
-    memcpy(state->transform, matrix, sizeof(pgl_m3_t));
+    memcpy(state->transform, matrix, sizeof(pgl_m4_t));
 }
 
-void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix)
+void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 {
     pgl_state_t* state = pgl_get_active_state(ctx);
-    memcpy(state->projection, matrix, sizeof(pgl_m3_t));
+    memcpy(state->projection, matrix, sizeof(pgl_m4_t));
 }
 
 void pgl_reset_projection(pgl_ctx_t* ctx)
 {
     pgl_state_t* state = pgl_get_active_state(ctx);
 
-    const pgl_m3_t matrix =
+    const pgl_m4_t matrix =
     {
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
     };
 
-    memcpy(state->projection, matrix, sizeof(pgl_m3_t));
+    memcpy(state->projection, matrix, sizeof(pgl_m4_t));
 }
 
 void pgl_set_viewport(pgl_ctx_t* ctx, int32_t x, int32_t y,
@@ -2444,24 +2445,24 @@ static void pgl_apply_blend(pgl_ctx_t* ctx, const pgl_blend_mode_t* mode)
                                       pgl_blend_eq_map[mode->alpha_eq]));
 }
 
-static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m3_t matrix)
+static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 {
     PGL_ASSERT(NULL != ctx);
 
-    if (pgl_mem_equal(matrix, ctx->last_state.transform, sizeof(pgl_m3_t)))
+    if (pgl_mem_equal(matrix, ctx->last_state.transform, sizeof(pgl_m4_t)))
         return;
 
-    pgl_set_m3(ctx->shader, "u_tr", matrix);
+    pgl_set_m4(ctx->shader, "u_transform", matrix);
 }
 
-static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m3_t matrix)
+static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 {
     PGL_ASSERT(NULL != ctx);
 
-    if (pgl_mem_equal(matrix, &ctx->last_state.projection, sizeof(pgl_m3_t)))
+    if (pgl_mem_equal(matrix, &ctx->last_state.projection, sizeof(pgl_m4_t)))
         return;
 
-    pgl_set_m3(ctx->shader, "u_proj", matrix);
+    pgl_set_m4(ctx->shader, "u_projection", matrix);
 }
 
 static void pgl_apply_viewport(pgl_ctx_t* ctx, const pgl_viewport_t* viewport)
@@ -2579,7 +2580,7 @@ static const pgl_uniform_t* pgl_find_uniform(const pgl_shader_t* shader, const c
 static void pgl_bind_attributes()
 {
     // Position
-    PGL_CHECK(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+    PGL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                                     sizeof(pgl_vertex_t),
                                     (GLvoid*)offsetof(pgl_vertex_t, pos)));
 

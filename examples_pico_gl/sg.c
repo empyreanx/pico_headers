@@ -69,7 +69,7 @@ typedef struct node_s
     sprite_t* sprite;
 } node_t;
 
-sprite_t* sprite_new(int w, int h, pgl_texture_t* tex)
+sprite_t* sprite_new(int w, int h, float d, pgl_texture_t* tex)
 {
     sprite_t* sprite = malloc(sizeof(sprite_t));
     sprite->w = w;
@@ -78,13 +78,13 @@ sprite_t* sprite_new(int w, int h, pgl_texture_t* tex)
 
     pgl_vertex_t vertices[6] =
     {
-        { { 0, 0 }, { 1, 1, 1, 1 }, { 0, 1 } },
-        { { 0, h }, { 1, 1, 1, 1 }, { 0, 0 } },
-        { { w, 0 }, { 1, 1, 1, 1 }, { 1, 1 } },
+        { { 0, 0, d }, { 1, 1, 1, 1 }, { 0, 1 } },
+        { { 0, h, d }, { 1, 1, 1, 1 }, { 0, 0 } },
+        { { w, 0, d }, { 1, 1, 1, 1 }, { 1, 1 } },
 
-        { { 0, h }, { 1, 1, 1, 1 }, { 0, 0 } },
-        { { w, h }, { 1, 1, 1, 1 }, { 1, 0 } },
-        { { w, 0 }, { 1, 1, 1, 1 }, { 1, 1 } }
+        { { 0, h, d }, { 1, 1, 1, 1 }, { 0, 0 } },
+        { { w, h, d }, { 1, 1, 1, 1 }, { 1, 0 } },
+        { { w, 0, d }, { 1, 1, 1, 1 }, { 1, 1 } }
     };
 
     sprite->buf = pgl_create_buffer(ctx, PGL_TRIANGLES, vertices, 6);
@@ -175,12 +175,14 @@ void node_render(node_t* node, double alpha)
         // by the amount alpha in [0,1]
         pm_t2 render = pm_t2_lerp(&last, &world, alpha);
 
-        // Update model-view
-        pgl_set_m3(shader, "u_tr", (pgl_m3_t)
+        // Update model-vie
+
+        pgl_set_transform(ctx, (pgl_m4_t)
         {
-            render.t00, render.t01, render.tx,
-            render.t10, render.t11, render.ty,
-            0.0f,       0.0f,       1.0f
+            render.t00, render.t01, 0.0f, render.tx,
+            render.t10, render.t11, 0.0f, render.ty,
+            0.0f,       0.0f,       1.0f, 0.0f,
+            0.0f,       0.0f,       0.0f, 1.0f
         });
 
         // Draw vertices
@@ -300,7 +302,7 @@ sg_t* sg_build(int scene_w, int scene_h)
     pgl_texture_t* bg_tex = load_texture("./space.png", &w, &h);
 
     // New sprite
-    sg->bg_sprite = sprite_new(scene_w, scene_h, bg_tex);
+    sg->bg_sprite = sprite_new(scene_w, scene_h, 10.0f, bg_tex);
 
     // Create a new node that uses this sprite. In theory more than one node
     // could have the same sprite.
@@ -315,7 +317,7 @@ sg_t* sg_build(int scene_w, int scene_h)
 
     pgl_texture_t* star_tex = load_texture("./star.png", &w, &h);
 
-    sg->star_sprite = sprite_new(w / 3, h / 3, star_tex);
+    sg->star_sprite = sprite_new(w / 3, h / 3, 0.0f, star_tex);
     node_t* star_node = node_new(sg->star_sprite);
 
     pm_v2 screen_center = pm_v2_make(scene_w / 2, scene_h / 2);
@@ -340,7 +342,7 @@ sg_t* sg_build(int scene_w, int scene_h)
 
     int ship_w = w;
 
-    sg->ship_sprite = sprite_new(w, h, ship_tex);
+    sg->ship_sprite = sprite_new(w, h, 5.0f, ship_tex);
     node_t* ship_node = node_new(sg->ship_sprite);
 
     pm_t2_translate(&ship_node->local, pm_v2_make(-w / 2, -h / 2));
@@ -352,7 +354,7 @@ sg_t* sg_build(int scene_w, int scene_h)
 
     pgl_texture_t* jet_tex = load_texture("./jet.png", &w, &h);
 
-    sg->jet_sprite = sprite_new(w, h, jet_tex);
+    sg->jet_sprite = sprite_new(w, h, 0.0f, jet_tex);
     node_t* jet_node = node_new(sg->jet_sprite);
 
     pm_t2_translate(&jet_node->local, pm_v2_make(0, 32));
@@ -399,7 +401,7 @@ int main(int argc, char *argv[])
     PGL_LOG("Max texture size: %ix%i", tex_w, tex_h);
 
     // Create global PGL context
-    ctx = pgl_create_context(app->screen_w, app->screen_h, 0, false, NULL);
+    ctx = pgl_create_context(app->screen_w, app->screen_h, true, 0, false, NULL);
     pgl_set_viewport(ctx, 0, 0, app->screen_w, app->screen_h);
 
     // Make sure matrices are row-major order
@@ -413,11 +415,12 @@ int main(int argc, char *argv[])
     int w = app->screen_w;
     int h = app->screen_h;
 
-    pgl_set_projection(ctx, (pgl_m3_t)
+    pgl_set_projection(ctx, (pgl_m4_t)
     {
-        2.0f / w, 0.0f,   -1.0f,
-        0.0f,    -2.0 / h, 1.0f,
-        0.0f,     0.0f,    1.0f
+        2.0f / w, 0.0f,     0.0f,      -1.0f,
+        0.0f,    -2.0f / h, 0.0f,       1.0f,
+        0.0f,     0.0f,     2.0f / 256, 0.0f,
+        0.0f,     0.0f,     0.0f,       1.0f
     });
 
     // Build scene graph
