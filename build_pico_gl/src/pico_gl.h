@@ -1170,12 +1170,12 @@ static const pgl_hash_t PGL_PRIME = 0x1000193;
 "out vec4 color;\n" \
 "out vec2 uv;\n" \
 "\n" \
-"uniform mat4 u_tranform;\n" \
+"uniform mat4 u_transform;\n" \
 "uniform mat4 u_projection;\n" \
 "\n" \
 "void main()\n" \
 "{\n" \
-"   gl_Position = u_projection * u_tranform * vec4(a_pos, 1);\n" \
+"   gl_Position = u_projection * u_transform * vec4(a_pos, 1);\n" \
 "   color = a_color;\n" \
 "   uv = a_uv;\n" \
 "}\n"
@@ -2452,7 +2452,7 @@ static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix)
     if (pgl_mem_equal(matrix, ctx->last_state.transform, sizeof(pgl_m4_t)))
         return;
 
-    pgl_set_m4(ctx->shader, "u_tranform", matrix);
+    pgl_set_m4(ctx->shader, "u_transform", matrix);
 }
 
 static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix)
