@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 11/03/2022 14:04:35.
+/// WARNING: This file was automatically generated on 12/03/2022 00:27:26.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -517,7 +517,7 @@ uint64_t pgl_get_texture_id(const pgl_texture_t* texture);
 
 
 /**
- * @brief Activates a shader program for rendering
+ * @brief Activates a texture for rendering
  *
  * This function sets the context's currently texture. If `texture` is
  * `NULL` the current texture is deactivated.

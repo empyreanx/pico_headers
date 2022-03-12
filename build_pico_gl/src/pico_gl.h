@@ -512,7 +512,7 @@ uint64_t pgl_get_texture_id(const pgl_texture_t* texture);
 
 
 /**
- * @brief Activates a shader program for rendering
+ * @brief Activates a texture for rendering
  *
  * This function sets the context's currently texture. If `texture` is
  * `NULL` the current texture is deactivated.
