@@ -685,17 +685,17 @@ bool pm_b2_equal(const pm_b2* b1, const pm_b2* b2);
 /**
  * @brief Computes the union of `b1` and `b2
  */
-pm_b2 pm_b2_union(const pm_b2* b1, const pm_b2* b2);
+pm_b2 pm_b2_combine(const pm_b2* b1, const pm_b2* b2);
 
 /**
  * @brief Computes the intersection of `b1` and `b2`
  */
-pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2);
+pm_b2 pm_b2_overlap(const pm_b2* b1, const pm_b2* b2);
 
 /**
  * @brief Return `true` if the two bounding boxes intersect
  */
-PM_INLINE bool pm_b2_intersects(const pm_b2* b1, const pm_b2* b2)
+PM_INLINE bool pm_b2_overlaps(const pm_b2* b1, const pm_b2* b2)
 {
     return b1->max.x >= b2->min.x &&
            b1->max.y >= b2->min.y &&
@@ -956,16 +956,16 @@ bool pm_b2_equal(const pm_b2* b1, const pm_b2* b2)
     return pm_v2_equal(&b1->min, &b2->min) && pm_v2_equal(&b1->max, &b2->max);
 }
 
-pm_b2 pm_b2_union(const pm_b2* b1, const pm_b2* b2)
+pm_b2 pm_b2_combine(const pm_b2* b1, const pm_b2* b2)
 {
     pm_v2 min = pm_v2_min(&b1->min, &b2->min);
     pm_v2 max = pm_v2_max(&b1->max, &b2->max);
     return pm_b2_make_minmax(&min, &max);
 }
 
-pm_b2 pm_b2_intersection(const pm_b2* b1, const pm_b2* b2)
+pm_b2 pm_b2_overlap(const pm_b2* b1, const pm_b2* b2)
 {
-    if (!pm_b2_intersects(b1, b2))
+    if (!pm_b2_overlaps(b1, b2))
         return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
 
     pm_v2 min = pm_v2_max(&b1->min, &b2->min);

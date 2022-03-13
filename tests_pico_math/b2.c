@@ -43,13 +43,13 @@ PU_TEST(test_b2_equal)
     return true;
 }
 
-PU_TEST(test_b2_union)
+PU_TEST(test_b2_combine)
 {
     { // Case 1
         pm_b2 b1  = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 b2  = pm_b2_make(0.5f, 0.5f, 1.0f, 1.0f);
         pm_b2 exp = pm_b2_make(0.0f, 0.0f, 1.5f, 1.5f);
-        pm_b2 res = pm_b2_union(&b1, &b2);
+        pm_b2 res = pm_b2_combine(&b1, &b2);
         PU_ASSERT(pm_b2_equal(&res, &exp));
     }
 
@@ -57,7 +57,7 @@ PU_TEST(test_b2_union)
         pm_b2 b1  = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 b2  = pm_b2_make(1.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 exp = pm_b2_make(0.0f, 0.0f, 2.0f, 1.0f);
-        pm_b2 res = pm_b2_union(&b1, &b2);
+        pm_b2 res = pm_b2_combine(&b1, &b2);
         PU_ASSERT(pm_b2_equal(&res, &exp));
     }
 
@@ -65,30 +65,30 @@ PU_TEST(test_b2_union)
     return true;
 }
 
-PU_TEST(test_b2_intersects)
+PU_TEST(test_b2_overlaps)
 {
     { // Case 1
         pm_b2 b1 = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 b2 = pm_b2_make(0.5f, 0.5f, 1.0f, 1.0f);
-        PU_ASSERT(pm_b2_intersects(&b1, &b2));
+        PU_ASSERT(pm_b2_overlaps(&b1, &b2));
     }
 
     { // Case 2
         pm_b2 b1 = pm_b2_make(1000.0f, 0.0f, 800.0f, 600.0f);
         pm_b2 b2 = pm_b2_make(813.0f, 100.0f, 192.0f, 192.0f);
-        PU_ASSERT(pm_b2_intersects(&b1, &b2));
+        PU_ASSERT(pm_b2_overlaps(&b1, &b2));
     }
 
     return true;
 }
 
-PU_TEST(test_b2_intersection)
+PU_TEST(test_b2_overlap)
 {
     { // Case 1
         pm_b2 b1  = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 b2  = pm_b2_make(0.5f, 0.5f, 1.0f, 1.0f);
         pm_b2 exp = pm_b2_make(0.5f, 0.5f, 0.5f, 0.5f);
-        pm_b2 res = pm_b2_intersection(&b1, &b2);
+        pm_b2 res = pm_b2_overlap(&b1, &b2);
         PU_ASSERT(pm_b2_equal(&res, &exp));
     }
 
@@ -96,7 +96,7 @@ PU_TEST(test_b2_intersection)
         pm_b2 b1 =  pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 b2 =  pm_b2_make(2.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 exp = pm_b2_make(0, 0, 0, 0);
-        pm_b2 res = pm_b2_intersection(&b1, &b2);
+        pm_b2 res = pm_b2_overlap(&b1, &b2);
         PU_ASSERT(pm_b2_equal(&res, &exp));
     }
 
@@ -157,9 +157,9 @@ PU_SUITE(suite_b2)
     PU_RUN_TEST(test_b2_pos);
     PU_RUN_TEST(test_b2_size);
     PU_RUN_TEST(test_b2_equal);
-    PU_RUN_TEST(test_b2_union);
-    PU_RUN_TEST(test_b2_intersects);
-    PU_RUN_TEST(test_b2_intersection);
+    PU_RUN_TEST(test_b2_combine);
+    PU_RUN_TEST(test_b2_overlaps);
+    PU_RUN_TEST(test_b2_overlap);
     PU_RUN_TEST(test_b2_contains);
     PU_RUN_TEST(test_b2_min_aabb);
     PU_RUN_TEST(test_b2_transform);
