@@ -83,7 +83,6 @@ int main(int argc, char *argv[])
 
     if (gles)
     {
-        //gles_open();
         // This function must be called AFTER OpenGL context creation, but
         // BEFORE PGL context creation
         pgl_global_init((pgl_loader_fn)SDL_GL_GetProcAddress, true);
@@ -114,6 +113,7 @@ int main(int argc, char *argv[])
     unsigned char* bitmap = stbi_load("./boomer.png", &image_w, &image_h,
                                                       &image_c, 0);
     assert(bitmap);
+    assert(image_c == 4);
 
     pgl_texture_t* tex = pgl_texture_from_bitmap(ctx, PGL_RGBA, false,
                                                  image_w, image_h,

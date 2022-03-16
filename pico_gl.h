@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 12/03/2022 00:27:26.
+/// WARNING: This file was automatically generated on 16/03/2022 13:21:57.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -3974,6 +3974,8 @@ int pgl_global_init(pgl_loader_fn load_proc, bool gles)
         }
     }
 
+    PGL_CHECK(glEnable(GL_BLEND));
+
     pgl_initialized = true;
 
     return 0;
@@ -4029,8 +4031,6 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
         PGL_CHECK(glGenFramebuffers(1, &ctx->fbo_msaa));
         PGL_CHECK(glGenRenderbuffers(1, &ctx->rbo_msaa));
     }
-
-    glEnable(GL_BLEND);
 
     if (depth)
     {
@@ -4197,6 +4197,8 @@ void pgl_bind_shader(pgl_ctx_t* ctx, pgl_shader_t* shader)
     }
 }
 
+#include <stdio.h>
+
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                   pgl_format_t fmt,
                                   bool srgb,
@@ -4269,7 +4271,7 @@ pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
                                        bool smooth, bool repeat,
                                        const unsigned char* bitmap)
 {
-    pgl_texture_t* tex = pgl_create_texture(ctx, srgb, fmt, w, h, smooth, repeat);
+    pgl_texture_t* tex = pgl_create_texture(ctx, fmt, srgb, w, h, smooth, repeat);
 
     if (!tex)
         return NULL;
