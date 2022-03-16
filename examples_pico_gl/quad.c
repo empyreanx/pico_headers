@@ -17,10 +17,10 @@
      * Froper error handling
 */
 
+#include <SDL2/SDL.h>
+
 #include <assert.h>
 #include <stdio.h>
-
-#include <SDL2/SDL.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -29,23 +29,6 @@
 #include "../pico_gl.h"
 
 bool gles = false;
-void* handle = NULL;
-
-void gles_open()
-{
-    handle = SDL_LoadObject("libGL.so");
-    assert(handle);
-}
-
-void gles_close()
-{
-    SDL_UnloadObject(handle);
-}
-
-void* gles_proc(const char* name)
-{
-    return SDL_LoadFunction(handle, name);
-}
 
 int main(int argc, char *argv[])
 {
@@ -100,10 +83,10 @@ int main(int argc, char *argv[])
 
     if (gles)
     {
-        gles_open();
+        //gles_open();
         // This function must be called AFTER OpenGL context creation, but
         // BEFORE PGL context creation
-        pgl_global_init((pgl_loader_fn)gles_proc, true);
+        pgl_global_init((pgl_loader_fn)SDL_GL_GetProcAddress, true);
     }
     else
     {
@@ -187,9 +170,6 @@ int main(int argc, char *argv[])
     SDL_DestroyWindow(window);
 
     SDL_Quit();
-
-    if (gles)
-        gles_close();
 
     return 0;
 }

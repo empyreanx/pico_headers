@@ -26,10 +26,13 @@
      * Toggle full screen, interpolation
      * More docs
 */
-#define PT_IMPLEMENTATION
-#include "../pico_time.h"
+
+#define _POSIX_C_SOURCE 199309L
 
 #include <SDL2/SDL.h>
+
+#define PT_IMPLEMENTATION
+#include "../pico_time.h"
 
 #define PM_IMPLEMENTATION
 #include "../pico_math.h"
