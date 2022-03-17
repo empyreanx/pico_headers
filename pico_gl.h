@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 16/03/2022 20:23:42.
+/// WARNING: This file was automatically generated on 16/03/2022 20:40:13.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -3849,6 +3849,7 @@ struct pgl_ctx_t
     uint32_t          w, h;
     uint32_t          samples;
     bool              srgb;
+    bool              depth;
     bool              transpose;
     void*             mem_ctx;
 };
@@ -4001,6 +4002,7 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
     ctx->h = h;
     ctx->samples = samples;
     ctx->srgb = srgb;
+    ctx->depth = depth;
     ctx->mem_ctx = mem_ctx;
 
     PGL_CHECK(glGenVertexArrays(1, &ctx->vao));
@@ -4030,18 +4032,6 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
 
         PGL_CHECK(glGenFramebuffers(1, &ctx->fbo_msaa));
         PGL_CHECK(glGenRenderbuffers(1, &ctx->rbo_msaa));
-    }
-
-    if (depth)
-    {
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-        PGL_LOG("Enabled depth test");
-    }
-    else
-    {
-        glDisable(GL_DEPTH_TEST);
-        PGL_LOG("Disabled depth test");
     }
 
     pgl_clear_stack(ctx);
@@ -4408,11 +4398,6 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
 
     if (!target)
     {
-        if (ctx->srgb)
-        {
-            PGL_CHECK(glDisable(GL_FRAMEBUFFER_SRGB));
-        }
-
         PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
         ctx->target = NULL;
@@ -4458,9 +4443,6 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
         PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, ctx->fbo_msaa));
     else
         PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, ctx->fbo));
-
-    if (ctx->srgb)
-        PGL_CHECK(glEnable(GL_FRAMEBUFFER_SRGB));
 
     ctx->target = target;
 
@@ -5124,6 +5106,18 @@ static void pgl_before_draw(pgl_ctx_t* ctx, pgl_texture_t* texture, pgl_shader_t
     pgl_apply_transform(ctx, state->transform);
     pgl_apply_projection(ctx, state->projection);
     pgl_apply_line_width(ctx, state->line_width);
+
+    glEnable(GL_BLEND);
+
+    if (ctx->depth)
+        PGL_CHECK(glEnable(GL_DEPTH_TEST));
+    else
+        PGL_CHECK(glDisable(GL_DEPTH_TEST));
+
+    if (ctx->srgb)
+        PGL_CHECK(glEnable(GL_FRAMEBUFFER_SRGB));
+    else
+        PGL_CHECK(glDisable(GL_FRAMEBUFFER_SRGB));
 }
 
 static void pgl_after_draw(pgl_ctx_t* ctx)
