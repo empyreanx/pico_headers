@@ -1575,8 +1575,6 @@ void pgl_bind_shader(pgl_ctx_t* ctx, pgl_shader_t* shader)
     }
 }
 
-#include <stdio.h>
-
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                   pgl_format_t fmt,
                                   bool srgb,

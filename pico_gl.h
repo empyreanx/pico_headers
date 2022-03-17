@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 16/03/2022 13:21:57.
+/// WARNING: This file was automatically generated on 16/03/2022 20:23:42.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4196,8 +4196,6 @@ void pgl_bind_shader(pgl_ctx_t* ctx, pgl_shader_t* shader)
         ctx->shader = NULL;
     }
 }
-
-#include <stdio.h>
 
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                   pgl_format_t fmt,
