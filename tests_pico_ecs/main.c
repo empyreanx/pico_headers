@@ -481,5 +481,5 @@ int main ()
     pu_setup(setup, teardown);
     PU_RUN_SUITE(suite_ecs);
     pu_print_stats();
-    return 0;
+    return pu_num_failed == 0 ? 0 : -1;
 }
