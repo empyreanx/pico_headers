@@ -24,7 +24,9 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.platform.msystem }}
-          install: ${{ matrix.platform.msys-env }}-gcc
+          install: >-
+            ${{ matrix.platform.msys-env }}-gcc
+            make
       - uses: actions/checkout@v2
       - name: Build and run tests
         run: |
