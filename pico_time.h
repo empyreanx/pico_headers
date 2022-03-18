@@ -210,7 +210,7 @@ ptime_t pt_from_msec(int32_t msec)
 
 ptime_t pt_from_sec(double sec)
 {
-    return (ptime_t)(sec * 1000000.0);
+    return (ptime_t)(sec * 1000000.0 + 0.5);
 }
 
 #endif // PT_IMPLEMENTATION
