@@ -22,5 +22,5 @@ int main()
 
     pu_print_stats();
 
-    return 0;
+    return pu_num_failed == 0 ? 0 : -1;
 }
