@@ -29,4 +29,4 @@ tests: $(OBJS)
 .PHONY: clean
 
 clean:
-	rm tests *.o
+	rm -f tests *.o
