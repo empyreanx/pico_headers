@@ -37,7 +37,7 @@
     complex than PU_ASSERT. Experience has shown these are not serious defects.
 
     There are a number of display options available: color coded output, test
-    elapsed time (unless PU_NO_CLOCK is defined), and printing test statistics.
+    elapsed time (unless PICO_UNIT_NO_CLOCK is defined), and printing test statistics.
 
     A test suite is simply a group of tests. These contain calls to PU_RUN_TEST.
     The advantage of using test suites is that it divides unit tests into
@@ -53,7 +53,7 @@
 
     To use this library in your project, add the following
 
-    > #define PU_IMPLEMENTATION
+    > #define PICO_UNIT_IMPLEMENTATION
     > #include "pico_unit.h"
 
     to a source file (once), then simply include the header normally.
@@ -186,13 +186,13 @@ void pu_run_suite(const char* const name, pu_suite_fn suite_fp);
 
 #endif // PICO_UNIT_H
 
-#ifdef PU_IMPLEMENTATION
+#ifdef PICO_UNIT_IMPLEMENTATION
 
 #include <stdio.h> /* printf */
 
-#ifndef PU_NO_CLOCK
+#ifndef PICO_UNIT_NO_CLOCK
 #include <time.h>  /* clock_t, clock */
-#endif // PU_NO_CLOCK
+#endif // PICO_UNIT_NO_CLOCK
 
 #define TERM_COLOR_CODE   0x1B
 #define TERM_COLOR_RED   "[1;31m"
@@ -274,7 +274,7 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
 
     printf("Running: %s ", name);
 
-    #ifndef PU_NO_CLOCK
+    #ifndef PICO_UNIT_NO_CLOCK
 
     clock_t start_time = 0;
     clock_t end_time = 0;
@@ -284,7 +284,7 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
         start_time = clock();
     }
 
-    #endif // PU_NO_CLOCK
+    #endif // PICO_UNIT_NO_CLOCK
 
     if (!test_fp())
     {
@@ -298,14 +298,14 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
         return;
     }
 
-    #ifndef PU_NO_CLOCK
+    #ifndef PICO_UNIT_NO_CLOCK
 
     if (pu_time)
     {
         end_time = clock();
     }
 
-    #endif // PU_NO_CLOCK
+    #endif // PICO_UNIT_NO_CLOCK
 
     if (pu_colors)
     {
@@ -317,14 +317,14 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
         printf("(OK)");
     }
 
-    #ifndef PU_NO_CLOCK
+    #ifndef PICO_UNIT_NO_CLOCK
 
     if (pu_time)
     {
         printf(" (%f secs)", (double)(end_time - start_time) / CLOCKS_PER_SEC);
     }
 
-    #endif // PU_NO_CLOCK
+    #endif // PICO_UNIT_NO_CLOCK
 
     printf("\n");
 
@@ -389,7 +389,7 @@ pu_print_stats (void)
 }
 
 
-#endif // PU_IMPLEMENTATION
+#endif // PICO_UNIT_IMPLEMENTATION
 
 /*
     ----------------------------------------------------------------------------

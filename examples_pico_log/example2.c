@@ -1,4 +1,4 @@
-#define PL_IMPLEMENTATION
+#define PICO_LOG_IMPLEMENTATION
 #include "../pico_log.h"
 
 #include <stdio.h>

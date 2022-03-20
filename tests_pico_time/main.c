@@ -1,7 +1,7 @@
-#define PT_IMPLEMENTATION
+#define PICO_TIME_IMPLEMENTATION
 #include "../pico_time.h"
 
-#define PU_IMPLEMENTATION
+#define PICO_UNIT_IMPLEMENTATION
 #include "../pico_unit.h"
 
 PU_TEST(test_sleep)

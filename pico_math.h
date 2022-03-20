@@ -54,7 +54,7 @@
 
     To use this library in your project, add the following
 
-    > #define PM_IMPLEMENTATION
+    > #define PICO_MATH_IMPLEMENTATION
     > #include "pico_ml.h"
 
     to a source file (once), then simply include the header normally.
@@ -86,7 +86,7 @@ extern "C" {
 
 // Types
 
-#ifdef PM_USE_DOUBLE
+#ifdef PICO_MATH_DOUBLE
     /// @brief A double precision floating point number
     typedef double pm_flt;
 
@@ -785,8 +785,7 @@ pm_flt pm_random_float(pm_rng_t* rng);
 
 #endif // PICO_MATH_H
 
-#ifdef PM_IMPLEMENTATION
-
+#ifdef PICO_MATH_IMPLEMENTATION
 
 pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
 {
@@ -1082,7 +1081,7 @@ pm_flt pm_random_float(pm_rng_t* rng)
 }
 
 
-#endif // PM_IMPLEMENTATION
+#endif // PICO_MATH_IMPLEMENTATION
 
 /*
     ----------------------------------------------------------------------------

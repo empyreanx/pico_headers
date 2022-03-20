@@ -95,7 +95,7 @@ ptime_t pt_from_sec(double sec);
 
 #endif // PICO_TIME_H
 
-#ifdef PT_IMPLEMENTATION
+#ifdef PICO_TIME_IMPLEMENTATION
 
 #define PT_WINDOWS 1
 #define PT_APPLE   2
@@ -213,7 +213,7 @@ ptime_t pt_from_sec(double sec)
     return (ptime_t)(sec * 1000000.0 + 0.5);
 }
 
-#endif // PT_IMPLEMENTATION
+#endif // PICO_TIME_IMPLEMENTATION
 
 /*
     ----------------------------------------------------------------------------

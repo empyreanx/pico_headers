@@ -1,7 +1,7 @@
-#define PM_IMPLEMENTATION
+#define PICO_MATH_IMPLEMENTATION
 #include "../pico_math.h"
 
-#define PU_IMPLEMENTATION
+#define PICO_UNIT_IMPLEMENTATION
 #include "../pico_unit.h"
 
 void suite_scalar();

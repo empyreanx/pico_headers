@@ -51,7 +51,7 @@
 
     To use this library in your project, add the following
 
-    > #define PL_IMPLEMENTATION
+    > #define PICO_LOG_IMPLEMENTATION
     > #include "pico_log.h"
 
     to a source file (once), then simply include the header normally.
@@ -62,15 +62,11 @@
     - PL_MAX_APPENDERS (default: 16)
     - PL_MAX_MSG_LENGTH (default: 1024)
 
-    Must be defined before PL_IMPLEMENTATION
+    Must be defined before PICO_LOG_IMPLEMENTATION
 */
 
 #ifndef PICO_LOG_H
 #define PICO_LOG_H
-
-#ifndef PL_ASSERT
-#include <assert.h>  // assert
-#endif
 
 #include <stdarg.h>  // ...
 #include <stdbool.h> // bool, true, false
@@ -328,7 +324,7 @@ void pl_write(pl_level_t level,
 
 #endif // PICO_LOG_H
 
-#ifdef PL_IMPLEMENTATION
+#ifdef PICO_LOG_IMPLEMENTATION
 
 #include <time.h>
 #include <string.h>
@@ -336,17 +332,26 @@ void pl_write(pl_level_t level,
 /*
  * Configuration constants/macros.
  */
-#ifndef PL_MAX_APPENDERS
-#define PL_MAX_APPENDERS 16
+#ifndef PICO_LOG_MAX_APPENDERS
+#define PICO_LOG_MAX_APPENDERS 16
 #endif
 
-#ifndef PL_MAX_MSG_LENGTH
-#define PL_MAX_MSG_LENGTH 1024
+#ifndef PICO_LOG_MAX_MSG_LENGTH
+#define PICO_LOG_MAX_MSG_LENGTH 1024
 #endif
 
-#ifndef PL_ASSERT
-#define PL_ASSERT(expr) assert(expr)
+#ifndef PICO_LOG_ASSERT
+#include <assert.h>
+#define PICO_LOG_ASSERT(expr) assert(expr)
 #endif
+
+/*
+ * Internal aliases
+ */
+
+#define PL_MAX_APPENDERS  PICO_LOG_MAX_APPENDERS
+#define PL_MAX_MSG_LENGTH PICO_LOG_MAX_MSG_LENGTH
+#define PL_ASSERT         PICO_LOG_ASSERT
 
 /*
  * Log entry component maximum sizes. These have been chosen to be overly
@@ -861,7 +866,7 @@ pl_write (pl_level_t level, const char* file, unsigned line,
     }
 }
 
-#endif // PL_IMPLEMENTATION
+#endif // PICO_LOG_IMPLEMENTATION
 
 
 /*
