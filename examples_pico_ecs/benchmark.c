@@ -39,8 +39,8 @@ int random_int(int min, int max)
     return rand() % (max + 1 - min) + min;
 }
 
-#define ECS_MAX_ENTITIES (1000 * 1000)
-#define ECS_MAX_SYSTEMS 11
+#define PICO_ECS_MAX_ENTITIES (1000 * 1000)
+#define PICO_ECS_MAX_SYSTEMS 11
 
 static clock_t start, end;
 static ecs_t* ecs = NULL;
@@ -163,7 +163,7 @@ static void setup_abeimler()
     ecs_register_system(ecs, ComflabSystem, comflab_update, NULL, NULL, NULL);
     ecs_require_component(ecs, ComflabSystem, ComflabComponent);
 
-    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_id_t id = ecs_create(ecs);
@@ -217,7 +217,7 @@ static void setup_with_entities()
     ecs_require_component(ecs, QueueDestroySystem, PosComponent);
     ecs_require_component(ecs, QueueDestroySystem, RectComponent);
 
-    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_id_t id = ecs_create(ecs);
@@ -356,7 +356,7 @@ ecs_ret_t comflab_update(ecs_t* ecs,
 // Creates entity IDs as fast as possible
 static void bench_create()
 {
-    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
         ecs_create(ecs);
 }
 
@@ -364,14 +364,14 @@ static void bench_create()
 // coresponding entity
 static void bench_create_destroy()
 {
-    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
         ecs_destroy(ecs, ecs_create(ecs));
 }
 
 // Adds components to entities and assigns values to them
 static void bench_add_assign()
 {
-    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_id_t id = ecs_create(ecs);
@@ -390,7 +390,7 @@ static void bench_add_assign()
 // values to them
 static void bench_add_get_assign()
 {
-    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_id_t id = ecs_create(ecs);
@@ -413,7 +413,7 @@ static void bench_add_get_assign()
 // the systems
 static void bench_add_assign_sync()
 {
-    for (ecs_id_t i = 0; i < ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_id_t id = ecs_create(ecs);
@@ -470,7 +470,7 @@ int main()
 {
     printf("===============================================================\n");
 
-    printf("Number of entities: %u\n", ECS_MAX_ENTITIES);
+    printf("Number of entities: %u\n", PICO_ECS_MAX_ENTITIES);
 
     BENCH_RUN(bench_create, setup, teardown);
     BENCH_RUN(bench_create_destroy, setup, teardown);
@@ -489,7 +489,7 @@ int main()
 }
 
 //#define ECS_DEBUG
-#define ECS_MAX_COMPONENTS 64
-#define ECS_IMPLEMENTATION
+#define PICO_ECS_MAX_COMPONENTS 64
+#define PICO_ECS_IMPLEMENTATION
 #include "../pico_ecs.h"
 

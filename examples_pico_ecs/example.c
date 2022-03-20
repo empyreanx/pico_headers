@@ -184,5 +184,5 @@ int main()
 }
 
 // Pull in the ECS implementation
-#define ECS_IMPLEMENTATION
+#define PICO_ECS_IMPLEMENTATION
 #include "../pico_ecs.h"

@@ -3,7 +3,7 @@
 #include "files.h"
 #include "hud.h"
 
-#define ECS_IMPLEMENTATION
+#define PICO_ECS_IMPLEMENTATION
 #include "pico_ecs.h"
 
 #include <assert.h>

@@ -346,38 +346,54 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
 
 #endif // PICO_ECS_H
 
-#ifdef ECS_IMPLEMENTATION // Define once
+#ifdef PICO_ECS_IMPLEMENTATION // Define once
 
 #include <stdint.h> // uint32_t
 #include <stdlib.h> // malloc, realloc, free
 #include <string.h> // memcpy, memset
 
-#ifndef ECS_MAX_COMPONENTS
-#define ECS_MAX_COMPONENTS 32
+#ifndef PICO_ECS_MAX_COMPONENTS
+#define PICO_ECS_MAX_COMPONENTS 32
 #endif
 
-#ifndef ECS_MAX_ENTITIES
-#define ECS_MAX_ENTITIES (8*1024)
+#ifndef PICO_ECS_MAX_ENTITIES
+#define PICO_ECS_MAX_ENTITIES (8*1024)
 #endif
 
-#ifndef ECS_MAX_SYSTEMS
-#define ECS_MAX_SYSTEMS 16
+#ifndef PICO_ECS_MAX_SYSTEMS
+#define PICO_ECS_MAX_SYSTEMS 16
 #endif
 
-#ifdef ECS_DEBUG
-    #ifndef ECS_ASSERT
+#ifdef PICO_ECS_DEBUG
+    #ifndef PICO_ECS_ASSERT
         #include <assert.h>
-        #define ECS_ASSERT(expr) (assert(expr))
+        #define PICO_ECS_ASSERT(expr) (assert(expr))
     #endif
 #else
-    #define ECS_ASSERT(expr) ((void)0)
+    #define PICO_ECS_ASSERT(expr) ((void)0)
 #endif
 
-#if !defined(ECS_MALLOC) || !defined(ECS_FREE)
+#if !defined(PICO_ECS_MALLOC) || !defined(PICO_ECS_FREE)
 #include <stdlib.h>
-#define ECS_MALLOC(size, ctx) (malloc(size))
-#define ECS_FREE(ptr, ctx)    (free(ptr))
+#define PICO_ECS_MALLOC(size, ctx) (malloc(size))
+#define PICO_ECS_FREE(ptr, ctx)    (free(ptr))
 #endif
+
+/*=============================================================================
+ * Internal aliases
+ *============================================================================*/
+
+#define ECS_MAX_COMPONENTS  PICO_ECS_MAX_COMPONENTS
+#define ECS_MAX_ENTITIES    PICO_ECS_MAX_ENTITIES
+#define ECS_MAX_SYSTEMS     PICO_ECS_MAX_SYSTEMS
+
+#ifdef PICO_ECS_DEBUG
+#define ECS_DEBUG           PICO_ECS_DEBUG
+#endif
+
+#define ECS_ASSERT          PICO_ECS_ASSERT
+#define ECS_MALLOC          PICO_ECS_MALLOC
+#define ECS_FREE            PICO_ECS_FREE
 
 /*=============================================================================
  * Internal data structures
@@ -1123,7 +1139,7 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
 
 #endif // ECS_DEBUG
 
-#endif // ECS_IMPLEMENTATION
+#endif // PICO_ECS_IMPLEMENTATION
 
 /*
     ----------------------------------------------------------------------------
