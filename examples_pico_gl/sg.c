@@ -37,7 +37,7 @@
 #define PM_IMPLEMENTATION
 #include "../pico_math.h"
 
-#define PGL_IMPLEMENTATION
+#define PICO_GL_IMPLEMENTATION
 #include "../pico_gl.h"
 
 #define STB_IMAGE_IMPLEMENTATION

@@ -25,7 +25,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#define PGL_IMPLEMENTATION
+#define PICO_GL_IMPLEMENTATION
 #include "../pico_gl.h"
 
 bool gles = false;

@@ -948,31 +948,59 @@ void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value);
 }
 #endif
 
-#ifdef  PGL_IMPLEMENTATION
+#ifdef  PICO_GL_IMPLEMENTATION
 
 #include "glad.h"
 
-#if !defined(PGL_MALLOC) || !defined(PGL_FREE)
+#if !defined(PICO_GL_MALLOC) || !defined(PICO_GL_FREE)
 #include <stdlib.h>
-#define PGL_MALLOC(size, ctx) (malloc(size))
-#define PGL_FREE(ptr, ctx)    (free(ptr))
+#define PICO_GL_MALLOC(size, ctx) (malloc(size))
+#define PICO_GL_FREE(ptr, ctx)    (free(ptr))
 #endif
 
-#ifndef PGL_ASSERT
+#ifndef PICO_GL_ASSERT
 #include <assert.h>
-#define PGL_ASSERT(expr) (assert(expr))
+#define PICO_GL_ASSERT(expr) (assert(expr))
 #endif
 
 #ifdef NDEBUG
-    #define  PGL_LOG(...)
+    #define  PICO_GL_LOG(...)
 #else
-    #ifndef PGL_LOG
+    #ifndef PICO_GL_LOG
         #include <stdio.h>
-        #define  PGL_LOG(...) (pgl_log(__VA_ARGS__))
+        #define  PICO_GL_LOG(...) (pgl_log(__VA_ARGS__))
     #endif
 #endif
 
 #include <string.h>  // memset, strcmp
+
+#ifndef PICO_GL_UNIFORM_NAME_LENGTH
+#define PICO_GL_UNIFORM_NAME_LENGTH 32
+#endif
+
+#ifndef PICO_GL_MAX_UNIFORMS
+#define PICO_GL_MAX_UNIFORMS 32
+#endif
+
+#ifndef PICO_GL_MAX_STATES
+#define PICO_GL_MAX_STATES 32
+#endif
+
+/*=============================================================================
+ * Internal aliases
+ *============================================================================*/
+
+#define PGL_MALLOC              PICO_GL_MALLOC
+#define PGL_FREE                PICO_GL_FREE
+#define PGL_ASSERT              PICO_GL_ASSERT
+#define PGL_LOG                 PICO_GL_LOG
+#define PGL_UNIFORM_NAME_LENGTH PICO_GL_UNIFORM_NAME_LENGTH
+#define PGL_MAX_UNIFORMS        PICO_GL_MAX_UNIFORMS
+#define PGL_MAX_STATES          PICO_GL_MAX_STATES
+
+/*=============================================================================
+ * Internal PGL enum to GL enum maps
+ *============================================================================*/
 
 #ifdef NDEBUG
     #define PGL_CHECK(expr) (expr)
@@ -981,22 +1009,6 @@ void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value);
         expr; pgl_log_error(__FILE__, __LINE__, #expr); \
     }  while(false)
 #endif
-
-#ifndef PGL_UNIFORM_NAME_LENGTH
-#define PGL_UNIFORM_NAME_LENGTH 32
-#endif
-
-#ifndef PGL_MAX_UNIFORMS
-#define PGL_MAX_UNIFORMS 32
-#endif
-
-#ifndef PGL_MAX_STATES
-#define PGL_MAX_STATES 32
-#endif
-
-/*=============================================================================
- * Internal PGL enum to GL enum maps
- *============================================================================*/
 
 static bool pgl_initialized = false;
 
@@ -2668,7 +2680,7 @@ static pgl_hash_t pgl_hash_str(const char* str)
     #pragma GCC diagnostic pop
 #endif // __GNUC__
 
-#endif // PGL_IMPLEMENTATION
+#endif // PICO_GL_IMPLEMENTATION
 
 /*
     ----------------------------------------------------------------------------
