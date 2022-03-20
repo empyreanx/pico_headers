@@ -51,7 +51,7 @@
 
     To use this library in your project, add
 
-    > #define PGL_IMPLEMENTATION
+    > #define PICO_GL_IMPLEMENTATION
     > #include "pico_gl.h"
 
     to a source file.
@@ -59,9 +59,9 @@
     Constants:
     --------
 
-    - PGL_UNIFORM_NAME_LENGTH (default: 32)
-    - PGL_MAX_UNIFORMS (default: 32)
-    - PGL_MAX_STATES (default: 32)
+    - PICO_GL_UNIFORM_NAME_LENGTH (default: 32)
+    - PICO_GL_MAX_UNIFORMS (default: 32)
+    - PICO_GL_MAX_STATES (default: 32)
 
     Must be defined before PGL_IMPLEMENTATION
 

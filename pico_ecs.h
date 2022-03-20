@@ -57,11 +57,11 @@
     Constants:
     --------
 
-    - ECS_MAX_COMPONENTS (default: 32)
-    - ECS_MAX_ENTITIES (default: 8*1024)
-    - ECS_MAX_SYSTEMS (default: 16)
+    - PICO_ECS_MAX_COMPONENTS (default: 32)
+    - PICO_ECS_MAX_ENTITIES (default: 8*1024)
+    - PICO_ECS_MAX_SYSTEMS (default: 16)
 
-    Must be defined before ECS_IMPLEMENTATION
+    Must be defined before PICO_ECS_IMPLEMENTATION
 
     Todo:
     -----

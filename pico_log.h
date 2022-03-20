@@ -59,8 +59,8 @@
     Constants:
     --------
 
-    - PL_MAX_APPENDERS (default: 16)
-    - PL_MAX_MSG_LENGTH (default: 1024)
+    - PICO_LOG_MAX_APPENDERS (default: 16)
+    - PICO_LOG_MAX_MSG_LENGTH (default: 1024)
 
     Must be defined before PICO_LOG_IMPLEMENTATION
 */
