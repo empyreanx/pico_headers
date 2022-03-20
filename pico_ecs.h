@@ -49,7 +49,7 @@
 
     To use this library in your project, add the following
 
-    > #define ECS_IMPLEMENTATION
+    > #define PICO_ECS_IMPLEMENTATION
     > #include "pico_ecs.h"
 
     to a source file (once), then simply include the header normally.
