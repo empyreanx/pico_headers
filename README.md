@@ -14,8 +14,6 @@ Library | Docs | Description | Version
 
 These libraries are as-is, however, suggestions for improvements or bug fixes are welcome. Please raise an issue before submitting a PR.
 
-**Warning:** The APIs for these libraries are still in flux. It will take a little while for things to settle.
-
 The examples and tests compile and run on Linux (GCC), Windows (MSYS2/MinGW64), and MacOS (Clang). The only exception is the Rogue demo, which only compiles/runs on Linux and MacOS.
 
 All libraries are licensed under your choice of zlib or the public domain.
