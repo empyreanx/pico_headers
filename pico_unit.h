@@ -156,11 +156,11 @@ void pu_display_time(bool enabled);
 void pu_print_stats(void);
 
 /**
- * @brief Fetch a return value for the main function.
+ * @brief Check whether at least one test failed.
  * 
- * @return 0 if no test failed, -1 otherwise.
+ * @return true if any test failed, false if they all passed
  */
-int pu_get_result(void);
+bool pu_test_failed(void);
 
 /*
  * WARNING: These functions are not meant to be called directly. Use the macros
@@ -243,10 +243,10 @@ pu_display_time (bool enabled)
     pu_time = enabled;
 }
 
-int 
-pu_get_result(void)
+bool 
+pu_test_failed(void)
 {
-    return pu_num_failed == 0 ? 0 : -1;
+    return (pu_num_failed != 0);
 }
 
 bool

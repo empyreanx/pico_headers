@@ -66,5 +66,5 @@ int main (int argc, char* argv[])
     PU_RUN_TEST(test_sec);
     pu_print_stats();
 
-    return pu_get_result();
+    return pu_test_failed();
 }
