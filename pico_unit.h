@@ -155,6 +155,13 @@ void pu_display_time(bool enabled);
  */
 void pu_print_stats(void);
 
+/**
+ * @brief Check whether at least one test failed.
+ * 
+ * @return true if any test failed, false if they all passed
+ */
+bool pu_test_failed(void);
+
 /*
  * WARNING: These functions are not meant to be called directly. Use the macros
  * instead.
@@ -234,6 +241,12 @@ void
 pu_display_time (bool enabled)
 {
     pu_time = enabled;
+}
+
+bool 
+pu_test_failed(void)
+{
+    return (pu_num_failed != 0);
 }
 
 bool
