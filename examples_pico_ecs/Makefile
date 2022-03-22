@@ -22,4 +22,4 @@ example: example.o $(DEPS)
 .PHONY: clean
 
 clean:
-	rm benchmark example *.o
+	rm -f benchmark example *.o

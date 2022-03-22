@@ -25,4 +25,4 @@ example3: example3.o $(DEPS)
 .PHONY: clean
 
 clean:
-	rm example1 example2 example3 *.o
+	rm -f example1 example2 example3 *.o
