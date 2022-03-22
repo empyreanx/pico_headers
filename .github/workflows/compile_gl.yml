@@ -1,5 +1,5 @@
 
-name: Compile
+name: Check compile GL
 
 on: [push, pull_request]
 
@@ -53,5 +53,5 @@ jobs:
       - name: Build and run examples
         run: |
              make clean
-             make example
+             make all
         working-directory: examples_pico_gl
