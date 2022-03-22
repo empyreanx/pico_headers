@@ -32,4 +32,4 @@ sg: sg.o $(DEPS)
 .PHONY: clean
 
 clean:
-	rm quad sg *.o*
+	rm -f quad sg *.o*
