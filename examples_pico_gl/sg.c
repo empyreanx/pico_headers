@@ -31,10 +31,10 @@
 
 #include <SDL2/SDL.h>
 
-#define PT_IMPLEMENTATION
+#define PICO_TIME_IMPLEMENTATION
 #include "../pico_time.h"
 
-#define PM_IMPLEMENTATION
+#define PICO_MATH_IMPLEMENTATION
 #include "../pico_math.h"
 
 #define PICO_GL_IMPLEMENTATION
