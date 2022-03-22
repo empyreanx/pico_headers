@@ -1772,6 +1772,7 @@ void pgl_bind_texture(pgl_ctx_t* ctx, pgl_texture_t* texture)
     }
 }
 
+// TODO: FBO and FBO_MSAA should belong to texture?
 int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
 {
     if (ctx->target == target)

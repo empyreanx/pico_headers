@@ -1,0 +1,35 @@
+name: Check compile
+
+on: [push, pull_request]
+
+jobs:
+  Build:
+    name: ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.platform.shell }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { name: Windows (mingw32), os: windows-latest, shell: 'msys2 {0}', msystem: mingw32, msys-env: mingw-w64-i686 }
+          - { name: Windows (mingw64), os: windows-latest, shell: 'msys2 {0}', msystem: mingw64, msys-env: mingw-w64-x86_64 }
+          - { name: Linux,             os: ubuntu-latest,  shell: bash }
+          - { name: MacOS,             os: macos-latest,   shell: bash }
+        test-dirs: [examples_pico_ecs, examples_pico_log, examples_pico_unit]
+    steps:
+      - name: Set up MSYS2
+        if: matrix.platform.shell == 'msys2 {0}'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.platform.msystem }}
+          install: >-
+            ${{ matrix.platform.msys-env }}-gcc
+            make
+      - uses: actions/checkout@v2
+      - name: Build example
+        run: |
+          make clean
+          make all
+        working-directory: ${{ matrix.test-dirs }}
