@@ -1674,21 +1674,20 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                                 GL_RENDERBUFFER, tex->rbo_msaa));
         }
 
-    }
+        GLenum status;
+        PGL_CHECK(status = glCheckFramebufferStatus(GL_FRAMEBUFFER));
 
-    GLenum status;
-    PGL_CHECK(status = glCheckFramebufferStatus(GL_FRAMEBUFFER));
-
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        PGL_LOG("Framebuffer incomplete");
-        pgl_set_error(ctx, PGL_FRAMEBUFFER_INCOMPLETE);
+        if (status != GL_FRAMEBUFFER_COMPLETE)
+        {
+            PGL_LOG("Framebuffer incomplete");
+            pgl_set_error(ctx, PGL_FRAMEBUFFER_INCOMPLETE);
         // TODO: release resources
-        return NULL;
-    }
+            return NULL;
+        }
 
-    PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-    PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+        PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    }
 
     tex->ctx    = ctx;
     tex->target = target;
