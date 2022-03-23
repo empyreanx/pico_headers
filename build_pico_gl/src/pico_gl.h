@@ -394,6 +394,7 @@ uint64_t pgl_get_shader_id(const pgl_shader_t* shader);
  * @brief Creates an empty texture
  *
  * @param ctx The relevant context
+ * @param target If true, the texture can be used as a render target
  * @param fmt The texture pixel format
  * @param srgb True is the internal format is sRGB
  * @param w The texture's width
@@ -622,8 +623,13 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx);
  */
 void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix);
 
+/**
+ * @brief 3D variant of `pgl_set_transform`
+ *
+ * @param ctx The relevant context
+ * @param matrix The 3D global transform matrix
+ */
 void pgl_set_transform_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix);
-
 
 /**
  * @brief Resets the context's transform to the identity matrix
@@ -640,6 +646,12 @@ void pgl_reset_transform(pgl_ctx_t* ctx);
  */
 void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix);
 
+/**
+ * @brief 3D variant of `pgl_set_projection`
+ *
+ * @param ctx The relevant context
+ * @param matrix The 3D global projection matrix
+ */
 void pgl_set_projection_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix);
 
 /**
