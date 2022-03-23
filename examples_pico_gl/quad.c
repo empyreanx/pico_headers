@@ -121,7 +121,14 @@ int main(int argc, char *argv[])
     assert(tex);
     free(bitmap);
 
-    pgl_vertex_t vertices[6] = {
+    pgl_texture_t* target_tex = pgl_create_texture(ctx, true, PGL_RGBA, false,
+                                                   image_w, image_h,
+                                                   false, false);
+
+    assert(target_tex);
+
+    pgl_vertex_t vertices[6] =
+    {
         { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
         { {-1.0f, -1.0f }, { 1, 1, 1, 1 }, { 0, 0} },
         { { 1.0f, -1.0f }, { 1, 1, 1, 1 }, { 1, 0} },
@@ -155,9 +162,17 @@ int main(int argc, char *argv[])
             }
         }
 
+        pgl_set_render_target(ctx, target_tex);
+
         pgl_clear(1, 1, 1, 1);
 
         pgl_draw_array(ctx, PGL_TRIANGLES, vertices, 6, tex, shader);
+
+        pgl_set_render_target(ctx, NULL);
+
+        pgl_clear(1, 1, 1, 1);
+
+        pgl_draw_array(ctx, PGL_TRIANGLES, vertices, 6, target_tex, shader);
 
         SDL_GL_SwapWindow(window);
     }

@@ -402,8 +402,8 @@ uint64_t pgl_get_shader_id(const pgl_shader_t* shader);
  * @param repeat Repeats or clamps when uv coordinates exceed 1.0
  */
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
-                                  pgl_format_t fmt,
-                                  bool srgb,
+                                  bool target,
+                                  pgl_format_t fmt, bool srgb,
                                   int32_t w, int32_t h,
                                   bool smooth, bool repeat);
 
@@ -420,8 +420,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
  * @param bitmap Bitmap data corresponding to the specified format
  */
 pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
-                                       pgl_format_t fmt,
-                                       bool srgb,
+                                       pgl_format_t fmt, bool srgb,
                                        int32_t w, int32_t h,
                                        bool smooth, bool repeat,
                                        const uint8_t* bitmap);
@@ -439,8 +438,7 @@ pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
  */
 int pgl_upload_texture(pgl_ctx_t* ctx,
                        pgl_texture_t* texture,
-                       pgl_format_t fmt,
-                       bool srgb,
+                       pgl_format_t fmt, bool srgb,
                        int32_t w, int32_t h,
                        const uint8_t* bitmap);
 
@@ -1233,9 +1231,6 @@ struct pgl_ctx_t
     pgl_state_stack_t target_stack;
     GLuint            vao;
     GLuint            vbo;
-    GLuint            fbo;
-    GLuint            fbo_msaa;
-    GLuint            rbo_msaa;
     uint32_t          w, h;
     uint32_t          samples;
     bool              srgb;
@@ -1260,11 +1255,15 @@ struct pgl_shader_t
 
 struct pgl_texture_t
 {
-    GLuint id;
+    GLuint     id;
     pgl_ctx_t* ctx;
-    int32_t w, h;
-    bool smooth;
-    bool mipmap;
+    bool       target;
+    int32_t    w, h;
+    bool       smooth;
+    bool       mipmap;
+    GLuint     fbo;
+    GLuint     fbo_msaa;
+    GLuint     rbo_msaa;
 };
 
 struct pgl_buffer_t
@@ -1396,7 +1395,6 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
     ctx->mem_ctx = mem_ctx;
 
     PGL_CHECK(glGenVertexArrays(1, &ctx->vao));
-    PGL_CHECK(glGenFramebuffers(1, &ctx->fbo));
     PGL_CHECK(glGenBuffers(1, &ctx->vbo));
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
@@ -1414,14 +1412,10 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
         {
             PGL_LOG("MSAA samples exceeds maximum (max allowed: %i)", max_samples);
             PGL_CHECK(glDeleteBuffers(1, &ctx->vbo));
-            PGL_CHECK(glDeleteFramebuffers(1, &ctx->fbo));
             return NULL;
         }
 
         PGL_CHECK(glEnable(GL_MULTISAMPLE));
-
-        PGL_CHECK(glGenFramebuffers(1, &ctx->fbo_msaa));
-        PGL_CHECK(glGenRenderbuffers(1, &ctx->rbo_msaa));
     }
 
     pgl_clear_stack(ctx);
@@ -1434,14 +1428,6 @@ void pgl_destroy_context(pgl_ctx_t* ctx)
 {
     PGL_CHECK(glDeleteBuffers(1, &ctx->vbo));
     PGL_CHECK(glDeleteVertexArrays(1, &ctx->vao));
-    PGL_CHECK(glDeleteFramebuffers(1, &ctx->fbo));
-
-    if (ctx->samples > 0)
-    {
-        PGL_CHECK(glDeleteRenderbuffers(1, &ctx->rbo_msaa));
-        PGL_CHECK(glDeleteFramebuffers(1, &ctx->fbo_msaa));
-    }
-
     PGL_FREE(ctx, ctx->mem_ctx);
 }
 
@@ -1578,8 +1564,8 @@ void pgl_bind_shader(pgl_ctx_t* ctx, pgl_shader_t* shader)
 }
 
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
-                                  pgl_format_t fmt,
-                                  bool srgb,
+                                  bool target,
+                                  pgl_format_t fmt, bool srgb,
                                   int32_t w, int32_t h,
                                   bool smooth, bool repeat)
 {
@@ -1636,20 +1622,71 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
     PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
                               repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE));
 
-    tex->ctx = ctx;
+    if (target)
+    {
+        PGL_CHECK(glGenFramebuffers(1, &tex->fbo));
+
+        if (ctx->samples > 0)
+        {
+            PGL_CHECK(glGenFramebuffers(1, &tex->fbo_msaa));
+            PGL_CHECK(glGenRenderbuffers(1, &tex->rbo_msaa));
+        }
+    }
+
+    if (target)
+    {
+        PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, tex->fbo));
+        PGL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                         GL_COLOR_ATTACHMENT0,
+                                         GL_TEXTURE_2D, tex->id, 0));
+
+        if (ctx->samples > 0)
+        {
+            PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, tex->rbo_msaa));
+            PGL_CHECK(glRenderbufferStorageMultisample(GL_RENDERBUFFER,
+                                                       ctx->samples,
+                                                       ctx->srgb ?
+                                                       GL_SRGB8_ALPHA8 : GL_RGBA,
+                                                       tex->w, tex->h));
+
+            PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+
+            PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, tex->fbo_msaa));
+            PGL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                                                GL_COLOR_ATTACHMENT0,
+                                                GL_RENDERBUFFER, tex->rbo_msaa));
+        }
+
+    }
+
+    GLenum status;
+    PGL_CHECK(status = glCheckFramebufferStatus(GL_FRAMEBUFFER));
+
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        PGL_LOG("Framebuffer incomplete");
+        pgl_set_error(ctx, PGL_FRAMEBUFFER_INCOMPLETE);
+        // TODO: release resources
+        return NULL;
+    }
+
+    PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+    PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+    tex->ctx    = ctx;
+    tex->target = target;
     tex->smooth = smooth;
 
     return tex;
 }
 
 pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
-                                       pgl_format_t fmt,
-                                       bool srgb,
+                                       pgl_format_t fmt, bool srgb,
                                        int32_t w, int32_t h,
                                        bool smooth, bool repeat,
                                        const unsigned char* bitmap)
 {
-    pgl_texture_t* tex = pgl_create_texture(ctx, fmt, srgb, w, h, smooth, repeat);
+    pgl_texture_t* tex = pgl_create_texture(ctx, false, fmt, srgb, w, h, smooth, repeat);
 
     if (!tex)
         return NULL;
@@ -1727,11 +1764,23 @@ int pgl_generate_mipmap(pgl_texture_t* texture, bool linear)
     return 0;
 }
 
-void pgl_destroy_texture(pgl_texture_t* texture)
+void pgl_destroy_texture(pgl_texture_t* tex)
 {
-    pgl_bind_texture(texture->ctx, NULL);
-    PGL_CHECK(glDeleteTextures(1, &texture->id));
-    PGL_FREE(texture, texture->ctx->mem_ctx);
+    pgl_bind_texture(tex->ctx, NULL);
+    PGL_CHECK(glDeleteTextures(1, &tex->id));
+
+    if (tex->target)
+    {
+        PGL_CHECK(glDeleteFramebuffers(1, &tex->fbo));
+
+        if (tex->ctx->samples > 0)
+        {
+            PGL_CHECK(glDeleteRenderbuffers(1, &tex->rbo_msaa));
+            PGL_CHECK(glDeleteFramebuffers(1, &tex->fbo_msaa));
+        }
+    }
+
+    PGL_FREE(tex, tex->ctx->mem_ctx);
 }
 
 void pgl_get_texture_size(const pgl_texture_t* texture, int* w, int* h)
@@ -1772,7 +1821,6 @@ void pgl_bind_texture(pgl_ctx_t* ctx, pgl_texture_t* texture)
     }
 }
 
-// TODO: FBO and FBO_MSAA should belong to texture?
 int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
 {
     if (ctx->target == target)
@@ -1780,8 +1828,8 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
 
     if (ctx->target && ctx->samples > 0)
     {
-        PGL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER,  ctx->fbo_msaa));
-        PGL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER,  ctx->fbo));
+        PGL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER,  ctx->target->fbo_msaa));
+        PGL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER,  ctx->target->fbo));
         PGL_CHECK(glBlitFramebuffer(0, 0, ctx->target->w, ctx->target->h,
                                     0, 0, ctx->target->w, ctx->target->h,
                                     GL_COLOR_BUFFER_BIT,  GL_LINEAR));
@@ -1797,43 +1845,10 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
         return 0;
     }
 
-    PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, ctx->fbo));
-    PGL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER,
-                                     GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D, target->id, 0));
-
     if (ctx->samples > 0)
-    {
-        PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, ctx->rbo_msaa));
-        PGL_CHECK(glRenderbufferStorageMultisample(GL_RENDERBUFFER,
-                                                   ctx->samples,
-                                                   ctx->srgb ?
-                                                   GL_SRGB8_ALPHA8 : GL_RGBA,
-                                                   target->w, target->h));
-
-        PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-
-        PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, ctx->fbo_msaa));
-        PGL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                                            GL_COLOR_ATTACHMENT0,
-                                            GL_RENDERBUFFER, ctx->rbo_msaa));
-
-    }
-
-    GLenum status;
-    PGL_CHECK(status = glCheckFramebufferStatus(GL_FRAMEBUFFER));
-
-    if(status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        PGL_LOG("Framebuffer incomplete");
-        pgl_set_error(ctx, PGL_FRAMEBUFFER_INCOMPLETE);
-        return -1;
-    }
-
-    if (ctx->samples > 0)
-        PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, ctx->fbo_msaa));
+        PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, target->fbo_msaa));
     else
-        PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, ctx->fbo));
+        PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, target->fbo));
 
     ctx->target = target;
 
