@@ -180,12 +180,19 @@ void node_render(node_t* node, double alpha)
 
         // Update model-vie
 
-        pgl_set_transform(ctx, (pgl_m4_t)
+        /*pgl_set_transform(ctx, (pgl_m4_t)
         {
             render.t00, render.t01, 0.0f, render.tx,
             render.t10, render.t11, 0.0f, render.ty,
             0.0f,       0.0f,       1.0f, 0.0f,
             0.0f,       0.0f,       0.0f, 1.0f
+        });*/
+
+        pgl_set_transform_3d(ctx, (pgl_m4_t)
+        {
+            render.t00, render.t01, render.tx,
+            render.t10, render.t11, render.ty,
+            0.0f,       0.0f,       1.0f
         });
 
         // Draw vertices
