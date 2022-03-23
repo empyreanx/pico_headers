@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 23/03/2022 14:52:00.
+/// WARNING: This file was automatically generated on 23/03/2022 15:03:27.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4035,11 +4035,7 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
         PGL_CHECK(glGetIntegerv(GL_MAX_SAMPLES, &max_samples));
 
         if (samples > (uint32_t)max_samples)
-        {
-            PGL_LOG("MSAA samples exceeds maximum (max allowed: %i)", max_samples);
-            PGL_CHECK(glDeleteBuffers(1, &ctx->vbo));
-            return NULL;
-        }
+            ctx->samples = (uint32_t)max_samples;
 
         PGL_CHECK(glEnable(GL_MULTISAMPLE));
     }

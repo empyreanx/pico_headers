@@ -1413,11 +1413,7 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
         PGL_CHECK(glGetIntegerv(GL_MAX_SAMPLES, &max_samples));
 
         if (samples > (uint32_t)max_samples)
-        {
-            PGL_LOG("MSAA samples exceeds maximum (max allowed: %i)", max_samples);
-            PGL_CHECK(glDeleteBuffers(1, &ctx->vbo));
-            return NULL;
-        }
+            ctx->samples = (uint32_t)max_samples;
 
         PGL_CHECK(glEnable(GL_MULTISAMPLE));
     }
