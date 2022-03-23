@@ -1309,11 +1309,15 @@ void pgl_print_info()
     const unsigned char* gl_version = glGetString(GL_VERSION);
     const unsigned char* glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
+    int tex_w, tex_h;
+    pgl_get_max_texture_size(&tex_w, &tex_h);
+
     PGL_LOG("OpenGL info:");
     PGL_LOG("Vendor: %s", vendor);
     PGL_LOG("Renderer: %s", renderer);
     PGL_LOG("GL Version: %s", gl_version);
     PGL_LOG("GLSL Version: %s", glsl_version);
+    PGL_LOG("Max texture size: %ix%i", tex_w, tex_h);
 }
 
 const char* pgl_get_error_str(pgl_error_t code)

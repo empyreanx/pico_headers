@@ -398,11 +398,6 @@ int main(int argc, char *argv[])
     pgl_global_init(NULL, false);
     pgl_print_info();
 
-    // Print maximum texture size
-    int tex_w, tex_h;
-    pgl_get_max_texture_size(&tex_w, &tex_h);
-    PGL_LOG("Max texture size: %ix%i", tex_w, tex_h);
-
     // Create global PGL context
     ctx = pgl_create_context(app->screen_w, app->screen_h, true, 0, false, NULL);
     pgl_set_viewport(ctx, 0, 0, app->screen_w, app->screen_h);
