@@ -178,7 +178,9 @@ void node_render(node_t* node, double alpha)
         // by the amount alpha in [0,1]
         pm_t2 render = pm_t2_lerp(&last, &world, alpha);
 
-        // Update model-vie
+        // Update model-view
+
+        // The following transforms are equivalent
 
         /*pgl_set_transform(ctx, (pgl_m4_t)
         {

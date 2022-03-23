@@ -2052,19 +2052,6 @@ void pgl_set_projection_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix)
     }
 }
 
-void pgl_set_projection_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix)
-{
-    const pgl_m4_t matrix4 =
-    {
-        matrix[0], matrix[3], 0.0f, matrix[6],
-        matrix[1], matrix[4], 0.0f, matrix[7],
-        0.0f,      0.0f,      1.0f, 0.0f,
-        matrix[2], matrix[5], 0.0f, matrix[8]
-    };
-
-    pgl_set_projection(ctx, matrix4);
-}
-
 void pgl_reset_projection(pgl_ctx_t* ctx)
 {
     pgl_state_t* state = pgl_get_active_state(ctx);

@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 23/03/2022 15:52:00.
+/// WARNING: This file was automatically generated on 23/03/2022 15:59:04.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4648,15 +4648,30 @@ void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 
 void pgl_set_projection_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 {
-    const pgl_m4_t matrix4 =
+    if (ctx->transpose)
     {
-        matrix[0], matrix[3], 0.0f, matrix[6],
-        matrix[1], matrix[4], 0.0f, matrix[7],
-        0.0f,      0.0f,      1.0f, 0.0f,
-        matrix[2], matrix[5], 0.0f, matrix[8]
-    };
+        const pgl_m4_t matrix4 =
+        {
+            matrix[0], matrix[1], 0.0f, matrix[2],
+            matrix[3], matrix[4], 0.0f, matrix[5],
+            0.0f,      0.0f,      1.0f, 0.0f,
+            matrix[6], matrix[7], 0.0f, matrix[8]
+        };
 
-    pgl_set_projection(ctx, matrix4);
+        pgl_set_projection(ctx, matrix4);
+    }
+    else
+    {
+        const pgl_m4_t matrix4 =
+        {
+            matrix[0], matrix[3], 0.0f, matrix[6],
+            matrix[1], matrix[4], 0.0f, matrix[7],
+            0.0f,      0.0f,      1.0f, 0.0f,
+            matrix[2], matrix[5], 0.0f, matrix[8]
+        };
+
+        pgl_set_projection(ctx, matrix4);
+    }
 }
 
 void pgl_reset_projection(pgl_ctx_t* ctx)
