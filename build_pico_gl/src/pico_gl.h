@@ -1639,6 +1639,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
     PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
                               repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE));
 
+    // TODO: Create another function that executes these steps
     if (target)
     {
         PGL_CHECK(glGenFramebuffers(1, &tex->fbo));
@@ -1681,8 +1682,20 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
         {
             PGL_LOG("Framebuffer incomplete");
             pgl_set_error(ctx, PGL_FRAMEBUFFER_INCOMPLETE);
-        // TODO: release resources
+
+            PGL_CHECK(glDeleteTextures(1, &tex->id));
+            PGL_CHECK(glDeleteFramebuffers(1, &tex->fbo));
+
+            if (ctx->samples > 0)
+            {
+                PGL_CHECK(glDeleteRenderbuffers(1, &tex->rbo_msaa));
+                PGL_CHECK(glDeleteFramebuffers(1, &tex->fbo_msaa));
+            }
+
+            PGL_FREE(tex, ctx->mem_ctx);
+
             return NULL;
+
         }
 
         PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
