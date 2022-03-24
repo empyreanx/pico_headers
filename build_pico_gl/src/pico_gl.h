@@ -982,13 +982,9 @@ void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value);
     #endif
 #endif
 
-#ifdef NDEBUG
-    #define  PICO_GL_LOG(...)
-#else
-    #ifndef PICO_GL_LOG
-        #include <stdio.h>
-        #define  PICO_GL_LOG(...) (pgl_log(__VA_ARGS__))
-    #endif
+#ifndef PICO_GL_LOG
+    #include <stdio.h>
+    #define  PICO_GL_LOG(...) (pgl_log(__VA_ARGS__))
 #endif
 
 #include <string.h>  // memset, strcmp

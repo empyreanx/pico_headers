@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 24/03/2022 14:26:22.
+/// WARNING: This file was automatically generated on 24/03/2022 14:37:18.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -3604,13 +3604,9 @@ GLAPI PFNGLVERTEXBINDINGDIVISORPROC glad_glVertexBindingDivisor;
     #endif
 #endif
 
-#ifdef NDEBUG
-    #define  PICO_GL_LOG(...)
-#else
-    #ifndef PICO_GL_LOG
-        #include <stdio.h>
-        #define  PICO_GL_LOG(...) (pgl_log(__VA_ARGS__))
-    #endif
+#ifndef PICO_GL_LOG
+    #include <stdio.h>
+    #define  PICO_GL_LOG(...) (pgl_log(__VA_ARGS__))
 #endif
 
 #include <string.h>  // memset, strcmp
