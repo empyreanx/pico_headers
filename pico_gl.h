@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 23/03/2022 16:34:12.
+/// WARNING: This file was automatically generated on 24/03/2022 14:07:45.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -3595,9 +3595,13 @@ GLAPI PFNGLVERTEXBINDINGDIVISORPROC glad_glVertexBindingDivisor;
 #define PICO_GL_FREE(ptr, ctx)    (free(ptr))
 #endif
 
-#ifndef PICO_GL_ASSERT
-#include <assert.h>
-#define PICO_GL_ASSERT(expr) (assert(expr))
+#ifdef NDEBUG
+    #define PICO_GL_ASSERT(...)
+#else
+    #ifndef PICO_GL_ASSERT
+        #include <assert.h>
+        #define PICO_GL_ASSERT(expr) (assert(expr))
+    #endif
 #endif
 
 #ifdef NDEBUG
@@ -4069,7 +4073,6 @@ void pgl_destroy_context(pgl_ctx_t* ctx)
     PGL_CHECK(glDeleteVertexArrays(1, &ctx->vao));
     PGL_FREE(ctx, ctx->mem_ctx);
 }
-
 
 pgl_shader_t* pgl_create_shader(pgl_ctx_t* ctx, const char* vert_src,
                                                 const char* frag_src)
