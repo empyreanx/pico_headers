@@ -364,13 +364,13 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
 #define PICO_ECS_MAX_SYSTEMS 16
 #endif
 
-#ifndef NDEBUG
+#ifdef NDEBUG
+    #define PICO_ECS_ASSERT(expr) ((void)0)
+#else
     #ifndef PICO_ECS_ASSERT
         #include <assert.h>
         #define PICO_ECS_ASSERT(expr) (assert(expr))
     #endif
-#else
-    #define PICO_ECS_ASSERT(expr) ((void)0)
 #endif
 
 #if !defined(PICO_ECS_MALLOC) || !defined(PICO_ECS_FREE)
