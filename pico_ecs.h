@@ -364,7 +364,7 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
 #define PICO_ECS_MAX_SYSTEMS 16
 #endif
 
-#ifdef PICO_ECS_DEBUG
+#ifndef NDEBUG
     #ifndef PICO_ECS_ASSERT
         #include <assert.h>
         #define PICO_ECS_ASSERT(expr) (assert(expr))
@@ -383,14 +383,10 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
  * Internal aliases
  *============================================================================*/
 
+#define ECS_ASSERT          PICO_ECS_ASSERT
 #define ECS_MAX_COMPONENTS  PICO_ECS_MAX_COMPONENTS
 #define ECS_MAX_ENTITIES    PICO_ECS_MAX_ENTITIES
 #define ECS_MAX_SYSTEMS     PICO_ECS_MAX_SYSTEMS
-
-#ifdef PICO_ECS_DEBUG
-#define ECS_DEBUG           PICO_ECS_DEBUG
-#endif
-
 #define ECS_ASSERT          PICO_ECS_ASSERT
 #define ECS_MALLOC          PICO_ECS_MALLOC
 #define ECS_FREE            PICO_ECS_FREE
@@ -507,7 +503,7 @@ static int      ecs_id_stack_size(ecs_id_stack_t* pool);
 /*=============================================================================
  * Internal validation functions
  *============================================================================*/
-#ifdef ECS_DEBUG
+#ifndef NDEBUG
 static bool ecs_is_not_null(void* ptr);
 static bool ecs_is_valid_entity_id(ecs_id_t id);
 static bool ecs_is_valid_component_id(ecs_id_t id);
@@ -515,7 +511,7 @@ static bool ecs_is_valid_system_id(ecs_id_t id);
 static bool ecs_is_entity_ready(ecs_t* ecs, ecs_id_t entity_id);
 static bool ecs_is_component_ready(ecs_t* ecs, ecs_id_t comp_id);
 static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
-#endif // ECS_DEBUG
+#endif // NDEBUG
 /*=============================================================================
  * Public API implementation
  *============================================================================*/
@@ -543,7 +539,7 @@ ecs_t* ecs_new(void* mem_ctx)
 
 void ecs_free(ecs_t* ecs)
 {
-    ECS_ASSERT(is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(ecs));
 
     for (ecs_id_t comp_id = 0; comp_id < ECS_MAX_COMPONENTS; comp_id++)
     {
@@ -656,7 +652,7 @@ void ecs_disable_system(ecs_t* ecs, ecs_id_t sys_id)
 
 ecs_id_t ecs_create(ecs_t* ecs)
 {
-    ECS_ASSERT(is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(ecs));
 
     ecs_id_stack_t* pool = &ecs->entity_pool;
 
@@ -992,7 +988,7 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set)
 
 static void ecs_sparse_set_init(ecs_sparse_set_t* set)
 {
-    ECS_ASSERT(is_not_null(set));
+    ECS_ASSERT(ecs_is_not_null(set));
 
     memset(set, 0, sizeof(ecs_sparse_set_t));
 
@@ -1004,7 +1000,7 @@ static void ecs_sparse_set_init(ecs_sparse_set_t* set)
 
 static ecs_id_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id)
 {
-    ECS_ASSERT(is_not_null(set));
+    ECS_ASSERT(ecs_is_not_null(set));
 
     if (set->sparse[id] < set->size && set->dense[set->sparse[id]] == id)
         return set->sparse[id];
@@ -1014,7 +1010,7 @@ static ecs_id_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id)
 
 static bool ecs_sparse_set_add(ecs_sparse_set_t* set, ecs_id_t id)
 {
-    ECS_ASSERT(is_not_null(set));
+    ECS_ASSERT(ecs_is_not_null(set));
 
     if (ECS_NULL != ecs_sparse_set_find(set, id))
         return false;
@@ -1029,7 +1025,7 @@ static bool ecs_sparse_set_add(ecs_sparse_set_t* set, ecs_id_t id)
 
 static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
 {
-    ECS_ASSERT(is_not_null(set));
+    ECS_ASSERT(ecs_is_not_null(set));
 
     if (ECS_NULL == ecs_sparse_set_find(set, id))
         return false;
@@ -1057,7 +1053,7 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* sys_bits,
 
 static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)
 {
-    ECS_ASSERT(is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(ecs));
 
     for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
     {
@@ -1082,14 +1078,14 @@ static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)
 
 inline static void ecs_id_stack_push(ecs_id_stack_t* stack, ecs_id_t id)
 {
-    ECS_ASSERT(is_not_null(stack));
+    ECS_ASSERT(ecs_is_not_null(stack));
     ECS_ASSERT(stack->size < ECS_MAX_ENTITIES);
     stack->array[stack->size++] = id;
 }
 
 inline static ecs_id_t ecs_id_stack_pop(ecs_id_stack_t* stack)
 {
-    ECS_ASSERT(is_not_null(stack));
+    ECS_ASSERT(ecs_is_not_null(stack));
     return stack->array[--stack->size];
 }
 
@@ -1101,7 +1097,7 @@ inline static int ecs_id_stack_size(ecs_id_stack_t* stack)
 /*=============================================================================
  * Internal validation functions
  *============================================================================*/
-#ifdef ECS_DEBUG
+#ifndef NDEBUG
 static bool ecs_is_not_null(void* ptr)
 {
     return NULL != ptr;

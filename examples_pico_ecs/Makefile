@@ -1,5 +1,5 @@
 CC     = gcc
-CFLAGS = -std=c99 -Wall -Wextra -Wpedantic
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -DNDEBUG
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)

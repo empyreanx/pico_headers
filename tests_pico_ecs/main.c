@@ -269,10 +269,6 @@ PU_TEST(test_destroy)
     PU_ASSERT(!comp1->used);
     PU_ASSERT(!comp2->used);
 
-    // Verify that entity no longer has components
-    PU_ASSERT(!ecs_has(ecs, id, Comp1));
-    PU_ASSERT(!ecs_has(ecs, id, Comp2));
-
     // Verify entity is inactive
     PU_ASSERT(!ecs_is_ready(ecs, id));
 
