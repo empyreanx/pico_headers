@@ -43,7 +43,7 @@ jobs:
       - name: Setup MinGW32 Dependences
         if: runner.os == 'Windows' && matrix.platform.msystem == 'mingw32'
         run: |
-             pacman --noconfirm -Syu
+             #pacman --noconfirm -Syu
              pacman --noconfirm -S mingw-w64-i686-SDL2
       - name: Setup MacOS Dependences
         if: runner.os == 'MacOS'
