@@ -19,12 +19,12 @@ static void appender2(const char* p_msg, void* p_user_data)
 
 static void log_all()
 {
-    pl_trace ("Test message: %d", 0);
-    pl_debug ("Test message: %d", 1);
-    pl_info  ("Test message: %d", 2);
-    pl_warn  ("Test message: %d", 3);
-    pl_error ("Test message: %d", 4);
-    pl_fatal ("Test message: %d", 5);
+    pl_log_trace ("Test message: %d", 0);
+    pl_log_debug ("Test message: %d", 1);
+    pl_log_info  ("Test message: %d", 2);
+    pl_log_warn  ("Test message: %d", 3);
+    pl_log_error ("Test message: %d", 4);
+    pl_log_fatal ("Test message: %d", 5);
 }
 
 int main(int argc, char** argv)

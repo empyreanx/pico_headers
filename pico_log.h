@@ -99,7 +99,7 @@ typedef enum
 typedef void (*pl_appender_fn)(const char* entry, void* udata);
 
 /**
- *  @brief Lock function definition. This is called during pl_write. Adapted
+ *  @brief Lock function definition. This is called during pl_write_log. Adapted
  */
 typedef void (*pl_lock_fn)(bool lock, void *udata);
 
@@ -258,8 +258,8 @@ void pl_display_function(pl_id_t id, bool enabled);
  * Writes a TRACE level message to the log. Usage is similar to printf
  * (i.e. pl_trace(format, args...))
  */
-#define pl_trace(...) \
-        pl_write(PL_LEVEL_TRACE, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define pl_log_trace(...) \
+        pl_write_log(PL_LEVEL_TRACE, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs a DEBUG message
@@ -267,8 +267,8 @@ void pl_display_function(pl_id_t id, bool enabled);
  * Writes a DEBUG level message to the log. Usage is similar to printf (i.e.
  * (i.e. pl_debug(format, args...))
  */
-#define pl_debug(...) \
-        pl_write(PL_LEVEL_DEBUG, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define pl_log_debug(...) \
+        pl_write_log(PL_LEVEL_DEBUG, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs an INFO message
@@ -276,8 +276,8 @@ void pl_display_function(pl_id_t id, bool enabled);
  * Writes an INFO level message to the log. Usage is similar to printf
  * (i.e. pl_info(format, args...))
  */
-#define pl_info(...) \
-        pl_write(PL_LEVEL_INFO,  __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define pl_log_info(...) \
+        pl_write_log(PL_LEVEL_INFO,  __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs a WARN message
@@ -285,8 +285,8 @@ void pl_display_function(pl_id_t id, bool enabled);
  * Writes a WARN level message to the log. Usage is similar to printf (i.e.
  * (i.e. pl_warn(format, args...))
  */
-#define pl_warn(...) \
-        pl_write(PL_LEVEL_WARN,  __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define pl_log_warn(...) \
+        pl_write_log(PL_LEVEL_WARN,  __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs an ERROR message
@@ -294,8 +294,8 @@ void pl_display_function(pl_id_t id, bool enabled);
  * Writes a ERROR level message to the log. Usage is similar to printf (i.e.
  * (i.e. pl_error(format, args...))
  */
-#define pl_error(...) \
-        pl_write(PL_LEVEL_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define pl_log_error(...) \
+        pl_write_log(PL_LEVEL_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs a FATAL message
@@ -303,19 +303,19 @@ void pl_display_function(pl_id_t id, bool enabled);
  * Writes a FATAL level message to the log.. Usage is similar to printf (i.e.
  * (i.e. pl_fatal(format, args...))
  */
-#define pl_fatal(...) \
-        pl_write(PL_LEVEL_FATAL, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define pl_log_fatal(...) \
+        pl_write_log(PL_LEVEL_FATAL, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 
 /**
  * WARNING: It is inadvisable to call this function directly. Use the macros
  * instead.
  */
-void pl_write(pl_level_t level,
-              const char* file,
-              unsigned line,
-              const char* func,
-              const char* fmt, ...);
+void pl_write_log(pl_level_t level,
+                  const char* file,
+                  unsigned line,
+                  const char* func,
+                  const char* fmt, ...);
 
 
 #ifdef __cplusplus
@@ -787,7 +787,7 @@ pl_append_func(char* entry_str, const char* func, bool colors)
 }
 
 void
-pl_write (pl_level_t level, const char* file, unsigned line,
+pl_write_log (pl_level_t level, const char* file, unsigned line,
                             const char* func, const char* fmt, ...)
 {
     // Only write entry if there are registered appenders and the logger is
