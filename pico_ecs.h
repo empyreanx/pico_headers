@@ -1133,7 +1133,7 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
     return ecs->systems[sys_id].ready;
 }
 
-#endif // ECS_DEBUG
+#endif // NDEBUG
 
 #endif // PICO_ECS_IMPLEMENTATION
 
