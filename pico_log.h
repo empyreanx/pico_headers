@@ -340,13 +340,13 @@ void pl_write_log(pl_level_t level,
 #define PICO_LOG_MAX_MSG_LENGTH 1024
 #endif
 
-#ifndef NDEBUG
+#ifdef NDEBUG
+    #define PICO_LOG_ASSERT(expr) ((void)0)
+#else
     #ifndef PICO_LOG_ASSERT
         #include <assert.h>
         #define PICO_LOG_ASSERT(expr) assert(expr)
     #endif
-#else
-    #define PICO_LOG_ASSERT(expr) ((void)0)
 #endif
 
 /*
