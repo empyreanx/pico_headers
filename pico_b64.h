@@ -41,23 +41,6 @@ size_t b64_decode(unsigned char* dec, const char* buf, size_t len);
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef PICO_B64_BUFFER_SIZE
-#define PICO_B64_BUFFER_SIZE (1024 * 64) // 64K
-#endif
-
-#if !defined(PICO_B64_MALLOC) || !defined(PICO_B64_REALLOC)
-#include <stdlib.h>
-#define PICO_B64_MALLOC(size)       (malloc(size))
-#define PICO_B64_REALLOC(ptr, size) (realloc(ptr, size))
-#endif
-
-/*=============================================================================
- * Internal aliases
- *============================================================================*/
-#define B64_MALLOC      PICO_B64_MALLOC
-#define B64_REALLOC     PICO_B64_REALLOC
-#define B64_BUFFER_SIZE PICO_B64_BUFFER_SIZE
-
 /*=============================================================================
  * Look-up table
  *============================================================================*/
@@ -91,6 +74,23 @@ int b64_decoded_size(int size)
     return 3 * (size / 4);
 }
 
+/*=============================================================================
+ * Buffer encoding/decoding functions
+ *============================================================================*/
+static inline void b64_encode_buf(unsigned char* buf, unsigned char* tmp)
+{
+    buf[0] = (tmp[0] & 0xfc) >> 2;
+    buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
+    buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
+    buf[3] = tmp[2] & 0x3f;
+}
+
+static inline void b64_decode_buf(unsigned char* buf, unsigned char* tmp)
+{
+    buf[0] = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4);
+    buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
+    buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3];
+}
 
 /*=============================================================================
  * Encoding
@@ -110,10 +110,7 @@ size_t b64_encode(char* enc, const unsigned char* src, size_t len) {
 
         // if 3 bytes read then encode into `buf'
         if (3 == i) {
-            buf[0] = (tmp[0] & 0xfc) >> 2;
-            buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
-            buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
-            buf[3] = tmp[2] & 0x3f;
+            b64_encode_buf(buf, tmp);
 
             // allocate 4 new byts for `enc` and
             // then translate each encoded buffer
@@ -136,10 +133,7 @@ size_t b64_encode(char* enc, const unsigned char* src, size_t len) {
         }
 
         // perform same codec as above
-        buf[0] = (tmp[0] & 0xfc) >> 2;
-        buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
-        buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
-        buf[3] = tmp[2] & 0x3f;
+        b64_encode_buf(buf, tmp);
 
         // perform same write to `enc` with new allocation
         for (j = 0; j < i + 1; ++j) {
@@ -199,9 +193,7 @@ size_t b64_decode(unsigned char* dec, const char * src, size_t len)
             }
 
             // decode
-            buf[0] = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4);
-            buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
-            buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3];
+            b64_decode_buf(buf, tmp);
 
             for (i = 0; i < 3; ++i) {
                 dec[size++] = buf[i];
@@ -231,9 +223,7 @@ size_t b64_decode(unsigned char* dec, const char * src, size_t len)
         }
 
         // decode remainder
-        buf[0] = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4);
-        buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
-        buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3];
+        b64_decode_buf(buf, tmp);
 
         for (j = 0; j < i - 1; ++j) {
             dec[size++] = buf[j];
