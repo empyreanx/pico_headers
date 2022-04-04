@@ -10,9 +10,25 @@ int main()
 {
     char *bradley = "bradley";
 
-    char* encoded = b64_encode((unsigned char*)bradley, strlen(bradley));
+    size_t size = b64_encoded_size(strlen(bradley)) + 1;
 
-    printf("%s\n", encoded);
+    char enc_buf[size];
+
+    b64_encode(enc_buf, (unsigned char*)bradley, size - 1);
+    enc_buf[size] = '\0';
+
+    printf("%s\n", enc_buf);
+
+    char* str = "Y2FzaWxsZXJv";
+
+    size = b64_decoded_size(strlen(str)) + 1;
+
+    unsigned char dec_buf[size];
+
+    size =  b64_decode(dec_buf, str, strlen(str));
+    dec_buf[size] = '\0';
+
+    printf("%s\n", (char*)dec_buf);
 
     return 0;
 }

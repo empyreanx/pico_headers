@@ -20,11 +20,13 @@
 extern "C" {
 #endif
 
-char* b64_encode(const unsigned char* buf, size_t size);
+int b64_encoded_size(int size);
 
-unsigned char* b64_decode(const char* buf, size_t size);
+size_t b64_encode(char* enc, const unsigned char* src, size_t len);
 
-unsigned char* b64_decode_ex(const char* buf, size_t in_size, size_t* out_size);
+int b64_decoded_size(int size);
+
+size_t b64_decode(unsigned char* dec, const char* buf, size_t len);
 
 #ifdef __cplusplus
 }
@@ -34,9 +36,10 @@ unsigned char* b64_decode_ex(const char* buf, size_t in_size, size_t* out_size);
 
 #ifdef PICO_B64_IMPLEMENTATION
 
+#include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 
 #ifndef PICO_B64_BUFFER_SIZE
 #define PICO_B64_BUFFER_SIZE (1024 * 64) // 64K
@@ -72,53 +75,33 @@ static const char b64_table[] =
 };
 
 /*=============================================================================
- * Buffer handling
+ * Buffer size functions
  *============================================================================*/
 
-static void* b64_buf_init(size_t* buf_count);
-static void* b64_buf_resize(void* ptr, size_t size, size_t* buf_count);
-
-static void* b64_buf_init(size_t* buf_count) {
-    void* buf = B64_MALLOC(B64_BUFFER_SIZE);
-    *buf_count = 1;
-    return buf;
+int b64_encoded_size(int size)
+{
+    return 4 * ceil((double)size / 3.0);
 }
 
-void* b64_buf_resize(void* ptr, size_t size, size_t* buf_count) {
-    if (size > (*buf_count) * B64_BUFFER_SIZE) {
+int b64_decoded_size(int size)
+{
+    if (size % 4 != 0)
+        return -1; // Input must be padded
 
-        while (size > (*buf_count) * B64_BUFFER_SIZE)
-            (*buf_count)++;
-
-        void* buf = B64_REALLOC(ptr, B64_BUFFER_SIZE * (*buf_count));
-
-        if (!buf)
-            return NULL;
-        else
-            return buf;
-    }
-
-    return ptr;
+    return 3 * (size / 4);
 }
+
 
 /*=============================================================================
  * Encoding
  *============================================================================*/
 
-char* b64_encode(const unsigned char* src, size_t len) {
+size_t b64_encode(char* enc, const unsigned char* src, size_t len) {
     int i = 0;
     int j = 0;
-    char * enc = NULL;
     size_t size = 0;
-    size_t buf_count = 0;
     unsigned char buf[4];
     unsigned char tmp[3];
-
-    // alloc
-    enc = (char*)b64_buf_init(&buf_count);
-    if (NULL == enc) {
-        return NULL;
-    }
 
     // parse until end of source
     while (len--) {
@@ -136,7 +119,6 @@ char* b64_encode(const unsigned char* src, size_t len) {
             // then translate each encoded buffer
             // part by index from the base 64 index table
             // into `enc' unsigned char array
-            enc = (char*)b64_buf_resize(enc, size + 4, &buf_count);
             for (i = 0; i < 4; ++i) {
                 enc[size++] = b64_table[buf[i]];
             }
@@ -161,52 +143,34 @@ char* b64_encode(const unsigned char* src, size_t len) {
 
         // perform same write to `enc` with new allocation
         for (j = 0; j < i + 1; ++j) {
-            enc = (char*)b64_buf_resize(enc, size + 1, &buf_count);
             enc[size++] = b64_table[buf[j]];
         }
 
         // while there is still a remainder
         // append `=' to `enc'
         while (i++ < 3) {
-            enc = (char*)b64_buf_resize(enc, size + 1, &buf_count);
             enc[size++] = '=';
         }
     }
 
-    // Make sure we have enough space to add '\0' character at end.
-    enc = (char*)b64_buf_resize(enc, size + 1, &buf_count);
-    enc[size] = '\0';
-
-    return enc;
+    return size;
 }
 
 /*=============================================================================
  * Decoding
  *============================================================================*/
 
-unsigned char* b64_decode(const char * src, size_t size) {
-        return b64_decode_ex(src, size, NULL);
-}
-
-unsigned char * b64_decode_ex(const char * src, size_t in_size, size_t * out_size) {
+size_t b64_decode(unsigned char* dec, const char * src, size_t len)
+{
     int i = 0;
     int j = 0;
     int l = 0;
     size_t size = 0;
-    size_t buf_count = 0;
-    unsigned char * dec = NULL;
     unsigned char buf[3];
     unsigned char tmp[4];
 
-    // alloc
-    dec = (unsigned char*)b64_buf_init(&buf_count);
-
-    if (NULL == dec) {
-        return NULL;
-    }
-
     // parse until end of source
-    while (in_size--) {
+    while (len--) {
         // break if char is `=' or not base64 char
         if ('=' == src[j]) {
             break;
@@ -214,7 +178,7 @@ unsigned char * b64_decode_ex(const char * src, size_t in_size, size_t * out_siz
 
         int num = (int)src[j];
 
-        if (!isalnum(num) || '+' != src[j] || '/' != src[j]) {
+        if (!isalnum(num) && '+' != src[j] && '/' != src[j]) {
             break;
         }
 
@@ -239,15 +203,8 @@ unsigned char * b64_decode_ex(const char * src, size_t in_size, size_t * out_siz
             buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
             buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3];
 
-            // write decoded buffer to `dec'
-            dec = (unsigned char*)b64_buf_resize(dec, size + 3, &buf_count);
-
-            if (dec != NULL) {
-                for (i = 0; i < 3; ++i) {
-                    dec[size++] = buf[i];
-                }
-            } else {
-                return NULL;
+            for (i = 0; i < 3; ++i) {
+                dec[size++] = buf[i];
             }
 
             // reset
@@ -278,33 +235,12 @@ unsigned char * b64_decode_ex(const char * src, size_t in_size, size_t * out_siz
         buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
         buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3];
 
-        // write remainer decoded buffer to `dec'
-        dec = (unsigned char*)b64_buf_resize(dec, size + (i - 1), &buf_count);
-
-        if (dec != NULL) {
-            for (j = 0; j < i - 1; ++j) {
-                dec[size++] = buf[j];
-            }
-        } else {
-            return NULL;
+        for (j = 0; j < i - 1; ++j) {
+            dec[size++] = buf[j];
         }
     }
 
-    // Make sure we have enough space to add '\0' character at end.
-    dec = (unsigned char*)b64_buf_resize(dec, size + 1, &buf_count);
-
-    if (dec != NULL) {
-        dec[size] = '\0';
-    } else {
-        return NULL;
-    }
-
-    // Return back the size of decoded string if demanded.
-    if (out_size != NULL) {
-        * out_size = size;
-    }
-
-    return dec;
+    return size;
 }
 
 #endif // PICO_B64_IMPLEMENTATION
