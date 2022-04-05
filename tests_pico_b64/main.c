@@ -21,11 +21,11 @@ int main()
 
     char* str = "Y2FzaWxsZXJv";
 
-    size = b64_decoded_size(strlen(str)) + 1;
+    size = b64_decoded_size(str, strlen(str)) + 1;
 
     unsigned char dec_buf[size];
 
-    size =  b64_decode(dec_buf, str, strlen(str));
+    b64_decode(dec_buf, str, strlen(str));
     dec_buf[size] = '\0';
 
     printf("%s\n", (char*)dec_buf);

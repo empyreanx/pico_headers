@@ -20,12 +20,10 @@
 extern "C" {
 #endif
 
-int b64_encoded_size(int size);
+size_t b64_encoded_size(size_t len);
+size_t b64_decoded_size(const char* src, size_t len);
 
 size_t b64_encode(char* dst, const unsigned char* src, size_t len);
-
-int b64_decoded_size(int size); // size_t b64_decoded_size(const char* src, size_t len);
-
 size_t b64_decode(unsigned char* dst, const char* src, size_t len);
 
 #ifdef __cplusplus
@@ -61,17 +59,26 @@ static const char b64_table[] =
  * Buffer size functions
  *============================================================================*/
 
-int b64_encoded_size(int size)
+size_t b64_encoded_size(size_t len)
 {
-    return 4 * ceil((double)size / 3.0);
+    return 4 * ceil((double)len / 3.0);
 }
 
-int b64_decoded_size(int size)
+size_t b64_decoded_size(const char* src, size_t len)
 {
-    if (size % 4 != 0)
-        return -1; // Input must be padded
+    if (len % 4 != 0)
+        return 0; // Input must be padded
 
-    return 3 * (size / 4);
+    size_t padding = 0;
+
+    if ('=' == src[len - 3])
+        padding = 3;
+    else if ('=' == src[len - 2])
+        padding = 2;
+    else if ('=' == src[len - 1])
+        return padding = 1;
+
+    return floor(3.0 * (len - padding) / 4.0);
 }
 
 /*=============================================================================
