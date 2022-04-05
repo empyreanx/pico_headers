@@ -22,11 +22,11 @@ extern "C" {
 
 int b64_encoded_size(int size);
 
-size_t b64_encode(char* enc, const unsigned char* src, size_t len);
+size_t b64_encode(char* dst, const unsigned char* src, size_t len);
 
-int b64_decoded_size(int size);
+int b64_decoded_size(int size); // size_t b64_decoded_size(const char* src, size_t len);
 
-size_t b64_decode(unsigned char* dec, const char* buf, size_t len);
+size_t b64_decode(unsigned char* dst, const char* src, size_t len);
 
 #ifdef __cplusplus
 }
@@ -77,7 +77,7 @@ int b64_decoded_size(int size)
 /*=============================================================================
  * Buffer encoding/decoding functions
  *============================================================================*/
-static inline void b64_encode_buf(unsigned char* buf, unsigned char* tmp)
+static inline void b64_encode_tmp(unsigned char* buf, unsigned char* tmp)
 {
     buf[0] = (tmp[0] & 0xfc) >> 2;
     buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
@@ -85,7 +85,7 @@ static inline void b64_encode_buf(unsigned char* buf, unsigned char* tmp)
     buf[3] = tmp[2] & 0x3f;
 }
 
-static inline void b64_decode_buf(unsigned char* buf, unsigned char* tmp)
+static inline void b64_decode_tmp(unsigned char* buf, unsigned char* tmp)
 {
     buf[0] = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4);
     buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
@@ -96,7 +96,8 @@ static inline void b64_decode_buf(unsigned char* buf, unsigned char* tmp)
  * Encoding
  *============================================================================*/
 
-size_t b64_encode(char* enc, const unsigned char* src, size_t len) {
+size_t b64_encode(char* dst, const unsigned char* src, size_t len)
+{
     int i = 0;
     int j = 0;
     size_t size = 0;
@@ -104,20 +105,23 @@ size_t b64_encode(char* enc, const unsigned char* src, size_t len) {
     unsigned char tmp[3];
 
     // parse until end of source
-    while (len--) {
+    while (len--)
+    {
         // read up to 3 bytes at a time into `tmp'
         tmp[i++] = *(src++);
 
         // if 3 bytes read then encode into `buf'
-        if (3 == i) {
-            b64_encode_buf(buf, tmp);
+        if (3 == i)
+        {
+            b64_encode_tmp(buf, tmp);
 
             // allocate 4 new byts for `enc` and
             // then translate each encoded buffer
             // part by index from the base 64 index table
             // into `enc' unsigned char array
-            for (i = 0; i < 4; ++i) {
-                enc[size++] = b64_table[buf[i]];
+            for (i = 0; i < 4; ++i)
+            {
+                dst[size++] = b64_table[buf[i]];
             }
 
             // reset index
@@ -126,24 +130,28 @@ size_t b64_encode(char* enc, const unsigned char* src, size_t len) {
     }
 
     // remainder
-    if (i > 0) {
+    if (i > 0)
+    {
         // fill `tmp' with `\0' at most 3 times
-        for (j = i; j < 3; ++j) {
+        for (j = i; j < 3; ++j)
+        {
             tmp[j] = '\0';
         }
 
         // perform same codec as above
-        b64_encode_buf(buf, tmp);
+        b64_encode_tmp(buf, tmp);
 
         // perform same write to `enc` with new allocation
-        for (j = 0; j < i + 1; ++j) {
-            enc[size++] = b64_table[buf[j]];
+        for (j = 0; j < i + 1; ++j)
+        {
+            dst[size++] = b64_table[buf[j]];
         }
 
         // while there is still a remainder
-        // append `=' to `enc'
-        while (i++ < 3) {
-            enc[size++] = '=';
+        // append `=' to `dst'
+        while (i++ < 3)
+        {
+            dst[size++] = '=';
         }
     }
 
@@ -154,11 +162,23 @@ size_t b64_encode(char* enc, const unsigned char* src, size_t len) {
  * Decoding
  *============================================================================*/
 
-size_t b64_decode(unsigned char* dec, const char * src, size_t len)
+static inline size_t b64_table_lookup(char symbol)
+{
+    size_t i;
+
+    for (i = 0; i < 64; ++i)
+    {
+        if (symbol == b64_table[i])
+            return i;
+    }
+
+    return 0;
+}
+
+size_t b64_decode(unsigned char* dst, const char * src, size_t len)
 {
     int i = 0;
     int j = 0;
-    int l = 0;
     size_t size = 0;
     unsigned char buf[3];
     unsigned char tmp[4];
@@ -166,37 +186,38 @@ size_t b64_decode(unsigned char* dec, const char * src, size_t len)
     // parse until end of source
     while (len--) {
         // break if char is `=' or not base64 char
-        if ('=' == src[j]) {
+        if ('=' == src[j])
             break;
-        }
 
-        int num = (int)src[j];
-
-        if (!isalnum(num) && '+' != src[j] && '/' != src[j]) {
+        if (!isalnum((int)src[j]) && '+' != src[j] && '/' != src[j])
             break;
-        }
 
         // read up to 4 bytes at a time into `tmp'
         tmp[i++] = src[j++];
 
         // if 4 bytes read then decode into `buf'
-        if (4 == i) {
+        if (4 == i)
+        {
             // translate values in `tmp' from table
-            for (i = 0; i < 4; ++i) {
+            for (i = 0; i < 4; ++i)
+            {
+                tmp[i] = b64_table_lookup(tmp[i]);
+
                 // find translation char in `b64_table'
-                for (l = 0; l < 64; ++l) {
+                /*for (l = 0; l < 64; ++l) {
                     if (tmp[i] == b64_table[l]) {
                         tmp[i] = l;
                         break;
                     }
-                }
+                }*/
             }
 
             // decode
-            b64_decode_buf(buf, tmp);
+            b64_decode_tmp(buf, tmp);
 
-            for (i = 0; i < 3; ++i) {
-                dec[size++] = buf[i];
+            for (i = 0; i < 3; ++i)
+            {
+                dst[size++] = buf[i];
             }
 
             // reset
@@ -205,28 +226,33 @@ size_t b64_decode(unsigned char* dec, const char * src, size_t len)
     }
 
     // remainder
-    if (i > 0) {
+    if (i > 0)
+    {
         // fill `tmp' with `\0' at most 4 times
-        for (j = i; j < 4; ++j) {
+        for (j = i; j < 4; ++j)
+        {
             tmp[j] = '\0';
         }
 
         // translate remainder
-        for (j = 0; j < 4; ++j) {
+        for (j = 0; j < 4; ++j)
+        {
+            tmp[j] = b64_table_lookup(tmp[j]);
             // find translation char in `b64_table'
-            for (l = 0; l < 64; ++l) {
+            /*for (l = 0; l < 64; ++l) {
                 if (tmp[j] == b64_table[l]) {
                     tmp[j] = l;
                     break;
                 }
-            }
+            }*/
         }
 
         // decode remainder
-        b64_decode_buf(buf, tmp);
+        b64_decode_tmp(buf, tmp);
 
-        for (j = 0; j < i - 1; ++j) {
-            dec[size++] = buf[j];
+        for (j = 0; j < i - 1; ++j)
+        {
+            dst[size++] = buf[j];
         }
     }
 
