@@ -26,14 +26,22 @@ static bool decode_test(const char* src, const char* expected)
 
 PU_TEST(test_encode)
 {
-    PU_ASSERT(encode_test("", ""));
-
     PU_ASSERT(encode_test("Many hands make light work.",
                           "TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu"));
 
     PU_ASSERT(encode_test("light work.", "bGlnaHQgd29yay4="));
     PU_ASSERT(encode_test("light work" , "bGlnaHQgd29yaw=="));
     PU_ASSERT(encode_test("light wor"  , "bGlnaHQgd29y"));
+    PU_ASSERT(encode_test("light wo"   , "bGlnaHQgd28="));
+    PU_ASSERT(encode_test("light w"    , "bGlnaHQgdw=="));
+
+    PU_ASSERT(encode_test(""       , ""));
+    PU_ASSERT(encode_test("f"      , "Zg=="));
+    PU_ASSERT(encode_test("fo"     , "Zm8="));
+    PU_ASSERT(encode_test("foo"    , "Zm9v"));
+    PU_ASSERT(encode_test("foob"   , "Zm9vYg=="));
+    PU_ASSERT(encode_test("fooba"  , "Zm9vYmE="));
+    PU_ASSERT(encode_test("foobar" , "Zm9vYmFy"));
 
     return true;
 }
@@ -48,10 +56,19 @@ PU_TEST(test_decode)
     PU_ASSERT(decode_test("bGlnaHQgd29yay4=", "light work."));
     PU_ASSERT(decode_test("bGlnaHQgd29yaw==", "light work"));
     PU_ASSERT(decode_test("bGlnaHQgd29y"    , "light wor"));
+    PU_ASSERT(decode_test("bGlnaHQgd28="    , "light wo"));
+    PU_ASSERT(decode_test("bGlnaHQgdw=="    , "light w"));
+
+    PU_ASSERT(decode_test(""        , ""));
+    PU_ASSERT(decode_test("Zg=="    , "f"));
+    PU_ASSERT(decode_test("Zm8="    , "fo"));
+    PU_ASSERT(decode_test("Zm9v"    , "foo"));
+    PU_ASSERT(decode_test("Zm9vYg==", "foob"));
+    PU_ASSERT(decode_test("Zm9vYmE=", "fooba"));
+    PU_ASSERT(decode_test("Zm9vYmFy", "foobar"));
 
     return true;
 }
-
 
 int main()
 {
