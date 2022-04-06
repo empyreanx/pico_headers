@@ -6,6 +6,24 @@
 
 #include <stdio.h>
 
+bool encode_test(const char* src, const char* expected)
+{
+    size_t size = b64_encoded_size(strlen(src)) + 1;
+    char buf[size];
+    b64_encode(buf, (unsigned char*)src, strlen(src));
+    buf[size - 1] = '\0';
+    return 0 == strcmp(buf, expected);
+}
+
+bool decode_test(const char* src, const char* expected)
+{
+    size_t size = b64_decoded_size(src, strlen(src)) + 1;
+    unsigned char buf[size];
+    b64_decode(buf, src, strlen(src));
+    buf[size - 1] = '\0';
+    return 0 == strcmp((char*)buf, expected);
+}
+
 int main()
 {
     char* enc = "light wor";
@@ -19,24 +37,13 @@ int main()
 
     printf("%s\n", enc_buf);
 
-    /*char *bradley = "bradley";
+    char* dec = "Y2FzaWxsZXJv";
 
-    size_t size = b64_encoded_size(strlen(bradley)) + 1;*
-
-    char enc_buf[size];
-
-    b64_encode(enc_buf, (unsigned char*)bradley, size - 1);
-    enc_buf[size] = '\0';
-
-    printf("%s\n", enc_buf);*/
-
-    char* str = "Y2FzaWxsZXJv";
-
-    size = b64_decoded_size(str, strlen(str)) + 1;
+    size = b64_decoded_size(dec, strlen(dec)) + 1;
 
     unsigned char dec_buf[size];
 
-    b64_decode(dec_buf, str, strlen(str));
+    b64_decode(dec_buf, dec, strlen(dec));
     dec_buf[size - 1] = '\0';
 
     printf("%s\n", (char*)dec_buf);
