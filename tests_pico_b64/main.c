@@ -26,37 +26,39 @@ static bool decode_test(const char* src, const char* expected)
 
 PU_TEST(test_encode)
 {
+    PU_ASSERT(encode_test("", ""));
+
+    PU_ASSERT(encode_test("Many hands make light work.",
+                          "TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu"));
+
     PU_ASSERT(encode_test("light work.", "bGlnaHQgd29yay4="));
+    PU_ASSERT(encode_test("light work" , "bGlnaHQgd29yaw=="));
+    PU_ASSERT(encode_test("light wor"  , "bGlnaHQgd29y"));
 
     return true;
 }
 
+PU_TEST(test_decode)
+{
+    PU_ASSERT(decode_test("", ""));
+
+    PU_ASSERT(decode_test("TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu",
+                          "Many hands make light work."));
+
+    PU_ASSERT(decode_test("bGlnaHQgd29yay4=", "light work."));
+    PU_ASSERT(decode_test("bGlnaHQgd29yaw==", "light work"));
+    PU_ASSERT(decode_test("bGlnaHQgd29y"    , "light wor"));
+
+    return true;
+}
+
+
 int main()
 {
+    pu_display_colors(true);
     PU_RUN_TEST(test_encode);
-
-    char* enc = "light wor";
-
-    size_t size = b64_encoded_size(strlen(enc)) + 1;
-
-    char enc_buf[size];
-
-    b64_encode(enc_buf, (unsigned char*)enc, strlen(enc));
-    enc_buf[size - 1] = '\0';
-
-    printf("%s\n", enc_buf);
-
-    char* dec = "Y2FzaWxsZXJv";
-
-    size = b64_decoded_size(dec, strlen(dec)) + 1;
-
-    unsigned char dec_buf[size];
-
-    b64_decode(dec_buf, dec, strlen(dec));
-    dec_buf[size - 1] = '\0';
-
-    printf("%s\n", (char*)dec_buf);
-
+    PU_RUN_TEST(test_decode);
+    pu_print_stats();
     return 0;
 }
 
