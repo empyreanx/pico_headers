@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-bool encode_test(const char* src, const char* expected)
+static bool encode_test(const char* src, const char* expected)
 {
     size_t size = b64_encoded_size(strlen(src)) + 1;
     char buf[size];
@@ -15,7 +15,7 @@ bool encode_test(const char* src, const char* expected)
     return 0 == strcmp(buf, expected);
 }
 
-bool decode_test(const char* src, const char* expected)
+static bool decode_test(const char* src, const char* expected)
 {
     size_t size = b64_decoded_size(src, strlen(src)) + 1;
     unsigned char buf[size];
@@ -24,8 +24,17 @@ bool decode_test(const char* src, const char* expected)
     return 0 == strcmp((char*)buf, expected);
 }
 
+PU_TEST(test_encode)
+{
+    PU_ASSERT(encode_test("light work.", "bGlnaHQgd29yay4="));
+
+    return true;
+}
+
 int main()
 {
+    PU_RUN_TEST(test_encode);
+
     char* enc = "light wor";
 
     size_t size = b64_encoded_size(strlen(enc)) + 1;
