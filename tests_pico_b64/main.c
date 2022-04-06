@@ -42,6 +42,7 @@ PU_TEST(test_encode)
     PU_ASSERT(encode_test("foob"   , "Zm9vYg=="));
     PU_ASSERT(encode_test("fooba"  , "Zm9vYmE="));
     PU_ASSERT(encode_test("foobar" , "Zm9vYmFy"));
+    PU_ASSERT(encode_test("a+b/c"  , "YStiL2M="));
 
     return true;
 }
@@ -66,6 +67,7 @@ PU_TEST(test_decode)
     PU_ASSERT(decode_test("Zm9vYg==", "foob"));
     PU_ASSERT(decode_test("Zm9vYmE=", "fooba"));
     PU_ASSERT(decode_test("Zm9vYmFy", "foobar"));
+    PU_ASSERT(decode_test("YStiL2M=", "a+b/c"));
 
     return true;
 }

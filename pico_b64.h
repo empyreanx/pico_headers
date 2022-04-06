@@ -71,9 +71,6 @@ size_t b64_decoded_size(const char* src, size_t len)
 
     size_t padding = 0;
 
-    //if ('=' == src[len - 3])
-    //    padding = 3;
-
     if ('=' == src[len - 2])
         padding = 2;
     else if ('=' == src[len - 1])
