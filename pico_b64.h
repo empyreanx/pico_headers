@@ -61,7 +61,7 @@ static const char b64_table[] =
 
 size_t b64_encoded_size(size_t len)
 {
-    return 4 * ceil((double)len / 3.0);
+    return 4 * ceil(len / 3.0);
 }
 
 size_t b64_decoded_size(const char* src, size_t len)
@@ -76,7 +76,7 @@ size_t b64_decoded_size(const char* src, size_t len)
     else if ('=' == src[len - 2])
         padding = 2;
     else if ('=' == src[len - 1])
-        return padding = 1;
+        padding = 1;
 
     return floor(3.0 * (len - padding) / 4.0);
 }

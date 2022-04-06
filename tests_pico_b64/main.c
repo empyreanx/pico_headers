@@ -8,16 +8,27 @@
 
 int main()
 {
-    char *bradley = "bradley";
+    char* enc = "light wor";
 
-    size_t size = b64_encoded_size(strlen(bradley)) + 1;
+    size_t size = b64_encoded_size(strlen(enc)) + 1;
+
+    char enc_buf[size];
+
+    b64_encode(enc_buf, (unsigned char*)enc, strlen(enc));
+    enc_buf[size - 1] = '\0';
+
+    printf("%s\n", enc_buf);
+
+    /*char *bradley = "bradley";
+
+    size_t size = b64_encoded_size(strlen(bradley)) + 1;*
 
     char enc_buf[size];
 
     b64_encode(enc_buf, (unsigned char*)bradley, size - 1);
     enc_buf[size] = '\0';
 
-    printf("%s\n", enc_buf);
+    printf("%s\n", enc_buf);*/
 
     char* str = "Y2FzaWxsZXJv";
 
@@ -26,7 +37,7 @@ int main()
     unsigned char dec_buf[size];
 
     b64_decode(dec_buf, str, strlen(str));
-    dec_buf[size] = '\0';
+    dec_buf[size - 1] = '\0';
 
     printf("%s\n", (char*)dec_buf);
 
