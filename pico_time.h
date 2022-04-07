@@ -48,6 +48,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Time value expressed in microseconds
  */
@@ -95,6 +99,10 @@ ptime_t pt_from_msec(int32_t msec);
  * @brief Make time from seconds
  */
 ptime_t pt_from_sec(double sec);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // PICO_TIME_H
 
