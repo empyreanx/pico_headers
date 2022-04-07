@@ -5,10 +5,12 @@
 
     Summary:
     --------
-    A simple Base64 encoding/decoding library. This library is a repackaged
-    version of the [b64.c](https://github.com/littlstar/b64.c) library into a
-    single header format. Aside from a few minor modifications the code is
-    largely true to the original code by Joseph Werle.
+    A simple Base64 encoding/decoding library. This header is a repackaged
+    and heavily modified version of the [b64.c](https://github.com/littlstar/b64.c)
+    library by Joseph Werle. The most significant change is that there is no
+    dynamic memory allocation memory. There are functions that compute the size
+    of encoded/decoded buffers in advance. Other changes are mostly cosmetic and
+    are intended to make the code easier to understand.
 */
 
 #ifndef PICO_B64_H
@@ -207,14 +209,6 @@ size_t b64_decode(unsigned char* dst, const char * src, size_t len)
             for (i = 0; i < 4; ++i)
             {
                 tmp[i] = b64_table_lookup(tmp[i]);
-
-                // find translation char in `b64_table'
-                /*for (l = 0; l < 64; ++l) {
-                    if (tmp[i] == b64_table[l]) {
-                        tmp[i] = l;
-                        break;
-                    }
-                }*/
             }
 
             // decode
@@ -242,14 +236,8 @@ size_t b64_decode(unsigned char* dst, const char * src, size_t len)
         // translate remainder
         for (j = 0; j < 4; ++j)
         {
-            tmp[j] = b64_table_lookup(tmp[j]);
             // find translation char in `b64_table'
-            /*for (l = 0; l < 64; ++l) {
-                if (tmp[j] == b64_table[l]) {
-                    tmp[j] = l;
-                    break;
-                }
-            }*/
+            tmp[j] = b64_table_lookup(tmp[j]);
         }
 
         // decode remainder
