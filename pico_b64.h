@@ -29,7 +29,7 @@
     encoding is useful in circumstances where data needs to be stored or
     transmitted, but where a binary format is not possible nor desired.
     Applications include embedding binary data in JSON/XML, as well as
-    embedding cryptographic certificates and signatures in plain text.
+    representing cryptographic certificates and signatures in plain text.
 
     Usage:
     ------
