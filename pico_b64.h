@@ -27,7 +27,7 @@
     data as plain ASCII. Each Base64 character represents log2(64) = 6 bits,
     meaning the encoded bytes occupy more memory that the original. This
     encoding is useful in circumstances where data needs to be stored or
-    transmitted, but where a binary format is not possible or desired.
+    transmitted, but where a binary format is not possible nor desired.
 
     Usage:
     ------
@@ -36,6 +36,8 @@
 
     > #define PICO_B64_IMPLEMENTATION <br>
     > #include "pico_b64.h"
+
+    to a source file (once), then simply include the header normally.
 */
 
 #ifndef PICO_B64_H
@@ -127,8 +129,12 @@ size_t b64_encoded_size(size_t len)
 
 size_t b64_decoded_size(const char* src, size_t len)
 {
-    if (len % 4 != 0)
-        return 0; // Input must be padded
+    // Input must be padded and large enough
+    if (len > 0 && len % 4 != 0)
+        return 0;
+
+    if (0 == len)
+        return 0;
 
     size_t padding = 0;
 
@@ -276,7 +282,7 @@ size_t b64_decode(unsigned char* dst, const char * src, size_t len)
                 dst[size++] = buf[i];
             }
 
-            // reset
+            // Reset
             i = 0;
         }
     }
