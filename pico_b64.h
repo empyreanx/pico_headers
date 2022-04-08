@@ -1,16 +1,35 @@
-/*
+/**
+    @file pico_b64.h
+    @brief A simple Base64 encoding/decoding library
+
     ----------------------------------------------------------------------------
     Licensing information at end of header
     ----------------------------------------------------------------------------
 
+    Features:
+    ---------
+    - Written in ANSI C
+    - Single header library for easy build system integration
+    - No dyanmic memory allocation
+    - Simple and concise API
+    - Permissive license (MIT)
+
     Summary:
     --------
-    A simple Base64 encoding/decoding library. This header is a repackaged
-    and heavily modified version of the [b64.c](https://github.com/littlstar/b64.c)
-    library by Joseph Werle. The most significant change is that there is no
-    dynamic memory allocation memory. There are functions that compute the size
-    of encoded/decoded buffers in advance. Other changes are mostly cosmetic and
-    are intended to make the code easier to understand.
+    This header is a repackaged and modified version of the
+    [b64.c](https://github.com/littlstar/b64.c) library by Joseph Werle. The
+    most significant change is that there is no dynamic memory allocation.
+    Instead there are functions that compute the size of encoded/decoded buffers
+    in advance. Other changes are mostly cosmetic and are intended to make the
+    code easier to understand.
+
+    Usage:
+    ------
+
+    To use this library in your project, add the following
+
+    > #define PICO_B64_IMPLEMENTATION <br>
+    > #include "pico_b64.h"
 */
 
 #ifndef PICO_B64_H
@@ -22,10 +41,44 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Returns the Base64 encoded size of an array of bytes (NOTE: This does
+ * not include a null terminator)
+ *
+ * @param len The length of the array of bytes
+ */
 size_t b64_encoded_size(size_t len);
+
+/**
+ * @brief Returns the decoded size of a Base64 string (NOTE: This does not
+ * include a null terminator)
+ *
+ * @param src The string to decode. This is used to determine padding and is not
+ * traversed
+ * @param len The length of the encoded (`src`) string
+ */
 size_t b64_decoded_size(const char* src, size_t len);
 
+/**
+ * @brief Encodes an array of bytes into a Base64 encoded string (NOTE: A null
+ * terminator is not appended)
+ *
+ * @param dst Encoded character (destination) buffer
+ * @param src Byte array to be encoded
+ * @param len Length of `src` in bytes
+ * @returns Number of encoded characters
+ */
 size_t b64_encode(char* dst, const unsigned char* src, size_t len);
+
+/**
+ * @brief Decodes a Base64 encoded string into an array of bytes (NOTE: A null
+ * terminator is not appended)
+ *
+ * @param dst Decoded byte array (destination)
+ * @param src Character array to be decoded
+ * @param len Length of `src` in bytes
+ * @returns Number of decoded bytes
+ */
 size_t b64_decode(unsigned char* dst, const char* src, size_t len);
 
 #ifdef __cplusplus
