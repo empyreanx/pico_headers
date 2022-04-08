@@ -19,9 +19,15 @@
     This header is a repackaged and modified version of the
     [b64.c](https://github.com/littlstar/b64.c) library by Joseph Werle. The
     most significant change is that there is no dynamic memory allocation.
-    Instead there are functions that compute the size of encoded/decoded buffers
-    in advance. Other changes are mostly cosmetic and are intended to make the
-    code easier to understand.
+    Instead, there are functions that compute the size of encoded/decoded
+    buffers in advance. Other changes are mostly cosmetic and are intended to
+    make the code easier to understand.
+
+    [Base64](https://en.wikipedia.org/wiki/Base64) is a means of encoding binary
+    data as plain ASCII. Each Base64 character represents log2(64) = 6 bits,
+    meaning the encoded bytes occupy more memory that the original. This
+    encoding is useful in circumstances where data needs to be stored or
+    transmitted, but where a binary format is not possible or desired.
 
     Usage:
     ------
@@ -164,21 +170,18 @@ size_t b64_encode(char* dst, const unsigned char* src, size_t len)
     unsigned char buf[4];
     unsigned char tmp[3];
 
-    // parse until end of source
+    // Parse until end of source
     while (len--)
     {
-        // read up to 3 bytes at a time into `tmp'
+        // Read up to 3 bytes at a time into 'tmp'
         tmp[i++] = *(src++);
 
-        // if 3 bytes read then encode into `buf'
+        // If 3 bytes read then encode them
         if (3 == i)
         {
             b64_encode_tmp(buf, tmp);
 
-            // allocate 4 new byts for `enc` and
-            // then translate each encoded buffer
-            // part by index from the base 64 index table
-            // into `enc' unsigned char array
+            // Translate buffer
             for (i = 0; i < 4; ++i)
             {
                 dst[size++] = b64_table[buf[i]];
@@ -189,26 +192,25 @@ size_t b64_encode(char* dst, const unsigned char* src, size_t len)
         }
     }
 
-    // remainder
+    // Remainder
     if (i > 0)
     {
-        // fill `tmp' with `\0' at most 3 times
+        // Fill 'tmp' with '\0' at most twice
         for (j = i; j < 3; ++j)
         {
             tmp[j] = '\0';
         }
 
-        // perform same codec as above
+        // Perform same transformation as above
         b64_encode_tmp(buf, tmp);
 
-        // perform same write to `enc` with new allocation
+        // Translate buffer
         for (j = 0; j < i + 1; ++j)
         {
             dst[size++] = b64_table[buf[j]];
         }
 
-        // while there is still a remainder
-        // append `=' to `dst'
+        // While there is still a remainder append '=' to 'dst'
         while (i++ < 3)
         {
             dst[size++] = '=';
@@ -243,30 +245,32 @@ size_t b64_decode(unsigned char* dst, const char * src, size_t len)
     unsigned char buf[3];
     unsigned char tmp[4];
 
-    // parse until end of source
+    // Parse until end of source
     while (len--) {
-        // break if char is `=' or not base64 char
+        // Break if char is padding ('=') or not base64 char
         if ('=' == src[j])
             break;
 
+        // Break if char is not base64
         if (!isalnum((int)src[j]) && '+' != src[j] && '/' != src[j])
             break;
 
-        // read up to 4 bytes at a time into `tmp'
+        // Read up to 4 bytes at a time into 'tmp'
         tmp[i++] = src[j++];
 
-        // if 4 bytes read then decode into `buf'
+        // If 4 bytes read then decode into 'buf'
         if (4 == i)
         {
-            // translate values in `tmp' from table
+            // Translate values in 'tmp' from table
             for (i = 0; i < 4; ++i)
             {
                 tmp[i] = b64_table_lookup(tmp[i]);
             }
 
-            // decode
+            // Decode transform
             b64_decode_tmp(buf, tmp);
 
+            // Write into result
             for (i = 0; i < 3; ++i)
             {
                 dst[size++] = buf[i];
@@ -277,25 +281,26 @@ size_t b64_decode(unsigned char* dst, const char * src, size_t len)
         }
     }
 
-    // remainder
+    // Remainder
     if (i > 0)
     {
-        // fill `tmp' with `\0' at most 4 times
+        // Fill 'tmp' with '\0' at most 3 times
         for (j = i; j < 4; ++j)
         {
             tmp[j] = '\0';
         }
 
-        // translate remainder
+        // Translate remainder
         for (j = 0; j < 4; ++j)
         {
-            // find translation char in `b64_table'
+            // find translation char in 'b64_table'
             tmp[j] = b64_table_lookup(tmp[j]);
         }
 
-        // decode remainder
+        // Decode transform
         b64_decode_tmp(buf, tmp);
 
+        // Write into result
         for (j = 0; j < i - 1; ++j)
         {
             dst[size++] = buf[j];

@@ -78,6 +78,6 @@ int main()
     PU_RUN_TEST(test_encode);
     PU_RUN_TEST(test_decode);
     pu_print_stats();
-    return 0;
+    return pu_test_failed();
 }
 
