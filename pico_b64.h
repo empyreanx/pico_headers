@@ -29,7 +29,7 @@
     encoding is useful in circumstances where data needs to be stored or
     transmitted, but where a binary format is not possible nor desired.
     Applications include embedding binary data in JSON/XML, as well as
-    embedding cryptographic certificates and signatures.
+    embedding cryptographic certificates and signatures in plain text.
 
     Usage:
     ------
@@ -63,7 +63,7 @@ size_t b64_encoded_size(size_t len);
  * @brief Returns the decoded size of a Base64 string (NOTE: This does not
  * include a null terminator)
  *
- * @param src The string to decode. This is used to determine padding and is not
+ * @param src The string to decode. This is only used to determine padding and is not
  * traversed
  * @param len The length of the encoded (`src`) string
  */
