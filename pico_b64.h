@@ -36,7 +36,7 @@
 
     To use this library in your project, add the following
 
-    > #define PICO_B64_IMPLEMENTATION <br>
+    > #define PICO_B64_IMPLEMENTATION
     > #include "pico_b64.h"
 
     to a source file (once), then simply include the header normally.
