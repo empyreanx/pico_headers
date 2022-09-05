@@ -41,7 +41,9 @@
     3) The build system must define `_POSIX_C_SOURCE 199309L`
 */
 
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 199309L
+#endif
 
 #ifndef PICO_TIME_H
 #define PICO_TIME_H
