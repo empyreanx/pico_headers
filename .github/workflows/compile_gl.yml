@@ -16,8 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-        - { name: Windows (mingw32), os: windows-latest, shell: 'msys2 {0}', msystem: mingw32, msys-env: mingw-w64-i686 }
-        - { name: Windows (mingw64), os: windows-latest, shell: 'msys2 {0}', msystem: mingw64, msys-env: mingw-w64-x86_64 }
+        #- { name: Windows (mingw32), os: windows-latest, shell: 'msys2 {0}', msystem: mingw32, msys-env: mingw-w64-i686 }
+        #- { name: Windows (mingw64), os: windows-latest, shell: 'msys2 {0}', msystem: mingw64, msys-env: mingw-w64-x86_64 }
         - { name: Linux,             os: ubuntu-latest,  shell: bash }
         - { name: MacOS,             os: macos-latest,   shell: bash }
 
@@ -35,16 +35,16 @@ jobs:
         run: |
              sudo apt-get update
              sudo apt-get install libsdl2-dev
-      - name: Setup MinGW64 Dependences
-        if: runner.os == 'Windows' && matrix.platform.msystem == 'mingw64'
-        run: |
-             #pacman --noconfirm -Syu
-             pacman --noconfirm -S mingw-w64-x86_64-SDL2
-      - name: Setup MinGW32 Dependences
-        if: runner.os == 'Windows' && matrix.platform.msystem == 'mingw32'
-        run: |
-             #pacman --noconfirm -Syu
-             pacman --noconfirm -S mingw-w64-i686-SDL2
+      #- name: Setup MinGW64 Dependences
+      #  if: runner.os == 'Windows' && matrix.platform.msystem == 'mingw64'
+      #  run: |
+      #       #pacman --noconfirm -Syu
+      #       pacman --noconfirm -S mingw-w64-x86_64-SDL2
+      #- name: Setup MinGW32 Dependences
+      #  if: runner.os == 'Windows' && matrix.platform.msystem == 'mingw32'
+      #  run: |
+      #       #pacman --noconfirm -Syu
+      #       pacman --noconfirm -S mingw-w64-i686-SDL2
       - name: Setup MacOS Dependences
         if: runner.os == 'MacOS'
         run: |
