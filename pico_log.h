@@ -26,20 +26,20 @@
     messages to a sink. It could be a file, a network connection, or stream
     (e.g. stdout).
 
-    Once one or more appenders are registered, macros such as pl_info will send
+    Once one or more appenders are registered, macros such as log_info will send
     messages to the appenders.
 
     Output can be modified in a number of ways. The most important way to affect
-    the output is to specify the log level (e.g. PL_LEVEL_INFO). If the log
-    level is set PL_LEVEL_INFO, then messages sent to pl_trace or pl_debug will
-    not be written whereas pl_info, pl_warn, pl_error, and pl_fatal will be.
+    the output is to specify the log level (e.g. LOG_LEVEL_INFO). If the log
+    level is set LOG_LEVEL_INFO, then messages sent to log_trace or log_debug will
+    not be written whereas log_info, log_warn, log_error, and log_fatal will be.
 
     Output can also be modified to show or hide various metadata. These are
     date/time, log level, filename/line number, and calling function. They can
-    be toggled using the pl_display* functions. There is also an option to
+    be toggled using the log_display* functions. There is also an option to
     enable color coded output.
 
-    It is possible to synchronize appenders using `pl_set_lock`. This function
+    It is possible to synchronize appenders using `log_set_lock`. This function
     accepts a function pointer that takes a boolean and user data as input. When
     this function pointer is passed true the lock is acquired and false to
     release the lock.
@@ -79,49 +79,49 @@ extern "C" {
 
 /**
  * @brief These codes allow different layers of granularity when logging. See
- * the documentation of the `pl_set_level` function for more information.
+ * the documentation of the `log_set_level` function for more information.
  */
 typedef enum
 {
-    PL_LEVEL_TRACE = 0,
-    PL_LEVEL_DEBUG,
-    PL_LEVEL_INFO,
-    PL_LEVEL_WARN,
-    PL_LEVEL_ERROR,
-    PL_LEVEL_FATAL,
-    PL_LEVEL_COUNT
-} pl_level_t;
+    LOG_LEVEL_TRACE = 0,
+    LOG_LEVEL_DEBUG,
+    LOG_LEVEL_INFO,
+    LOG_LEVEL_WARN,
+    LOG_LEVEL_ERROR,
+    LOG_LEVEL_FATAL,
+    LOG_LEVEL_COUNT
+} log_level_t;
 
 /**
  * @brief Appender function definition. An appender writes a log entry to an
  * output stream. This could be the console, a file, a network connection, etc...
  */
-typedef void (*pl_appender_fn)(const char* entry, void* udata);
+typedef void (*log_appender_fn)(const char* entry, void* udata);
 
 /**
- *  @brief Lock function definition. This is called during pl_write_log. Adapted
+ *  @brief Lock function definition. This is called during log_write_log. Adapted
  */
-typedef void (*pl_lock_fn)(bool lock, void *udata);
+typedef void (*log_lock_fn)(bool lock, void *udata);
 
 /**
  * @brief Identifies a registered appender.
  */
-typedef int pl_id_t;
+typedef int app_id_t;
 
 /**
   * @brief Converts a string to the corresponding log level
   */
-bool pl_str_level(const char* str, pl_level_t* level);
+bool log_str_level(const char* str, log_level_t* level);
 
 /**
  * @brief Enables logging. NOTE: Logging is enabled by default.
  */
-void pl_enable(void);
+void log_enable(void);
 
 /**
  * @brief Disables logging.
  */
-void pl_disable(void);
+void log_disable(void);
 
 /**
  * @brief Registers an appender
@@ -143,8 +143,8 @@ void pl_disable(void);
  * @return            An identifier for the appender. This ID is valid until the
  *                    appender is unregistered.
  */
-pl_id_t pl_add_appender(pl_appender_fn appender_fp,
-                        pl_level_t level, void* udata);
+app_id_t log_add_appender(log_appender_fn appender_fp,
+                        log_level_t level, void* udata);
 
 /**
  * @brief Registers an output stream appender.
@@ -155,14 +155,14 @@ pl_id_t pl_add_appender(pl_appender_fn appender_fp,
  * @return       An identifier for the appender. This ID is valid until the
  *               appender is unregistered.
  */
-pl_id_t pl_add_stream(FILE* stream, pl_level_t level);
+app_id_t log_add_stream(FILE* stream, log_level_t level);
 
 /**
  * @brief Unregisters appender (removes the appender from the logger).
  *
  * @param id The appender to unregister
  */
-void pl_remove_appender(pl_id_t id);
+void log_remove_appender(app_id_t id);
 
 /**
  * @brief Enables the specified appender. NOTE: Appenders are enabled by default
@@ -170,19 +170,19 @@ void pl_remove_appender(pl_id_t id);
  *
  * @param id The appender to enable.
  */
-void pl_enable_appender(pl_id_t id);
+void log_enable_appender(app_id_t id);
 
 /**
  * @brief Disables the specified appender.
  *
  * @param id The appender to disable
  */
-void pl_disable_appender(pl_id_t id);
+void log_disable_appender(app_id_t id);
 
 /**
  * @brief Sets the locking function.
  */
-void pl_set_lock(pl_id_t id, pl_lock_fn lock_fp, void* udata);
+void log_set_lock(app_id_t id, log_lock_fn lock_fp, void* udata);
 
 /**
  * @brief Sets the logging level
@@ -193,7 +193,7 @@ void pl_set_lock(pl_id_t id, pl_lock_fn lock_fp, void* udata);
  * @param id    The appender to hold the lock
  * @param level The new appender logging threshold.
  */
-void pl_set_level(pl_id_t id, pl_level_t level);
+void log_set_level(app_id_t id, log_level_t level);
 
 /**
  * @brief Set the appender timestamp.
@@ -204,7 +204,7 @@ void pl_set_level(pl_id_t id, pl_level_t level);
  * @param id The appender id
  * @param fmt The time format
  */
-void pl_set_time_fmt(pl_id_t id, const char* fmt);
+void log_set_time_fmt(app_id_t id, const char* fmt);
 
 /**
  * @brief Turns colors ouput on or off for the specified appender.
@@ -213,7 +213,7 @@ void pl_set_time_fmt(pl_id_t id, const char* fmt);
  * @param id      The appender id
  * @param enabled On if true
  */
-void pl_display_colors(pl_id_t id, bool enabled);
+void log_display_colors(app_id_t id, bool enabled);
 
 /**
  * @brief Turns timestamp reporting on/off for the specified appender.
@@ -222,7 +222,7 @@ void pl_display_colors(pl_id_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void pl_display_timestamp(pl_id_t id, bool enabled);
+void log_display_timestamp(app_id_t id, bool enabled);
 
 /**
  * @brief Turns log level reporting on/off for the specified appender.
@@ -231,7 +231,7 @@ void pl_display_timestamp(pl_id_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void pl_display_level(pl_id_t id, bool enabled);
+void log_display_level(app_id_t id, bool enabled);
 
 /**
  * @brief Turns filename and line number reporting on/off for the specified
@@ -241,7 +241,7 @@ void pl_display_level(pl_id_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void pl_display_file(pl_id_t id, bool enabled);
+void log_display_file(app_id_t id, bool enabled);
 
 /**
  * @brief Turns function reporting on/off for the specified appender.
@@ -250,72 +250,72 @@ void pl_display_file(pl_id_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void pl_display_function(pl_id_t id, bool enabled);
+void log_display_function(app_id_t id, bool enabled);
 
 /**
  * @brief Logs a TRACE an INFO message
  *
  * Writes a TRACE level message to the log. Usage is similar to printf
- * (i.e. pl_trace(format, args...))
+ * (i.e. log_trace(format, args...))
  */
-#define pl_log_trace(...) \
-        pl_write_log(PL_LEVEL_TRACE, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define log_trace(...) \
+        log_write(LOG_LEVEL_TRACE, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs a DEBUG message
  *
  * Writes a DEBUG level message to the log. Usage is similar to printf (i.e.
- * (i.e. pl_debug(format, args...))
+ * (i.e. log_debug(format, args...))
  */
-#define pl_log_debug(...) \
-        pl_write_log(PL_LEVEL_DEBUG, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define log_debug(...) \
+        log_write(LOG_LEVEL_DEBUG, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs an INFO message
  *
  * Writes an INFO level message to the log. Usage is similar to printf
- * (i.e. pl_info(format, args...))
+ * (i.e. log_info(format, args...))
  */
-#define pl_log_info(...) \
-        pl_write_log(PL_LEVEL_INFO,  __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define log_info(...) \
+        log_write(LOG_LEVEL_INFO,  __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs a WARN message
  *
  * Writes a WARN level message to the log. Usage is similar to printf (i.e.
- * (i.e. pl_warn(format, args...))
+ * (i.e. log_warn(format, args...))
  */
-#define pl_log_warn(...) \
-        pl_write_log(PL_LEVEL_WARN,  __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define log_warn(...) \
+        log_write(LOG_LEVEL_WARN,  __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs an ERROR message
  *
  * Writes a ERROR level message to the log. Usage is similar to printf (i.e.
- * (i.e. pl_error(format, args...))
+ * (i.e. log_error(format, args...))
  */
-#define pl_log_error(...) \
-        pl_write_log(PL_LEVEL_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define log_error(...) \
+        log_write(LOG_LEVEL_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /**
  * @brief Logs a FATAL message
  *
  * Writes a FATAL level message to the log.. Usage is similar to printf (i.e.
- * (i.e. pl_fatal(format, args...))
+ * (i.e. log_fatal(format, args...))
  */
-#define pl_log_fatal(...) \
-        pl_write_log(PL_LEVEL_FATAL, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define log_fatal(...) \
+        log_write(LOG_LEVEL_FATAL, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 
 /**
  * WARNING: It is inadvisable to call this function directly. Use the macros
  * instead.
  */
-void pl_write_log(pl_level_t level,
-                  const char* file,
-                  unsigned line,
-                  const char* func,
-                  const char* fmt, ...);
+void log_write(log_level_t level,
+               const char* file,
+               unsigned line,
+               const char* func,
+               const char* fmt, ...);
 
 
 #ifdef __cplusplus
@@ -353,44 +353,44 @@ void pl_write_log(pl_level_t level,
  * Internal aliases
  */
 
-#define PL_MAX_APPENDERS  PICO_LOG_MAX_APPENDERS
-#define PL_MAX_MSG_LENGTH PICO_LOG_MAX_MSG_LENGTH
-#define PL_ASSERT         PICO_LOG_ASSERT
+#define LOG_MAX_APPENDERS  PICO_LOG_MAX_APPENDERS
+#define LOG_MAX_MSG_LENGTH PICO_LOG_MAX_MSG_LENGTH
+#define LOG_ASSERT         PICO_LOG_ASSERT
 
 /*
  * Log entry component maximum sizes. These have been chosen to be overly
  * generous powers of 2 for the sake of safety and simplicity.
  */
 
-#define PL_TIMESTAMP_LEN 64
-#define PL_LEVEL_LEN     32
-#define PL_FILE_LEN      512
-#define PL_FUNC_LEN      32
-#define PL_MSG_LEN       PL_MAX_MSG_LENGTH
-#define PL_BREAK_LEN     1
+#define LOG_TIMESTAMP_LEN 64
+#define LOG_LEVEL_LEN     32
+#define LOG_FILE_LEN      512
+#define LOG_FUNC_LEN      32
+#define LOG_MSG_LEN       LOG_MAX_MSG_LENGTH
+#define LOG_BREAK_LEN     1
 
-#define PL_ENTRY_LEN (PL_TIMESTAMP_LEN  + \
-                      PL_LEVEL_LEN      + \
-                      PL_FILE_LEN       + \
-                      PL_FUNC_LEN       + \
-                      PL_MSG_LEN        + \
-                      PL_BREAK_LEN)
+#define LOG_ENTRY_LEN (LOG_TIMESTAMP_LEN  + \
+                       LOG_LEVEL_LEN      + \
+                       LOG_FILE_LEN       + \
+                       LOG_FUNC_LEN       + \
+                       LOG_MSG_LEN        + \
+                       LOG_BREAK_LEN)
 
-#define PL_TIME_FMT_LEN 32
-#define PL_TIME_FMT     "%d/%m/%Y %H:%M:%S"
+#define LOG_TIME_FMT_LEN 32
+#define LOG_TIME_FMT     "%d/%m/%Y %H:%M:%S"
 
-#define PL_TERM_CODE  0x1B
-#define PL_TERM_RESET "[0m"
-#define PL_TERM_GRAY  "[90m"
+#define LOG_TERM_CODE  0x1B
+#define LOG_TERM_RESET "[0m"
+#define LOG_TERM_GRAY  "[90m"
 
-static bool pl_initialized    = false; // True if logger is initialized
-static bool pl_enabled        = true;  // True if logger is enabled
-static int  pl_appender_count = 0;     // Number of appenders
+static bool log_initialized    = false; // True if logger is initialized
+static bool log_enabled        = true;  // True if logger is enabled
+static int  log_appender_count = 0;     // Number of appenders
 
 /*
- * Logger level strings indexed by level ID (pl_level_t).
+ * Logger level strings indexed by level ID (log_level_t).
  */
-static const char* const pl_level_str[] =
+static const char* const log_level_str[] =
 {
     "TRACE",
     "DEBUG",
@@ -402,9 +402,9 @@ static const char* const pl_level_str[] =
 };
 
 /*
- * Logger level strings indexed by level ID (pl_level_t).
+ * Logger level strings indexed by level ID (log_level_t).
  */
-static const char* const pl_level_str_formatted[] =
+static const char* const log_level_str_formatted[] =
 {
     "TRACE",
     "DEBUG",
@@ -416,7 +416,7 @@ static const char* const pl_level_str_formatted[] =
 };
 
 // Appropriated from https://github.com/rxi/log.c (MIT licensed)
-static const char* pl_level_color[] =
+static const char* log_level_color[] =
 {
     "[94m", "[36m", "[32m", "[33m", "[31m", "[35m", NULL
 };
@@ -426,64 +426,64 @@ static const char* pl_level_color[] =
  */
 typedef struct
 {
-    pl_appender_fn appender_fp;
-    void*          udata;
-    bool           enabled;
-    pl_level_t     log_level;
-    char           time_fmt[PL_TIME_FMT_LEN];
-    bool           colors;
-    bool           timestamp;
-    bool           level;
-    bool           file;
-    bool           func;
-    pl_lock_fn     lock_fp;
+    log_appender_fn appender_fp;
+    void*           udata;
+    bool            enabled;
+    log_level_t     log_level;
+    char            time_fmt[LOG_TIME_FMT_LEN];
+    bool            colors;
+    bool            timestamp;
+    bool            level;
+    bool            file;
+    bool            func;
+    log_lock_fn     lock_fp;
     void*          lock_udata;
-} pl_appender_t;
+} log_appender_t;
 
 /*
  * Array of appenders.
  */
-static pl_appender_t pl_appenders[PL_MAX_APPENDERS];
+static log_appender_t log_appenders[LOG_MAX_APPENDERS];
 
 /*
  * Initializes the logger provided it has not been initialized.
  */
 static void
-pl_try_init ()
+log_try_init ()
 {
-    if (pl_initialized)
+    if (log_initialized)
     {
         return;
     }
 
-    for (int i = 0; i < PL_MAX_APPENDERS; i++)
+    for (int i = 0; i < LOG_MAX_APPENDERS; i++)
     {
-        pl_appenders[i].appender_fp = NULL;
+        log_appenders[i].appender_fp = NULL;
     }
 
-    pl_initialized = true;
+    log_initialized = true;
 }
 
-static bool pl_appender_exists(pl_id_t id)
+static bool log_appender_exists(app_id_t id)
 {
-    return (id < PL_MAX_APPENDERS && NULL != pl_appenders[id].appender_fp);
+    return (id < LOG_MAX_APPENDERS && NULL != log_appenders[id].appender_fp);
 }
 
-static bool pl_appender_enabled(pl_id_t id)
+static bool log_appender_enabled(app_id_t id)
 {
-    return pl_appender_exists(id) && pl_appenders[id].enabled;
+    return log_appender_exists(id) && log_appenders[id].enabled;
 }
 
-bool pl_str_level(const char* str, pl_level_t* level)
+bool log_str_level(const char* str, log_level_t* level)
 {
     if (!level)
         return false;
 
-    for (int i = 0; pl_level_str[i]; i++)
+    for (int i = 0; log_level_str[i]; i++)
     {
-        if (0 == strcmp(str, pl_level_str[i]))
+        if (0 == strcmp(str, log_level_str[i]))
         {
-            *level = (pl_level_t)i;
+            *level = (log_level_t)i;
             return true;
         }
     }
@@ -492,41 +492,41 @@ bool pl_str_level(const char* str, pl_level_t* level)
 }
 
 void
-pl_enable (void)
+log_enable (void)
 {
-    pl_enabled = true;
+    log_enabled = true;
 }
 
 void
-pl_disable (void)
+log_disable (void)
 {
-    pl_enabled = false;
+    log_enabled = false;
 }
 
-pl_id_t
-pl_add_appender (pl_appender_fn appender_fp, pl_level_t level, void* udata)
+app_id_t
+log_add_appender (log_appender_fn appender_fp, log_level_t level, void* udata)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Check if there is space for a new appender.
-    PL_ASSERT(pl_appender_count < PL_MAX_APPENDERS);
+    LOG_ASSERT(log_appender_count < LOG_MAX_APPENDERS);
 
     // Ensure level is valid
-    PL_ASSERT(level >= 0 && level < PL_LEVEL_COUNT);
+    LOG_ASSERT(level >= 0 && level < LOG_LEVEL_COUNT);
 
     // Iterate through appender array and find an empty slot.
-    for (int i = 0; i < PL_MAX_APPENDERS; i++)
+    for (int i = 0; i < LOG_MAX_APPENDERS; i++)
     {
-        if (NULL == pl_appenders[i].appender_fp)
+        if (NULL == log_appenders[i].appender_fp)
         {
-            pl_appender_t* appender = &pl_appenders[i];
+            log_appender_t* appender = &log_appenders[i];
 
             // Store and enable appender
             appender->appender_fp = appender_fp;
             appender->log_level   = level;
             appender->udata       = udata;
-            appender->level       = PL_LEVEL_INFO;
+            appender->level       = LOG_LEVEL_INFO;
             appender->enabled     = true;
             appender->colors      = false;
             appender->level       = true;
@@ -536,284 +536,284 @@ pl_add_appender (pl_appender_fn appender_fp, pl_level_t level, void* udata)
             appender->lock_fp     = NULL;
             appender->lock_udata  = NULL;
 
-            strncpy(appender->time_fmt, PL_TIME_FMT, PL_TIME_FMT_LEN);
+            strncpy(appender->time_fmt, LOG_TIME_FMT, LOG_TIME_FMT_LEN);
 
-            pl_appender_count++;
+            log_appender_count++;
 
-            return (pl_id_t)i;
+            return (app_id_t)i;
         }
     }
 
     // This should never happen
-    PL_ASSERT(false);
+    LOG_ASSERT(false);
     return 0;
 }
 
 static void
-pl_stream_appender (const char* entry, void* udata)
+log_stream_appender (const char* entry, void* udata)
 {
     FILE* stream = (FILE*)udata;
     fprintf(stream, "%s", entry);
     fflush(stream);
 }
 
-pl_id_t
-pl_add_stream (FILE* stream, pl_level_t level)
+app_id_t
+log_add_stream (FILE* stream, log_level_t level)
 {
     // Stream must not be NULL
-    PL_ASSERT(NULL != stream);
+    LOG_ASSERT(NULL != stream);
 
-    return pl_add_appender(pl_stream_appender, level, stream);
+    return log_add_appender(log_stream_appender, level, stream);
 }
 
 void
-pl_remove_appender (pl_id_t id)
+log_remove_appender (app_id_t id)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Reset appender with given ID
-    pl_appenders[id].appender_fp = NULL;
+    log_appenders[id].appender_fp = NULL;
 
-    pl_appender_count--;
+    log_appender_count--;
 }
 
 void
-pl_enable_appender (pl_id_t id)
+log_enable_appender (app_id_t id)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Enable appender
-    pl_appenders[id].enabled = true;
+    log_appenders[id].enabled = true;
 }
 
 void
-pl_disable_appender (pl_id_t id)
+log_disable_appender (app_id_t id)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Disable appender
-    pl_appenders[id].enabled = false;
+    log_appenders[id].enabled = false;
 }
 
-void pl_set_lock(pl_id_t id, pl_lock_fn lock_fp, void* udata)
+void log_set_lock (app_id_t id, log_lock_fn lock_fp, void* udata)
 {
     // Ensure lock function is initialized
-    PL_ASSERT(NULL != lock_fp);
+    LOG_ASSERT(NULL != lock_fp);
 
     // Ensure appender is registered
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
-    pl_appenders[id].lock_fp = lock_fp;
-    pl_appenders[id].lock_udata = udata;
+    log_appenders[id].lock_fp = lock_fp;
+    log_appenders[id].lock_udata = udata;
 }
 
 void
-pl_set_level (pl_id_t id, pl_level_t level)
+log_set_level (app_id_t id, log_level_t level)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Ensure level is valid
-    PL_ASSERT(level >= 0 && level < PL_LEVEL_COUNT);
+    LOG_ASSERT(level >= 0 && level < LOG_LEVEL_COUNT);
 
     // Set the level
-    pl_appenders[id].log_level = level;
+    log_appenders[id].log_level = level;
 }
 
 void
-pl_set_time_fmt (pl_id_t id, const char* fmt)
+log_set_time_fmt (app_id_t id, const char* fmt)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Copy the time string
-    strncpy(pl_appenders[id].time_fmt, fmt, PL_TIME_FMT_LEN);
+    strncpy(log_appenders[id].time_fmt, fmt, LOG_TIME_FMT_LEN);
 }
 
 void
-pl_display_colors (pl_id_t id, bool enabled)
+log_display_colors (app_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Disable appender
-    pl_appenders[id].colors = enabled;
+    log_appenders[id].colors = enabled;
 }
 
 void
-pl_display_timestamp (pl_id_t id, bool enabled)
+log_display_timestamp (app_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Turn timestamp on
-    pl_appenders[id].timestamp = enabled;
+    log_appenders[id].timestamp = enabled;
 }
 
 void
-pl_display_level (pl_id_t id, bool enabled)
+log_display_level (app_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Turn level reporting on
-    pl_appenders[id].level = enabled;
+    log_appenders[id].level = enabled;
 }
 
 void
-pl_display_file (pl_id_t id, bool enabled)
+log_display_file (app_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Turn file reporting on
-    pl_appenders[id].file = enabled;
+    log_appenders[id].file = enabled;
 }
 
 void
-pl_display_function (pl_id_t id, bool enabled)
+log_display_function (app_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
-    pl_try_init();
+    log_try_init();
 
     // Ensure appender is registered
-    PL_ASSERT(pl_appender_exists(id));
+    LOG_ASSERT(log_appender_exists(id));
 
     // Turn file reporting on
-    pl_appenders[id].func = enabled;
+    log_appenders[id].func = enabled;
 }
 
 /*
  * Formats the current time as as string.
  */
 static char*
-pl_time_str (const char* time_fmt, char* str, int len)
+log_time_str (const char* time_fmt, char* str, int len)
 {
     time_t now = time(0);
     int ret = strftime(str, len, time_fmt, localtime(&now));
 
-    PL_ASSERT(ret > 0);
+    LOG_ASSERT(ret > 0);
 
     return str;
 }
 
 static void
-pl_append_timestamp (char* entry_str, const char* time_fmt)
+log_append_timestamp (char* entry_str, const char* time_fmt)
 {
-    char time_str[PL_TIMESTAMP_LEN + 1];
-    char tmp_str[PL_TIMESTAMP_LEN + 1];
+    char time_str[LOG_TIMESTAMP_LEN + 1];
+    char tmp_str[LOG_TIMESTAMP_LEN + 1];
 
-    snprintf(time_str, PL_TIMESTAMP_LEN, "%s ",
-             pl_time_str(time_fmt, tmp_str, PL_TIMESTAMP_LEN));
+    snprintf(time_str, LOG_TIMESTAMP_LEN, "%s ",
+             log_time_str(time_fmt, tmp_str, LOG_TIMESTAMP_LEN));
 
-    strncat(entry_str, time_str, PL_TIMESTAMP_LEN);
+    strncat(entry_str, time_str, LOG_TIMESTAMP_LEN);
 }
 
 static void
-pl_append_level (char* entry_str, pl_level_t level, bool colors)
+log_append_level (char* entry_str, log_level_t level, bool colors)
 {
-    char level_str[PL_LEVEL_LEN];
+    char level_str[LOG_LEVEL_LEN];
 
     if (colors)
     {
         snprintf(level_str, sizeof(level_str), "%c%s%s %c%s",
-        PL_TERM_CODE, pl_level_color[level],
-        pl_level_str_formatted[level],
-        PL_TERM_CODE, PL_TERM_RESET);
+        LOG_TERM_CODE, log_level_color[level],
+        log_level_str_formatted[level],
+        LOG_TERM_CODE, LOG_TERM_RESET);
     }
     else
     {
-        snprintf(level_str, sizeof(level_str), "%s ", pl_level_str[level]);
+        snprintf(level_str, sizeof(level_str), "%s ", log_level_str[level]);
     }
 
-    strncat(entry_str, level_str, PL_LEVEL_LEN);
+    strncat(entry_str, level_str, LOG_LEVEL_LEN);
 }
 
 static void
-pl_append_file(char* entry_str, const char* file, unsigned line)
+log_append_file(char* entry_str, const char* file, unsigned line)
 {
-    char file_str[PL_FILE_LEN];
+    char file_str[LOG_FILE_LEN];
     snprintf(file_str, sizeof(file_str), "[%s:%u] ", file, line);
-    strncat(entry_str, file_str, PL_FILE_LEN);
+    strncat(entry_str, file_str, LOG_FILE_LEN);
 }
 
 static void
-pl_append_func(char* entry_str, const char* func, bool colors)
+log_append_func(char* entry_str, const char* func, bool colors)
 {
-   char func_str[PL_FUNC_LEN];
+   char func_str[LOG_FUNC_LEN];
 
     if (colors)
     {
         snprintf(func_str, sizeof(func_str), "%c%s[%s] %c%s",
-                 PL_TERM_CODE, PL_TERM_GRAY,
+                 LOG_TERM_CODE, LOG_TERM_GRAY,
                  func,
-                 PL_TERM_CODE, PL_TERM_RESET);
+                 LOG_TERM_CODE, LOG_TERM_RESET);
     }
     else
     {
         snprintf(func_str, sizeof(func_str), "[%s] ", func);
     }
 
-    strncat(entry_str, func_str, PL_FUNC_LEN);
+    strncat(entry_str, func_str, LOG_FUNC_LEN);
 }
 
 void
-pl_write_log (pl_level_t level, const char* file, unsigned line,
+log_write (log_level_t level, const char* file, unsigned line,
                             const char* func, const char* fmt, ...)
 {
     // Only write entry if there are registered appenders and the logger is
     // enabled
-    if (0 == pl_appender_count || !pl_enabled)
+    if (0 == log_appender_count || !log_enabled)
     {
         return;
     }
 
     // Ensure valid log level
-    PL_ASSERT(level < PL_LEVEL_COUNT);
+    LOG_ASSERT(level < LOG_LEVEL_COUNT);
 
-    for (pl_id_t i = 0; i < PL_MAX_APPENDERS; i++)
+    for (app_id_t i = 0; i < LOG_MAX_APPENDERS; i++)
     {
-        pl_appender_t* appender = &pl_appenders[i];
+        log_appender_t* appender = &log_appenders[i];
 
-        if (!pl_appender_enabled(i))
+        if (!log_appender_enabled(i))
             continue;
 
-        if (pl_appenders[i].log_level <= level)
+        if (log_appenders[i].log_level <= level)
         {
-            char entry_str[PL_ENTRY_LEN + 1]; // Ensure there is space for
+            char entry_str[LOG_ENTRY_LEN + 1]; // Ensure there is space for
                                               // null char
 
             entry_str[0] = '\0'; // Ensure the entry is null terminated
@@ -821,36 +821,36 @@ pl_write_log (pl_level_t level, const char* file, unsigned line,
             // Append a timestamp
             if (appender->timestamp)
             {
-                pl_append_timestamp(entry_str, appender->time_fmt);
+                log_append_timestamp(entry_str, appender->time_fmt);
             }
 
             // Append the logger level
             if (appender->level)
             {
-                pl_append_level(entry_str, level, appender->colors);
+                log_append_level(entry_str, level, appender->colors);
             }
 
             // Append the filename/line number
             if (appender->file)
             {
-                pl_append_file(entry_str, file, line);
+                log_append_file(entry_str, file, line);
             }
 
             // Append the function name
             if (appender->func)
             {
-                pl_append_func(entry_str, func, appender->colors);
+                log_append_func(entry_str, func, appender->colors);
             }
 
             // Append the log message
-            char msg_str[PL_MSG_LEN];
+            char msg_str[LOG_MSG_LEN];
 
             va_list args;
             va_start(args, fmt);
             vsnprintf(msg_str, sizeof(msg_str), fmt, args);
             va_end(args);
 
-            strncat(entry_str, msg_str, PL_MSG_LEN);
+            strncat(entry_str, msg_str, LOG_MSG_LEN);
             strcat(entry_str, "\n");
 
             // Locks the appender
