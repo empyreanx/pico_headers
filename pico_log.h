@@ -106,7 +106,7 @@ typedef void (*log_lock_fn)(bool lock, void *udata);
 /**
  * @brief Identifies a registered appender.
  */
-typedef int app_id_t;
+typedef int log_id_t;
 
 /**
   * @brief Converts a string to the corresponding log level
@@ -143,7 +143,7 @@ void log_disable(void);
  * @return            An identifier for the appender. This ID is valid until the
  *                    appender is unregistered.
  */
-app_id_t log_add_appender(log_appender_fn appender_fp,
+log_id_t log_add_appender(log_appender_fn appender_fp,
                         log_level_t level, void* udata);
 
 /**
@@ -155,14 +155,14 @@ app_id_t log_add_appender(log_appender_fn appender_fp,
  * @return       An identifier for the appender. This ID is valid until the
  *               appender is unregistered.
  */
-app_id_t log_add_stream(FILE* stream, log_level_t level);
+log_id_t log_add_stream(FILE* stream, log_level_t level);
 
 /**
  * @brief Unregisters appender (removes the appender from the logger).
  *
  * @param id The appender to unregister
  */
-void log_remove_appender(app_id_t id);
+void log_remove_appender(log_id_t id);
 
 /**
  * @brief Enables the specified appender. NOTE: Appenders are enabled by default
@@ -170,19 +170,19 @@ void log_remove_appender(app_id_t id);
  *
  * @param id The appender to enable.
  */
-void log_enable_appender(app_id_t id);
+void log_enable_appender(log_id_t id);
 
 /**
  * @brief Disables the specified appender.
  *
  * @param id The appender to disable
  */
-void log_disable_appender(app_id_t id);
+void log_disable_appender(log_id_t id);
 
 /**
  * @brief Sets the locking function.
  */
-void log_set_lock(app_id_t id, log_lock_fn lock_fp, void* udata);
+void log_set_lock(log_id_t id, log_lock_fn lock_fp, void* udata);
 
 /**
  * @brief Sets the logging level
@@ -193,7 +193,7 @@ void log_set_lock(app_id_t id, log_lock_fn lock_fp, void* udata);
  * @param id    The appender to hold the lock
  * @param level The new appender logging threshold.
  */
-void log_set_level(app_id_t id, log_level_t level);
+void log_set_level(log_id_t id, log_level_t level);
 
 /**
  * @brief Set the appender timestamp.
@@ -204,7 +204,7 @@ void log_set_level(app_id_t id, log_level_t level);
  * @param id The appender id
  * @param fmt The time format
  */
-void log_set_time_fmt(app_id_t id, const char* fmt);
+void log_set_time_fmt(log_id_t id, const char* fmt);
 
 /**
  * @brief Turns colors ouput on or off for the specified appender.
@@ -213,7 +213,7 @@ void log_set_time_fmt(app_id_t id, const char* fmt);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_colors(app_id_t id, bool enabled);
+void log_display_colors(log_id_t id, bool enabled);
 
 /**
  * @brief Turns timestamp reporting on/off for the specified appender.
@@ -222,7 +222,7 @@ void log_display_colors(app_id_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_timestamp(app_id_t id, bool enabled);
+void log_display_timestamp(log_id_t id, bool enabled);
 
 /**
  * @brief Turns log level reporting on/off for the specified appender.
@@ -231,7 +231,7 @@ void log_display_timestamp(app_id_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_level(app_id_t id, bool enabled);
+void log_display_level(log_id_t id, bool enabled);
 
 /**
  * @brief Turns filename and line number reporting on/off for the specified
@@ -241,7 +241,7 @@ void log_display_level(app_id_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_file(app_id_t id, bool enabled);
+void log_display_file(log_id_t id, bool enabled);
 
 /**
  * @brief Turns function reporting on/off for the specified appender.
@@ -250,7 +250,7 @@ void log_display_file(app_id_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_function(app_id_t id, bool enabled);
+void log_display_function(log_id_t id, bool enabled);
 
 /**
  * @brief Logs a TRACE an INFO message
@@ -464,12 +464,12 @@ log_try_init ()
     log_initialized = true;
 }
 
-static bool log_appender_exists(app_id_t id)
+static bool log_appender_exists(log_id_t id)
 {
     return (id < LOG_MAX_APPENDERS && NULL != log_appenders[id].appender_fp);
 }
 
-static bool log_appender_enabled(app_id_t id)
+static bool log_appender_enabled(log_id_t id)
 {
     return log_appender_exists(id) && log_appenders[id].enabled;
 }
@@ -503,7 +503,7 @@ log_disable (void)
     log_enabled = false;
 }
 
-app_id_t
+log_id_t
 log_add_appender (log_appender_fn appender_fp, log_level_t level, void* udata)
 {
     // Initialize logger if neccesary
@@ -540,7 +540,7 @@ log_add_appender (log_appender_fn appender_fp, log_level_t level, void* udata)
 
             log_appender_count++;
 
-            return (app_id_t)i;
+            return (log_id_t)i;
         }
     }
 
@@ -557,7 +557,7 @@ log_stream_appender (const char* entry, void* udata)
     fflush(stream);
 }
 
-app_id_t
+log_id_t
 log_add_stream (FILE* stream, log_level_t level)
 {
     // Stream must not be NULL
@@ -567,7 +567,7 @@ log_add_stream (FILE* stream, log_level_t level)
 }
 
 void
-log_remove_appender (app_id_t id)
+log_remove_appender (log_id_t id)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -582,7 +582,7 @@ log_remove_appender (app_id_t id)
 }
 
 void
-log_enable_appender (app_id_t id)
+log_enable_appender (log_id_t id)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -595,7 +595,7 @@ log_enable_appender (app_id_t id)
 }
 
 void
-log_disable_appender (app_id_t id)
+log_disable_appender (log_id_t id)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -607,7 +607,7 @@ log_disable_appender (app_id_t id)
     log_appenders[id].enabled = false;
 }
 
-void log_set_lock (app_id_t id, log_lock_fn lock_fp, void* udata)
+void log_set_lock (log_id_t id, log_lock_fn lock_fp, void* udata)
 {
     // Ensure lock function is initialized
     LOG_ASSERT(NULL != lock_fp);
@@ -623,7 +623,7 @@ void log_set_lock (app_id_t id, log_lock_fn lock_fp, void* udata)
 }
 
 void
-log_set_level (app_id_t id, log_level_t level)
+log_set_level (log_id_t id, log_level_t level)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -639,7 +639,7 @@ log_set_level (app_id_t id, log_level_t level)
 }
 
 void
-log_set_time_fmt (app_id_t id, const char* fmt)
+log_set_time_fmt (log_id_t id, const char* fmt)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -652,7 +652,7 @@ log_set_time_fmt (app_id_t id, const char* fmt)
 }
 
 void
-log_display_colors (app_id_t id, bool enabled)
+log_display_colors (log_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -665,7 +665,7 @@ log_display_colors (app_id_t id, bool enabled)
 }
 
 void
-log_display_timestamp (app_id_t id, bool enabled)
+log_display_timestamp (log_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -678,7 +678,7 @@ log_display_timestamp (app_id_t id, bool enabled)
 }
 
 void
-log_display_level (app_id_t id, bool enabled)
+log_display_level (log_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -691,7 +691,7 @@ log_display_level (app_id_t id, bool enabled)
 }
 
 void
-log_display_file (app_id_t id, bool enabled)
+log_display_file (log_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -704,7 +704,7 @@ log_display_file (app_id_t id, bool enabled)
 }
 
 void
-log_display_function (app_id_t id, bool enabled)
+log_display_function (log_id_t id, bool enabled)
 {
     // Initialize logger if neccesary
     log_try_init();
@@ -804,7 +804,7 @@ log_write (log_level_t level, const char* file, unsigned line,
     // Ensure valid log level
     LOG_ASSERT(level < LOG_LEVEL_COUNT);
 
-    for (app_id_t i = 0; i < LOG_MAX_APPENDERS; i++)
+    for (log_id_t i = 0; i < LOG_MAX_APPENDERS; i++)
     {
         log_appender_t* appender = &log_appenders[i];
 

@@ -32,8 +32,8 @@ int main(int argc, char** argv)
     (void)argc;
     (void)argv;
 
-    app_id_t id1 = log_add_appender(appender1, LOG_LEVEL_TRACE, NULL);
-    app_id_t id2 = log_add_appender(appender2, LOG_LEVEL_INFO, NULL);
+    log_id_t id1 = log_add_appender(appender1, LOG_LEVEL_TRACE, NULL);
+    log_id_t id2 = log_add_appender(appender2, LOG_LEVEL_INFO, NULL);
 
     log_set_level(id1, LOG_LEVEL_TRACE);
     log_set_level(id2, LOG_LEVEL_TRACE);
