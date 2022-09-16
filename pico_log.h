@@ -31,8 +31,9 @@
 
     Output can be modified in a number of ways. The most important way to affect
     the output is to specify the log level (e.g. LOG_LEVEL_INFO). If the log
-    level is set LOG_LEVEL_INFO, then messages sent to log_trace or log_debug will
-    not be written whereas log_info, log_warn, log_error, and log_fatal will be.
+    level is set LOG_LEVEL_INFO, then messages sent to log_trace or log_debug
+    will not be written whereas log_info, log_warn, log_error, and log_fatal
+    will be.
 
     Output can also be modified to show or hide various metadata. These are
     date/time, log level, filename/line number, and calling function. They can
@@ -99,7 +100,10 @@ typedef enum
 typedef void (*log_appender_fn)(const char* entry, void* udata);
 
 /**
- *  @brief Lock function definition. This is called during log_write_log. Adapted
+ * @brief Lock function definition. This is called during log_write.
+ *
+ * @param lock  True to lock, false to release the log
+ * @param udata Data obtained from the corresponding `log_set_lock` function
  */
 typedef void (*log_lock_fn)(bool lock, void *udata);
 
@@ -126,9 +130,9 @@ void log_disable(void);
 /**
  * @brief Registers an appender
  *
- * Registers (adds appender to logger) and enables the specified appender. An
- * appender writes a log entry to an output stream. This could be a console,
- * a file, a network connection, etc...
+ * Adds appender to logger and enables the specified appender. An appender
+ * writes a log entry to an output stream. This could be a console, a file, a
+ * network connection, etc...
  *
  * @param appender_fp Pointer to the appender function to register. An appender
  *                    function has the signature,
@@ -144,7 +148,8 @@ void log_disable(void);
  *                    appender is unregistered.
  */
 log_id_t log_add_appender(log_appender_fn appender_fp,
-                        log_level_t level, void* udata);
+                          log_level_t level,
+                          void* udata);
 
 /**
  * @brief Registers an output stream appender.
@@ -180,7 +185,10 @@ void log_enable_appender(log_id_t id);
 void log_disable_appender(log_id_t id);
 
 /**
- * @brief Sets the locking function.
+ * @brief Sets the locking function for a given appender
+
+ ^ @param lock_fp The lock function pointer
+ * @param id      The appender to hold the lock
  */
 void log_set_lock(log_id_t id, log_lock_fn lock_fp, void* udata);
 
@@ -190,7 +198,7 @@ void log_set_lock(log_id_t id, log_lock_fn lock_fp, void* udata);
  * Sets the logging level. Only those messages of equal or higher priority
  * (severity) than this value will be logged.
  *
- * @param id    The appender to hold the lock
+ * @param id    The appender
  * @param level The new appender logging threshold.
  */
 void log_set_level(log_id_t id, log_level_t level);
@@ -437,7 +445,7 @@ typedef struct
     bool            file;
     bool            func;
     log_lock_fn     lock_fp;
-    void*          lock_udata;
+    void*           lock_udata;
 } log_appender_t;
 
 /*
@@ -763,7 +771,7 @@ log_append_level (char* entry_str, log_level_t level, bool colors)
 }
 
 static void
-log_append_file(char* entry_str, const char* file, unsigned line)
+log_append_file (char* entry_str, const char* file, unsigned line)
 {
     char file_str[LOG_FILE_LEN];
     snprintf(file_str, sizeof(file_str), "[%s:%u] ", file, line);
@@ -771,7 +779,7 @@ log_append_file(char* entry_str, const char* file, unsigned line)
 }
 
 static void
-log_append_func(char* entry_str, const char* func, bool colors)
+log_append_func (char* entry_str, const char* func, bool colors)
 {
    char func_str[LOG_FUNC_LEN];
 
@@ -792,7 +800,7 @@ log_append_func(char* entry_str, const char* func, bool colors)
 
 void
 log_write (log_level_t level, const char* file, unsigned line,
-                            const char* func, const char* fmt, ...)
+                              const char* func, const char* fmt, ...)
 {
     // Only write entry if there are registered appenders and the logger is
     // enabled
