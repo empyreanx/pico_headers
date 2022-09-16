@@ -185,7 +185,7 @@ void log_enable_appender(log_id_t id);
 void log_disable_appender(log_id_t id);
 
 /**
- * @brief Sets the locking function for a given appender
+ * @brief Sets the lock function for a given appender
 
  ^ @param lock_fp The lock function pointer
  * @param id      The appender to hold the lock
