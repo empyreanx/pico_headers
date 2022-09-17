@@ -33,7 +33,7 @@
     the output is to specify the log level (e.g. LOG_LEVEL_INFO). If the log
     level is set LOG_LEVEL_INFO, then messages sent to log_trace or log_debug
     will not be written whereas log_info, log_warn, log_error, and log_fatal
-    will be.
+    will have no effect.
 
     Output can also be modified to show or hide various metadata. These are
     date/time, log level, filename/line number, and calling function. They can
@@ -41,7 +41,7 @@
     enable color coded output.
 
     It is possible to synchronize appenders using `log_set_lock`. This function
-    accepts a function pointer that takes a boolean and user data as input. When
+    accepts a function pointer that takes a boolean and user data as input. If
     this function pointer is passed true the lock is acquired and false to
     release the lock.
 
@@ -102,10 +102,10 @@ typedef void (*log_appender_fn)(const char* entry, void* udata);
 /**
  * @brief Lock function definition. This is called during log_write.
  *
- * @param lock  True to lock, false to release the log
+ * @param lock  True to lock, false to release the lock
  * @param udata Data obtained from the corresponding `log_set_lock` function
  */
-typedef void (*log_lock_fn)(bool lock, void *udata);
+typedef void (*log_appender_lock_fn)(bool lock, void *udata);
 
 /**
  * @brief Identifies a registered appender.
@@ -190,7 +190,7 @@ void log_disable_appender(log_appender_t id);
  ^ @param lock_fp The lock function pointer
  * @param id      The appender to hold the lock
  */
-void log_set_lock(log_appender_t id, log_lock_fn lock_fp, void* udata);
+void log_set_lock(log_appender_t id, log_appender_lock_fn lock_fp, void* udata);
 
 /**
  * @brief Sets the logging level
@@ -434,18 +434,18 @@ static const char* log_level_color[] =
  */
 typedef struct
 {
-    log_appender_fn appender_fp;
-    void*           udata;
-    bool            enabled;
-    log_level_t     log_level;
-    char            time_fmt[LOG_TIME_FMT_LEN];
-    bool            colors;
-    bool            timestamp;
-    bool            level;
-    bool            file;
-    bool            func;
-    log_lock_fn     lock_fp;
-    void*           lock_udata;
+    log_appender_fn      appender_fp;
+    void*                udata;
+    log_appender_lock_fn lock_fp;
+    void*                lock_udata;
+    bool                 enabled;
+    log_level_t          log_level;
+    char                 time_fmt[LOG_TIME_FMT_LEN];
+    bool                 colors;
+    bool                 timestamp;
+    bool                 level;
+    bool                 file;
+    bool                 func;
 } log_appender_data_t;
 
 /*
@@ -474,11 +474,15 @@ log_try_init ()
 
 static bool log_appender_exists(log_appender_t id)
 {
+    log_try_init();
+
     return (id < LOG_MAX_APPENDERS && NULL != log_appenders[id].appender_fp);
 }
 
 static bool log_appender_enabled(log_appender_t id)
 {
+    log_try_init();
+
     return log_appender_exists(id) && log_appenders[id].enabled;
 }
 
@@ -616,7 +620,7 @@ log_disable_appender (log_appender_t id)
 }
 
 void
-log_set_lock (log_appender_t id, log_lock_fn lock_fp, void* udata)
+log_set_lock (log_appender_t id, log_appender_lock_fn lock_fp, void* udata)
 {
     // Ensure lock function is initialized
     LOG_ASSERT(NULL != lock_fp);
@@ -803,6 +807,9 @@ void
 log_write (log_level_t level, const char* file, unsigned line,
                               const char* func, const char* fmt, ...)
 {
+    // Ensure logger is initialized
+    log_try_init();
+
     // Only write entry if there are registered appenders and the logger is
     // enabled
     if (0 == log_appender_count || !log_enabled)
