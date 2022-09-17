@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     (void)argc;
     (void)argv;
 
-    log_id_t id = log_add_appender(appender, LOG_LEVEL_INFO, NULL);
+    log_appender_t id = log_add_appender(appender, LOG_LEVEL_INFO, NULL);
 
     log_display_timestamp(id, true);
     log_display_file(id, true);

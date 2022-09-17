@@ -8,7 +8,7 @@ int main(int argc, char** argv)
     (void)argc;
     (void)argv;
 
-    log_id_t id = log_add_stream(stdout, LOG_LEVEL_TRACE);
+    log_appender_t id = log_add_stream(stdout, LOG_LEVEL_TRACE);
 
     log_set_time_fmt(id, "%H:%M:%S");
     log_display_colors(id, true);
