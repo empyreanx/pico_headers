@@ -115,7 +115,7 @@ typedef int log_id_t;
 /**
   * @brief Converts a string to the corresponding log level
   */
-bool log_str_level(const char* str, log_level_t* level);
+bool log_str_to_level(const char* str, log_level_t* level);
 
 /**
  * @brief Enables logging. NOTE: Logging is enabled by default.
@@ -402,8 +402,8 @@ static const char* const log_level_str[] =
 {
     "TRACE",
     "DEBUG",
-    "INFO ",
-    "WARN ",
+    "INFO",
+    "WARN",
     "ERROR",
     "FATAL",
     0
@@ -482,7 +482,7 @@ static bool log_appender_enabled(log_id_t id)
     return log_appender_exists(id) && log_appenders[id].enabled;
 }
 
-bool log_str_level(const char* str, log_level_t* level)
+bool log_str_to_level(const char* str, log_level_t* level)
 {
     if (!level)
         return false;
@@ -764,7 +764,7 @@ log_append_level (char* entry_str, log_level_t level, bool colors)
     }
     else
     {
-        snprintf(level_str, sizeof(level_str), "%s ", log_level_str[level]);
+        snprintf(level_str, sizeof(level_str), "%s ", log_level_str_formatted[level]);
     }
 
     strncat(entry_str, level_str, LOG_LEVEL_LEN);
