@@ -19,12 +19,12 @@ static void appender2(const char* p_msg, void* p_user_data)
 
 static void log_all()
 {
-    pl_log_trace ("Test message: %d", 0);
-    pl_log_debug ("Test message: %d", 1);
-    pl_log_info  ("Test message: %d", 2);
-    pl_log_warn  ("Test message: %d", 3);
-    pl_log_error ("Test message: %d", 4);
-    pl_log_fatal ("Test message: %d", 5);
+    log_trace ("Test message: %d", 0);
+    log_debug ("Test message: %d", 1);
+    log_info  ("Test message: %d", 2);
+    log_warn  ("Test message: %d", 3);
+    log_error ("Test message: %d", 4);
+    log_fatal ("Test message: %d", 5);
 }
 
 int main(int argc, char** argv)
@@ -32,11 +32,11 @@ int main(int argc, char** argv)
     (void)argc;
     (void)argv;
 
-    pl_id_t id1 = pl_add_appender(appender1, PL_LEVEL_TRACE, NULL);
-    pl_id_t id2 = pl_add_appender(appender2, PL_LEVEL_INFO, NULL);
+    log_appender_t id1 = log_add_appender(appender1, LOG_LEVEL_TRACE, NULL);
+    log_appender_t id2 = log_add_appender(appender2, LOG_LEVEL_INFO, NULL);
 
-    pl_set_level(id1, PL_LEVEL_TRACE);
-    pl_set_level(id2, PL_LEVEL_TRACE);
+    log_set_level(id1, LOG_LEVEL_TRACE);
+    log_set_level(id2, LOG_LEVEL_TRACE);
 
     printf("================== Both appenders ==================\n");
 
@@ -44,50 +44,50 @@ int main(int argc, char** argv)
 
     printf("================== One appender ==================\n");
 
-    pl_disable_appender(id1);
+    log_disable_appender(id1);
     log_all();
 
     printf("================== Level Off ==================\n");
 
-    pl_display_level(id1, false);
-    pl_display_level(id2, false);
+    log_display_level(id1, false);
+    log_display_level(id2, false);
 
     log_all();
 
     printf("================== Level On/Set Level (INFO) ==================\n");
 
-    pl_enable_appender(id1);
+    log_enable_appender(id1);
 
-    pl_display_level(id1, true);
-    pl_display_level(id2, true);
+    log_display_level(id1, true);
+    log_display_level(id2, true);
 
-    pl_set_level(id1, PL_LEVEL_INFO);
-    pl_set_level(id2, PL_LEVEL_INFO);
+    log_set_level(id1, LOG_LEVEL_INFO);
+    log_set_level(id2, LOG_LEVEL_INFO);
 
     log_all();
 
-    pl_remove_appender(id2);
+    log_remove_appender(id2);
 
     printf("================== Timestamp ==================\n");
 
-    id2 = pl_add_appender(appender2, PL_LEVEL_INFO, NULL);
+    id2 = log_add_appender(appender2, LOG_LEVEL_INFO, NULL);
 
-    pl_display_timestamp(id1, true);
-    pl_display_timestamp(id2, true);
+    log_display_timestamp(id1, true);
+    log_display_timestamp(id2, true);
 
     log_all();
 
     printf("================== File ==================\n");
 
-    pl_display_file(id1, true);
-    pl_display_file(id2, true);
+    log_display_file(id1, true);
+    log_display_file(id2, true);
 
     log_all();
 
     printf("================== Function ==================\n");
 
-    pl_display_function(id1, true);
-    pl_display_function(id2, true);
+    log_display_function(id1, true);
+    log_display_function(id2, true);
 
     log_all();
 
