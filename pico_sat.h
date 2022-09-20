@@ -38,11 +38,12 @@ typedef struct
     pm_flt overlap;
 } sat_response_t;
 
+//later
 //pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
 //pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
 
-sat_circle_t sat_init_cicle(pm_v2 pos, pm_flt radius);
-sat_polygon_t sat_init_polygon(int vertex_count, pm_v2 vertices[]);
+sat_circle_t sat_make_cicle(pm_v2 pos, pm_flt radius);
+sat_polygon_t sat_make_polygon(int vertex_count, pm_v2 vertices[]);
 sat_polygon_t sat_aabb_to_polygon(const pm_b2* aabb);
 
 bool sat_test_polygon_polygon(const sat_poly_t* p1,
@@ -65,9 +66,15 @@ bool sat_test_circle_circle(const sat_circle_t* c1,
 
 #ifdef PICO_SAT_IMPLEMENTATION
 
-bool sat_is_separating_axist();
+bool sat_is_separating_axis(const sat_poly_t* p1,
+                            const sat_poly_t* p2,
+                            pm_v2 axis,
+                            sat_response_t* response)
+{
+    return true;
+}
 
-sat_circle_t sat_init_cicle(pm_v2 pos, pm_flt radius)
+sat_circle_t sat_make_cicle(pm_v2 pos, pm_flt radius)
 {
     sat_circle_t circle;
     circle.pos = pos;
@@ -75,11 +82,12 @@ sat_circle_t sat_init_cicle(pm_v2 pos, pm_flt radius)
     return circle;
 }
 
-sat_polygon_t sat_init_polygon(int vertex_count, pm_v2 vertices[])
+sat_polygon_t sat_make_polygon(int vertex_count, pm_v2 vertices[])
 {
     //assert(vertex_count <= PICO_SAT_MAX_POLY_VERTS);
 
     sat_polygon_t poly;
+
     poly.vertex_count = vertex_count;
 
     for (int i = 0; i < vertex_count; i++)
@@ -92,7 +100,7 @@ sat_polygon_t sat_init_polygon(int vertex_count, pm_v2 vertices[])
         pm_v2 v1 = vertices[i];
         pm_v2 v2 = (i < vertex_count - 1) ? vertices[i + 1] : vertices[0];
         poly.edges[i] = pm_v2_sub(v2, v1);
-        poly.normals[i] = pm_v2_perp(&poly.edges[i]); //TODO: use pm_v2_normalized
+        poly.normals[i] = pm_v2_perp(&poly.edges[i]);
         pm_v2_normalize(&poly.normals[i]);
     }
 
