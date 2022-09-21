@@ -562,7 +562,7 @@ pm_t2 pm_t2_inv(const pm_t2* t);
 /**
  * @brief Composes two transformations
  */
-pm_t2 pm_t2_compose(const pm_t2* t1, const pm_t2* t2);
+pm_t2 pm_t2_mult(const pm_t2* t1, const pm_t2* t2);
 
 /**
  * @brief Linearly interpolates two transforms
@@ -610,7 +610,7 @@ PM_INLINE pm_t2 pm_t2_translation(pm_v2 pos)
 PM_INLINE void pm_t2_scale(pm_t2* t, pm_v2 scale)
 {
     pm_t2 scaling = pm_t2_scaling(scale);
-    *t = pm_t2_compose(&scaling, t);
+    *t = pm_t2_mult(&scaling, t);
 }
 
 /**
@@ -621,7 +621,7 @@ PM_INLINE void pm_t2_scale(pm_t2* t, pm_v2 scale)
 PM_INLINE void pm_t2_rotate(pm_t2* t, pm_float angle)
 {
     pm_t2 rotation = pm_t2_rotation(angle);
-    *t = pm_t2_compose(&rotation, t);
+    *t = pm_t2_mult(&rotation, t);
 }
 
 /**
@@ -632,7 +632,7 @@ PM_INLINE void pm_t2_rotate(pm_t2* t, pm_float angle)
 PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
 {
     pm_t2 translation = pm_t2_translation(pos);
-    *t = pm_t2_compose(&translation, t);
+    *t = pm_t2_mult(&translation, t);
 }
 
 /*==============================================================================
@@ -906,7 +906,7 @@ pm_t2 pm_t2_inv(const pm_t2* t)
     return out;
 }
 
-pm_t2 pm_t2_compose(const pm_t2* t1, const pm_t2* t2)
+pm_t2 pm_t2_mult(const pm_t2* t1, const pm_t2* t2)
 {
     pm_t2 out;
 

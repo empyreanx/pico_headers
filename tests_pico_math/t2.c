@@ -72,7 +72,7 @@ PU_TEST(test_t2_get_scale)
     { // Acute angle
         pm_t2 t1 = pm_t2_rotation(PM_PI / 4.0f);
         pm_t2 t2 = pm_t2_scaling(pm_v2_make(2, 3));
-        pm_t2 t3 = pm_t2_compose(&t2, &t1);
+        pm_t2 t3 = pm_t2_mult(&t2, &t1);
         pm_v2 exp = pm_v2_make(2, 3);
         pm_v2 res = pm_t2_get_scale(&t3);
         PU_ASSERT(pm_v2_equal(res, exp));
@@ -81,7 +81,7 @@ PU_TEST(test_t2_get_scale)
     { // Obtuse angle
         pm_t2 t1 = pm_t2_rotation(PM_PI * 3.0/ 4.0f);
         pm_t2 t2 = pm_t2_scaling(pm_v2_make(2, 3));
-        pm_t2 t3 = pm_t2_compose(&t2, &t1);
+        pm_t2 t3 = pm_t2_mult(&t2, &t1);
         pm_v2 exp = pm_v2_make(2, 3);
         pm_v2 res = pm_t2_get_scale(&t3);
         PU_ASSERT(pm_v2_equal(res, exp));
@@ -90,7 +90,7 @@ PU_TEST(test_t2_get_scale)
     {
         pm_t2 t1 = pm_t2_rotation(PM_PI / 2.0f);
         pm_t2 t2 = pm_t2_scaling(pm_v2_make(2, 2));
-        pm_t2 t3 = pm_t2_compose(&t2, &t1);
+        pm_t2 t3 = pm_t2_mult(&t2, &t1);
         pm_v2 exp = pm_v2_make(2, 2);
         pm_v2 res = pm_t2_get_scale(&t3);
         PU_ASSERT(pm_v2_equal(res, exp));
@@ -103,7 +103,7 @@ PU_TEST(test_t2_set_angle)
 {
     pm_t2 t1 = pm_t2_rotation(PM_PI / 2.0f);
     pm_t2 t2 = pm_t2_scaling(pm_v2_make(2, 3));
-    pm_t2 t3 = pm_t2_compose(&t2, &t1);
+    pm_t2 t3 = pm_t2_mult(&t2, &t1);
 
     { // Case 0
         pm_t2_set_angle(&t3, PM_PI / 8.0f);
@@ -160,7 +160,7 @@ PU_TEST(test_t2_map)
 {
     pm_t2 t1 = pm_t2_rotation(PM_PI / 4.0f);
     pm_t2 t2 = pm_t2_scaling(pm_v2_make(2, 2));
-    pm_t2 t3 = pm_t2_compose(&t1, &t2);
+    pm_t2 t3 = pm_t2_mult(&t1, &t2);
 
     pm_v2 v = pm_v2_make(1, 0);
 
@@ -176,13 +176,13 @@ PU_TEST(test_t2_compose)
 {
     pm_t2 t1 = pm_t2_rotation(PM_PI / 8.0f);
     pm_t2 t2 = pm_t2_rotation(PM_PI / 8.0f);
-    pm_t2 t3 = pm_t2_compose(&t1, &t2);
+    pm_t2 t3 = pm_t2_mult(&t1, &t2);
 
     pm_float angle = pm_t2_get_angle(&t3);
     PU_ASSERT(pm_equal(angle, PM_PI / 4.0f));
 
     t2 = pm_t2_scaling(pm_v2_make(2, 2));
-    t3 = pm_t2_compose(&t3, &t2);
+    t3 = pm_t2_mult(&t3, &t2);
 
     pm_v2 scale = pm_t2_get_scale(&t3);
 
@@ -199,20 +199,20 @@ PU_TEST(test_t2_inv)
 {
     pm_t2 t1 = pm_t2_rotation(PM_PI / 8.0f);
     pm_t2 t2 = pm_t2_rotation(PM_PI / 8.0f);
-    pm_t2 t3 = pm_t2_compose(&t1, &t2);
+    pm_t2 t3 = pm_t2_mult(&t1, &t2);
 
     pm_t2 inv = pm_t2_inv(&t3);
     pm_t2 exp = pm_t2_identity();
-    pm_t2 res = pm_t2_compose(&t3, &inv);
+    pm_t2 res = pm_t2_mult(&t3, &inv);
 
     PU_ASSERT(pm_t2_equal(&res, &exp));
 
     t1 = pm_t2_translation(pm_v2_make(1, 2));
     t2 = pm_t2_scaling(pm_v2_make(2, 2));
-    t3 = pm_t2_compose(&t3, &t2);
-    t3 = pm_t2_compose(&t3, &t1);
+    t3 = pm_t2_mult(&t3, &t2);
+    t3 = pm_t2_mult(&t3, &t1);
     inv = pm_t2_inv(&t3);
-    res = pm_t2_compose(&t3, &inv);
+    res = pm_t2_mult(&t3, &inv);
 
     PU_ASSERT(pm_t2_equal(&res, &exp));
 
@@ -226,21 +226,21 @@ PU_TEST(test_t2_lerp)
 
     t1 = pm_t2_translation(pm_v2_make(1, 1));
     t3 = pm_t2_scaling(pm_v2_make(1, 1));
-    t1 = pm_t2_compose(&t1, &t3);
+    t1 = pm_t2_mult(&t1, &t3);
     t3 = pm_t2_rotation(PM_PI / 4.0f);
-    t1 = pm_t2_compose(&t1, &t3);
+    t1 = pm_t2_mult(&t1, &t3);
 
     /*t1 = pm_t2_rotation(PM_PI / 4.0f);
     t3 = pm_t2_scaling(pm_v2_make(1, 1));
-    t1 = pm_t2_compose(&t3, &t1);
+    t1 = pm_t2_mult(&t3, &t1);
     t3 = pm_t2_translation(pm_v2_make(1, 1));
-    t1 = pm_t2_compose(&t3, &t1);*/
+    t1 = pm_t2_mult(&t3, &t1);*/
 
     t2 = pm_t2_rotation(PM_PI / 2.0f);
     t3 = pm_t2_scaling(pm_v2_make(2, 2));
-    t2 = pm_t2_compose(&t3, &t2);
+    t2 = pm_t2_mult(&t3, &t2);
     t3 = pm_t2_translation(pm_v2_make(1, 1));
-    t2 = pm_t2_compose(&t3, &t2);
+    t2 = pm_t2_mult(&t3, &t2);
 
     t3 = pm_t2_lerp(&t1, &t2, 0.5f);
 
