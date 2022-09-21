@@ -31,7 +31,7 @@
     Vector functions comprise basic vector creation and manipulation, as well
     as computing lengths, dot products, projections, and more.
 
-    Transformation functions include functions for computing compositions,
+    Transformation functions include functions for computing multiplications,
     determinants, inverses, as well as extracting and inserting transformation
     parameters. There are also functions for applying rotations, scaling, and
     translations to a given transform. The provided functions are sufficient for
