@@ -23,20 +23,24 @@
     transforms (pm_t2), and axis-align bounding boxes (pm_b2). The library also
     provides some scalar functions as well as a random number generator.
 
-    The library aims to strike a balance between performance and simplicity.
-    Most functions return by value, whereas most arguments are passed by
-    pointer. An exception to this are vector arithmetic functions (add, sub,
-    scale), and transform functions (translate and scale) which have arguments
-    passed by value. There is no dynamic memory allocation.
+    This library aims to strike a balance between performance and simplicity.
+    Most functions return by value. All vectors are passed by value. Otherwise,
+    transforms and AABBs are passed by pointer. There is no dynamic memory
+    allocation.
 
-    Vector functions comprise basic vector creation and manipulation.Transforms,
-    on the other hand, are more advanced. The functions provided are sufficient
-    for implementing a scene graph.
+    Vector functions comprise basic vector creation and manipulation, as well
+    as computing lengths, dot products, projections, and more.
 
-    Another feature of this library is that it provides linear interpolation for
-    transforms, vectors, and scalars. Interpolating transforms can be used in a
-    variety of contexts, for example, interpolated rendering when using a fixed
-    timestep, or smoothing when doing networked physics.
+    Transformation functions include functions for computing compositions,
+    determinants, inverses, as well as extracting and inserting transformation
+    parameters. There are also functions for applying rotations, scaling, and
+    translations to a given transform. The provided functions are sufficient for
+    implementing a scene graph.
+
+    This library provides linear interpolation for transforms, vectors, and
+    scalars. Interpolating transforms can be used in a variety of contexts, for
+    example, interpolated rendering when using a fixed timestep, or smoothing
+    when performing networked physics.
 
     Bounding box functions provide tests for intersection of AABBs and
     determnining if a point is contained within a given AABB. There are
@@ -558,7 +562,7 @@ pm_t2 pm_t2_inv(const pm_t2* t);
 /**
  * @brief Composes two transformations
  */
-pm_t2 pm_t2_mult(const pm_t2* t1, const pm_t2* t2);
+pm_t2 pm_t2_compose(const pm_t2* t1, const pm_t2* t2);
 
 /**
  * @brief Linearly interpolates two transforms
@@ -606,7 +610,7 @@ PM_INLINE pm_t2 pm_t2_translation(pm_v2 pos)
 PM_INLINE void pm_t2_scale(pm_t2* t, pm_v2 scale)
 {
     pm_t2 scaling = pm_t2_scaling(scale);
-    *t = pm_t2_mult(&scaling, t);
+    *t = pm_t2_compose(&scaling, t);
 }
 
 /**
@@ -617,7 +621,7 @@ PM_INLINE void pm_t2_scale(pm_t2* t, pm_v2 scale)
 PM_INLINE void pm_t2_rotate(pm_t2* t, pm_float angle)
 {
     pm_t2 rotation = pm_t2_rotation(angle);
-    *t = pm_t2_mult(&rotation, t);
+    *t = pm_t2_compose(&rotation, t);
 }
 
 /**
@@ -628,7 +632,7 @@ PM_INLINE void pm_t2_rotate(pm_t2* t, pm_float angle)
 PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
 {
     pm_t2 translation = pm_t2_translation(pos);
-    *t = pm_t2_mult(&translation, t);
+    *t = pm_t2_compose(&translation, t);
 }
 
 /*==============================================================================
@@ -902,7 +906,7 @@ pm_t2 pm_t2_inv(const pm_t2* t)
     return out;
 }
 
-pm_t2 pm_t2_mult(const pm_t2* t1, const pm_t2* t2)
+pm_t2 pm_t2_compose(const pm_t2* t1, const pm_t2* t2)
 {
     pm_t2 out;
 
