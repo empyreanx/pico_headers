@@ -515,7 +515,7 @@ PM_INLINE pm_float pm_t2_get_angle(const pm_t2* t)
  * @param t The transform
  * @param scale The vector containing scale factors in the x/y directions
  */
-void pm_t2_set_scale(pm_t2* t, const pm_v2* scale);
+void pm_t2_set_scale(pm_t2* t, pm_v2 scale);
 
 /**
  * @brief Gets the scale of the transform
@@ -829,15 +829,15 @@ bool pm_t2_equal(const pm_t2* t1, const pm_t2* t2)
            pm_equal(t1->ty,  t2->ty);
 }
 
-void pm_t2_set_scale(pm_t2* t, const pm_v2* scale)
+void pm_t2_set_scale(pm_t2* t, pm_v2 scale)
 {
     pm_float angle = pm_t2_get_angle(t);
 
     pm_float c = pm_cos(angle);
     pm_float s = pm_sin(angle);
 
-    pm_float sx = scale->x;
-    pm_float sy = scale->y;
+    pm_float sx = scale.x;
+    pm_float sy = scale.y;
 
     t->t00 = sx * c; t->t01 = sx * -s;
     t->t10 = sy * s; t->t11 = sy *  c;
