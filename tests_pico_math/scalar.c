@@ -33,7 +33,7 @@ PU_TEST(test_next_pow2)
 
 PU_TEST(test_lerp_angle)
 {
-    pm_flt angle = pm_lerp_angle(0.0f, PM_PI / 4.0, 0.5f);
+    pm_float angle = pm_lerp_angle(0.0f, PM_PI / 4.0, 0.5f);
     PU_ASSERT(pm_equal(angle, PM_PI / 8.0f));
 
     angle = pm_lerp_angle(PM_PI / 4.0, PM_PI * 3.0 / 4.0, 0.5f);

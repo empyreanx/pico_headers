@@ -61,7 +61,7 @@ PU_TEST(test_v2_dot)
     pm_v2 v1 = pm_v2_make(1, 2);
     pm_v2 v2 = pm_v2_make(3, 4);
 
-    pm_flt exp = 1 * 3 + 2 * 4;
+    pm_float exp = 1 * 3 + 2 * 4;
 
     PU_ASSERT(pm_equal(exp, pm_v2_dot(v1, v2)));
 
@@ -106,7 +106,7 @@ PU_TEST(test_v2_cross)
     pm_v2 v2 = pm_v2_make(1, 1);
 
     { // Should be positive
-        pm_flt c = pm_v2_cross(v1, v2);
+        pm_float c = pm_v2_cross(v1, v2);
 
         c /= (2 * sqrtf(2));
 
@@ -114,7 +114,7 @@ PU_TEST(test_v2_cross)
     }
 
     { // Should be negative
-        pm_flt c = pm_v2_cross(v2, v1);
+        pm_float c = pm_v2_cross(v2, v1);
 
         c /= (2 * sqrtf(2));
 
@@ -127,7 +127,7 @@ PU_TEST(test_v2_cross)
 PU_TEST(test_v2_angle)
 {
     pm_v2 v = pm_v2_make(1, 1);
-    pm_flt a = pm_v2_angle(v);
+    pm_float a = pm_v2_angle(v);
     PU_ASSERT(pm_equal(a, PM_PI / 4));
 
     return true;

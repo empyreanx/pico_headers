@@ -107,49 +107,49 @@ PU_TEST(test_t2_set_angle)
 
     { // Case 0
         pm_t2_set_angle(&t3, PM_PI / 8.0f);
-        pm_flt angle = pm_t2_get_angle(&t3);
+        pm_float angle = pm_t2_get_angle(&t3);
         PU_ASSERT(pm_equal(angle, PM_PI / 8.0f));
     }
 
     { // Case 1
         pm_t2_set_angle(&t3, PM_PI / 4.0f);
-        pm_flt angle = pm_t2_get_angle(&t3);
+        pm_float angle = pm_t2_get_angle(&t3);
         PU_ASSERT(pm_equal(angle, PM_PI / 4.0f));
     }
 
     { // Case 2
         pm_t2_set_angle(&t3, PM_PI * 3.0f / 8.0f);
-        pm_flt angle = pm_t2_get_angle(&t3);
+        pm_float angle = pm_t2_get_angle(&t3);
         PU_ASSERT(pm_equal(angle, PM_PI * 3.0f / 8.0f));
     }
 
     { // Case 3
         pm_t2_set_angle(&t3, PM_PI * 7.0f / 8.0f);
-        pm_flt angle = pm_t2_get_angle(&t3);
+        pm_float angle = pm_t2_get_angle(&t3);
         PU_ASSERT(pm_equal(angle, PM_PI * 7.0f / 8.0f));
     }
 
     { // Case 4
         pm_t2_set_angle(&t3, PM_PI / 2.0f);
-        pm_flt angle = pm_t2_get_angle(&t3);
+        pm_float angle = pm_t2_get_angle(&t3);
         PU_ASSERT(pm_equal(angle, PM_PI / 2.0f));
     }
 
     { // Case 5
         pm_t2_set_angle(&t3, PM_PI);
-        pm_flt angle = pm_t2_get_angle(&t3);
+        pm_float angle = pm_t2_get_angle(&t3);
         PU_ASSERT(pm_equal(angle, PM_PI));
     }
 
     { // Case 6
         pm_t2_set_angle(&t3, PM_PI * 3.0f / 4.0f);
-        pm_flt angle = pm_t2_get_angle(&t3);
+        pm_float angle = pm_t2_get_angle(&t3);
         PU_ASSERT(pm_equal(angle, PM_PI * 3.0f / 4.0f));
     }
 
     { // Case 9
         pm_t2_set_angle(&t3, PM_PI * 9.0f / 8.0f);
-        pm_flt angle = pm_t2_get_angle(&t3);
+        pm_float angle = pm_t2_get_angle(&t3);
         PU_ASSERT(pm_equal(angle, PM_PI * 9.0f / 8.0f));
     }
 
@@ -178,7 +178,7 @@ PU_TEST(test_t2_mult)
     pm_t2 t2 = pm_t2_rotation(PM_PI / 8.0f);
     pm_t2 t3 = pm_t2_mult(&t1, &t2);
 
-    pm_flt angle = pm_t2_get_angle(&t3);
+    pm_float angle = pm_t2_get_angle(&t3);
     PU_ASSERT(pm_equal(angle, PM_PI / 4.0f));
 
     t2 = pm_t2_scaling(pm_v2_make(2, 2));
@@ -247,7 +247,7 @@ PU_TEST(test_t2_lerp)
     pm_v2 scale = pm_t2_get_scale(&t3);
     pm_v2 pos = pm_t2_get_pos(&t3);
 
-    pm_flt angle = pm_t2_get_angle(&t3);
+    pm_float angle = pm_t2_get_angle(&t3);
 
     PU_ASSERT(pm_equal(angle, PM_PI * 3.0f / 8.0f));
 
