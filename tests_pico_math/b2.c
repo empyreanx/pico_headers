@@ -8,7 +8,7 @@ PU_TEST(test_b2_pos)
     pm_v2 res = pm_b2_pos(&b);
     pm_v2 exp = pm_v2_make(1.0f, 2.0f);
 
-    PU_ASSERT(pm_v2_equal(&res, &exp));
+    PU_ASSERT(pm_v2_equal(res, exp));
 
     return true;
 }
@@ -20,7 +20,7 @@ PU_TEST(test_b2_size)
     pm_v2 res = pm_b2_size(&b);
     pm_v2 exp = pm_v2_make(3.0f, 4.0f);
 
-    PU_ASSERT(pm_v2_equal(&res, &exp));
+    PU_ASSERT(pm_v2_equal(res, exp));
 
     return true;
 }
@@ -144,7 +144,7 @@ PU_TEST(test_b2_transform)
     pm_t2_rotate(&t, -PM_PI / 4.0f);
 
     pm_b2 res = pm_b2_transform(&t, &b);
-    pm_flt len = pm_sin(PM_PI / 4.0f);
+    pm_float len = pm_sin(PM_PI / 4.0f);
     pm_b2 exp = pm_b2_make(-len, -len, 2.0f * len, 2.0f * len);
 
     PU_ASSERT(pm_b2_equal(&res, &exp));
