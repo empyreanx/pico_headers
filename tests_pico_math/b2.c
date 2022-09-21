@@ -8,7 +8,7 @@ PU_TEST(test_b2_pos)
     pm_v2 res = pm_b2_pos(&b);
     pm_v2 exp = pm_v2_make(1.0f, 2.0f);
 
-    PU_ASSERT(pm_v2_equal(&res, &exp));
+    PU_ASSERT(pm_v2_equal(res, exp));
 
     return true;
 }
@@ -20,7 +20,7 @@ PU_TEST(test_b2_size)
     pm_v2 res = pm_b2_size(&b);
     pm_v2 exp = pm_v2_make(3.0f, 4.0f);
 
-    PU_ASSERT(pm_v2_equal(&res, &exp));
+    PU_ASSERT(pm_v2_equal(res, exp));
 
     return true;
 }

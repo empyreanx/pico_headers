@@ -267,10 +267,10 @@ PM_INLINE pm_v2 pm_v2_make(pm_flt x, pm_flt y)
 /**
  * @brief Returns true if the vectors are equal (within epsilon)
  */
-PM_INLINE bool pm_v2_equal(const pm_v2* v1, const pm_v2* v2)
+PM_INLINE bool pm_v2_equal(pm_v2 v1, pm_v2 v2)
 {
-    return pm_equal(v1->x, v2->x) &&
-           pm_equal(v1->y, v2->y);
+    return pm_equal(v1.x, v2.x) &&
+           pm_equal(v1.y, v2.y);
 }
 
 /**
@@ -306,15 +306,15 @@ PM_INLINE pm_v2 pm_v2_scale(pm_v2 v, pm_flt c)
 /**
  * @brief Dot product
  */
-PM_INLINE pm_flt pm_v2_dot(const pm_v2* v1, const pm_v2* v2)
+PM_INLINE pm_flt pm_v2_dot(pm_v2 v1, pm_v2 v2)
 {
-    return v1->x * v2->x + v1->y * v2->y;
+    return v1.x * v2.x + v1.y * v2.y;
 }
 
 /**
  * @brief Returns the square of the length of the vector
  */
-PM_INLINE pm_flt pm_v2_len2(const pm_v2* v)
+PM_INLINE pm_flt pm_v2_len2(pm_v2 v)
 {
     return pm_v2_dot(v, v);
 }
@@ -322,7 +322,7 @@ PM_INLINE pm_flt pm_v2_len2(const pm_v2* v)
 /**
  * @brief Returns the length of the vector
  */
-PM_INLINE pm_flt pm_v2_len(const pm_v2* v)
+PM_INLINE pm_flt pm_v2_len(pm_v2 v)
 {
     return pm_sqrt(pm_v2_len2(v));
 }
@@ -332,14 +332,14 @@ PM_INLINE pm_flt pm_v2_len(const pm_v2* v)
  * @param v The vector to normalize
  * @returns The normalized vector
  */
-PM_INLINE void pm_v2_normalize(pm_v2* v)
+PM_INLINE pm_v2 pm_v2_normalize(pm_v2 v)
 {
     pm_flt c = pm_v2_len(v);
 
     if (c < PM_EPSILON)
-        *v = pm_v2_make(0.0f, 0.0f);
+        return pm_v2_make(0.0f, 0.0f);
     else
-        *v = pm_v2_scale(*v, 1.0f / c);
+        return pm_v2_scale(v, 1.0f / c);
 }
 
 /**
@@ -347,26 +347,26 @@ PM_INLINE void pm_v2_normalize(pm_v2* v)
  * @param v The vector to be made perpendicular
  * @returns The perpendicular vector
  */
-PM_INLINE pm_v2 pm_v2_perp(const pm_v2* v)
+PM_INLINE pm_v2 pm_v2_perp(pm_v2 v)
 {
-    return pm_v2_make(-v->y, v->x);
+    return pm_v2_make(-v.y, v.x);
 }
 
 /**
  * @brief A 2D analog of the 3D cross product
  */
-PM_INLINE pm_flt pm_v2_cross(const pm_v2* v1, const pm_v2* v2)
+PM_INLINE pm_flt pm_v2_cross(pm_v2 v1, pm_v2 v2)
 {
     pm_v2 perp = pm_v2_perp(v1);
-    return pm_v2_dot(&perp, v2);
+    return pm_v2_dot(perp, v2);
 }
 
 /**
  * @brief Returns the angle the vector with respect to the current basis
  */
-PM_INLINE pm_flt pm_v2_angle(const pm_v2* v)
+PM_INLINE pm_flt pm_v2_angle(pm_v2 v)
 {
-    return pm_atan2(v->y, v->x);
+    return pm_atan2(v.y, v.x);
 }
 
 /**
@@ -375,19 +375,19 @@ PM_INLINE pm_flt pm_v2_angle(const pm_v2* v)
  * @param v2 The vector to project onto
  * @returns The projection of v1 onto v2
  */
-PM_INLINE pm_v2 pm_v2_proj(const pm_v2* v1, const pm_v2* v2)
+PM_INLINE pm_v2 pm_v2_proj(pm_v2 v1, pm_v2 v2)
 {
     pm_flt d = pm_v2_dot(v1, v2) / pm_v2_dot(v2, v2);
-    return pm_v2_scale(*v2, d);
+    return pm_v2_scale(v2, d);
 }
 
 /**
  * @brief Returns the distance between the two vectors
  */
-PM_INLINE pm_flt pm_v2_dist(const pm_v2* v1, const pm_v2* v2)
+PM_INLINE pm_flt pm_v2_dist(pm_v2 v1, pm_v2 v2)
 {
-    pm_v2 v = pm_v2_sub(*v1, *v2);
-    return pm_v2_len(&v);
+    pm_v2 v = pm_v2_sub(v1, v2);
+    return pm_v2_len(v);
 }
 
 /**
@@ -396,11 +396,11 @@ PM_INLINE pm_flt pm_v2_dist(const pm_v2* v1, const pm_v2* v2)
  * @param v2 The second endpoint
  * @param alpha The normalized distance between v1 and v2
  */
-PM_INLINE pm_v2 pm_v2_lerp(const pm_v2* v1, const pm_v2* v2, pm_flt alpha)
+PM_INLINE pm_v2 pm_v2_lerp(pm_v2 v1, pm_v2 v2, pm_flt alpha)
 {
     pm_v2 out;
-    out.x = pm_lerp(v1->x, v2->x, alpha);
-    out.y = pm_lerp(v1->y, v2->y, alpha);
+    out.x = pm_lerp(v1.x, v2.x, alpha);
+    out.y = pm_lerp(v1.y, v2.y, alpha);
     return out;
 }
 
@@ -423,33 +423,33 @@ PM_INLINE pm_v2 pm_v2_polar(pm_flt angle, pm_flt len)
 /**
  * @brief Computes the component-wise minimum of two vectors
  */
-PM_INLINE pm_v2 pm_v2_min(const pm_v2* v1, const pm_v2* v2)
+PM_INLINE pm_v2 pm_v2_min(pm_v2 v1, pm_v2 v2)
 {
-    return pm_v2_make(pm_min(v1->x, v2->x), pm_min(v1->y, v2->y));
+    return pm_v2_make(pm_min(v1.x, v2.x), pm_min(v1.y, v2.y));
 }
 
 /**
  * @brief Computes the component-wise maximum of two vectors
  */
-PM_INLINE pm_v2 pm_v2_max(const pm_v2* v1, const pm_v2* v2)
+PM_INLINE pm_v2 pm_v2_max(pm_v2 v1, pm_v2 v2)
 {
-    return pm_v2_make(pm_max(v1->x, v2->x), pm_max(v1->y, v2->y));
+    return pm_v2_make(pm_max(v1.x, v2.x), pm_max(v1.y, v2.y));
 }
 
 /**
  * @brief Computes the component-wise floor of the specified vector
  */
-PM_INLINE pm_v2 pm_v2_floor(const pm_v2* v)
+PM_INLINE pm_v2 pm_v2_floor(pm_v2 v)
 {
-    return pm_v2_make(pm_floor(v->x), pm_floor(v->y));
+    return pm_v2_make(pm_floor(v.x), pm_floor(v.y));
 }
 
 /**
  * @brief Computes the component-wise ceiling of the specified vector
  */
-PM_INLINE pm_v2 pm_v2_ceil(const pm_v2* v)
+PM_INLINE pm_v2 pm_v2_ceil(pm_v2 v)
 {
-    return pm_v2_make(pm_ceil(v->x), pm_ceil(v->y));
+    return pm_v2_make(pm_ceil(v.x), pm_ceil(v.y));
 }
 
 /*==============================================================================
@@ -496,10 +496,10 @@ PM_INLINE pm_v2 pm_t2_get_pos(const pm_t2* t)
  * @param t Pointer to the transform
  * @param pos The position vector
  */
-PM_INLINE void pm_t2_set_pos(pm_t2* t, const pm_v2* pos)
+PM_INLINE void pm_t2_set_pos(pm_t2* t, pm_v2 pos)
 {
-    t->tx = pos->x;
-    t->ty = pos->y;
+    t->tx = pos.x;
+    t->ty = pos.y;
 }
 
 /**
@@ -533,7 +533,7 @@ void pm_t2_set_angle(pm_t2* t, pm_flt angle);
  * @param t The transform
  * @param v The vector to be transformed
  */
-PM_INLINE pm_v2 pm_t2_map(const pm_t2* t, const pm_v2 v)
+PM_INLINE pm_v2 pm_t2_map(const pm_t2* t, pm_v2 v)
 {
     pm_v2 out;
     out.x = t->t00 * v.x + t->t01 * v.y + t->tx;
@@ -635,11 +635,11 @@ PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
  * 2D Box (AABB)
  *============================================================================*/
 
-PM_INLINE pm_b2 pm_b2_make_minmax(pm_v2* min, pm_v2* max)
+PM_INLINE pm_b2 pm_b2_make_minmax(pm_v2 min, pm_v2 max)
 {
     pm_b2 out;
-    out.min = *min;
-    out.max = *max;
+    out.min = min;
+    out.max = max;
     return out;
 }
 
@@ -650,7 +650,7 @@ PM_INLINE pm_b2 pm_b2_make(pm_flt x, pm_flt y, pm_flt w, pm_flt h)
 {
     pm_v2 min = { x, y};
     pm_v2 max = { x + w, y + h };
-    return pm_b2_make_minmax(&min, &max);
+    return pm_b2_make_minmax(min, max);
 }
 
 /**
@@ -793,12 +793,12 @@ pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
     const pm_v2 v2 = pm_v2_make(pm_cos(angle2), pm_sin(angle2));
 
     // Calculuate cosine of angle between the two vectors
-    pm_flt dot = pm_clamp(pm_v2_dot(&v1, &v2), -1.0f, 1.0f);
+    pm_flt dot = pm_clamp(pm_v2_dot(v1, v2), -1.0f, 1.0f);
 
     // LERP if the cosine is too close to its limits
     if (pm_equal(dot, 1.0f) || pm_equal(dot, -1.0f))
     {
-        pm_v2 tmp = pm_v2_lerp(&v1, &v2, alpha);
+        pm_v2 tmp = pm_v2_lerp(v1, v2, alpha);
         return pm_normalize_angle(pm_atan2(tmp.y, tmp.x));
     }
 
@@ -807,7 +807,7 @@ pm_flt pm_lerp_angle(pm_flt angle1, pm_flt angle2, pm_flt alpha)
 
     // Gram-Schmidt(construct a new vector 'v0' that is orthogonal to 'v1')
     pm_v2 v0  = pm_v2_sub(v2, pm_v2_scale(v1, dot));
-    pm_v2_normalize(&v0);
+    v0 = pm_v2_normalize(v0);
 
     // Calcuate vector in new coordinate system
     pm_v2 tmp1 = pm_v2_scale(v1, pm_cos(angle));
@@ -860,8 +860,8 @@ pm_v2 pm_t2_get_scale(const pm_t2* t)
     pm_v2 v1 = pm_v2_make(t->t00, t->t01);
     pm_v2 v2 = pm_v2_make(t->t10, t->t11);
 
-    out.x = pm_sign(t->t00) * cos_sign * pm_v2_len(&v1);
-    out.y = pm_sign(t->t11) * cos_sign * pm_v2_len(&v2);
+    out.x = pm_sign(t->t00) * cos_sign * pm_v2_len(v1);
+    out.y = pm_sign(t->t11) * cos_sign * pm_v2_len(v2);
 
     return out;
 }
@@ -929,8 +929,8 @@ pm_t2 pm_t2_lerp(const pm_t2* t1, const pm_t2* t2, pm_flt alpha)
     pm_v2 pos1 = pm_t2_get_pos(t1);
     pm_v2 pos2 = pm_t2_get_pos(t2);
 
-    pm_v2 scale = pm_v2_lerp(&scale1, &scale2, alpha);
-    pm_v2 pos = pm_v2_lerp(&pos1, &pos2, alpha);
+    pm_v2 scale = pm_v2_lerp(scale1, scale2, alpha);
+    pm_v2 pos = pm_v2_lerp(pos1, pos2, alpha);
     pm_flt angle = pm_lerp_angle(angle1, angle2, alpha);
 
     pm_flt c = pm_cos(angle);
@@ -952,14 +952,14 @@ pm_t2 pm_t2_lerp(const pm_t2* t1, const pm_t2* t2, pm_flt alpha)
 
 bool pm_b2_equal(const pm_b2* b1, const pm_b2* b2)
 {
-    return pm_v2_equal(&b1->min, &b2->min) && pm_v2_equal(&b1->max, &b2->max);
+    return pm_v2_equal(b1->min, b2->min) && pm_v2_equal(b1->max, b2->max);
 }
 
 pm_b2 pm_b2_combine(const pm_b2* b1, const pm_b2* b2)
 {
-    pm_v2 min = pm_v2_min(&b1->min, &b2->min);
-    pm_v2 max = pm_v2_max(&b1->max, &b2->max);
-    return pm_b2_make_minmax(&min, &max);
+    pm_v2 min = pm_v2_min(b1->min, b2->min);
+    pm_v2 max = pm_v2_max(b1->max, b2->max);
+    return pm_b2_make_minmax(min, max);
 }
 
 pm_b2 pm_b2_overlap(const pm_b2* b1, const pm_b2* b2)
@@ -967,9 +967,9 @@ pm_b2 pm_b2_overlap(const pm_b2* b1, const pm_b2* b2)
     if (!pm_b2_overlaps(b1, b2))
         return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
 
-    pm_v2 min = pm_v2_max(&b1->min, &b2->min);
-    pm_v2 max = pm_v2_min(&b1->max, &b2->max);
-    return pm_b2_make_minmax(&min, &max);
+    pm_v2 min = pm_v2_max(b1->min, b2->min);
+    pm_v2 max = pm_v2_min(b1->max, b2->max);
+    return pm_b2_make_minmax(min, max);
 }
 
 pm_b2 pm_b2_min_aabb(const pm_v2 verts[], int count)
@@ -982,11 +982,11 @@ pm_b2 pm_b2_min_aabb(const pm_v2 verts[], int count)
 
     for (int i = 1; i < count; i++)
     {
-        min = pm_v2_min(&min, &verts[i]);
-        max = pm_v2_max(&max, &verts[i]);
+        min = pm_v2_min(min, verts[i]);
+        max = pm_v2_max(max, verts[i]);
     }
 
-    return pm_b2_make_minmax(&min, &max);
+    return pm_b2_make_minmax(min, max);
 }
 
 pm_b2 pm_b2_transform(const pm_t2* t, const pm_b2* b)

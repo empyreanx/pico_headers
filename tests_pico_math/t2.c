@@ -37,7 +37,7 @@ PU_TEST(test_t2_get_pos)
 
     pm_v2 res = pm_t2_get_pos(&t);
 
-    PU_ASSERT(pm_v2_equal(&res, &exp));
+    PU_ASSERT(pm_v2_equal(res, exp));
 
     return true;
 }
@@ -48,10 +48,10 @@ PU_TEST(test_t2_set_pos)
     pm_v2 pos = pm_v2_make(2, 3);
     pm_v2 exp = pm_v2_make(2, 3);
 
-    pm_t2_set_pos(&t, &pos);
+    pm_t2_set_pos(&t, pos);
     pm_v2 res = pm_t2_get_pos(&t);
 
-    PU_ASSERT(pm_v2_equal(&res, &exp));
+    PU_ASSERT(pm_v2_equal(res, exp));
 
     return true;
 }
@@ -75,7 +75,7 @@ PU_TEST(test_t2_get_scale)
         pm_t2 t3 = pm_t2_mult(&t2, &t1);
         pm_v2 exp = pm_v2_make(2, 3);
         pm_v2 res = pm_t2_get_scale(&t3);
-        PU_ASSERT(pm_v2_equal(&res, &exp));
+        PU_ASSERT(pm_v2_equal(res, exp));
     }
 
     { // Obtuse angle
@@ -84,7 +84,7 @@ PU_TEST(test_t2_get_scale)
         pm_t2 t3 = pm_t2_mult(&t2, &t1);
         pm_v2 exp = pm_v2_make(2, 3);
         pm_v2 res = pm_t2_get_scale(&t3);
-        PU_ASSERT(pm_v2_equal(&res, &exp));
+        PU_ASSERT(pm_v2_equal(res, exp));
     }
 
     {
@@ -93,7 +93,7 @@ PU_TEST(test_t2_get_scale)
         pm_t2 t3 = pm_t2_mult(&t2, &t1);
         pm_v2 exp = pm_v2_make(2, 2);
         pm_v2 res = pm_t2_get_scale(&t3);
-        PU_ASSERT(pm_v2_equal(&res, &exp));
+        PU_ASSERT(pm_v2_equal(res, exp));
     }
 
     return true;
@@ -167,7 +167,7 @@ PU_TEST(test_t2_map)
     pm_v2 exp = pm_v2_make(pm_sqrt(2), pm_sqrt(2));
     pm_v2 res = pm_t2_map(&t3, v);
 
-    PU_ASSERT(pm_v2_equal(&res, &exp));
+    PU_ASSERT(pm_v2_equal(res, exp));
 
     return true;
 }
@@ -190,7 +190,7 @@ PU_TEST(test_t2_mult)
 
     pm_v2 exp = pm_v2_make(2, 2);
 
-    PU_ASSERT(pm_v2_equal(&scale, &exp));
+    PU_ASSERT(pm_v2_equal(scale, exp));
 
     return true;
 }
@@ -254,8 +254,8 @@ PU_TEST(test_t2_lerp)
     pm_v2 exp_scale = pm_v2_make(1.5, 1.5);
     pm_v2 exp_pos = pm_v2_make(1, 1);
 
-    PU_ASSERT(pm_v2_equal(&scale, &exp_scale));
-    PU_ASSERT(pm_v2_equal(&pos, &exp_pos));
+    PU_ASSERT(pm_v2_equal(scale, exp_scale));
+    PU_ASSERT(pm_v2_equal(pos, exp_pos));
 
     return true;
 }
