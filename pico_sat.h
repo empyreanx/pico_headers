@@ -41,20 +41,20 @@ typedef struct
 //pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
 
 sat_circle_t sat_make_cicle(pm_v2 pos, pm_float radius);
-sat_polygon_t sat_make_polygon(int vertex_count, pm_v2 vertices[]);
-sat_polygon_t sat_aabb_to_polygon(const pm_b2* aabb);
+sat_poly_t sat_make_polygon(int vertex_count, pm_v2 vertices[]);
+sat_poly_t sat_aabb_to_poly(const pm_b2* aabb);
 
 bool sat_test_poly_poly(const sat_poly_t* p1,
-                              const sat_poly_t* p2,
-                              sat_response_t* response);
+                        const sat_poly_t* p2,
+                        sat_response_t* response);
 
 bool sat_test_circle_poly(const sat_circle_t* c,
-                             const sat_poly_t* p,
-                             sat_response_t* response);
+                          const sat_poly_t* p,
+                          sat_response_t* response);
 
 bool sat_test_poly_circle(const sat_poly_t* p,
-                             const sat_circle_t* c,
-                             sat_response_t* response);
+                          const sat_circle_t* c,
+                          sat_response_t* response);
 
 bool sat_test_circle_circle(const sat_circle_t* c1,
                             const sat_circle_t* c2,
@@ -63,6 +63,27 @@ bool sat_test_circle_circle(const sat_circle_t* c1,
 #endif // PICO_SAT_H
 
 #ifdef PICO_SAT_IMPLEMENTATION
+
+void sat_calc_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
+{
+    pm_float dot = pm_v2_dot(poly->vertices[0], normal);
+    pm_float min = dot;
+    pm_float max = dot;
+
+    for (int i = 1; i < poly->vertex_count; i++)
+    {
+        dot = pm_v2_dot(poly->vertices[i], normal);
+
+        if (dot < min)
+            min = dot;
+
+        if (dot > max)
+            max = dot;
+    }
+
+    range[0] = min;
+    range[1] = max;
+}
 
 bool sat_is_separating_axis(const sat_poly_t* p1,
                             const sat_poly_t* p2,
@@ -82,11 +103,11 @@ sat_circle_t sat_make_cicle(pm_v2 pos, pm_float radius)
     return circle;
 }
 
-sat_polygon_t sat_make_polygon(int vertex_count, pm_v2 vertices[])
+sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
 {
     //assert(vertex_count <= PICO_SAT_MAX_POLY_VERTS);
 
-    sat_polygon_t poly;
+    sat_poly_t poly;
 
     poly.vertex_count = vertex_count;
 
