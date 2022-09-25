@@ -6,11 +6,23 @@
 #define PICO_MATH_IMPLEMENTATION
 #include "../pico_math.h"
 
-int main(int argc, char* argv[])
-{
-    (void)argc;
-    (void)argv;
+#define PICO_UNIT_IMPLEMENTATION
+#include "../pico_unit.h"
 
-    printf("Hello SAT\n");
-    return 0;
+PU_TEST(test_collide)
+{
+    return true;
+}
+
+static PU_SUITE(suite_sat)
+{
+    PU_RUN_TEST(test_collide);
+}
+
+int main()
+{
+    pu_display_colors(true);
+    PU_RUN_SUITE(suite_sat);
+    pu_print_stats();
+    return pu_test_failed();
 }

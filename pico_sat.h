@@ -140,23 +140,39 @@ sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
     return poly;
 }
 
+sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
+{
+    pm_v2 pos = pm_b2_pos(aabb);
+    pm_v2 size = pm_b2_size(aabb);
+
+    pm_v2 vertices[] =
+    {
+        { pos.x, pos.y                   },
+        { pos.x,          pos.y + size.y },
+        { pos.x + size.x, pos.y + size.y },
+        { pos.x + size.x, pos.y          }
+    };
+
+    return sat_make_poly(4, vertices);
+}
+
 bool sat_test_poly_poly(const sat_poly_t* p1,
                         const sat_poly_t* p2,
                         sat_manifold_t* manifold)
 {
-    (void)manifold;
-
     for (int i = 0; i < p1->vertex_count - 1; i++)
     {
-        if (sat_is_separating_axis(p1, p2, p1->normals[i], NULL))
+        if (sat_is_separating_axis(p1, p2, p1->normals[i], manifold))
             return false;
     }
 
     for (int i = 0; i < p2->vertex_count - 1; i++)
     {
-        if (sat_is_separating_axis(p2, p1, p2->normals[i], NULL))
+        if (sat_is_separating_axis(p2, p1, p2->normals[i], manifold))
             return false;
     }
+
+    // Get contact points
 
     return true;
 }
