@@ -26,15 +26,17 @@ typedef struct
 {
     int   vertex_count;
     pm_v2 vertices[PICO_SAT_MAX_POLY_VERTS];
-    pm_v2 normals[PICO_SAT_MAX_POLY_VERTS - 1];
-    pm_v2 edges[PICO_SAT_MAX_POLY_VERTS - 1];
+    pm_v2 normals[PICO_SAT_MAX_POLY_VERTS];
+    pm_v2 edges[PICO_SAT_MAX_POLY_VERTS];
 } sat_poly_t;
 
 typedef struct
 {
     pm_v2    normal;
-    pm_float overlap;
-} sat_response_t;
+    pm_float depth[2];
+    pm_v2    contacts[2];
+    int      count;
+} sat_manifold_t;
 
 //later
 //pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
@@ -46,25 +48,25 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb);
 
 bool sat_test_poly_poly(const sat_poly_t* p1,
                         const sat_poly_t* p2,
-                        sat_response_t* response);
+                        sat_manifold_t* manifold);
 
 bool sat_test_circle_poly(const sat_circle_t* c,
                           const sat_poly_t* p,
-                          sat_response_t* response);
+                          sat_manifold_t* manifold);
 
 bool sat_test_poly_circle(const sat_poly_t* p,
                           const sat_circle_t* c,
-                          sat_response_t* response);
+                          sat_manifold_t* manifold);
 
 bool sat_test_circle_circle(const sat_circle_t* c1,
                             const sat_circle_t* c2,
-                            sat_response_t* response);
+                            sat_manifold_t* manifold);
 
 #endif // PICO_SAT_H
 
 #ifdef PICO_SAT_IMPLEMENTATION
 
-void sat_calc_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
+void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
 {
     pm_float dot = pm_v2_dot(poly->vertices[0], normal);
     pm_float min = dot;
@@ -88,11 +90,21 @@ void sat_calc_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2]
 bool sat_is_separating_axis(const sat_poly_t* p1,
                             const sat_poly_t* p2,
                             pm_v2 axis,
-                            sat_response_t* response)
+                            sat_manifold_t* manifold)
+
 {
+    (void)manifold;
 
+    pm_float range1[2];
+    pm_float range2[2];
 
-    return true;
+    sat_axis_range(p1, axis, range1);
+    sat_axis_range(p2, axis, range2);
+
+    if (range1[1] < range2[0] || range2[1] < range1[0])
+        return true;
+
+    return false;
 }
 
 sat_circle_t sat_make_cicle(pm_v2 pos, pm_float radius)
@@ -121,13 +133,33 @@ sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
         pm_v2 v1 = vertices[i];
         pm_v2 v2 = (i < vertex_count - 1) ? vertices[i + 1] : vertices[0];
         poly.edges[i] = pm_v2_sub(v2, v1);
-        poly.normals[i] = pm_v2_normalize(pm_v2_perp(poly.edges[i]));
+        poly.normals[i] = pm_v2_scale(pm_v2_perp(poly.edges[i]), -1.0f);
+        poly.normals[i] = pm_v2_normalize(poly.normals[i]);
     }
 
     return poly;
 }
 
+bool sat_test_poly_poly(const sat_poly_t* p1,
+                        const sat_poly_t* p2,
+                        sat_manifold_t* manifold)
+{
+    (void)manifold;
 
+    for (int i = 0; i < p1->vertex_count - 1; i++)
+    {
+        if (sat_is_separating_axis(p1, p2, p1->normals[i], NULL))
+            return false;
+    }
+
+    for (int i = 0; i < p2->vertex_count - 1; i++)
+    {
+        if (sat_is_separating_axis(p2, p1, p2->normals[i], NULL))
+            return false;
+    }
+
+    return true;
+}
 
 #endif // PICO_SAT_IMPLEMENTATION
 
