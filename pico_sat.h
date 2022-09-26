@@ -10,6 +10,8 @@
 #ifndef PICO_SAT_H
 #define PICO_SAT_H
 
+#include <float.h>
+
 #include "pico_math.h"
 
 #ifndef PICO_SAT_MAX_POLY_VERTS
@@ -90,8 +92,7 @@ void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
 bool sat_is_separating_axis(const sat_poly_t* p1,
                             const sat_poly_t* p2,
                             pm_v2 axis,
-                            pm_float* depth,
-                            pm_v2* normal)
+                            pm_float* depth)
 
 {
     pm_float range1[2];
@@ -103,21 +104,11 @@ bool sat_is_separating_axis(const sat_poly_t* p1,
     if (range1[1] < range2[0] || range2[1] < range1[0])
         return true;
 
-    if (depth && normal)
+    if (depth)
     {
         pm_float depth1 = range1[1] - range2[0];
         pm_float depth2 = range2[1] - range1[0];
-
-        if (depth2 > depth1)
-        {
-            *depth = depth1;
-            *normal = axis;
-        }
-        else
-        {
-            *depth = depth2;
-            *normal = pm_v2_scale(axis, -1.0f); // pm_v2_neg
-        }
+        *depth = (depth2 > depth1) ? depth1 : -depth2;
     }
 
     return false;
@@ -172,25 +163,66 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
     return sat_make_poly(4, vertices);
 }
 
+
 bool sat_test_poly_poly(const sat_poly_t* p1,
                         const sat_poly_t* p2,
                         sat_manifold_t* manifold)
 {
-    (void)manifold;
+    pm_float depth = FLT_MAX;
+    pm_v2 normal = pm_v2_zero();
 
     for (int i = 0; i < p1->vertex_count - 1; i++)
     {
-        if (sat_is_separating_axis(p1, p2, p1->normals[i], NULL, NULL))
+        pm_float signed_depth;
+
+        if (sat_is_separating_axis(p1, p2, p1->normals[i], &signed_depth))
             return false;
+
+        if (manifold)
+        {
+            pm_float abs_depth = pm_abs(signed_depth);
+
+            if (abs_depth < depth)
+            {
+                depth = abs_depth;
+
+                if (signed_depth < 0.0f)
+                    normal = pm_v2_scale(p1->normals[i], -1.0f); // TODO: pm_v2_neg
+                else
+                    normal = p1->normals[i];
+            }
+        }
     }
 
     for (int i = 0; i < p2->vertex_count - 1; i++)
     {
-        if (sat_is_separating_axis(p2, p1, p2->normals[i], NULL, NULL))
+        pm_float signed_depth;
+
+        if (sat_is_separating_axis(p2, p1, p2->normals[i], &signed_depth))
             return false;
+
+        if (manifold)
+        {
+            pm_float abs_depth = pm_abs(signed_depth);
+
+            if (abs_depth < depth)
+            {
+                depth = abs_depth;
+
+                if (signed_depth < 0.0f)
+                    normal = pm_v2_scale(p2->normals[i], -1.0f); // TODO: pm_v2_neg
+                else
+                    normal = p1->normals[i];
+            }
+        }
     }
 
-    // Get contact points
+    if (manifold)
+    {
+        manifold->normal = normal;
+
+        // Get contact points...
+    }
 
     return true;
 }
