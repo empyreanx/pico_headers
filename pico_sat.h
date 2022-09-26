@@ -212,7 +212,7 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
                 if (signed_depth < 0.0f)
                     normal = pm_v2_neg(p2->normals[i]);
                 else
-                    normal = p1->normals[i];
+                    normal = p2->normals[i];
             }
         }
     }
