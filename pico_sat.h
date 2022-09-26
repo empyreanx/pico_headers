@@ -90,11 +90,10 @@ void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
 bool sat_is_separating_axis(const sat_poly_t* p1,
                             const sat_poly_t* p2,
                             pm_v2 axis,
-                            sat_manifold_t* manifold)
+                            pm_float* depth,
+                            pm_v2* normal)
 
 {
-    (void)manifold;
-
     pm_float range1[2];
     pm_float range2[2];
 
@@ -103,6 +102,23 @@ bool sat_is_separating_axis(const sat_poly_t* p1,
 
     if (range1[1] < range2[0] || range2[1] < range1[0])
         return true;
+
+    if (depth && normal)
+    {
+        pm_float depth1 = range1[1] - range2[0];
+        pm_float depth2 = range2[1] - range1[0];
+
+        if (depth2 > depth1)
+        {
+            *depth = depth1;
+            *normal = axis;
+        }
+        else
+        {
+            *depth = depth2;
+            *normal = pm_v2_scale(axis, -1.0f); // pm_v2_neg
+        }
+    }
 
     return false;
 }
@@ -160,15 +176,17 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
                         const sat_poly_t* p2,
                         sat_manifold_t* manifold)
 {
+    (void)manifold;
+
     for (int i = 0; i < p1->vertex_count - 1; i++)
     {
-        if (sat_is_separating_axis(p1, p2, p1->normals[i], manifold))
+        if (sat_is_separating_axis(p1, p2, p1->normals[i], NULL, NULL))
             return false;
     }
 
     for (int i = 0; i < p2->vertex_count - 1; i++)
     {
-        if (sat_is_separating_axis(p2, p1, p2->normals[i], manifold))
+        if (sat_is_separating_axis(p2, p1, p2->normals[i], NULL, NULL))
             return false;
     }
 
