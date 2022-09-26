@@ -163,6 +163,23 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
     return sat_make_poly(4, vertices);
 }
 
+void sat_update_normal(pm_float signed_depth,
+                       pm_float* depth,
+                       pm_v2 normal_in,
+                       pm_v2* normal_out)
+{
+    pm_float abs_depth = pm_abs(signed_depth);
+
+    if (abs_depth < *depth)
+    {
+        *depth = abs_depth;
+
+        if (signed_depth < 0.0f)
+            *normal_out = pm_v2_neg(normal_in);
+        else
+            *normal_out = normal_in;
+    }
+}
 
 bool sat_test_poly_poly(const sat_poly_t* p1,
                         const sat_poly_t* p2,
@@ -180,17 +197,7 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
 
         if (manifold)
         {
-            pm_float abs_depth = pm_abs(signed_depth);
-
-            if (abs_depth < depth)
-            {
-                depth = abs_depth;
-
-                if (signed_depth < 0.0f)
-                    normal = pm_v2_neg(p1->normals[i]);
-                else
-                    normal = p1->normals[i];
-            }
+            sat_update_normal(signed_depth, &depth, p1->normals[i], &normal);
         }
     }
 
@@ -203,17 +210,7 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
 
         if (manifold)
         {
-            pm_float abs_depth = pm_abs(signed_depth);
-
-            if (abs_depth < depth)
-            {
-                depth = abs_depth;
-
-                if (signed_depth < 0.0f)
-                    normal = pm_v2_neg(p2->normals[i]);
-                else
-                    normal = p2->normals[i];
-            }
+            sat_update_normal(signed_depth, &depth, p2->normals[i], &normal);
         }
     }
 
