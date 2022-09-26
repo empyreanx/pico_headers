@@ -140,7 +140,7 @@ sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
         pm_v2 v1 = vertices[i];
         pm_v2 v2 = (i < vertex_count - 1) ? vertices[i + 1] : vertices[0];
         poly.edges[i] = pm_v2_sub(v2, v1);
-        poly.normals[i] = pm_v2_scale(pm_v2_perp(poly.edges[i]), -1.0f);
+        poly.normals[i] = pm_v2_neg(pm_v2_perp(poly.edges[i]));
         poly.normals[i] = pm_v2_normalize(poly.normals[i]);
     }
 
@@ -187,7 +187,7 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
                 depth = abs_depth;
 
                 if (signed_depth < 0.0f)
-                    normal = pm_v2_scale(p1->normals[i], -1.0f); // TODO: pm_v2_neg
+                    normal = pm_v2_neg(p1->normals[i]);
                 else
                     normal = p1->normals[i];
             }
@@ -210,7 +210,7 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
                 depth = abs_depth;
 
                 if (signed_depth < 0.0f)
-                    normal = pm_v2_scale(p2->normals[i], -1.0f); // TODO: pm_v2_neg
+                    normal = pm_v2_neg(p2->normals[i]);
                 else
                     normal = p1->normals[i];
             }
