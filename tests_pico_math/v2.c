@@ -88,6 +88,18 @@ PU_TEST(test_v2_normalize)
     return true;
 }
 
+PU_TEST(test_v2_neg)
+{
+    pm_v2 v = pm_v2_make(1, -1);
+    pm_v2 exp = pm_v2_make(-1, 1);
+
+    pm_v2 res = pm_v2_neg(v);
+
+    PU_ASSERT(pm_v2_equal(exp, res));
+
+    return true;
+}
+
 PU_TEST(test_v2_perp)
 {
     pm_v2 v1 = pm_v2_make(1, 2);
@@ -256,6 +268,7 @@ PU_SUITE(suite_v2)
     PU_RUN_TEST(test_v2_dot);
     PU_RUN_TEST(test_v2_len);
     PU_RUN_TEST(test_v2_normalize);
+    PU_RUN_TEST(test_v2_neg);
     PU_RUN_TEST(test_v2_perp);
     PU_RUN_TEST(test_v2_cross);
     PU_RUN_TEST(test_v2_angle);
