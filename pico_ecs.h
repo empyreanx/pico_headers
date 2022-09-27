@@ -754,10 +754,10 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     // Add entity to systems
     for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
     {
-        if (!ecs->systems[sys_id].ready)
-            continue;
-
         ecs_sys_t* sys = &ecs->systems[sys_id];
+
+        if (!sys->ready)
+            continue;
 
         if (ecs_bitset_test(&sys->comp_bits, comp_id))
         {
@@ -768,6 +768,8 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
             }
         }
     }
+
+    // Allocate component
 
     // Get pointer to component
     void* ptr = ecs_get(ecs, entity_id, comp_id);
@@ -790,13 +792,13 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     // Load entity
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
-    // Remove entity to systems
+    // Remove entity from systems
     for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
     {
-        if (!ecs->systems[sys_id].ready)
-            continue;
-
         ecs_sys_t* sys = &ecs->systems[sys_id];
+
+        if (!sys->ready)
+            continue;
 
         if (ecs_bitset_test(&sys->comp_bits, comp_id))
         {
@@ -810,6 +812,8 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 
     // Reset the relevant component mask bit
     ecs_bitset_flip(&entity->comp_bits, comp_id, false);
+
+    // Deallocate component
 }
 
 void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)

@@ -183,7 +183,7 @@ static void setup_abeimler()
         *dir  = (v2d_t) { 0 };
 
         // Adds entity to systems
-        ecs_sync(ecs, id);
+        //ecs_sync(ecs, id);
     }
 }
 
@@ -231,7 +231,7 @@ static void setup_with_entities()
         *rect = (rect_t){ 1, 2, 3, 4 };
 
         // Adds entity to systems
-        ecs_sync(ecs, id);
+        //ecs_sync(ecs, id);
     }
 }
 
@@ -279,7 +279,7 @@ ecs_ret_t queue_sync_update(ecs_t* ecs,
 
     for (int i = 0; i < entity_count; i++)
     {
-        ecs_queue_sync(ecs, entities[i]);
+        //ecs_queue_sync(ecs, entities[i]);
     }
 
     return 0;
@@ -297,7 +297,7 @@ ecs_ret_t queue_destroy_update(ecs_t* ecs,
 
     for (int i = 0; i < entity_count; i++)
     {
-        ecs_queue_destroy(ecs, entities[i]);
+        //ecs_queue_destroy(ecs, entities[i]);
     }
 
     return 0;
@@ -427,7 +427,7 @@ static void bench_add_assign_sync()
         *rect = (rect_t){ 1, 2, 3, 4 };
 
         // Adds entity to systems
-        ecs_sync(ecs, id);
+        //ecs_sync(ecs, id);
     }
 }
 
