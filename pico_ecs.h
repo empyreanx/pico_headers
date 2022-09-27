@@ -249,16 +249,6 @@ bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id);
 void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id);
 
 /**
- * @brief Queues an entity for destruction at the end of system execution
- *
- * Queued entities are destroyed after the curent iteration.
- *
- * @param ecs       The ECS instance
- * @param entity_id The ID of the entity to destroy
- */
-void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id);
-
-/**
  * @brief Test if entity has the specified component
  *
  * @param ecs       The ECS instance
@@ -307,17 +297,6 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
  * @param entity_id The target entity
  */
 void ecs_sync(ecs_t* ecs, ecs_id_t entity_id);
-
-/**
- * @brief Queues a sync call on the specified entity at the end of system
- * execution
- *
- * Queued entities are synced after the curent iteration.
- *
- * @param ecs       The ECS instance
- * @param entity_id The ID of the entity to sync
- */
-void ecs_queue_sync(ecs_t* ecs, ecs_id_t entity_id);
 
 /**
  * @brief Update an individual system
@@ -418,8 +397,7 @@ typedef struct
     ecs_id_t dense[ECS_MAX_ENTITIES];
 } ecs_sparse_set_t;
 
-// Data-structure for and ID pool that provides O(1) operations for
-// pooling/queueing IDs
+// Data-structure for an ID pool that provides O(1) operations for pooling IDs
 typedef struct
 {
     int   size;
@@ -454,19 +432,11 @@ typedef struct
 struct ecs_s
 {
     ecs_id_stack_t entity_pool;
-    ecs_id_stack_t destroy_queue;
-    ecs_id_stack_t sync_queue;
     ecs_entity_t   entities[ECS_MAX_ENTITIES];
     ecs_comp_t     comps[ECS_MAX_COMPONENTS];
     ecs_sys_t      systems[ECS_MAX_SYSTEMS];
     void*          mem_ctx;
 };
-
-/*=============================================================================
- * Internal functions to flush destroyed entity and removed component
- *============================================================================*/
-static void ecs_flush_sync(ecs_t* ecs);
-static void ecs_flush_destroyed(ecs_t* ecs);
 
 /*=============================================================================
  * Internal bit set functions
@@ -557,8 +527,6 @@ void ecs_reset(ecs_t* ecs)
     ECS_ASSERT(ecs_is_not_null(ecs));
 
     ecs->entity_pool.size = 0;
-    ecs->destroy_queue.size = 0;
-    ecs->sync_queue.size = 0;
 
     memset(ecs->entities, 0, sizeof(ecs_entity_t) * ECS_MAX_ENTITIES);
 
@@ -707,18 +675,6 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     memset(entity, 0, sizeof(ecs_entity_t));
 }
 
-void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
-{
-    ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
-
-    // Push entity ID onto destroy_queue
-    ecs_id_stack_push(&ecs->destroy_queue, entity_id);
-
-    ecs->entities[entity_id].ready = false;
-}
-
 bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
@@ -862,16 +818,6 @@ void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)
     }
 }
 
-void ecs_queue_sync(ecs_t* ecs, ecs_id_t entity_id)
-{
-    ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
-
-    // Push both component and entities onto ID stacks
-    ecs_id_stack_push(&ecs->sync_queue, entity_id);
-}
-
 ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
@@ -889,9 +835,6 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt)
                      sys->entity_ids.size,
                      dt,
                      sys->udata);
-
-    ecs_flush_sync(ecs);
-    ecs_flush_destroyed(ecs);
 
     return code;
 }
@@ -915,33 +858,6 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt)
     }
 
     return 0;
-}
-
-/*=============================================================================
- * Internal functions to flush destroyed entity and removed component
- *============================================================================*/
-
-static void ecs_flush_sync(ecs_t* ecs)
-{
-    ecs_id_stack_t* entities = &ecs->sync_queue;
-
-    while (ecs_id_stack_size(entities) > 0)
-    {
-        ecs_id_t entity_id = ecs_id_stack_pop(entities);
-        ecs_sync(ecs, entity_id);
-    }
-}
-
-static void ecs_flush_destroyed(ecs_t* ecs)
-{
-    ecs_id_stack_t* entities = &ecs->destroy_queue;
-
-    while (ecs_id_stack_size(entities) > 0)
-    {
-        ecs_id_t entity_id = ecs_id_stack_pop(entities);
-        ecs->entities[entity_id].ready = true; // FIXME: this is a hack
-        ecs_destroy(ecs, entity_id);
-    }
 }
 
 /*=============================================================================
