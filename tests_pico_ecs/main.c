@@ -153,7 +153,7 @@ PU_TEST(test_sync)
     comp1->used = false;
 
     // Sync it add it to the systems
-    ecs_sync(ecs, id1);
+    //ecs_sync(ecs, id1);
 
     // Run Sys1
     ecs_update_system(ecs, Sys1, 0.0);
@@ -169,7 +169,7 @@ PU_TEST(test_sync)
     comp2->used = false;
 
     // Add the entity to the systems
-    ecs_sync(ecs, id2);
+    //ecs_sync(ecs, id2);
 
     // Run Sys2
     ecs_update_system(ecs, Sys2, 0.0);
@@ -199,7 +199,7 @@ PU_TEST(test_remove)
     comp2->used = false;
 
     // Add entity to system
-    ecs_sync(ecs, id);
+    //ecs_sync(ecs, id);
 
     // Run system
     ecs_update_system(ecs, Sys1, 0.0);
@@ -216,7 +216,7 @@ PU_TEST(test_remove)
     ecs_remove(ecs, id, Comp2);
 
     // Sync entity with systems
-    ecs_sync(ecs, id);
+    //ecs_sync(ecs, id);
 
     // Run system again
     ecs_update_system(ecs, Sys1, 0.0);
@@ -246,7 +246,7 @@ PU_TEST(test_destroy)
     comp2->used = false;
 
     // Sync entity with systems
-    ecs_sync(ecs, id);
+    //ecs_sync(ecs, id);
 
     // Run system
     ecs_update_system(ecs, Sys1, 0.0);
@@ -289,7 +289,7 @@ PU_TEST(test_enable_disable)
     comp->used = false;
 
     // Sync entity with systems
-    ecs_sync(ecs, id);
+    //ecs_sync(ecs, id);
 
     // Run system
     ecs_update_system(ecs, Sys1, 0.0);
@@ -449,7 +449,7 @@ PU_TEST(test_add_remove_callbacks)
 
     ecs_id_t entity_id = ecs_create(ecs);
     ecs_add(ecs, entity_id, Comp1);
-    ecs_sync(ecs, entity_id);
+    //ecs_sync(ecs, entity_id);
     ecs_destroy(ecs, entity_id);
 
     PU_ASSERT(added);
