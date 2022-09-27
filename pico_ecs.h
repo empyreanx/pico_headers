@@ -491,8 +491,6 @@ static bool     ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
 static bool ecs_entity_system_test(ecs_bitset_t* sys_bits,
                                    ecs_bitset_t* entity_bits);
 
-static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id);
-
 /*=============================================================================
  * Internal ID pool functions
  *============================================================================*/
@@ -685,7 +683,21 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
     // Remove entity from systems
-    ecs_remove_entity_from_systems(ecs, entity_id);
+    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
+    {
+        ecs_sys_t* sys = &ecs->systems[sys_id];
+
+        if (!sys->ready)
+            continue;
+
+        // Just attempting to remove the entity from the sparse set is faster
+        // than calling ecs_entity_system_test
+        if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+        {
+            if (sys->remove_cb)
+                sys->remove_cb(ecs, entity_id, sys->udata);
+        }
+    }
 
     // Push entity ID back into pool
     ecs_id_stack_t* pool = &ecs->entity_pool;
@@ -1089,27 +1101,6 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* sys_bits,
 {
     ecs_bitset_t tmp = ecs_bitset_and(sys_bits, entity_bits);
     return ecs_bitset_equal(sys_bits, &tmp);
-}
-
-static void ecs_remove_entity_from_systems(ecs_t* ecs, ecs_id_t entity_id)
-{
-    ECS_ASSERT(ecs_is_not_null(ecs));
-
-    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
-    {
-        if (!ecs->systems[sys_id].ready)
-            continue;
-
-        ecs_sys_t* sys = &ecs->systems[sys_id];
-
-        // Just attempting to remove the entity from the sparse set is faster
-        // than calling ecs_entity_system_test
-        if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
-        {
-            if (sys->remove_cb)
-                sys->remove_cb(ecs, entity_id, sys->udata);
-        }
-    }
 }
 
 /*=============================================================================
