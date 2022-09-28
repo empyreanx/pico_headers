@@ -737,8 +737,6 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
         }
     }
 
-    // Allocate component
-
     // Get pointer to component
     void* ptr = ecs_get(ecs, entity_id, comp_id);
 
@@ -780,8 +778,6 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 
     // Reset the relevant component mask bit
     ecs_bitset_flip(&entity->comp_bits, comp_id, false);
-
-    // Deallocate component
 }
 
 void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)
