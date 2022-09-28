@@ -145,7 +145,18 @@ static void setup()
     ecs_register_component(ecs, RectComponent, sizeof(rect_t));
 }
 
-static void setup_abeimler()
+static void setup_destroy()
+{
+    // Create ECS instance
+    ecs = ecs_new(NULL);
+
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        ecs_create(ecs);
+    }
+}
+
+static void setup_three_systems()
 {
     ecs = ecs_new(NULL);
 
@@ -320,6 +331,14 @@ static void bench_create_destroy()
         ecs_destroy(ecs, ecs_create(ecs));
 }
 
+static void bench_destroy()
+{
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        ecs_destroy(ecs, i);
+    }
+}
+
 static void bench_create_with_two_components()
 {
     for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
@@ -330,6 +349,17 @@ static void bench_create_with_two_components()
         // Add components
         ecs_add(ecs, id, PosComponent);
         ecs_add(ecs, id, RectComponent);
+    }
+}
+
+// Adds components to entities and assigns values to them
+static void bench_add_remove()
+{
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        ecs_id_t id = ecs_create(ecs);
+        ecs_add(ecs, id, PosComponent);
+        ecs_remove(ecs, id, PosComponent);
     }
 }
 
@@ -388,7 +418,7 @@ static void bench_iterate_assign2()
     ecs_update_system(ecs, IterateSystem, 0.0f);
 }
 
-static void bench_abeimler()
+static void bench_three_systems()
 {
     // Create entities
 
@@ -429,11 +459,13 @@ int main()
     BENCH_RUN(bench_create, setup, teardown);
     BENCH_RUN(bench_create_destroy, setup, teardown);
     BENCH_RUN(bench_create_with_two_components, setup, teardown);
+    BENCH_RUN(bench_destroy, setup_destroy, teardown);
+    BENCH_RUN(bench_add_remove, setup, teardown);
     BENCH_RUN(bench_add_assign, setup, teardown);
     BENCH_RUN(bench_add_get_assign, setup, teardown);
     BENCH_RUN(bench_iterate_assign, setup_with_entities, teardown);
     BENCH_RUN(bench_iterate_assign2, setup_with_entities, teardown);
-    BENCH_RUN(bench_abeimler, setup_abeimler, teardown);
+    BENCH_RUN(bench_three_systems, setup_three_systems, teardown);
 
     printf("---------------------------------------------------------------\n");
 
