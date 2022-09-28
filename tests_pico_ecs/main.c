@@ -168,9 +168,6 @@ PU_TEST(test_sync)
     comp_t* comp2 = ecs_add(ecs, id2, Comp2);
     comp2->used = false;
 
-    // Add the entity to the systems
-    //ecs_sync(ecs, id2);
-
     // Run Sys2
     ecs_update_system(ecs, Sys2, 0.0);
 
@@ -197,9 +194,6 @@ PU_TEST(test_remove)
 
     comp1->used = false;
     comp2->used = false;
-
-    // Add entity to system
-    //ecs_sync(ecs, id);
 
     // Run system
     ecs_update_system(ecs, Sys1, 0.0);
@@ -245,9 +239,6 @@ PU_TEST(test_destroy)
     comp1->used = false;
     comp2->used = false;
 
-    // Sync entity with systems
-    //ecs_sync(ecs, id);
-
     // Run system
     ecs_update_system(ecs, Sys1, 0.0);
 
@@ -288,9 +279,6 @@ PU_TEST(test_enable_disable)
     comp_t* comp = ecs_add(ecs, id, Comp1);
     comp->used = false;
 
-    // Sync entity with systems
-    //ecs_sync(ecs, id);
-
     // Run system
     ecs_update_system(ecs, Sys1, 0.0);
 
@@ -325,7 +313,7 @@ PU_TEST(test_enable_disable)
 static bool added = false;
 static bool removed = false;
 
-static ecs_ret_t empty_update(ecs_t* ecs,
+static ecs_ret_t empty_system(ecs_t* ecs,
                               ecs_id_t* entities,
                               int entity_count,
                               ecs_dt_t dt,
@@ -357,7 +345,7 @@ static void on_remove(ecs_t* ecs, ecs_id_t entity_id, void* udata)
 
 PU_TEST(test_add_remove_callbacks)
 {
-    ecs_register_system(ecs, Sys1, empty_update,
+    ecs_register_system(ecs, Sys1, empty_system,
                         on_add, on_remove, NULL);
 
     ecs_require_component(ecs, Sys1, Comp1);
@@ -366,7 +354,6 @@ PU_TEST(test_add_remove_callbacks)
 
     ecs_id_t entity_id = ecs_create(ecs);
     ecs_add(ecs, entity_id, Comp1);
-    //ecs_sync(ecs, entity_id);
     ecs_destroy(ecs, entity_id);
 
     PU_ASSERT(added);
