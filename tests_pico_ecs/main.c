@@ -321,89 +321,6 @@ PU_TEST(test_enable_disable)
     return true;
 }
 
-// System update function that removes a component and then queues a sync on
-// matching entities
-static ecs_ret_t sync_update(ecs_t* ecs,
-                             ecs_id_t* entities,
-                             int entity_count,
-                             ecs_dt_t dt,
-                             void* udata)
-{
-	(void)dt;
-	(void)udata;
-
-    for (int i = 0; i < entity_count; i++)
-    {
-        ecs_id_t id = entities[i];
-        ecs_remove(ecs, id, Comp1);
-        ecs_queue_sync(ecs, id);
-    }
-
-    return 0;
-}
-
-PU_TEST(test_queue_sync)
-{
-    // Set up the system
-    ecs_register_system(ecs, Sys1, sync_update, NULL, NULL, NULL);
-    ecs_require_component(ecs, Sys1, Comp1);
-
-    // Create an entity
-    ecs_id_t id = ecs_create(ecs);
-
-    // Add a component to the entity and then sync it with the system
-    ecs_add(ecs, id, Comp1);
-    ecs_sync(ecs, id);
-
-    // Run the system
-    ecs_update_system(ecs, Sys1, 0.0);
-
-    // Verify that the component has been removed
-    PU_ASSERT(!ecs_has(ecs, id, Comp1));
-
-    return true;
-}
-
-// System update function that queues a destroy on matching enitites
-static ecs_ret_t destroy_update(ecs_t* ecs,
-                                ecs_id_t* entities,
-                                int entity_count,
-                                ecs_dt_t dt,
-                                void* udata)
-{
-    (void)dt;
-    (void)udata;
-
-    for (int i = 0; i < entity_count; i++)
-    {
-        ecs_id_t id = entities[i];
-        ecs_queue_destroy(ecs, id);
-    }
-
-    return 0;
-}
-
-PU_TEST(test_queue_destroy)
-{
-    // Set up system
-    ecs_register_system(ecs, Sys1, destroy_update, NULL, NULL, NULL);
-    ecs_require_component(ecs, Sys1, Comp1);
-
-    // Create an entity
-    ecs_id_t id = ecs_create(ecs);
-
-    // Add a component to the entity and then sync it with the system
-    ecs_add(ecs, id, Comp1);
-    ecs_sync(ecs, id);
-
-    // Run the system
-    ecs_update_system(ecs, Sys1, 0.0);
-
-    // Verify that the entity has been destroyed
-    PU_ASSERT(!ecs_is_ready(ecs, id));
-
-    return true;
-}
 
 static bool added = false;
 static bool removed = false;
@@ -466,8 +383,6 @@ static PU_SUITE(suite_ecs)
     PU_RUN_TEST(test_remove);
     PU_RUN_TEST(test_destroy);
     PU_RUN_TEST(test_enable_disable);
-    PU_RUN_TEST(test_queue_sync);
-    PU_RUN_TEST(test_queue_destroy);
     PU_RUN_TEST(test_add_remove_callbacks);
 }
 
