@@ -213,6 +213,21 @@ static void setup_with_entities()
     }
 }
 
+static void setup_get()
+{
+    // Create ECS instance
+    ecs = ecs_new(NULL);
+
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        // Create entity
+        ecs_id_t id = ecs_create(ecs);
+
+        // Add components
+        ecs_add(ecs, id, PosComponent);
+    }
+}
+
 /*=============================================================================
  * Update function callbacks
  *============================================================================*/
@@ -383,24 +398,12 @@ static void bench_add_assign()
 
 // Adds components to entities, retrieves the components, and assigns
 // values to them
-static void bench_add_get_assign()
+static void bench_get()
 {
     for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
     {
         // Create entity
-        ecs_id_t id = ecs_create(ecs);
-
-        // Add components
-        ecs_add(ecs, id, PosComponent);
-        ecs_add(ecs, id, RectComponent);
-
-        // Get components
-        v2d_t*  pos  = (v2d_t*)ecs_get(ecs, id, PosComponent);
-        rect_t* rect = (rect_t*)ecs_get(ecs, id, RectComponent);
-
-        // Set concrete component values
-        *pos  = (v2d_t) { 1, 2 };
-        *rect = (rect_t){ 1, 2, 3, 4 };
+        ecs_get(ecs, i, PosComponent);
     }
 }
 
@@ -462,7 +465,7 @@ int main()
     BENCH_RUN(bench_destroy, setup_destroy, teardown);
     BENCH_RUN(bench_add_remove, setup, teardown);
     BENCH_RUN(bench_add_assign, setup, teardown);
-    BENCH_RUN(bench_add_get_assign, setup, teardown);
+    BENCH_RUN(bench_get, setup_get, teardown);
     BENCH_RUN(bench_iterate_assign, setup_with_entities, teardown);
     BENCH_RUN(bench_iterate_assign2, setup_with_entities, teardown);
     BENCH_RUN(bench_three_systems, setup_three_systems, teardown);
