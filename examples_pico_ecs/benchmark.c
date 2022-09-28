@@ -368,6 +368,19 @@ static void bench_create_destroy()
         ecs_destroy(ecs, ecs_create(ecs));
 }
 
+static void bench_create_with_two_components()
+{
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        // Create entity
+        ecs_id_t id = ecs_create(ecs);
+
+        // Add components
+        ecs_add(ecs, id, PosComponent);
+        ecs_add(ecs, id, RectComponent);
+    }
+}
+
 // Adds components to entities and assigns values to them
 static void bench_add_assign()
 {
@@ -474,6 +487,7 @@ int main()
 
     BENCH_RUN(bench_create, setup, teardown);
     BENCH_RUN(bench_create_destroy, setup, teardown);
+    BENCH_RUN(bench_create_with_two_components, setup, teardown);
     BENCH_RUN(bench_add_assign, setup, teardown);
     BENCH_RUN(bench_add_get_assign, setup, teardown);
     BENCH_RUN(bench_add_assign_sync, setup, teardown);
