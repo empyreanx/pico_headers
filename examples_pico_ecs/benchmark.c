@@ -76,7 +76,6 @@ static void bench_end()
 // System IDs
 enum
 {
-    IterateSystem,
     MovementSystem,
     ComflabSystem,
     BoundsSystem
@@ -124,10 +123,6 @@ ecs_ret_t comflab_update(ecs_t* ecs, ecs_id_t* entities,
 ecs_ret_t movement_update(ecs_t* ecs, ecs_id_t* entities,
                           int entity_count, ecs_dt_t dt,
                           void* udata);
-
-ecs_ret_t iterate_assign_update(ecs_t* ecs, ecs_id_t* entities,
-                                int entity_count, ecs_dt_t dt,
-                                void* udata);
 
 ecs_ret_t bounds_update(ecs_t* ecs,
                         ecs_id_t* entities,
@@ -184,35 +179,6 @@ static void teardown()
     ecs = NULL;
 }
 
-// Runs before benchmark function
-static void setup_with_entities()
-{
-    // Create ECS instance
-    ecs = ecs_new(NULL);
-
-    // Register two new components
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
-    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
-
-    ecs_register_system(ecs, IterateSystem, iterate_assign_update, NULL, NULL , NULL);
-    ecs_require_component(ecs, IterateSystem, PosComponent);
-    ecs_require_component(ecs, IterateSystem, RectComponent);
-
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
-    {
-        // Create entity
-        ecs_id_t id = ecs_create(ecs);
-
-        // Add components
-        v2d_t*  pos  = (v2d_t*)ecs_add(ecs, id, PosComponent);
-        rect_t* rect = (rect_t*)ecs_add(ecs, id, RectComponent);
-
-        // Set concrete component values
-        *pos  = (v2d_t) { 1, 2 };
-        *rect = (rect_t){ 1, 2, 3, 4 };
-    }
-}
-
 static void setup_get()
 {
     // Create ECS instance
@@ -231,35 +197,6 @@ static void setup_get()
 /*=============================================================================
  * Update function callbacks
  *============================================================================*/
-
-// System update function that iterates over the entities and assigns values to
-// their components
-ecs_ret_t iterate_assign_update(ecs_t* ecs,
-                                 ecs_id_t* entities,
-                                 int entity_count,
-                                 ecs_dt_t dt,
-                                 void* udata)
-{
-    (void)dt;
-    (void)udata;
-
-    for (int i = 0; i < entity_count; i++)
-    {
-        // Get entity ID
-        ecs_id_t id = entities[i];
-
-        // Get entity components
-        v2d_t*  pos  = (v2d_t*)ecs_get(ecs, id, PosComponent);
-        rect_t* rect = (rect_t*)ecs_get(ecs, id, RectComponent);
-
-        // Set concrete component values
-        *pos  = (v2d_t) { 2, 3 };
-        *rect = (rect_t){ 2, 3, 4, 5 };
-    }
-
-    return 0;
-}
-
 
 ecs_ret_t movement_update(ecs_t* ecs,
                           ecs_id_t* entities,
@@ -407,20 +344,6 @@ static void bench_get()
     }
 }
 
-// Registers a new system. Adds components to entities, and assigns values to
-// them. Adds the entities to the system, and executes the system.
-static void bench_iterate_assign()
-{
-    ecs_update_system(ecs, IterateSystem, 0.0f);
-}
-
-static void bench_iterate_assign2()
-{
-    // Run the system
-    ecs_update_system(ecs, IterateSystem, 0.0f);
-    ecs_update_system(ecs, IterateSystem, 0.0f);
-}
-
 static void bench_three_systems()
 {
     // Create entities
@@ -466,8 +389,6 @@ int main()
     BENCH_RUN(bench_add_remove, setup, teardown);
     BENCH_RUN(bench_add_assign, setup, teardown);
     BENCH_RUN(bench_get, setup_get, teardown);
-    BENCH_RUN(bench_iterate_assign, setup_with_entities, teardown);
-    BENCH_RUN(bench_iterate_assign2, setup_with_entities, teardown);
     BENCH_RUN(bench_three_systems, setup_three_systems, teardown);
 
     printf("---------------------------------------------------------------\n");
