@@ -112,19 +112,15 @@ typedef struct
  * Setup / teardown functions
  *============================================================================*/
 
-ecs_ret_t movement_update(ecs_t* ecs, ecs_id_t* entities,
+ecs_ret_t movement_system(ecs_t* ecs, ecs_id_t* entities,
                           int entity_count, ecs_dt_t dt,
                           void* udata);
 
-ecs_ret_t comflab_update(ecs_t* ecs, ecs_id_t* entities,
+ecs_ret_t comflab_system(ecs_t* ecs, ecs_id_t* entities,
                          int entity_count, ecs_dt_t dt,
                          void* udata);
 
-ecs_ret_t movement_update(ecs_t* ecs, ecs_id_t* entities,
-                          int entity_count, ecs_dt_t dt,
-                          void* udata);
-
-ecs_ret_t bounds_update(ecs_t* ecs,
+ecs_ret_t bounds_system(ecs_t* ecs,
                         ecs_id_t* entities,
                         int entity_count,
                         ecs_dt_t dt,
@@ -160,14 +156,14 @@ static void setup_three_systems()
     ecs_register_component(ecs, ComflabComponent, sizeof(comflab_t));
     ecs_register_component(ecs, RectComponent, sizeof(rect_t));
 
-    ecs_register_system(ecs, MovementSystem, movement_update, NULL, NULL, NULL);
+    ecs_register_system(ecs, MovementSystem, movement_system, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
     ecs_require_component(ecs, MovementSystem, DirComponent);
 
-    ecs_register_system(ecs, ComflabSystem, comflab_update, NULL, NULL, NULL);
+    ecs_register_system(ecs, ComflabSystem, comflab_system, NULL, NULL, NULL);
     ecs_require_component(ecs, ComflabSystem, ComflabComponent);
 
-    ecs_register_system(ecs, BoundsSystem, bounds_update, NULL, NULL, NULL);
+    ecs_register_system(ecs, BoundsSystem, bounds_system, NULL, NULL, NULL);
     ecs_require_component(ecs, BoundsSystem, RectComponent);
 }
 
@@ -198,7 +194,7 @@ static void setup_get()
  * Update function callbacks
  *============================================================================*/
 
-ecs_ret_t movement_update(ecs_t* ecs,
+ecs_ret_t movement_system(ecs_t* ecs,
                           ecs_id_t* entities,
                           int entity_count,
                           ecs_dt_t dt,
@@ -221,7 +217,7 @@ ecs_ret_t movement_update(ecs_t* ecs,
     return 0;
 }
 
-ecs_ret_t comflab_update(ecs_t* ecs,
+ecs_ret_t comflab_system(ecs_t* ecs,
                         ecs_id_t* entities,
                         int entity_count,
                         ecs_dt_t dt,
@@ -244,12 +240,15 @@ ecs_ret_t comflab_update(ecs_t* ecs,
     return 0;
 }
 
-ecs_ret_t bounds_update(ecs_t* ecs,
+ecs_ret_t bounds_system(ecs_t* ecs,
                         ecs_id_t* entities,
                         int entity_count,
                         ecs_dt_t dt,
                         void* udata)
 {
+    (void)dt;
+    (void)udata;
+
     for (int i = 0; i < entity_count; i++)
     {
         // Get entity ID
@@ -262,6 +261,8 @@ ecs_ret_t bounds_update(ecs_t* ecs,
         bounds->w = 1;
         bounds->h = 1;
     }
+
+    return 0;
 }
 
 /*=============================================================================
