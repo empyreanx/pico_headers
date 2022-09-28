@@ -40,7 +40,7 @@ int random_int(int min, int max)
 }
 
 #define PICO_ECS_MAX_ENTITIES (1000 * 1000)
-#define PICO_ECS_MAX_SYSTEMS 11
+#define PICO_ECS_MAX_SYSTEMS 4
 
 static clock_t start, end;
 static ecs_t* ecs = NULL;
@@ -77,10 +77,9 @@ static void bench_end()
 enum
 {
     IterateSystem,
-    QueueSyncSystem,
-    QueueDestroySystem,
     MovementSystem,
-    ComflabSystem
+    ComflabSystem,
+    BoundsSystem
 };
 
 // Component IDs
@@ -130,13 +129,11 @@ ecs_ret_t iterate_assign_update(ecs_t* ecs, ecs_id_t* entities,
                                 int entity_count, ecs_dt_t dt,
                                 void* udata);
 
-ecs_ret_t queue_sync_update(ecs_t* ecs, ecs_id_t* entities,
-                            int entity_count, ecs_dt_t dt,
-                            void* udata);
-
-ecs_ret_t queue_destroy_update(ecs_t* ecs, ecs_id_t* entities,
-                               int entity_count, ecs_dt_t dt,
-                               void* udata);
+ecs_ret_t bounds_update(ecs_t* ecs,
+                        ecs_id_t* entities,
+                        int entity_count,
+                        ecs_dt_t dt,
+                        void* udata);
 
 static void setup()
 {
@@ -155,6 +152,7 @@ static void setup_abeimler()
     ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
     ecs_register_component(ecs, DirComponent, sizeof(v2d_t));
     ecs_register_component(ecs, ComflabComponent, sizeof(comflab_t));
+    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
 
     ecs_register_system(ecs, MovementSystem, movement_update, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
@@ -163,28 +161,8 @@ static void setup_abeimler()
     ecs_register_system(ecs, ComflabSystem, comflab_update, NULL, NULL, NULL);
     ecs_require_component(ecs, ComflabSystem, ComflabComponent);
 
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
-    {
-        // Create entity
-        ecs_id_t id = ecs_create(ecs);
-
-        // Add components
-        v2d_t* pos = ecs_add(ecs, id, PosComponent);
-        v2d_t* dir = ecs_add(ecs, id, DirComponent);
-
-        if (i % 2 == 0)
-        {
-            comflab_t* comflab = ecs_add(ecs, id, ComflabComponent);
-            *comflab = (comflab_t){ 0 };
-        }
-
-        // Set concrete component values
-        *pos  = (v2d_t) { 0 };
-        *dir  = (v2d_t) { 0 };
-
-        // Adds entity to systems
-        //ecs_sync(ecs, id);
-    }
+    ecs_register_system(ecs, BoundsSystem, bounds_update, NULL, NULL, NULL);
+    ecs_require_component(ecs, BoundsSystem, RectComponent);
 }
 
 // Runs after benchmark function
@@ -209,14 +187,6 @@ static void setup_with_entities()
     ecs_require_component(ecs, IterateSystem, PosComponent);
     ecs_require_component(ecs, IterateSystem, RectComponent);
 
-    ecs_register_system(ecs, QueueSyncSystem, queue_sync_update, NULL, NULL , NULL);
-    ecs_require_component(ecs, QueueSyncSystem, PosComponent);
-    ecs_require_component(ecs, QueueSyncSystem, RectComponent);
-
-    ecs_register_system(ecs, QueueDestroySystem, queue_destroy_update, NULL, NULL, NULL);
-    ecs_require_component(ecs, QueueDestroySystem, PosComponent);
-    ecs_require_component(ecs, QueueDestroySystem, RectComponent);
-
     for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
     {
         // Create entity
@@ -229,9 +199,6 @@ static void setup_with_entities()
         // Set concrete component values
         *pos  = (v2d_t) { 1, 2 };
         *rect = (rect_t){ 1, 2, 3, 4 };
-
-        // Adds entity to systems
-        //ecs_sync(ecs, id);
     }
 }
 
@@ -267,41 +234,6 @@ ecs_ret_t iterate_assign_update(ecs_t* ecs,
     return 0;
 }
 
-// Queues sync calls on all entitiea
-ecs_ret_t queue_sync_update(ecs_t* ecs,
-                             ecs_id_t* entities,
-                             int entity_count,
-                             ecs_dt_t dt,
-                             void* udata)
-{
-    (void)dt;
-    (void)udata;
-
-    for (int i = 0; i < entity_count; i++)
-    {
-        //ecs_queue_sync(ecs, entities[i]);
-    }
-
-    return 0;
-}
-
-// Call queue destroy on all entities
-ecs_ret_t queue_destroy_update(ecs_t* ecs,
-                          ecs_id_t* entities,
-                          int entity_count,
-                          ecs_dt_t dt,
-                          void* udata)
-{
-    (void)dt;
-    (void)udata;
-
-    for (int i = 0; i < entity_count; i++)
-    {
-        //ecs_queue_destroy(ecs, entities[i]);
-    }
-
-    return 0;
-}
 
 ecs_ret_t movement_update(ecs_t* ecs,
                           ecs_id_t* entities,
@@ -347,6 +279,26 @@ ecs_ret_t comflab_update(ecs_t* ecs,
     }
 
     return 0;
+}
+
+ecs_ret_t bounds_update(ecs_t* ecs,
+                        ecs_id_t* entities,
+                        int entity_count,
+                        ecs_dt_t dt,
+                        void* udata)
+{
+    for (int i = 0; i < entity_count; i++)
+    {
+        // Get entity ID
+        ecs_id_t id = entities[i];
+
+        rect_t* bounds = ecs_get(ecs, id, RectComponent);
+
+        bounds->x = 1;
+        bounds->y = 1;
+        bounds->w = 1;
+        bounds->h = 1;
+    }
 }
 
 /*=============================================================================
@@ -422,28 +374,6 @@ static void bench_add_get_assign()
     }
 }
 
-// Adds components to entities, assigns values to them, and adds them to
-// the systems
-static void bench_add_assign_sync()
-{
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
-    {
-        // Create entity
-        ecs_id_t id = ecs_create(ecs);
-
-        // Add components
-        v2d_t*  pos  = (v2d_t*)ecs_add(ecs, id, PosComponent);
-        rect_t* rect = (rect_t*)ecs_add(ecs, id, RectComponent);
-
-        // Set concrete component values
-        *pos  = (v2d_t) { 1, 2 };
-        *rect = (rect_t){ 1, 2, 3, 4 };
-
-        // Adds entity to systems
-        //ecs_sync(ecs, id);
-    }
-}
-
 // Registers a new system. Adds components to entities, and assigns values to
 // them. Adds the entities to the system, and executes the system.
 static void bench_iterate_assign()
@@ -458,25 +388,36 @@ static void bench_iterate_assign2()
     ecs_update_system(ecs, IterateSystem, 0.0f);
 }
 
-// Adds a system that enqueues sync on all entities.
-static void bench_queue_sync()
-{
-    // Run the system
-    ecs_update_system(ecs, QueueSyncSystem, 0.0f);
-}
-
-// Adds a system that enqueues destroy on all entities.
-static void bench_queue_destroy()
-{
-    // Run the system
-    ecs_update_system(ecs, QueueDestroySystem, 0.0f);
-}
-
 static void bench_abeimler()
 {
+    // Create entities
+
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        // Create entity
+        ecs_id_t id = ecs_create(ecs);
+
+        // Add components
+        v2d_t*  pos    = ecs_add(ecs, id, PosComponent);
+        v2d_t*  dir    = ecs_add(ecs, id, DirComponent);
+        rect_t* bounds = ecs_add(ecs, id, RectComponent);
+
+        if (i % 2 == 0)
+        {
+            comflab_t* comflab = ecs_add(ecs, id, ComflabComponent);
+            *comflab = (comflab_t){ 0 };
+        }
+
+        // Set concrete component values
+        *pos    = (v2d_t)  { 0 };
+        *dir    = (v2d_t)  { 0 };
+        *bounds = (rect_t) { 0 };
+    }
+
     // Run the system
     ecs_update_system(ecs, MovementSystem, 1.0f);
     ecs_update_system(ecs, ComflabSystem, 1.0f);
+    ecs_update_system(ecs, BoundsSystem, 1.0f);
 }
 
 int main()
@@ -490,11 +431,8 @@ int main()
     BENCH_RUN(bench_create_with_two_components, setup, teardown);
     BENCH_RUN(bench_add_assign, setup, teardown);
     BENCH_RUN(bench_add_get_assign, setup, teardown);
-    BENCH_RUN(bench_add_assign_sync, setup, teardown);
     BENCH_RUN(bench_iterate_assign, setup_with_entities, teardown);
     BENCH_RUN(bench_iterate_assign2, setup_with_entities, teardown);
-    BENCH_RUN(bench_queue_sync, setup_with_entities, teardown);
-    BENCH_RUN(bench_queue_destroy, setup_with_entities, teardown);
     BENCH_RUN(bench_abeimler, setup_abeimler, teardown);
 
     printf("---------------------------------------------------------------\n");
