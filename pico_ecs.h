@@ -291,14 +291,6 @@ void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
 void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
 
 /**
- * @brief Adds/removes an entity from systems based upon its components
- *
- * @param ecs The ECS instance
- * @param entity_id The target entity
- */
-void ecs_sync(ecs_t* ecs, ecs_id_t entity_id);
-
-/**
  * @brief Update an individual system
  *
  * This function should be called once per frame.
@@ -727,7 +719,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
         if (!sys->ready)
             continue;
 
-        if (ecs_bitset_test(&sys->comp_bits, comp_id))
+        if (ecs_entity_system_test(&sys->comp_bits, &entity->comp_bits))
         {
             if (ecs_sparse_set_add(&sys->entity_ids, entity_id))
             {
@@ -766,7 +758,7 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
         if (!sys->ready)
             continue;
 
-        if (ecs_bitset_test(&sys->comp_bits, comp_id))
+        if (ecs_entity_system_test(&sys->comp_bits, &entity->comp_bits))
         {
             if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
             {
@@ -778,40 +770,6 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 
     // Reset the relevant component mask bit
     ecs_bitset_flip(&entity->comp_bits, comp_id, false);
-}
-
-void ecs_sync(ecs_t* ecs, ecs_id_t entity_id)
-{
-    ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
-
-    ecs_bitset_t* entity_bits = &ecs->entities[entity_id].comp_bits;
-
-    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
-    {
-        if (!ecs->systems[sys_id].ready)
-            continue;
-
-        ecs_sys_t* sys = &ecs->systems[sys_id];
-
-        if (ecs_entity_system_test(&sys->comp_bits, entity_bits))
-        {
-            if (ecs_sparse_set_add(&sys->entity_ids, entity_id))
-            {
-                if (sys->add_cb)
-                    sys->add_cb(ecs, entity_id, sys->udata);
-            }
-        }
-        else
-        {
-            if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
-            {
-                if (sys->remove_cb)
-                    sys->remove_cb(ecs, entity_id, sys->udata);
-            }
-        }
-    }
 }
 
 ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt)

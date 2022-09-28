@@ -143,8 +143,7 @@ int main()
     printf("---------------------------------------------------------------\n");
 
     printf("PosComp added to: %u\n", e1);
-    ecs_add(ecs,  e1, PosComp);
-    ecs_sync(ecs, e1);
+    ecs_add(ecs, e1, PosComp);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %u\n", e2);
@@ -152,7 +151,6 @@ int main()
 
     ecs_add(ecs, e2, PosComp);
     ecs_add(ecs, e2, VelComp);
-    ecs_sync(ecs, e2);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %u\n", e3);
@@ -162,7 +160,6 @@ int main()
     ecs_add(ecs, e3, PosComp);
     ecs_add(ecs, e3, VelComp);
     ecs_add(ecs, e3, RectComp);
-    ecs_sync(ecs, e3);
 
     printf("---------------------------------------------------------------\n");
 
