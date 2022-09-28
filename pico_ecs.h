@@ -665,6 +665,7 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
 
     // Reset entity
     memset(entity, 0, sizeof(ecs_entity_t));
+    entity->ready = false;
 }
 
 bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)

@@ -99,7 +99,7 @@ PU_TEST(test_add_remove)
 }
 
 // Turns on the `used` flag on the components of matching entities
-static ecs_ret_t comp_update(ecs_t* ecs,
+static ecs_ret_t comp_system(ecs_t* ecs,
                              ecs_id_t* entities,
                              int entity_count,
                              ecs_dt_t dt,
@@ -134,13 +134,13 @@ static ecs_ret_t comp_update(ecs_t* ecs,
     return 0;
 }
 
-PU_TEST(test_sync)
+PU_TEST(test_add_systems)
 {
     // Set up systems
-    ecs_register_system(ecs, Sys1, comp_update, NULL, NULL, NULL);
+    ecs_register_system(ecs,   Sys1, comp_system, NULL, NULL, NULL);
     ecs_require_component(ecs, Sys1, Comp1); // Entities must have component 1
 
-    ecs_register_system(ecs, Sys2, comp_update, NULL, NULL, NULL);
+    ecs_register_system(ecs,   Sys2, comp_system, NULL, NULL, NULL);
     ecs_require_component(ecs, Sys2, Comp1);
     ecs_require_component(ecs, Sys2, Comp2);
 
@@ -151,9 +151,6 @@ PU_TEST(test_sync)
     // Add a component to entity 1
     comp_t* comp1 = ecs_add(ecs, id1, Comp1);
     comp1->used = false;
-
-    // Sync it add it to the systems
-    //ecs_sync(ecs, id1);
 
     // Run Sys1
     ecs_update_system(ecs, Sys1, 0.0);
@@ -181,7 +178,7 @@ PU_TEST(test_sync)
 PU_TEST(test_remove)
 {
     // Set up system
-    ecs_register_system(ecs, Sys1, comp_update, NULL, NULL, NULL);
+    ecs_register_system(ecs, Sys1, comp_system, NULL, NULL, NULL);
     ecs_require_component(ecs, Sys1, Comp1); // Entity must have at least
     ecs_require_component(ecs, Sys1, Comp2); // component 1 and 2 to match
 
@@ -209,9 +206,6 @@ PU_TEST(test_remove)
     // Remove compoent 2
     ecs_remove(ecs, id, Comp2);
 
-    // Sync entity with systems
-    //ecs_sync(ecs, id);
-
     // Run system again
     ecs_update_system(ecs, Sys1, 0.0);
 
@@ -225,7 +219,7 @@ PU_TEST(test_remove)
 PU_TEST(test_destroy)
 {
     // Set up system
-    ecs_register_system(ecs, Sys1, comp_update, NULL, NULL, NULL);
+    ecs_register_system(ecs, Sys1, comp_system, NULL, NULL, NULL);
     ecs_require_component(ecs, Sys1, Comp1);
     ecs_require_component(ecs, Sys1, Comp2);
 
@@ -266,10 +260,54 @@ PU_TEST(test_destroy)
     return true;
 }
 
+static ecs_ret_t destroy_system(ecs_t* ecs,
+                                ecs_id_t* entities,
+                                int entity_count,
+                                ecs_dt_t dt,
+                                void* udata)
+{
+    (void)entities;
+    (void)entity_count;
+    (void)dt;
+    (void)udata;
+
+    while (entity_count > 0)
+    {
+        ecs_destroy(ecs, entities[0]);
+        entity_count--;
+    }
+
+    return 0;
+}
+
+PU_TEST(test_destroy_system)
+{
+    ecs_register_system(ecs,   Sys1, destroy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, Sys1, Comp1);
+    ecs_require_component(ecs, Sys1, Comp2);
+
+    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        ecs_id_t id = ecs_create(ecs);
+        ecs_add(ecs, id, Comp1);
+        ecs_add(ecs, id, Comp2);
+    }
+
+    // Run system again
+    ecs_update_system(ecs, Sys1, 0.0);
+
+    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        PU_ASSERT(!ecs_is_ready(ecs, i));
+    }
+
+    return true;
+}
+
 PU_TEST(test_enable_disable)
 {
     // Set up system
-    ecs_register_system(ecs, Sys1, comp_update, NULL, NULL, NULL);
+    ecs_register_system(ecs, Sys1, comp_system, NULL, NULL, NULL);
     ecs_require_component(ecs, Sys1, Comp1);
 
     // Create entity
@@ -366,9 +404,10 @@ static PU_SUITE(suite_ecs)
 {
     PU_RUN_TEST(test_create_destroy);
     PU_RUN_TEST(test_add_remove);
-    PU_RUN_TEST(test_sync);
+    PU_RUN_TEST(test_add_systems);
     PU_RUN_TEST(test_remove);
     PU_RUN_TEST(test_destroy);
+    PU_RUN_TEST(test_destroy_system);
     PU_RUN_TEST(test_enable_disable);
     PU_RUN_TEST(test_add_remove_callbacks);
 }
