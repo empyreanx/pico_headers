@@ -304,6 +304,139 @@ PU_TEST(test_destroy_system)
     return true;
 }
 
+static ecs_ret_t remove_system(ecs_t* ecs,
+                               ecs_id_t* entities,
+                               int entity_count,
+                               ecs_dt_t dt,
+                               void* udata)
+{
+    (void)entities;
+    (void)entity_count;
+    (void)dt;
+    (void)udata;
+
+    while (entity_count > 0)
+    {
+        ecs_remove(ecs, entities[0], Comp1);
+        entity_count--;
+    }
+
+    return 0;
+}
+
+PU_TEST(test_remove_system)
+{
+    ecs_register_system(ecs,   Sys1, remove_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, Sys1, Comp1);
+    ecs_require_component(ecs, Sys1, Comp2);
+
+    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        ecs_id_t id = ecs_create(ecs);
+        ecs_add(ecs, id, Comp1);
+        ecs_add(ecs, id, Comp2);
+    }
+
+    // Run system again
+    ecs_update_system(ecs, Sys1, 0.0);
+
+    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        PU_ASSERT(!ecs_has(ecs, i, Comp1));
+    }
+
+    return true;
+}
+
+static ecs_ret_t queue_destroy_system(ecs_t* ecs,
+                                      ecs_id_t* entities,
+                                      int entity_count,
+                                      ecs_dt_t dt,
+                                      void* udata)
+{
+    (void)entities;
+    (void)entity_count;
+    (void)dt;
+    (void)udata;
+
+    for (int i = 0; i < entity_count; i++)
+    {
+        ecs_queue_destroy(ecs, entities[i]);
+    }
+
+    return 0;
+}
+
+PU_TEST(test_queue_destroy_system)
+{
+    ecs_register_system(ecs,   Sys1, queue_destroy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, Sys1, Comp1);
+    ecs_require_component(ecs, Sys1, Comp2);
+
+    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        ecs_id_t id = ecs_create(ecs);
+        ecs_add(ecs, id, Comp1);
+        ecs_add(ecs, id, Comp2);
+    }
+
+    // Run system again
+    ecs_update_system(ecs, Sys1, 0.0);
+
+    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        PU_ASSERT(!ecs_is_ready(ecs, i));
+    }
+
+    return true;
+
+
+    return true;
+}
+
+/*static ecs_ret_t queue_remove_system(ecs_t* ecs,
+                                     ecs_id_t* entities,
+                                     int entity_count,
+                                     ecs_dt_t dt,
+                                     void* udata)
+{
+    (void)entities;
+    (void)entity_count;
+    (void)dt;
+    (void)udata;
+
+    for (int i = 0; i < entity_count; i++)
+    {
+        ecs_queue_remove(ecs, entities[i], Comp1);
+    }
+
+    return 0;
+}
+
+PU_TEST(test_queue_remove_system)
+{
+    ecs_register_system(ecs,   Sys1, queue_remove_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, Sys1, Comp1);
+    ecs_require_component(ecs, Sys1, Comp2);
+
+    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        ecs_id_t id = ecs_create(ecs);
+        ecs_add(ecs, id, Comp1);
+        ecs_add(ecs, id, Comp2);
+    }
+
+    // Run system again
+    ecs_update_system(ecs, Sys1, 0.0);
+
+    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        PU_ASSERT(!ecs_has(ecs, i, Comp1));
+    }
+
+    return true;
+}*/
+
 PU_TEST(test_enable_disable)
 {
     // Set up system
@@ -346,7 +479,6 @@ PU_TEST(test_enable_disable)
 
     return true;
 }
-
 
 static bool added = false;
 static bool removed = false;
@@ -408,6 +540,9 @@ static PU_SUITE(suite_ecs)
     PU_RUN_TEST(test_remove);
     PU_RUN_TEST(test_destroy);
     PU_RUN_TEST(test_destroy_system);
+    PU_RUN_TEST(test_remove_system);
+    PU_RUN_TEST(test_queue_destroy_system);
+    //PU_RUN_TEST(test_queue_remove_system);
     PU_RUN_TEST(test_enable_disable);
     PU_RUN_TEST(test_add_remove_callbacks);
 }
