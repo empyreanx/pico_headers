@@ -78,7 +78,8 @@ enum
 {
     MovementSystem,
     ComflabSystem,
-    BoundsSystem
+    BoundsSystem,
+    QueueDestroySystem
 };
 
 // Component IDs
@@ -265,6 +266,23 @@ ecs_ret_t bounds_system(ecs_t* ecs,
     return 0;
 }
 
+ecs_ret_t queue_destroy_system(ecs_t* ecs,
+                               ecs_id_t* entities,
+                               int entity_count,
+                               ecs_dt_t dt,
+                               void* udata)
+{
+    (void)dt;
+    (void)udata;
+
+    for (int i = 0; i < entity_count; i++)
+    {
+        ecs_queue_destroy(ecs, entities[i]);
+    }
+
+    return 0;
+}
+
 /*=============================================================================
  * Benchmark functions
  *============================================================================*/
@@ -345,6 +363,25 @@ static void bench_get()
     }
 }
 
+static void bench_queue_destroy()
+{
+    ecs_register_system(ecs,   QueueDestroySystem, queue_destroy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, QueueDestroySystem, PosComponent);
+    ecs_require_component(ecs, QueueDestroySystem, RectComponent);
+
+    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    {
+        // Create entity
+        ecs_create(ecs);
+
+        // Add components
+//        ecs_add(ecs, id, PosComponent);
+//        ecs_add(ecs, id, RectComponent);
+    }
+
+    ecs_update_system(ecs, QueueDestroySystem, 1.0f);
+}
+
 static void bench_three_systems()
 {
     // Create entities
@@ -390,6 +427,7 @@ int main()
     BENCH_RUN(bench_add_remove, setup, teardown);
     BENCH_RUN(bench_add_assign, setup, teardown);
     BENCH_RUN(bench_get, setup_get, teardown);
+    BENCH_RUN(bench_queue_destroy, setup, teardown);
     BENCH_RUN(bench_three_systems, setup_three_systems, teardown);
 
     printf("---------------------------------------------------------------\n");

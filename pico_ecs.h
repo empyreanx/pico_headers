@@ -414,7 +414,7 @@ typedef struct
 // Data-structure for an ID pool that provides O(1) operations for pooling IDs
 typedef struct
 {
-    int   size;
+    int      size;
     ecs_id_t array[ECS_MAX_ENTITIES];
 } ecs_id_stack_t;
 
@@ -447,9 +447,9 @@ struct ecs_s
 {
     ecs_id_stack_t entity_pool;
     ecs_id_stack_t destroy_queue;
-    ecs_id_stack_t remove_queue; // FIXME: Currently holds entity and component
-                                 // IDs so only ECS_MAX_COMPONENTS / 2 components
-                                 // can be in the queue
+    ecs_id_stack_t remove_queue; // FIXME: Only (ECS_MAX_COMPONENTS / 2)
+                                 // entity_id/component_id pairs can be in
+                                 // the queue
     ecs_entity_t   entities[ECS_MAX_ENTITIES];
     ecs_comp_t     comps[ECS_MAX_COMPONENTS];
     ecs_sys_t      systems[ECS_MAX_SYSTEMS];
