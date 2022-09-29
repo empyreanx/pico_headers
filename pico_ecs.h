@@ -36,7 +36,7 @@
     If the state specified by the class changes this could ripple through the
     class, and perhaps subclasses as well. It could well be that the class no
     longer belongs in the existing class hierarchy forcing even more revisions.
-    If could even be true that a class doesn't neatly fit into the inheritance
+    It could even be true that a class doesn't neatly fit into the inheritance
     tree at all.
 
     An ECS solves these problems while also granting more flexibility in
@@ -291,6 +291,28 @@ void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
 void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
 
 /**
+ * @brief Queues an entity for destruction at the end of system execution
+ *
+ * Queued entities are destroyed after the curent iteration.
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The ID of the entity to destroy
+ */
+void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id);
+
+/**
+ * @brief Queues a component for removable
+ *
+ * Queued entity/component pairs that will be deleted after the current system
+ * returns
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The ID of the entity that has the component
+ * @param comp_id   The component to remove
+ */
+void ecs_queue_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
+
+/**
  * @brief Update an individual system
  *
  * This function should be called once per frame.
@@ -424,11 +446,21 @@ typedef struct
 struct ecs_s
 {
     ecs_id_stack_t entity_pool;
+    ecs_id_stack_t destroy_queue;
+    ecs_id_stack_t remove_queue; // FIXME: Currently holds entity and component
+                                 // IDs so only ECS_MAX_COMPONENTS / 2 components
+                                 // can be in the queue
     ecs_entity_t   entities[ECS_MAX_ENTITIES];
     ecs_comp_t     comps[ECS_MAX_COMPONENTS];
     ecs_sys_t      systems[ECS_MAX_SYSTEMS];
     void*          mem_ctx;
 };
+
+/*=============================================================================
+ * Internal functions to flush destroyed entity and removed component
+ *============================================================================*/
+static void ecs_flush_destroyed(ecs_t* ecs);
+static void ecs_flush_removed(ecs_t* ecs);
 
 /*=============================================================================
  * Internal bit set functions
@@ -519,6 +551,8 @@ void ecs_reset(ecs_t* ecs)
     ECS_ASSERT(ecs_is_not_null(ecs));
 
     ecs->entity_pool.size = 0;
+    ecs->destroy_queue.size = 0;
+    ecs->remove_queue.size = 0;
 
     memset(ecs->entities, 0, sizeof(ecs_entity_t) * ECS_MAX_ENTITIES);
 
@@ -773,6 +807,26 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     ecs_bitset_flip(&entity->comp_bits, comp_id, false);
 }
 
+void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
+
+    ecs_id_stack_push(&ecs->destroy_queue, entity_id);
+}
+
+void ecs_queue_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
+    ECS_ASSERT(ecs_has(ecs, entity_id, comp_id));
+
+    ecs_id_stack_push(&ecs->remove_queue, entity_id);
+    ecs_id_stack_push(&ecs->remove_queue, comp_id);
+}
+
 ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
@@ -790,6 +844,9 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt)
                      sys->entity_ids.size,
                      dt,
                      sys->udata);
+
+    ecs_flush_destroyed(ecs);
+    ecs_flush_removed(ecs);
 
     return code;
 }
@@ -814,6 +871,39 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt)
 
     return 0;
 }
+
+/*=============================================================================
+ * Internal functions to flush destroyed entity and removed component
+ *============================================================================*/
+
+static void ecs_flush_destroyed(ecs_t* ecs)
+{
+    ecs_id_stack_t* destroy_queue = &ecs->destroy_queue;
+
+    for (int i = 0; i < destroy_queue->size; i++)
+    {
+        ecs_id_t entity_id = destroy_queue->array[i];
+        ecs_destroy(ecs, entity_id);
+    }
+
+    destroy_queue->size = 0;
+}
+
+
+static void ecs_flush_removed(ecs_t* ecs)
+{
+    ecs_id_stack_t* remove_queue = &ecs->remove_queue;
+
+    for (int i = 0; i < remove_queue->size; i += 2)
+    {
+        ecs_id_t entity_id = remove_queue->array[i];
+        ecs_id_t comp_id   = remove_queue->array[i + 1];
+        ecs_remove(ecs, entity_id, comp_id);
+    }
+
+    remove_queue->size = 0;
+}
+
 
 /*=============================================================================
  * Internal bitset functions
