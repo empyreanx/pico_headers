@@ -21,7 +21,6 @@ ecs_id_t make_player(game_t* game, int x, int y)
     stats->defense = 3;
 
     ecs_add(ecs, id, COMP_PLAYER);
-    ecs_sync(ecs, id);
 
     return id;
 }
@@ -48,8 +47,6 @@ ecs_id_t make_snake(game_t* game, int x, int y)
     monster->state = MONSTER_WANDER;
     monster->type = MONSTER_SNAKE;
 
-    ecs_sync(ecs, id);
-
     return id;
 }
 
@@ -74,8 +71,6 @@ ecs_id_t make_goblin(game_t* game, int x, int y)
     monster_t* monster = ecs_add(ecs, id, COMP_MONSTER);
     monster->state = MONSTER_WANDER;
     monster->type = MONSTER_GOBLIN;
-
-    ecs_sync(ecs, id);
 
     return id;
 }
@@ -102,8 +97,6 @@ ecs_id_t make_orc(game_t* game, int x, int y)
     monster->state = MONSTER_WANDER;
     monster->type = MONSTER_ORC;
 
-    ecs_sync(ecs, id);
-
     return id;
 }
 
@@ -129,8 +122,6 @@ ecs_id_t make_king(game_t* game, int x, int y)
     monster->state = MONSTER_WANDER;
     monster->type = MONSTER_ORC;
 
-    ecs_sync(ecs, id);
-
     return id;
 }
 
@@ -152,7 +143,5 @@ ecs_id_t make_chest(game_t* game, int x, int y)
     drawable->symbol = 'C';
     drawable->visible = false;
 
-    ecs_sync(ecs, id);
-
-   return id;
+    return id;
 }
