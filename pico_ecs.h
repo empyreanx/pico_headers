@@ -120,7 +120,7 @@ static const ecs_id_t ECS_NULL = (ecs_id_t)-1;
  * @param dt           The time delta
  * @param udata        The user data associated with the system
  */
-typedef ecs_ret_t (*ecs_update_fn)(ecs_t* ecs,
+typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
                                    ecs_id_t* entities,
                                    int entity_count,
                                    ecs_dt_t dt,
@@ -185,14 +185,14 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
  *
  * @param ecs       The ECS instance
  * @param sys_id    The system ID to use (must be less than ECS_MAX_SYSTEMS)
- * @param update_cb Callback that is fired every update
+ * @param system_cb Callback that is fired every update
  * @param add_cb    Called when an entity is added to the system (can be NULL)
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
  * @param udata     The user data passed to the callbacks
  */
 void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
-                         ecs_update_fn update_cb,
+                         ecs_system_fn system_cb,
                          ecs_added_fn add_cb,
                          ecs_removed_fn remove_cb,
                          void* udata);
@@ -436,7 +436,7 @@ typedef struct
     bool             ready;
     bool             active;
     ecs_sparse_set_t entity_ids;
-    ecs_update_fn    update_cb;
+    ecs_system_fn    system_cb;
     ecs_added_fn     add_cb;
     ecs_removed_fn   remove_cb;
     ecs_bitset_t     comp_bits;
@@ -584,7 +584,7 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes)
 
 void ecs_register_system(ecs_t* ecs,
                          ecs_id_t sys_id,
-                         ecs_update_fn update_cb,
+                         ecs_system_fn system_cb,
                          ecs_added_fn add_cb,
                          ecs_removed_fn remove_cb,
 
@@ -593,7 +593,7 @@ void ecs_register_system(ecs_t* ecs,
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys_id));
     ECS_ASSERT(!ecs_is_system_ready(ecs, sys_id));
-    ECS_ASSERT(NULL != update_cb);
+    ECS_ASSERT(NULL != system_cb);
 
     ecs_sys_t* sys = &ecs->systems[sys_id];
 
@@ -601,7 +601,7 @@ void ecs_register_system(ecs_t* ecs,
 
     sys->ready = true;
     sys->active = true;
-    sys->update_cb = update_cb;
+    sys->system_cb = system_cb;
     sys->add_cb = add_cb;
     sys->remove_cb = remove_cb;
     sys->udata = udata;
@@ -839,7 +839,7 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt)
     if (!sys->active)
         return 0;
 
-    ecs_ret_t code = sys->update_cb(ecs,
+    ecs_ret_t code = sys->system_cb(ecs,
                      sys->entity_ids.dense,
                      sys->entity_ids.size,
                      dt,
