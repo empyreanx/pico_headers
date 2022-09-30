@@ -371,12 +371,7 @@ static void bench_queue_destroy()
 
     for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
     {
-        // Create entity
         ecs_create(ecs);
-
-        // Add components
-//        ecs_add(ecs, id, PosComponent);
-//        ecs_add(ecs, id, RectComponent);
     }
 
     ecs_update_system(ecs, QueueDestroySystem, 1.0f);
