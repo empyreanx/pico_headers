@@ -883,12 +883,13 @@ static void ecs_flush_destroyed(ecs_t* ecs)
     for (int i = 0; i < destroy_queue->size; i++)
     {
         ecs_id_t entity_id = destroy_queue->array[i];
-        ecs_destroy(ecs, entity_id);
+
+        if (ecs_is_ready(ecs, entity_id))
+            ecs_destroy(ecs, entity_id);
     }
 
     destroy_queue->size = 0;
 }
-
 
 static void ecs_flush_removed(ecs_t* ecs)
 {
@@ -897,8 +898,12 @@ static void ecs_flush_removed(ecs_t* ecs)
     for (int i = 0; i < remove_queue->size; i += 2)
     {
         ecs_id_t entity_id = remove_queue->array[i];
-        ecs_id_t comp_id   = remove_queue->array[i + 1];
-        ecs_remove(ecs, entity_id, comp_id);
+
+        if (ecs_is_ready(ecs, entity_id))
+        {
+            ecs_id_t comp_id   = remove_queue->array[i + 1];
+            ecs_remove(ecs, entity_id, comp_id);
+        }
     }
 
     remove_queue->size = 0;
