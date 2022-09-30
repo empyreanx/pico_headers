@@ -417,8 +417,8 @@ typedef struct
 // Data-structure for an ID pool that provides O(1) operations for pooling IDs
 typedef struct
 {
-    int       capacity;
-    int       size;
+    size_t    capacity;
+    size_t    size;
     ecs_id_t* array;
 } ecs_stack_t;
 
@@ -477,6 +477,7 @@ static inline bool  ecs_bitset_true(ecs_bitset_t* set);
  * Internal sparse set functions
  *============================================================================*/
 static void     ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, int capacity);
+static void     ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set);
 static bool     ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id);
 static ecs_id_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id);
 static bool     ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
@@ -491,6 +492,7 @@ static bool ecs_entity_system_test(ecs_bitset_t* sys_bits,
  * Internal ID pool functions
  *============================================================================*/
 static void     ecs_stack_init(ecs_t* ecs, ecs_stack_t* pool, int capacity);
+static void     ecs_stack_free(ecs_t* ecs, ecs_stack_t* pool);
 static void     ecs_stack_push(ecs_t* ecs, ecs_stack_t* pool, ecs_id_t id);
 static ecs_id_t ecs_stack_pop(ecs_stack_t* pool);
 static int      ecs_stack_size(ecs_stack_t* pool);
@@ -540,6 +542,10 @@ void ecs_free(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
+    ecs_stack_free(ecs, &ecs->entity_pool);
+    ecs_stack_free(ecs, &ecs->destroy_queue);
+    ecs_stack_free(ecs, &ecs->remove_queue);
+
     for (ecs_id_t comp_id = 0; comp_id < ECS_MAX_COMPONENTS; comp_id++)
     {
         ecs_comp_t* comp = &ecs->comps[comp_id];
@@ -548,6 +554,16 @@ void ecs_free(ecs_t* ecs)
         {
             ECS_FREE(ecs->comps[comp_id].array, ecs->mem_ctx);
         }
+    }
+
+    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
+    {
+        ecs_sys_t* sys = &ecs->systems[sys_id];
+
+        if (!sys->ready)
+            continue;
+
+        ecs_sparse_set_free(ecs, &sys->entity_ids);
     }
 
     ECS_FREE(ecs, ecs->mem_ctx);
@@ -887,7 +903,7 @@ static void ecs_flush_destroyed(ecs_t* ecs)
 {
     ecs_stack_t* destroy_queue = &ecs->destroy_queue;
 
-    for (int i = 0; i < destroy_queue->size; i++)
+    for (size_t i = 0; i < destroy_queue->size; i++)
     {
         ecs_id_t entity_id = destroy_queue->array[i];
 
@@ -902,7 +918,7 @@ static void ecs_flush_removed(ecs_t* ecs)
 {
     ecs_stack_t* remove_queue = &ecs->remove_queue;
 
-    for (int i = 0; i < remove_queue->size; i += 2)
+    for (size_t i = 0; i < remove_queue->size; i += 2)
     {
         ecs_id_t entity_id = remove_queue->array[i];
 
@@ -1014,6 +1030,7 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set)
 
 static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, int capacity)
 {
+    ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(set));
 
     (void)ecs;
@@ -1025,6 +1042,15 @@ static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, int capacity)
 
     set->dense  = (ecs_id_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
     set->sparse = (size_t*)  ECS_MALLOC(capacity * sizeof(size_t),   ecs->mem_ctx);
+}
+
+static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(set));
+
+    ECS_FREE(set->dense,  ecs->mem_ctx);
+    ECS_FREE(set->sparse, ecs->mem_ctx);
 }
 
 static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
@@ -1107,6 +1133,9 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* sys_bits,
 
 inline static void ecs_stack_init(ecs_t* ecs, ecs_stack_t* stack, int capacity)
 {
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(stack));
+
     (void)ecs;
 
     stack->size = 0;
@@ -1114,8 +1143,19 @@ inline static void ecs_stack_init(ecs_t* ecs, ecs_stack_t* stack, int capacity)
     stack->array = (ecs_id_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
 }
 
+inline static void ecs_stack_free(ecs_t* ecs, ecs_stack_t* stack)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(stack));
+
+    (void)ecs;
+
+    ECS_FREE(stack->array, ecs->mem_ctx);
+}
+
 inline static void ecs_stack_push(ecs_t* ecs, ecs_stack_t* stack, ecs_id_t id)
 {
+    ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(stack));
 
     (void)ecs;
