@@ -634,7 +634,7 @@ void ecs_register_system(ecs_t* ecs,
 
     ecs_sys_t* sys = &ecs->systems[sys_id];
 
-    ecs_sparse_set_init(ecs, &sys->entity_ids, 1024);
+    ecs_sparse_set_init(ecs, &sys->entity_ids, ecs->entity_count);
 
     sys->ready = true;
     sys->active = true;
@@ -652,10 +652,8 @@ void ecs_require_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id)
     ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
 
-    // Load system
-    ecs_sys_t* sys = &ecs->systems[sys_id];
-
     // Set system component bit for the specified component
+    ecs_sys_t* sys = &ecs->systems[sys_id];
     ecs_bitset_flip(&sys->comp_bits, comp_id, true);
 }
 
@@ -1092,13 +1090,7 @@ static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capaci
     set->dense  = (ecs_id_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
     set->sparse = (size_t*)  ECS_MALLOC(capacity * sizeof(size_t),   ecs->mem_ctx);
 
-    memset(set->dense,  0, capacity * sizeof(ecs_id_t));
     memset(set->sparse, 0, capacity * sizeof(size_t));
-
-    for (size_t i = 0; i < capacity; i++)
-    {
-        set->dense[i] = ECS_NULL;
-    }
 }
 
 static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set)
@@ -1125,26 +1117,24 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
         size_t old_capacity = set->capacity;
         size_t new_capacity = old_capacity;
 
+        // Calculate new capacity
         while (new_capacity <= id)
         {
             new_capacity += (new_capacity + 1) >> 1;
         }
 
-        set->dense = (ecs_id_t*)ecs_realloc_zero(ecs,
-                                                 set->dense,
-                                                 old_capacity * sizeof(ecs_id_t),
-                                                 new_capacity * sizeof(ecs_id_t));
+        // Allocate new dense array
+        set->dense = (ecs_id_t*)ECS_REALLOC(set->dense,
+                                            new_capacity * sizeof(ecs_id_t),
+                                            ecs->mem_ctx);
 
-        for (size_t i = old_capacity; i < new_capacity; i++)
-        {
-            set->dense[i] = ECS_NULL;
-        }
-
+        // Allocate sparse array and zero it
         set->sparse = (size_t*)ecs_realloc_zero(ecs,
                                                 set->sparse,
                                                 old_capacity * sizeof(size_t),
                                                 new_capacity * sizeof(size_t));
 
+        // Set sparse set capacity to the new capacity
         set->capacity = new_capacity;
     }
 
