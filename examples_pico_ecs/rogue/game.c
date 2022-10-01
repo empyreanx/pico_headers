@@ -150,7 +150,7 @@ game_t* setup_game()
     game->term_size = get_term_size();
 
     // Create ECS
-    game->ecs = ecs_new(NULL);
+    game->ecs = ecs_new(128, NULL);
 
     // Load ECS components
     register_components(game);
