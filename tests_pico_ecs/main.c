@@ -397,7 +397,7 @@ PU_TEST(test_queue_destroy_system)
     return true;
 }
 
-/*static ecs_ret_t queue_remove_system(ecs_t* ecs,
+static ecs_ret_t queue_remove_system(ecs_t* ecs,
                                      ecs_id_t* entities,
                                      int entity_count,
                                      ecs_dt_t dt,
@@ -434,11 +434,12 @@ PU_TEST(test_queue_remove_system)
 
     for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
     {
-        PU_ASSERT(!ecs_has(ecs, i, Comp1));
+        if (ecs_is_ready(ecs, i))
+            PU_ASSERT(!ecs_has(ecs, i, Comp1));
     }
 
     return true;
-}*/
+}
 
 PU_TEST(test_enable_disable)
 {
@@ -545,7 +546,7 @@ static PU_SUITE(suite_ecs)
     PU_RUN_TEST(test_destroy_system);
     PU_RUN_TEST(test_remove_system);
     PU_RUN_TEST(test_queue_destroy_system);
-    //PU_RUN_TEST(test_queue_remove_system);
+    PU_RUN_TEST(test_queue_remove_system);
     PU_RUN_TEST(test_enable_disable);
     PU_RUN_TEST(test_add_remove_callbacks);
 }
