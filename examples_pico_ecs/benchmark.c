@@ -39,8 +39,8 @@ int random_int(int min, int max)
     return rand() % (max + 1 - min) + min;
 }
 
-#define PICO_ECS_MAX_ENTITIES (1000 * 1000)
-#define PICO_ECS_MAX_SYSTEMS 4
+#define MIN_ENTITIES (1000 * 1000)
+#define MAX_ENTITIES (1000 * 1000)
 
 static clock_t start, end;
 static ecs_t* ecs = NULL;
@@ -130,7 +130,7 @@ ecs_ret_t bounds_system(ecs_t* ecs,
 static void setup()
 {
     // Create ECS instance
-    ecs = ecs_new(NULL);
+    ecs = ecs_new(MIN_ENTITIES, NULL);
 
     // Register two new components
     ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
@@ -140,9 +140,9 @@ static void setup()
 static void setup_destroy()
 {
     // Create ECS instance
-    ecs = ecs_new(NULL);
+    ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_create(ecs);
     }
@@ -150,7 +150,7 @@ static void setup_destroy()
 
 static void setup_three_systems()
 {
-    ecs = ecs_new(NULL);
+    ecs = ecs_new(MIN_ENTITIES, NULL);
 
     ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
     ecs_register_component(ecs, DirComponent, sizeof(v2d_t));
@@ -179,9 +179,9 @@ static void teardown()
 static void setup_get()
 {
     // Create ECS instance
-    ecs = ecs_new(NULL);
+    ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_id_t id = ecs_create(ecs);
@@ -290,7 +290,7 @@ ecs_ret_t queue_destroy_system(ecs_t* ecs,
 // Creates entity IDs as fast as possible
 static void bench_create()
 {
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
         ecs_create(ecs);
 }
 
@@ -298,13 +298,13 @@ static void bench_create()
 // coresponding entity
 static void bench_create_destroy()
 {
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
         ecs_destroy(ecs, ecs_create(ecs));
 }
 
 static void bench_destroy()
 {
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_destroy(ecs, i);
     }
@@ -312,7 +312,7 @@ static void bench_destroy()
 
 static void bench_create_with_two_components()
 {
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_id_t id = ecs_create(ecs);
@@ -326,7 +326,7 @@ static void bench_create_with_two_components()
 // Adds components to entities and assigns values to them
 static void bench_add_remove()
 {
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_id_t id = ecs_create(ecs);
         ecs_add(ecs, id, PosComponent);
@@ -337,7 +337,7 @@ static void bench_add_remove()
 // Adds components to entities and assigns values to them
 static void bench_add_assign()
 {
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_id_t id = ecs_create(ecs);
@@ -356,7 +356,7 @@ static void bench_add_assign()
 // values to them
 static void bench_get()
 {
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_get(ecs, i, PosComponent);
@@ -369,7 +369,7 @@ static void bench_queue_destroy()
     ecs_require_component(ecs, QueueDestroySystem, PosComponent);
     ecs_require_component(ecs, QueueDestroySystem, RectComponent);
 
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_create(ecs);
     }
@@ -381,7 +381,7 @@ static void bench_three_systems()
 {
     // Create entities
 
-    for (ecs_id_t i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
         ecs_id_t id = ecs_create(ecs);
@@ -413,7 +413,7 @@ int main()
 {
     printf("===============================================================\n");
 
-    printf("Number of entities: %u\n", PICO_ECS_MAX_ENTITIES);
+    printf("Number of entities: %u\n", MAX_ENTITIES);
 
     BENCH_RUN(bench_create, setup, teardown);
     BENCH_RUN(bench_create_destroy, setup, teardown);
@@ -431,6 +431,7 @@ int main()
 }
 
 //#define ECS_DEBUG
+#define PICO_ECS_MAX_SYSTEMS 4
 #define PICO_ECS_MAX_COMPONENTS 64
 #define PICO_ECS_IMPLEMENTATION
 #include "../pico_ecs.h"

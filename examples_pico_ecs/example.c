@@ -126,7 +126,7 @@ void register_systems(ecs_t* ecs)
 int main()
 {
     // Creates concrete ECS instance
-    ecs_t* ecs = ecs_new(NULL);
+    ecs_t* ecs = ecs_new(1024, NULL);
 
     // Register components and systems
     register_components(ecs);
