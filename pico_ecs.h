@@ -377,7 +377,6 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
 #define ECS_ASSERT          PICO_ECS_ASSERT
 #define ECS_MAX_COMPONENTS  PICO_ECS_MAX_COMPONENTS
 #define ECS_MAX_SYSTEMS     PICO_ECS_MAX_SYSTEMS
-#define ECS_ASSERT          PICO_ECS_ASSERT
 #define ECS_MALLOC          PICO_ECS_MALLOC
 #define ECS_REALLOC         PICO_ECS_REALLOC
 #define ECS_FREE            PICO_ECS_FREE
@@ -450,7 +449,7 @@ struct ecs_s
     ecs_stack_t   destroy_queue;
     ecs_stack_t   remove_queue;
     ecs_entity_t* entities;
-    ecs_id_t      entity_count;
+    size_t        entity_count;
     ecs_comp_t    comps[ECS_MAX_COMPONENTS];
     ecs_sys_t     systems[ECS_MAX_SYSTEMS];
     void*         mem_ctx;
@@ -574,6 +573,7 @@ void ecs_free(ecs_t* ecs)
         ecs_sparse_set_free(ecs, &sys->entity_ids);
     }
 
+    ECS_FREE(ecs->entities, ecs->mem_ctx);
     ECS_FREE(ecs, ecs->mem_ctx);
 }
 
