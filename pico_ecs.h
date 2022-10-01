@@ -480,7 +480,7 @@ static inline bool  ecs_bitset_true(ecs_bitset_t* set);
 /*=============================================================================
  * Internal sparse set functions
  *============================================================================*/
-static void     ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, int capacity);
+static void     ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capacity);
 static void     ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set);
 static bool     ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id);
 static ecs_id_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id);
@@ -588,9 +588,9 @@ void ecs_reset(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
-    ecs->entity_pool.size = 0;
+    ecs->entity_pool.size   = 0;
     ecs->destroy_queue.size = 0;
-    ecs->remove_queue.size = 0;
+    ecs->remove_queue.size  = 0;
 
     memset(ecs->entities, 0, sizeof(ecs_entity_t) * ecs->entity_count);
 
@@ -625,7 +625,6 @@ void ecs_register_system(ecs_t* ecs,
                          ecs_system_fn system_cb,
                          ecs_added_fn add_cb,
                          ecs_removed_fn remove_cb,
-
                          void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
@@ -1080,7 +1079,7 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set)
  * Internal sparse set functions
  *============================================================================*/
 
-static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, int capacity)
+static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capacity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(set));
@@ -1095,6 +1094,11 @@ static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, int capacity)
 
     memset(set->dense,  0, capacity * sizeof(ecs_id_t));
     memset(set->sparse, 0, capacity * sizeof(size_t));
+
+    for (size_t i = 0; i < capacity; i++)
+    {
+        set->dense[i] = ECS_NULL;
+    }
 }
 
 static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set)
@@ -1115,6 +1119,7 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
 
     (void)ecs;
 
+    // Grow sparse set if necessary
     if (id >= set->capacity)
     {
         size_t old_capacity = set->capacity;
@@ -1130,6 +1135,11 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
                                                  old_capacity * sizeof(ecs_id_t),
                                                  new_capacity * sizeof(ecs_id_t));
 
+        for (size_t i = old_capacity; i < new_capacity; i++)
+        {
+            set->dense[i] = ECS_NULL;
+        }
+
         set->sparse = (size_t*)ecs_realloc_zero(ecs,
                                                 set->sparse,
                                                 old_capacity * sizeof(size_t),
@@ -1138,9 +1148,11 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
         set->capacity = new_capacity;
     }
 
+    // Check if ID exists within the set
     if (ECS_NULL != ecs_sparse_set_find(set, id))
         return false;
 
+    // Add ID to set
     set->dense[set->size] = id;
     set->sparse[id] = set->size;
 
