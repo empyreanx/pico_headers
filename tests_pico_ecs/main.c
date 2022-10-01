@@ -7,6 +7,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#define MAX_ENTITIES (8 * 1024)
+
 ecs_t* ecs = NULL;
 
 enum
@@ -291,7 +293,7 @@ PU_TEST(test_destroy_system)
     ecs_require_component(ecs, Sys1, Comp1);
     ecs_require_component(ecs, Sys1, Comp2);
 
-    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_id_t id = ecs_create(ecs);
         ecs_add(ecs, id, Comp1);
@@ -338,7 +340,7 @@ PU_TEST(test_remove_system)
     ecs_require_component(ecs, Sys1, Comp1);
     ecs_require_component(ecs, Sys1, Comp2);
 
-    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_id_t id = ecs_create(ecs);
         ecs_add(ecs, id, Comp1);
@@ -379,7 +381,7 @@ PU_TEST(test_queue_destroy_system)
     ecs_require_component(ecs, Sys1, Comp1);
     ecs_require_component(ecs, Sys1, Comp2);
 
-    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_id_t id = ecs_create(ecs);
         ecs_add(ecs, id, Comp1);
@@ -389,7 +391,7 @@ PU_TEST(test_queue_destroy_system)
     // Run system again
     ecs_update_system(ecs, Sys1, 0.0);
 
-    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (int i = 0; i < MAX_ENTITIES; i++)
     {
         PU_ASSERT(!ecs_is_ready(ecs, i));
     }
@@ -422,7 +424,7 @@ PU_TEST(test_queue_remove_system)
     ecs_require_component(ecs, Sys1, Comp1);
     ecs_require_component(ecs, Sys1, Comp2);
 
-    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_id_t id = ecs_create(ecs);
         ecs_add(ecs, id, Comp1);
@@ -432,7 +434,7 @@ PU_TEST(test_queue_remove_system)
     // Run system again
     ecs_update_system(ecs, Sys1, 0.0);
 
-    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
+    for (int i = 0; i < MAX_ENTITIES; i++)
     {
         if (ecs_is_ready(ecs, i))
             PU_ASSERT(!ecs_has(ecs, i, Comp1));

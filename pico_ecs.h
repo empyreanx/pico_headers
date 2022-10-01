@@ -349,14 +349,6 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
 #define PICO_ECS_MAX_COMPONENTS 32
 #endif
 
-#ifndef PICO_ECS_MAX_ENTITIES
-#define PICO_ECS_MAX_ENTITIES (8*1024)
-#endif
-
-#ifndef PICO_ECS_MIN_ENTITIES
-#define PICO_ECS_MIN_ENTITIES (8*1024)
-#endif
-
 #ifndef PICO_ECS_MAX_SYSTEMS
 #define PICO_ECS_MAX_SYSTEMS 16
 #endif
@@ -383,8 +375,6 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
 
 #define ECS_ASSERT          PICO_ECS_ASSERT
 #define ECS_MAX_COMPONENTS  PICO_ECS_MAX_COMPONENTS
-#define ECS_MAX_ENTITIES    PICO_ECS_MAX_ENTITIES
-#define ECS_MIN_ENTITIES    PICO_ECS_MIN_ENTITIES
 #define ECS_MAX_SYSTEMS     PICO_ECS_MAX_SYSTEMS
 #define ECS_ASSERT          PICO_ECS_ASSERT
 #define ECS_MALLOC          PICO_ECS_MALLOC
@@ -594,9 +584,9 @@ void ecs_reset(ecs_t* ecs)
     ecs->destroy_queue.size = 0;
     ecs->remove_queue.size = 0;
 
-    memset(ecs->entities, 0, sizeof(ecs_entity_t) * ECS_MAX_ENTITIES);
+    memset(ecs->entities, 0, sizeof(ecs_entity_t) * ecs->entity_count);
 
-    for (ecs_id_t entity_id = 0; entity_id < ECS_MAX_ENTITIES; entity_id++)
+    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
     {
         ecs_stack_push(ecs, &ecs->entity_pool, entity_id);
     }
@@ -813,6 +803,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
         }
     }
 
+    // Grow component array
     if (entity_id >= comp->entity_count)
     {
         if (comp->entity_count < entity_id)
