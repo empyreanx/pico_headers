@@ -173,9 +173,9 @@ void ecs_reset(ecs_t* ecs);
  * @param ecs       The ECS instance
  * @param comp_id   The component ID to use (must be less than
  *                  ECS_MAX_COMPONENTS)
- * @param num_bytes The number of bytes to allocate for each component instance
+ * @param size The number of bytes to allocate for each component instance
  */
-void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes);
+void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, size_t size);
 
 /**
  * @brief Registers a system
@@ -435,9 +435,10 @@ typedef struct
 
 typedef struct
 {
-    void* array;
-    int   size;
-    bool  ready;
+    size_t entity_count;
+    void*  array;
+    size_t size;
+    bool   ready;
 } ecs_comp_t;
 
 typedef struct
@@ -606,7 +607,7 @@ void ecs_reset(ecs_t* ecs)
     }
 }
 
-void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes)
+void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, size_t size)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
@@ -614,11 +615,12 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, int num_bytes)
 
     ecs_comp_t* comp = &ecs->comps[comp_id];
 
-    comp->array = ECS_MALLOC(ECS_MAX_ENTITIES * num_bytes, ecs->mem_ctx);
-    comp->size  = num_bytes;
-    comp->ready = true;
+    comp->entity_count = ecs->entity_count;
+    comp->array        = ECS_MALLOC(comp->entity_count * size, ecs->mem_ctx);
+    comp->size         = size;
+    comp->ready        = true;
 
-    memset(comp->array, 0, ECS_MAX_ENTITIES * num_bytes);
+//    memset(comp->array, 0, ECS_MAX_ENTITIES * size);
 }
 
 void ecs_register_system(ecs_t* ecs,
@@ -809,6 +811,18 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
                     sys->add_cb(ecs, entity_id, sys->udata);
             }
         }
+    }
+
+    if (entity_id >= comp->entity_count)
+    {
+        if (comp->entity_count < entity_id)
+        {
+            comp->entity_count += (comp->entity_count + 1) >> 1;
+        }
+
+        comp->array = ECS_REALLOC(comp->array,
+                                  comp->entity_count * comp->size,
+                                  ecs->mem_ctx);
     }
 
     // Get pointer to component
