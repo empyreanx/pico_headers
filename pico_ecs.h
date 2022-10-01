@@ -150,7 +150,7 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_id_t entity_id, void *udata);
  *
  * @returns An ECS instance or NULL if out of memory
  */
-ecs_t* ecs_new(void* mem_ctx);
+ecs_t* ecs_new(size_t entity_count, void* mem_ctx);
 
 /**
  * @brief Destroys an ECS instance
@@ -353,6 +353,10 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
 #define PICO_ECS_MAX_ENTITIES (8*1024)
 #endif
 
+#ifndef PICO_ECS_MIN_ENTITIES
+#define PICO_ECS_MIN_ENTITIES (8*1024)
+#endif
+
 #ifndef PICO_ECS_MAX_SYSTEMS
 #define PICO_ECS_MAX_SYSTEMS 16
 #endif
@@ -380,6 +384,7 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
 #define ECS_ASSERT          PICO_ECS_ASSERT
 #define ECS_MAX_COMPONENTS  PICO_ECS_MAX_COMPONENTS
 #define ECS_MAX_ENTITIES    PICO_ECS_MAX_ENTITIES
+#define ECS_MIN_ENTITIES    PICO_ECS_MIN_ENTITIES
 #define ECS_MAX_SYSTEMS     PICO_ECS_MAX_SYSTEMS
 #define ECS_ASSERT          PICO_ECS_ASSERT
 #define ECS_MALLOC          PICO_ECS_MALLOC
@@ -449,14 +454,20 @@ typedef struct
 
 struct ecs_s
 {
-    ecs_stack_t  entity_pool;
-    ecs_stack_t  destroy_queue;
-    ecs_stack_t  remove_queue;
-    ecs_entity_t entities[ECS_MAX_ENTITIES];
-    ecs_comp_t   comps[ECS_MAX_COMPONENTS];
-    ecs_sys_t    systems[ECS_MAX_SYSTEMS];
-    void*        mem_ctx;
+    ecs_stack_t   entity_pool;
+    ecs_stack_t   destroy_queue;
+    ecs_stack_t   remove_queue;
+    ecs_entity_t* entities;
+    ecs_id_t      entity_count;
+    ecs_comp_t    comps[ECS_MAX_COMPONENTS];
+    ecs_sys_t     systems[ECS_MAX_SYSTEMS];
+    void*         mem_ctx;
 };
+
+/*=============================================================================
+ * Internal realloc wrapper
+ *============================================================================*/
+void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size);
 
 /*=============================================================================
  * Internal functions to flush destroyed entity and removed component
@@ -513,7 +524,7 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
  * Public API implementation
  *============================================================================*/
 
-ecs_t* ecs_new(void* mem_ctx)
+ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 {
     ecs_t* ecs = (ecs_t*)ECS_MALLOC(sizeof(ecs_t), mem_ctx);
 
@@ -523,17 +534,23 @@ ecs_t* ecs_new(void* mem_ctx)
 
     memset(ecs, 0, sizeof(ecs_t));
 
-    ecs->mem_ctx = mem_ctx;
+    ecs->entity_count = entity_count;
+    ecs->mem_ctx      = mem_ctx;
 
-    ecs_stack_init(ecs, &ecs->entity_pool,   8 * 1024);
-    ecs_stack_init(ecs, &ecs->destroy_queue, 8 * 1024);
-    ecs_stack_init(ecs, &ecs->remove_queue,  8 * 1024);
+    ecs_stack_init(ecs, &ecs->entity_pool,   entity_count);
+    ecs_stack_init(ecs, &ecs->destroy_queue, entity_count);
+    ecs_stack_init(ecs, &ecs->remove_queue,  entity_count * 2);
 
     // Pre-populate the the ID pools
-    for (ecs_id_t entity_id = 0; entity_id < ECS_MAX_ENTITIES; entity_id++)
+    for (ecs_id_t entity_id = 0; entity_id < entity_count; entity_id++)
     {
         ecs_stack_push(ecs, &ecs->entity_pool, entity_id);
     }
+
+    ecs->entities = (ecs_entity_t*)ECS_MALLOC(ecs->entity_count * sizeof(ecs_entity_t),
+                                              ecs->mem_ctx);
+
+    memset(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_t));
 
     return ecs;
 }
@@ -671,10 +688,20 @@ ecs_id_t ecs_create(ecs_t* ecs)
 
     ecs_stack_t* pool = &ecs->entity_pool;
 
-    ECS_ASSERT(ecs_stack_size(pool) > 0);
-
     if (0 == ecs_stack_size(pool))
-        return ECS_NULL;
+    {
+        size_t old_count = ecs->entity_count;
+        size_t new_count = old_count + ((old_count + 1) >> 1);
+
+        ecs->entities = (ecs_entity_t*)ecs_realloc_zero(ecs, ecs->entities,
+                                                        old_count * sizeof(ecs_entity_t),
+                                                        new_count * sizeof(ecs_entity_t));
+
+        for (ecs_id_t id = old_count; id < new_count; id++)
+            ecs_stack_push(ecs, pool, id);
+
+        ecs->entity_count = new_count;
+    }
 
     ecs_id_t entity_id = ecs_stack_pop(pool);
     ecs->entities[entity_id].ready = true;
@@ -685,7 +712,7 @@ ecs_id_t ecs_create(ecs_t* ecs)
 bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
 
     return ecs->entities[entity_id].ready;
 }
@@ -693,7 +720,7 @@ bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id)
 void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
     // Load entity
@@ -728,7 +755,7 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
 bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
@@ -742,7 +769,7 @@ bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
@@ -756,7 +783,7 @@ void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
@@ -800,7 +827,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
@@ -833,7 +860,7 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
     ecs_stack_push(ecs, &ecs->destroy_queue, entity_id);
@@ -842,7 +869,7 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
 void ecs_queue_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
     ECS_ASSERT(ecs_has(ecs, entity_id, comp_id));
 
@@ -893,6 +920,24 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt)
     }
 
     return 0;
+}
+
+/*=============================================================================
+ * Internal realloc wrapper
+ *============================================================================*/
+void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size)
+{
+    (void)ecs;
+
+    ptr = ECS_REALLOC(ptr, new_size, ecs->mem_ctx);
+
+    if (new_size > old_size && ptr) {
+        size_t diff = new_size - old_size;
+        void* start = ((char*)ptr)+ old_size;
+        memset(start, 0, diff);
+    }
+
+    return ptr;
 }
 
 /*=============================================================================
@@ -1048,6 +1093,8 @@ static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(set));
+
+    (void)ecs;
 
     ECS_FREE(set->dense,  ecs->mem_ctx);
     ECS_FREE(set->sparse, ecs->mem_ctx);

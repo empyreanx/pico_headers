@@ -29,7 +29,7 @@ typedef struct
 
 void setup()
 {
-    ecs = ecs_new(NULL);
+    ecs = ecs_new(1024, NULL);
 
     ecs_register_component(ecs, Comp1, sizeof(comp_t));
     ecs_register_component(ecs, Comp2, sizeof(comp_t));
@@ -273,8 +273,13 @@ static ecs_ret_t destroy_system(ecs_t* ecs,
 
     while (entity_count > 0)
     {
-        ecs_destroy(ecs, entities[0]);
+        ecs_id_t entity_id = entities[0];
+
+        ecs_destroy(ecs, entity_id);
         entity_count--;
+
+        if (ecs_is_ready(ecs, entity_id))
+            return -1;
     }
 
     return 0;
@@ -291,15 +296,13 @@ PU_TEST(test_destroy_system)
         ecs_id_t id = ecs_create(ecs);
         ecs_add(ecs, id, Comp1);
         ecs_add(ecs, id, Comp2);
+        PU_ASSERT(ecs_is_ready(ecs, id));
     }
 
     // Run system again
-    ecs_update_system(ecs, Sys1, 0.0);
+    ecs_ret_t ret = ecs_update_system(ecs, Sys1, 0.0);
 
-    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
-    {
-        PU_ASSERT(!ecs_is_ready(ecs, i));
-    }
+    PU_ASSERT(ret == 0);
 
     return true;
 }
@@ -317,8 +320,13 @@ static ecs_ret_t remove_system(ecs_t* ecs,
 
     while (entity_count > 0)
     {
-        ecs_remove(ecs, entities[0], Comp1);
+        ecs_id_t entity_id = entities[0];
+
+        ecs_remove(ecs, entity_id, Comp1);
         entity_count--;
+
+        if (ecs_has(ecs, entity_id, Comp1))
+            return -1;
     }
 
     return 0;
@@ -335,15 +343,13 @@ PU_TEST(test_remove_system)
         ecs_id_t id = ecs_create(ecs);
         ecs_add(ecs, id, Comp1);
         ecs_add(ecs, id, Comp2);
+        PU_ASSERT(ecs_is_ready(ecs, id));
     }
 
     // Run system again
-    ecs_update_system(ecs, Sys1, 0.0);
+    ecs_ret_t ret = ecs_update_system(ecs, Sys1, 0.0);
 
-    for (int i = 0; i < PICO_ECS_MAX_ENTITIES; i++)
-    {
-        PU_ASSERT(!ecs_has(ecs, i, Comp1));
-    }
+    PU_ASSERT(ret == 0);
 
     return true;
 }
@@ -387,9 +393,6 @@ PU_TEST(test_queue_destroy_system)
     {
         PU_ASSERT(!ecs_is_ready(ecs, i));
     }
-
-    return true;
-
 
     return true;
 }
