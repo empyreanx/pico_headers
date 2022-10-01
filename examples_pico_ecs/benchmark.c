@@ -180,6 +180,7 @@ static void setup_get()
 {
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
+    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
 
     for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {

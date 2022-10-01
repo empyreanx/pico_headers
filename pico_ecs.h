@@ -58,7 +58,6 @@
     --------
 
     - PICO_ECS_MAX_COMPONENTS (default: 32)
-    - PICO_ECS_MAX_ENTITIES (default: 8*1024)
     - PICO_ECS_MAX_SYSTEMS (default: 16)
 
     Must be defined before PICO_ECS_IMPLEMENTATION
@@ -149,6 +148,9 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_id_t entity_id, void *udata);
 /**
  * @brief Creates an ECS instance.
  *
+ * @param entity_count The inital number of pooled entities
+ * @param mem_ctx The  Context for a custom allocator
+ *
  * @returns An ECS instance or NULL if out of memory
  */
 ecs_t* ecs_new(size_t entity_count, void* mem_ctx);
@@ -171,10 +173,10 @@ void ecs_reset(ecs_t* ecs);
  * Registers a component with the specfied component ID. Components define the
  * game state (usually contained within structs) and are manipulated by systems.
  *
- * @param ecs       The ECS instance
- * @param comp_id   The component ID to use (must be less than
- *                  ECS_MAX_COMPONENTS)
- * @param size The number of bytes to allocate for each component instance
+ * @param ecs      The ECS instance
+ * @param comp_id  The component ID to use (must be less than
+ *                 ECS_MAX_COMPONENTS)
+ * @param size     The number of bytes to allocate for each component instance
  */
 void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, size_t size);
 
@@ -461,7 +463,7 @@ struct ecs_s
 void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size);
 
 /*=============================================================================
- * Internal functions to flush destroyed entity and removed component
+ * Internal functions to flush destroyed entities and removed component
  *============================================================================*/
 static void ecs_flush_destroyed(ecs_t* ecs);
 static void ecs_flush_removed(ecs_t* ecs);
@@ -516,6 +518,8 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
 
 ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 {
+    ECS_ASSERT(entity_count > 0);
+
     ecs_t* ecs = (ecs_t*)ECS_MALLOC(sizeof(ecs_t), mem_ctx);
 
     // Out of memory
@@ -527,20 +531,23 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
     ecs->entity_count = entity_count;
     ecs->mem_ctx      = mem_ctx;
 
+    // Initialize entity pool and queues
     ecs_stack_init(ecs, &ecs->entity_pool,   entity_count);
     ecs_stack_init(ecs, &ecs->destroy_queue, entity_count);
     ecs_stack_init(ecs, &ecs->remove_queue,  entity_count * 2);
 
-    // Pre-populate the the ID pools
-    for (ecs_id_t entity_id = 0; entity_id < entity_count; entity_id++)
-    {
-        ecs_stack_push(ecs, &ecs->entity_pool, entity_id);
-    }
-
+    // Allocate entity array
     ecs->entities = (ecs_entity_t*)ECS_MALLOC(ecs->entity_count * sizeof(ecs_entity_t),
                                               ecs->mem_ctx);
 
+    // Zero entity array
     memset(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_t));
+
+    // Pre-populate the the ID pool
+    for (ecs_id_t id = 0; id < entity_count; id++)
+    {
+        ecs_stack_push(ecs, &ecs->entity_pool, id);
+    }
 
     return ecs;
 }
@@ -603,6 +610,7 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, size_t size)
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
     ECS_ASSERT(!ecs_is_component_ready(ecs, comp_id));
+    ECS_ASSERT(size > 0);
 
     ecs_comp_t* comp = &ecs->comps[comp_id];
 
@@ -610,8 +618,6 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, size_t size)
     comp->array        = ECS_MALLOC(comp->entity_count * size, ecs->mem_ctx);
     comp->size         = size;
     comp->ready        = true;
-
-//    memset(comp->array, 0, ECS_MAX_ENTITIES * size);
 }
 
 void ecs_register_system(ecs_t* ecs,
@@ -680,6 +686,7 @@ ecs_id_t ecs_create(ecs_t* ecs)
 
     ecs_stack_t* pool = &ecs->entity_pool;
 
+    // If pool is empty, increase the number of entity IDs
     if (0 == ecs_stack_size(pool))
     {
         size_t old_count = ecs->entity_count;
@@ -807,7 +814,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     // Grow component array
     if (entity_id >= comp->entity_count)
     {
-        if (comp->entity_count < entity_id)
+        while (comp->entity_count <= entity_id)
         {
             comp->entity_count += (comp->entity_count + 1) >> 1;
         }
@@ -969,7 +976,7 @@ static void ecs_flush_removed(ecs_t* ecs)
 
         if (ecs_is_ready(ecs, entity_id))
         {
-            ecs_id_t comp_id   = remove_queue->array[i + 1];
+            ecs_id_t comp_id = remove_queue->array[i + 1];
             ecs_remove(ecs, entity_id, comp_id);
         }
     }
@@ -1080,13 +1087,14 @@ static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, int capacity)
 
     (void)ecs;
 
-    memset(set, 0, sizeof(ecs_sparse_set_t));
-
     set->capacity = capacity;
     set->size = 0;
 
     set->dense  = (ecs_id_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
     set->sparse = (size_t*)  ECS_MALLOC(capacity * sizeof(size_t),   ecs->mem_ctx);
+
+    memset(set->dense,  0, capacity * sizeof(ecs_id_t));
+    memset(set->sparse, 0, capacity * sizeof(size_t));
 }
 
 static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set)
@@ -1107,24 +1115,31 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
 
     (void)ecs;
 
-    if (ECS_NULL != ecs_sparse_set_find(set, id))
-        return false;
-
     if (id >= set->capacity)
     {
-        while (set->capacity <= id)
+        size_t old_capacity = set->capacity;
+        size_t new_capacity = old_capacity;
+
+        while (new_capacity <= id)
         {
-            set->capacity += (set->capacity + 1) >> 1;
+            new_capacity += (new_capacity + 1) >> 1;
         }
 
-        set->dense = (ecs_id_t*)ECS_REALLOC(set->dense,
-                                            set->capacity * sizeof(ecs_id_t),
-                                            ecs->mem_ctx);
+        set->dense = (ecs_id_t*)ecs_realloc_zero(ecs,
+                                                 set->dense,
+                                                 old_capacity * sizeof(ecs_id_t),
+                                                 new_capacity * sizeof(ecs_id_t));
 
-        set->sparse = (size_t*)ECS_REALLOC(set->sparse,
-                                           set->capacity * sizeof(size_t),
-                                           ecs->mem_ctx);
+        set->sparse = (size_t*)ecs_realloc_zero(ecs,
+                                                set->sparse,
+                                                old_capacity * sizeof(size_t),
+                                                new_capacity * sizeof(size_t));
+
+        set->capacity = new_capacity;
     }
+
+    if (ECS_NULL != ecs_sparse_set_find(set, id))
+        return false;
 
     set->dense[set->size] = id;
     set->sparse[id] = set->size;
@@ -1138,14 +1153,11 @@ static ecs_id_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id)
 {
     ECS_ASSERT(ecs_is_not_null(set));
 
-    if (set->capacity >= id &&
-        set->sparse[id] < set->size &&
-        set->dense[set->sparse[id]] == id)
+    if (set->sparse[id] < set->size && set->dense[set->sparse[id]] == id)
         return set->sparse[id];
     else
         return ECS_NULL;
 }
-
 
 static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
 {
