@@ -513,7 +513,6 @@ static int      ecs_stack_size(ecs_stack_t* pool);
  *============================================================================*/
 #ifndef NDEBUG
 static bool ecs_is_not_null(void* ptr);
-static bool ecs_is_valid_entity_id(ecs_id_t id);
 static bool ecs_is_valid_component_id(ecs_id_t id);
 static bool ecs_is_valid_system_id(ecs_id_t id);
 static bool ecs_is_entity_ready(ecs_t* ecs, ecs_id_t entity_id);
@@ -698,7 +697,9 @@ ecs_id_t ecs_create(ecs_t* ecs)
                                                         new_count * sizeof(ecs_entity_t));
 
         for (ecs_id_t id = old_count; id < new_count; id++)
+        {
             ecs_stack_push(ecs, pool, id);
+        }
 
         ecs->entity_count = new_count;
     }
@@ -712,7 +713,7 @@ ecs_id_t ecs_create(ecs_t* ecs)
 bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
+
 
     return ecs->entities[entity_id].ready;
 }
@@ -720,7 +721,6 @@ bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id)
 void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
     // Load entity
@@ -755,7 +755,6 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
 bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
@@ -769,7 +768,6 @@ bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
@@ -783,7 +781,6 @@ void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
@@ -827,7 +824,6 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
@@ -860,7 +856,6 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
     ecs_stack_push(ecs, &ecs->destroy_queue, entity_id);
@@ -869,7 +864,6 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
 void ecs_queue_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-//     ECS_ASSERT(ecs_is_valid_entity_id(entity_id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
     ECS_ASSERT(ecs_has(ecs, entity_id, comp_id));
 
@@ -1102,6 +1096,7 @@ static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set)
 
 static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
 {
+    ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(set));
 
     (void)ecs;
@@ -1237,11 +1232,6 @@ inline static int ecs_stack_size(ecs_stack_t* stack)
 static bool ecs_is_not_null(void* ptr)
 {
     return NULL != ptr;
-}
-
-static bool ecs_is_valid_entity_id(ecs_id_t id)
-{
-    return id < ECS_MAX_ENTITIES;
 }
 
 static bool ecs_is_valid_component_id(ecs_id_t id)
