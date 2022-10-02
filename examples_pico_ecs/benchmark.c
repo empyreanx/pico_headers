@@ -137,14 +137,19 @@ static void setup()
     ecs_register_component(ecs, RectComponent, sizeof(rect_t));
 }
 
-static void setup_destroy()
+static void setup_destroy_with_two_components()
 {
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
+    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
+    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
+
     for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
-        ecs_create(ecs);
+        ecs_id_t id = ecs_create(ecs);
+        ecs_add(ecs, id, PosComponent);
+        ecs_add(ecs, id, RectComponent);
     }
 }
 
@@ -303,7 +308,7 @@ static void bench_create_destroy()
         ecs_destroy(ecs, ecs_create(ecs));
 }
 
-static void bench_destroy()
+static void bench_destroy_with_two_components()
 {
     for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
@@ -419,7 +424,7 @@ int main()
     BENCH_RUN(bench_create, setup, teardown);
     BENCH_RUN(bench_create_destroy, setup, teardown);
     BENCH_RUN(bench_create_with_two_components, setup, teardown);
-    BENCH_RUN(bench_destroy, setup_destroy, teardown);
+    BENCH_RUN(bench_destroy_with_two_components, setup_destroy_with_two_components, teardown);
     BENCH_RUN(bench_add_remove, setup, teardown);
     BENCH_RUN(bench_add_assign, setup, teardown);
     BENCH_RUN(bench_get, setup_get, teardown);
