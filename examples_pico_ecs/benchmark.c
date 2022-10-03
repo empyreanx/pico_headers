@@ -372,6 +372,7 @@ static void bench_get()
 static void bench_queue_destroy()
 {
     ecs_register_system(ecs,   QueueDestroySystem, queue_destroy_system, NULL, NULL, NULL);
+    ecs_register_system(ecs,   QueueDestroySystem, queue_destroy_system, NULL, NULL, NULL);
     ecs_require_component(ecs, QueueDestroySystem, PosComponent);
     ecs_require_component(ecs, QueueDestroySystem, RectComponent);
 
