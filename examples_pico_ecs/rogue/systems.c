@@ -126,7 +126,7 @@ ecs_ret_t player_sys(ecs_t* ecs,
     pos_t offset = get_move_offset(player->cmd);
     pos_t pos = pos_add(player_pos, &offset);
 
-    ecs_id_t target_id = ECS_NULL;
+    ecs_id_t target_id;
 
     if (get_entity_at(game->ecs, pos, entities, entity_count, &target_id))
     {
