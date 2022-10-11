@@ -418,17 +418,17 @@ typedef struct
 
 typedef struct
 {
-    ecs_bitset_t comp_bits;
-    bool         ready;
-} ecs_entity_t;
+    size_t capacity;
+    size_t count;
+    size_t size;
+    void*  data;
+} ecs_array_t;
 
 typedef struct
 {
-    size_t entity_count;
-    void*  array;
-    size_t size;
-    bool   ready;
-} ecs_comp_t;
+    ecs_bitset_t comp_bits;
+    bool         ready;
+} ecs_entity_t;
 
 typedef struct
 {
@@ -449,8 +449,8 @@ struct ecs_s
     ecs_stack_t   remove_queue;
     ecs_entity_t* entities;
     size_t        entity_count;
-    ecs_comp_t    comps[ECS_MAX_COMPONENTS];
-    ecs_sys_t     systems[ECS_MAX_SYSTEMS];
+    ecs_array_t   comps;
+    ecs_array_t   systems;
     void*         mem_ctx;
 };
 
@@ -497,6 +497,15 @@ static void     ecs_stack_free(ecs_t* ecs, ecs_stack_t* pool);
 static void     ecs_stack_push(ecs_t* ecs, ecs_stack_t* pool, ecs_id_t id);
 static ecs_id_t ecs_stack_pop(ecs_stack_t* pool);
 static int      ecs_stack_size(ecs_stack_t* pool);
+
+/*=============================================================================
+ * Internal array functions
+ *============================================================================*/
+static void   ecs_array_init(ecs_t* ecs, ecs_array_t* array, size_t size, size_t capacity);
+static void*  ecs_array_free(ecs_t* ecs, ecs_array_t* array);
+static void   ecs_array_push(ecs_t* ecs, ecs_array_t* array, void* item);
+static size_t ecs_array_count(const ecs_array_t* array);
+static void*  ecs_array_get(const ecs_array_t* array, size_t index);
 
 /*=============================================================================
  * Internal validation functions
@@ -1246,6 +1255,46 @@ inline static ecs_id_t ecs_stack_pop(ecs_stack_t* stack)
 inline static int ecs_stack_size(ecs_stack_t* stack)
 {
     return stack->size;
+}
+
+static void ecs_array_init(ecs_t* ecs, ecs_array_t* array, size_t size, size_t capacity)
+{
+    memset(array, 0, sizeof(ecs_array_t);
+
+    (void)ecs;
+
+    array->capacity = capacity;
+    array->count = 0;
+    array->size = size;
+    array->data = ECS_MALLOC(size * capacity, ecs->mem_ctx);
+}
+
+static void* ecs_array_free(ecs_t* ecs, ecs_array_t* array)
+{
+    ECS_FREE(array->data, ecs->mem_ctx);
+}
+
+static void ecs_array_push(ecs_t* ecs, ecs_array_t* array, void* item)
+{
+    if (array->count >= array->capacity)
+    {
+        array->capacity += (array->capacity / 2);
+        array->data = ECS_REALLOC(array->data, array->capcity * array->size, ecs->mem_ctx);
+    }
+
+    memcpy(ecs_array_get(array, array->count), item, array->size);
+
+    array->count++;
+}
+
+static size_t ecs_array_count(const ecs_array_t* array)
+{
+    return array->count;
+}
+
+static void* ecs_array_get(const ecs_array_t* array, size_t index)
+{
+    return (char*)array->data + (array->size * index);
 }
 
 /*=============================================================================
