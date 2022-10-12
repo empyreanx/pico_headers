@@ -173,7 +173,7 @@ void ecs_reset(ecs_t* ecs);
  *                 ECS_MAX_COMPONENTS)
  * @param size     The number of bytes to allocate for each component instance
  */
-void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, size_t size);
+ecs_id_t ecs_register_component(ecs_t* ecs, size_t size);
 
 /**
  * @brief Registers a system
@@ -188,12 +188,11 @@ void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, size_t size);
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
  * @param udata     The user data passed to the callbacks
  */
-void ecs_register_system(ecs_t* ecs,
-                         ecs_id_t sys_id,
-                         ecs_system_fn system_cb,
-                         ecs_added_fn add_cb,
-                         ecs_removed_fn remove_cb,
-                         void* udata);
+ecs_id_t ecs_register_system(ecs_t* ecs,
+                             ecs_system_fn system_cb,
+                             ecs_added_fn add_cb,
+                             ecs_removed_fn remove_cb,
+                             void* udata);
 /**
  * @brief Determines which components are available to the specified system.
  *
@@ -451,8 +450,8 @@ struct ecs_s
     size_t        entity_count;
     ecs_array_t   comps[ECS_MAX_COMPONENTS];
     size_t        comp_count;
-    //ecs_array_t   systems;
     ecs_sys_t     systems[ECS_MAX_SYSTEMS];
+    size_t        system_count;
     void*         mem_ctx;
 };
 
@@ -610,29 +609,33 @@ void ecs_reset(ecs_t* ecs)
     }
 }
 
-void ecs_register_component(ecs_t* ecs, ecs_id_t comp_id, size_t size)
+ecs_id_t ecs_register_component(ecs_t* ecs, size_t size)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_component_id(comp_id));
-    ECS_ASSERT(!ecs_is_component_ready(ecs, comp_id));
+    ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
     ECS_ASSERT(size > 0);
+
+    ecs_id_t comp_id = ecs->comp_count;
 
     ecs_array_t* comp = &ecs->comps[comp_id];
     ecs_array_init(ecs, comp, size, ecs->entity_count);
+
+    ecs->comp_count++;
+
+    return comp_id;
 }
 
-void ecs_register_system(ecs_t* ecs,
-                         ecs_id_t sys_id,
-                         ecs_system_fn system_cb,
-                         ecs_added_fn add_cb,
-                         ecs_removed_fn remove_cb,
-                         void* udata)
+ecs_id_t ecs_register_system(ecs_t* ecs,
+                             ecs_system_fn system_cb,
+                             ecs_added_fn add_cb,
+                             ecs_removed_fn remove_cb,
+                             void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
-    ECS_ASSERT(!ecs_is_system_ready(ecs, sys_id));
+    ECS_ASSERT(ecs->system_count < ECS_MAX_SYSTEMS);
     ECS_ASSERT(NULL != system_cb);
 
+    ecs_id_t sys_id = ecs->system_count;
     ecs_sys_t* sys = &ecs->systems[sys_id];
 
     ecs_sparse_set_init(ecs, &sys->entity_ids, ecs->entity_count);
@@ -643,6 +646,10 @@ void ecs_register_system(ecs_t* ecs,
     sys->add_cb = add_cb;
     sys->remove_cb = remove_cb;
     sys->udata = udata;
+
+    ecs->system_count++;
+
+    return sys_id;
 }
 
 void ecs_require_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id)
@@ -1244,9 +1251,9 @@ inline static int ecs_stack_size(ecs_stack_t* stack)
 
 static void ecs_array_init(ecs_t* ecs, ecs_array_t* array, size_t size, size_t capacity)
 {
-    memset(array, 0, sizeof(ecs_array_t));
-
     (void)ecs;
+
+    memset(array, 0, sizeof(ecs_array_t));
 
     array->capacity = capacity;
     array->count = 0;
