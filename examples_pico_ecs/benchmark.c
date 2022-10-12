@@ -74,21 +74,16 @@ static void bench_end()
  *============================================================================*/
 
 // System IDs
-enum
-{
-    MovementSystem,
-    ComflabSystem,
-    BoundsSystem,
-    QueueDestroySystem
-};
+ecs_id_t MovementSystem;
+ecs_id_t ComflabSystem;
+ecs_id_t BoundsSystem;
+ecs_id_t QueueDestroySystem;
 
 // Component IDs
-enum {
-    PosComponent,
-    DirComponent,
-    RectComponent,
-    ComflabComponent
-};
+ecs_id_t PosComponent;
+ecs_id_t DirComponent;
+ecs_id_t RectComponent;
+ecs_id_t ComflabComponent;
 
 // Position component
 typedef struct
@@ -133,8 +128,8 @@ static void setup()
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
     // Register two new components
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
-    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
+    PosComponent  = ecs_register_component(ecs, sizeof(v2d_t));
+    RectComponent = ecs_register_component(ecs, sizeof(rect_t));
 }
 
 static void setup_destroy_with_two_components()
@@ -142,8 +137,8 @@ static void setup_destroy_with_two_components()
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
-    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
+    PosComponent  = ecs_register_component(ecs, sizeof(v2d_t));
+    RectComponent = ecs_register_component(ecs, sizeof(rect_t));
 
     for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
@@ -157,19 +152,19 @@ static void setup_three_systems()
 {
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
-    ecs_register_component(ecs, DirComponent, sizeof(v2d_t));
-    ecs_register_component(ecs, ComflabComponent, sizeof(comflab_t));
-    ecs_register_component(ecs, RectComponent, sizeof(rect_t));
+    PosComponent = ecs_register_component(ecs, sizeof(v2d_t));
+    DirComponent = ecs_register_component(ecs, sizeof(v2d_t));
+    ComflabComponent = ecs_register_component(ecs, sizeof(comflab_t));
+    RectComponent = ecs_register_component(ecs, sizeof(rect_t));
 
-    ecs_register_system(ecs, MovementSystem, movement_system, NULL, NULL, NULL);
+    MovementSystem = ecs_register_system(ecs, movement_system, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
     ecs_require_component(ecs, MovementSystem, DirComponent);
 
-    ecs_register_system(ecs, ComflabSystem, comflab_system, NULL, NULL, NULL);
+    ComflabSystem = ecs_register_system(ecs, comflab_system, NULL, NULL, NULL);
     ecs_require_component(ecs, ComflabSystem, ComflabComponent);
 
-    ecs_register_system(ecs, BoundsSystem, bounds_system, NULL, NULL, NULL);
+    BoundsSystem = ecs_register_system(ecs, bounds_system, NULL, NULL, NULL);
     ecs_require_component(ecs, BoundsSystem, RectComponent);
 }
 
@@ -185,7 +180,7 @@ static void setup_get()
 {
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
-    ecs_register_component(ecs, PosComponent, sizeof(v2d_t));
+    PosComponent = ecs_register_component(ecs, sizeof(v2d_t));
 
     for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
@@ -371,8 +366,7 @@ static void bench_get()
 
 static void bench_queue_destroy()
 {
-    ecs_register_system(ecs,   QueueDestroySystem, queue_destroy_system, NULL, NULL, NULL);
-    ecs_register_system(ecs,   QueueDestroySystem, queue_destroy_system, NULL, NULL, NULL);
+    QueueDestroySystem = ecs_register_system(ecs, queue_destroy_system, NULL, NULL, NULL);
     ecs_require_component(ecs, QueueDestroySystem, PosComponent);
     ecs_require_component(ecs, QueueDestroySystem, RectComponent);
 
