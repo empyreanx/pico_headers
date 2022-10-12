@@ -135,7 +135,7 @@ void setup_level(game_t* game)
 
     game->map = game->maps[level];
 
-    player_t* player = ecs_get(game->ecs, game->player_id, COMP_PLAYER);
+    player_t* player = ecs_get(game->ecs, game->player_id, g_player_comp_id);
     player->cmd = MOVE_NONE;
 }
 
@@ -202,7 +202,7 @@ void shutdown_game(game_t* game)
 
 void handle_input(game_t* game)
 {
-    player_t* player = ecs_get(game->ecs, game->player_id, COMP_PLAYER);
+    player_t* player = ecs_get(game->ecs, game->player_id, g_player_comp_id);
 
     int ch = getch();
 

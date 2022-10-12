@@ -8,16 +8,6 @@
 
 struct game_s;
 
-enum
-{
-    COMP_POS,
-    COMP_DRAWABLE,
-    COMP_STATS,
-    COMP_PLAYER,
-    COMP_MONSTER,
-    COMP_CHEST
-};
-
 extern ecs_id_t g_pos_comp_id;
 extern ecs_id_t g_drawable_comp_id;
 extern ecs_id_t g_stats_comp_id;

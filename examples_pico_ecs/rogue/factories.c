@@ -15,12 +15,12 @@ ecs_id_t make_player(game_t* game, int x, int y)
     drawable->symbol = '@';
     drawable->visible = true;
 
-    stats_t* stats = ecs_add(ecs, id, COMP_STATS);
+    stats_t* stats = ecs_add(ecs, id, g_stats_comp_id);
     stats->health  = 10;
     stats->attack  = 5;
     stats->defense = 3;
 
-    ecs_add(ecs, id, COMP_PLAYER);
+    ecs_add(ecs, id, g_player_comp_id);
 
     return id;
 }
@@ -34,7 +34,7 @@ ecs_id_t make_snake(game_t* game, int x, int y)
     pos->x = x;
     pos->y = y;
 
-    stats_t* stats = ecs_add(ecs, id, COMP_STATS);
+    stats_t* stats = ecs_add(ecs, id, g_stats_comp_id);
     stats->health  = 5;
     stats->attack  = 4;
     stats->defense = 1;
@@ -59,7 +59,7 @@ ecs_id_t make_goblin(game_t* game, int x, int y)
     pos->x = x;
     pos->y = y;
 
-    stats_t* stats = ecs_add(ecs, id, COMP_STATS);
+    stats_t* stats = ecs_add(ecs, id, g_stats_comp_id);
     stats->health  = 10;
     stats->attack  = 6;
     stats->defense = 2;
@@ -84,7 +84,7 @@ ecs_id_t make_orc(game_t* game, int x, int y)
     pos->x = x;
     pos->y = y;
 
-    stats_t* stats = ecs_add(ecs, id, COMP_STATS);
+    stats_t* stats = ecs_add(ecs, id, g_stats_comp_id);
     stats->health  = 12;
     stats->attack  = 7;
     stats->defense = 3;
@@ -109,7 +109,7 @@ ecs_id_t make_king(game_t* game, int x, int y)
     pos->x = x;
     pos->y = y;
 
-    stats_t* stats = ecs_add(ecs, id, COMP_STATS);
+    stats_t* stats = ecs_add(ecs, id, g_stats_comp_id);
     stats->health  = 20;
     stats->attack  = 10;
     stats->defense = 5;
