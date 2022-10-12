@@ -431,7 +431,6 @@ typedef struct
 
 typedef struct
 {
-    bool             ready;
     bool             active;
     ecs_sparse_set_t entity_ids;
     ecs_system_fn    system_cb;
@@ -577,10 +576,6 @@ void ecs_free(ecs_t* ecs)
     for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
     {
         ecs_sys_t* sys = &ecs->systems[sys_id];
-
-        if (!sys->ready)
-            continue;
-
         ecs_sparse_set_free(ecs, &sys->entity_ids);
     }
 
@@ -640,7 +635,6 @@ ecs_id_t ecs_register_system(ecs_t* ecs,
 
     ecs_sparse_set_init(ecs, &sys->entity_ids, ecs->entity_count);
 
-    sys->ready = true;
     sys->active = true;
     sys->system_cb = system_cb;
     sys->add_cb = add_cb;
@@ -734,12 +728,9 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
     // Remove entity from systems
-    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_sys_t* sys = &ecs->systems[sys_id];
-
-        if (!sys->ready)
-            continue;
 
         // Just attempting to remove the entity from the sparse set is faster
         // than calling ecs_entity_system_test
@@ -802,12 +793,9 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     ecs_bitset_flip(&entity->comp_bits, comp_id, true);
 
     // Add entity to systems
-    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_sys_t* sys = &ecs->systems[sys_id];
-
-        if (!sys->ready)
-            continue;
 
         if (ecs_entity_system_test(&sys->comp_bits, &entity->comp_bits))
         {
@@ -843,12 +831,9 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
     // Remove entity from systems
-    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_sys_t* sys = &ecs->systems[sys_id];
-
-        if (!sys->ready)
-            continue;
 
         if (ecs_entity_system_test(&sys->comp_bits, &entity->comp_bits))
         {
@@ -911,13 +896,8 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt)
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(dt >= 0.0f);
 
-    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
-        ecs_sys_t* sys = &ecs->systems[sys_id];
-
-        if (!sys->ready)
-            continue;
-
         ecs_ret_t code = ecs_update_system(ecs, sys_id, dt);
 
         if (0 != code)
@@ -1336,7 +1316,7 @@ static bool ecs_is_component_ready(ecs_t* ecs, ecs_id_t comp_id)
 
 static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
 {
-    return ecs->systems[sys_id].ready;
+    return sys_id < ecs->system_count;
 }
 
 #endif // NDEBUG
