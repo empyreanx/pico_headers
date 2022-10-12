@@ -1,6 +1,8 @@
 #ifndef COMPONENTS_H
 #define COMPONENTS_H
 
+#include "../../pico_ecs.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -15,6 +17,13 @@ enum
     COMP_MONSTER,
     COMP_CHEST
 };
+
+extern ecs_id_t g_pos_comp_id;
+extern ecs_id_t g_drawable_comp_id;
+extern ecs_id_t g_stats_comp_id;
+extern ecs_id_t g_player_comp_id;
+extern ecs_id_t g_monster_comp_id;
+extern ecs_id_t g_chest_comp_id;
 
 typedef struct
 {

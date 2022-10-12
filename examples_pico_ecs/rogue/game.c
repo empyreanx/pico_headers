@@ -173,7 +173,7 @@ game_t* setup_game()
     setup_level(game);
 
     draw_tilemap(game->maps[game->level]);
-    ecs_update_system(game->ecs, SYS_DRAWABLE, 0.0);
+    ecs_update_system(game->ecs, g_drawable_sys_id, 0.0);
 
     draw_player_msg(game, "Press any key to continue to start.");
     getch();
