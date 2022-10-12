@@ -55,28 +55,21 @@ typedef struct
 } rect_t;
 
 // Corresponding component IDs
-enum
-{
-    PosComp,
-    VelComp,
-    RectComp
-};
+ecs_id_t PosComp;
+ecs_id_t VelComp;
+ecs_id_t RectComp;
 
 // System IDs
-enum
-{
-    System1,
-    System2,
-    System3,
-    SystemCount
-};
+ecs_id_t System1;
+ecs_id_t System2;
+ecs_id_t System3;
 
 // Register components
 void register_components(ecs_t* ecs)
 {
-    ecs_register_component(ecs, PosComp,  sizeof(pos_t));
-    ecs_register_component(ecs, VelComp,  sizeof(vel_t));
-    ecs_register_component(ecs, RectComp, sizeof(rect_t));
+    PosComp  = ecs_register_component(ecs, sizeof(pos_t));
+    VelComp  = ecs_register_component(ecs, sizeof(vel_t));
+    RectComp = ecs_register_component(ecs, sizeof(rect_t));
 }
 
 // System that prints the entity IDs of entities associated with this system
@@ -104,10 +97,9 @@ ecs_ret_t system_update(ecs_t* ecs,
 void register_systems(ecs_t* ecs)
 {
     // Register systems
-    for (ecs_id_t id = 0; id < SystemCount; id++)
-    {
-        ecs_register_system(ecs, id, system_update, NULL, NULL, NULL);
-    }
+    System1 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
+    System2 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
+    System3 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
 
     // System1 requires PosComp compnents
     ecs_require_component(ecs, System1, PosComp);
