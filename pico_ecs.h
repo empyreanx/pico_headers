@@ -1228,6 +1228,9 @@ inline static int ecs_stack_size(ecs_stack_t* stack)
 
 static void ecs_array_init(ecs_t* ecs, ecs_array_t* array, size_t size, size_t capacity)
 {
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(array));
+
     (void)ecs;
 
     memset(array, 0, sizeof(ecs_array_t));
@@ -1240,12 +1243,19 @@ static void ecs_array_init(ecs_t* ecs, ecs_array_t* array, size_t size, size_t c
 
 static void ecs_array_free(ecs_t* ecs, ecs_array_t* array)
 {
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(array));
+
     (void)ecs;
+
     ECS_FREE(array->data, ecs->mem_ctx);
 }
 
 static void ecs_array_resize(ecs_t* ecs, ecs_array_t* array, size_t capacity)
 {
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(array));
+
     (void)ecs;
 
     if (capacity >= array->capacity)
