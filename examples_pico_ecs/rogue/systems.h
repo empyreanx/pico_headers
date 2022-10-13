@@ -5,10 +5,10 @@
 
 struct game_s;
 
-extern ecs_id_t g_player_sys_id;
-extern ecs_id_t g_monster_sys_id;
-extern ecs_id_t g_chest_sys_id;
-extern ecs_id_t g_drawable_sys_id;
+extern ecs_id_t PLAYER_SYS;
+extern ecs_id_t MONSTER_SYS;
+extern ecs_id_t CHEST_SYS;
+extern ecs_id_t DRAWABLE_SYS;
 
 typedef enum
 {

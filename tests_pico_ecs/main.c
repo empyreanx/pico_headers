@@ -27,7 +27,6 @@ void setup()
 
     comp1_id = ecs_register_component(ecs, sizeof(comp_t));
     comp2_id = ecs_register_component(ecs, sizeof(comp_t));
-    //ecs_register_component(ecs, Comp3, sizeof(comp_t));
 }
 
 void teardown()
