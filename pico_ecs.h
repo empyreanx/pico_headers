@@ -570,7 +570,7 @@ void ecs_free(ecs_t* ecs)
         ecs_array_free(ecs, comp);
     }
 
-    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_sys_t* sys = &ecs->systems[sys_id];
         ecs_sparse_set_free(ecs, &sys->entity_ids);
@@ -595,7 +595,7 @@ void ecs_reset(ecs_t* ecs)
         ecs_stack_push(ecs, &ecs->entity_pool, entity_id);
     }
 
-    for (ecs_id_t sys_id = 0; sys_id < ECS_MAX_SYSTEMS; sys_id++)
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs->systems[sys_id].entity_ids.size = 0;
     }
