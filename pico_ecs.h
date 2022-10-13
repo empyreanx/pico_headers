@@ -503,7 +503,6 @@ static int      ecs_stack_size(ecs_stack_t* pool);
 static void   ecs_array_init(ecs_t* ecs, ecs_array_t* array, size_t size, size_t capacity);
 static void   ecs_array_free(ecs_t* ecs, ecs_array_t* array);
 static void   ecs_array_resize(ecs_t* ecs, ecs_array_t* array, size_t capacity);
-static void*  ecs_array_get(const ecs_array_t* array, size_t index);
 
 /*=============================================================================
  * Internal validation functions
@@ -769,9 +768,8 @@ void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     // Return pointer to component
     ecs_array_t* comp = &ecs->comps[comp_id]; //  eid0,  eid1   eid2, ...
                                               // [comp0, comp1, comp2, ...]
-    return ecs_array_get(comp, entity_id);
 
-//    return (char*)comp->data + (comp->size * entity_id);
+    return (char*)comp->data + (comp->size * entity_id);
 }
 
 void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
@@ -1263,11 +1261,6 @@ static void ecs_array_resize(ecs_t* ecs, ecs_array_t* array, size_t capacity)
 
         array->capacity = capacity;
     }
-}
-
-static void* ecs_array_get(const ecs_array_t* array, size_t index)
-{
-    return (char*)array->data + (array->size * index);
 }
 
 /*=============================================================================
