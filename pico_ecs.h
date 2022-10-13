@@ -165,28 +165,27 @@ void ecs_reset(ecs_t* ecs);
 /**
  * @brief Registers a component
  *
- * Registers a component with the specfied component ID. Components define the
+ * Registers a component with the specfied size in bytes. Components define the
  * game state (usually contained within structs) and are manipulated by systems.
  *
- * @param ecs      The ECS instance
- * @param comp_id  The component ID to use (must be less than
- *                 ECS_MAX_COMPONENTS)
- * @param size     The number of bytes to allocate for each component instance
+ * @param ecs   The ECS instance
+ * @param size  The number of bytes to allocate for each component instance
+ * @returns     The component's ID
  */
 ecs_id_t ecs_register_component(ecs_t* ecs, size_t size);
 
 /**
  * @brief Registers a system
  *
- * Registers a system with the user specified system ID. Systems contain the
+ * Registers a system with the specified parameters. Systems contain the
  * core logic of a game by manipulating game state as defined by components.
  *
  * @param ecs       The ECS instance
- * @param sys_id    The system ID to use (must be less than ECS_MAX_SYSTEMS)
  * @param system_cb Callback that is fired every update
  * @param add_cb    Called when an entity is added to the system (can be NULL)
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
  * @param udata     The user data passed to the callbacks
+ * @returns         The system's ID
  */
 ecs_id_t ecs_register_system(ecs_t* ecs,
                              ecs_system_fn system_cb,
