@@ -1268,8 +1268,6 @@ static void ecs_array_resize(ecs_t* ecs, ecs_array_t* array, size_t capacity)
         array->data = ECS_REALLOC(array->data,
                                   array->capacity * array->size,
                                   ecs->mem_ctx);
-
-        array->capacity = capacity;
     }
 }
 
