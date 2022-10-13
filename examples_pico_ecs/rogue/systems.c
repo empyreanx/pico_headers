@@ -48,7 +48,7 @@ bool perform_attack(game_t* game, ecs_id_t attacker_id, ecs_id_t defender_id)
 
     int damage  = random_int(0, attacker->attack);
     int defense = defender->defense;
-    damage = max(damage - defense, 0);;
+    damage = max(damage - defense, 0);
     defender->health -= damage;
 
     if (defender->health <= 0)
@@ -112,10 +112,10 @@ pos_t get_move_offset(move_t dir)
 
 
 ecs_ret_t player_sys(ecs_t* ecs,
-                ecs_id_t* entities,
-                int entity_count,
-                ecs_dt_t dt,
-                void* udata)
+                     ecs_id_t* entities,
+                     int entity_count,
+                     ecs_dt_t dt,
+                     void* udata)
 {
     (void)dt;
 
@@ -272,10 +272,10 @@ void monster_do_flee(ecs_t* ecs,
 }
 
 ecs_ret_t monster_sys(ecs_t* ecs,
-                       ecs_id_t* entities,
-                       int entity_count,
-                       ecs_dt_t dt,
-                       void* udata)
+                      ecs_id_t* entities,
+                      int entity_count,
+                      ecs_dt_t dt,
+                      void* udata)
 {
     (void)dt;
 
@@ -413,6 +413,7 @@ void register_systems(game_t* game)
     ecs_require_component(game->ecs, CHEST_SYS, POS_COMP);
     ecs_require_component(game->ecs, CHEST_SYS, DRAWABLE_COMP);
 
+    // Drawable system
     DRAWABLE_SYS = ecs_register_system(game->ecs, draw_sys, NULL, NULL, game);
 
     ecs_require_component(game->ecs, DRAWABLE_SYS, POS_COMP);
