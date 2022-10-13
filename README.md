@@ -6,7 +6,7 @@ A collection of cross-platform single header libraries written in C.
 Library | Docs | Description | Version
 ------- | -----| ------------| -------
 **[pico_b64](pico_b64.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__b64_8h.html)**  | A simple Base64 encoding/decoding library | 0.1
-**[pico_ecs](pico_ecs.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__ecs_8h.html)**  | A pure and simple ECS                     | 1.1.0
+**[pico_ecs](pico_ecs.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__ecs_8h.html)**  | A pure and simple ECS                     | 2.0.0
 **[pico_gl](pico_gl.h)**     | **[docs](https://empyreanx.github.io/docs/ph/pico__gl_8h.html)**   | A graphics library based on OpenGL        | 0.1
 **[pico_log](pico_log.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__log_8h.html)**  | A minimal and flexible logging framework  | 1.0.0
 **[pico_math](pico_math.h)** | **[docs](https://empyreanx.github.io/docs/ph/pico__math_8h.html)** | A 2D math library for games               | 0.1
