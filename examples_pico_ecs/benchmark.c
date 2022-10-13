@@ -381,7 +381,6 @@ static void bench_queue_destroy()
 static void bench_three_systems()
 {
     // Create entities
-
     for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
@@ -432,7 +431,7 @@ int main()
 }
 
 //#define ECS_DEBUG
-#define PICO_ECS_MAX_SYSTEMS 4
+#define PICO_ECS_MAX_SYSTEMS 16
 #define PICO_ECS_MAX_COMPONENTS 64
 #define PICO_ECS_IMPLEMENTATION
 #include "../pico_ecs.h"
