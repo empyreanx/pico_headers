@@ -5,13 +5,10 @@
 
 struct game_s;
 
-enum
-{
-    SYS_PLAYER,
-    SYS_MONSTER,
-    SYS_CHEST,
-    SYS_DRAWABLE
-};
+extern ecs_id_t PLAYER_SYS;
+extern ecs_id_t MONSTER_SYS;
+extern ecs_id_t CHEST_SYS;
+extern ecs_id_t DRAWABLE_SYS;
 
 typedef enum
 {

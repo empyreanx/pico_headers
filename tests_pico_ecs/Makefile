@@ -8,7 +8,7 @@ endif
 
 SRCS   = main.c
 
-#DEPS   = ../pico_ecs.h
+DEPS   = ../pico_ecs.h
 OBJS   = $(SRCS:.c=.o)
 
 all: tests

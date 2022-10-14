@@ -1,20 +1,19 @@
 #ifndef COMPONENTS_H
 #define COMPONENTS_H
 
+#include "../../pico_ecs.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
 struct game_s;
 
-enum
-{
-    COMP_POS,
-    COMP_DRAWABLE,
-    COMP_STATS,
-    COMP_PLAYER,
-    COMP_MONSTER,
-    COMP_CHEST
-};
+extern ecs_id_t POS_COMP;
+extern ecs_id_t DRAWABLE_COMP;
+extern ecs_id_t STATS_COMP;
+extern ecs_id_t PLAYER_COMP;
+extern ecs_id_t MONSTER_COMP;
+extern ecs_id_t CHEST_COMP;
 
 typedef struct
 {

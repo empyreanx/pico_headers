@@ -55,28 +55,21 @@ typedef struct
 } rect_t;
 
 // Corresponding component IDs
-enum
-{
-    PosComp,
-    VelComp,
-    RectComp
-};
+ecs_id_t PosComp;
+ecs_id_t VelComp;
+ecs_id_t RectComp;
 
 // System IDs
-enum
-{
-    System1,
-    System2,
-    System3,
-    SystemCount
-};
+ecs_id_t System1;
+ecs_id_t System2;
+ecs_id_t System3;
 
 // Register components
 void register_components(ecs_t* ecs)
 {
-    ecs_register_component(ecs, PosComp,  sizeof(pos_t));
-    ecs_register_component(ecs, VelComp,  sizeof(vel_t));
-    ecs_register_component(ecs, RectComp, sizeof(rect_t));
+    PosComp  = ecs_register_component(ecs, sizeof(pos_t));
+    VelComp  = ecs_register_component(ecs, sizeof(vel_t));
+    RectComp = ecs_register_component(ecs, sizeof(rect_t));
 }
 
 // System that prints the entity IDs of entities associated with this system
@@ -104,10 +97,9 @@ ecs_ret_t system_update(ecs_t* ecs,
 void register_systems(ecs_t* ecs)
 {
     // Register systems
-    for (ecs_id_t id = 0; id < SystemCount; id++)
-    {
-        ecs_register_system(ecs, id, system_update, NULL, NULL, NULL);
-    }
+    System1 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
+    System2 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
+    System3 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
 
     // System1 requires PosComp compnents
     ecs_require_component(ecs, System1, PosComp);
@@ -126,7 +118,7 @@ void register_systems(ecs_t* ecs)
 int main()
 {
     // Creates concrete ECS instance
-    ecs_t* ecs = ecs_new(NULL);
+    ecs_t* ecs = ecs_new(1024, NULL);
 
     // Register components and systems
     register_components(ecs);
@@ -143,8 +135,7 @@ int main()
     printf("---------------------------------------------------------------\n");
 
     printf("PosComp added to: %u\n", e1);
-    ecs_add(ecs,  e1, PosComp);
-    ecs_sync(ecs, e1);
+    ecs_add(ecs, e1, PosComp);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %u\n", e2);
@@ -152,7 +143,6 @@ int main()
 
     ecs_add(ecs, e2, PosComp);
     ecs_add(ecs, e2, VelComp);
-    ecs_sync(ecs, e2);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %u\n", e3);
@@ -162,7 +152,6 @@ int main()
     ecs_add(ecs, e3, PosComp);
     ecs_add(ecs, e3, VelComp);
     ecs_add(ecs, e3, RectComp);
-    ecs_sync(ecs, e3);
 
     printf("---------------------------------------------------------------\n");
 

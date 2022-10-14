@@ -135,7 +135,7 @@ void setup_level(game_t* game)
 
     game->map = game->maps[level];
 
-    player_t* player = ecs_get(game->ecs, game->player_id, COMP_PLAYER);
+    player_t* player = ecs_get(game->ecs, game->player_id, PLAYER_COMP);
     player->cmd = MOVE_NONE;
 }
 
@@ -150,7 +150,7 @@ game_t* setup_game()
     game->term_size = get_term_size();
 
     // Create ECS
-    game->ecs = ecs_new(NULL);
+    game->ecs = ecs_new(128, NULL);
 
     // Load ECS components
     register_components(game);
@@ -173,7 +173,7 @@ game_t* setup_game()
     setup_level(game);
 
     draw_tilemap(game->maps[game->level]);
-    ecs_update_system(game->ecs, SYS_DRAWABLE, 0.0);
+    ecs_update_system(game->ecs, DRAWABLE_SYS, 0.0);
 
     draw_player_msg(game, "Press any key to continue to start.");
     getch();
@@ -202,7 +202,7 @@ void shutdown_game(game_t* game)
 
 void handle_input(game_t* game)
 {
-    player_t* player = ecs_get(game->ecs, game->player_id, COMP_PLAYER);
+    player_t* player = ecs_get(game->ecs, game->player_id, PLAYER_COMP);
 
     int ch = getch();
 

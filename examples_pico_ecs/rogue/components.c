@@ -4,16 +4,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+ecs_id_t POS_COMP;
+ecs_id_t DRAWABLE_COMP;
+ecs_id_t STATS_COMP;
+ecs_id_t PLAYER_COMP;
+ecs_id_t MONSTER_COMP;
+ecs_id_t CHEST_COMP;
+
 //
 // Load all components
 //
 void register_components(game_t* game)
 {
-    ecs_register_component(game->ecs, COMP_POS,      sizeof(pos_t));
-    ecs_register_component(game->ecs, COMP_DRAWABLE, sizeof(drawable_t));
-    ecs_register_component(game->ecs, COMP_STATS,    sizeof(stats_t));
-    ecs_register_component(game->ecs, COMP_PLAYER,   sizeof(player_t));
-    ecs_register_component(game->ecs, COMP_MONSTER,  sizeof(monster_t));
-    ecs_register_component(game->ecs, COMP_CHEST,    sizeof(chest_comp_t));
+    POS_COMP      = ecs_register_component(game->ecs, sizeof(pos_t));
+    DRAWABLE_COMP = ecs_register_component(game->ecs, sizeof(drawable_t));
+    STATS_COMP    = ecs_register_component(game->ecs, sizeof(stats_t));
+    PLAYER_COMP   = ecs_register_component(game->ecs, sizeof(player_t));
+    MONSTER_COMP  = ecs_register_component(game->ecs, sizeof(monster_t));
+    CHEST_COMP    = ecs_register_component(game->ecs, sizeof(chest_comp_t));
 }
 
