@@ -109,8 +109,14 @@ pm_float sat_axis_overlap(const sat_poly_t* p1,
     return (depth2 > depth1) ? depth1 : -depth2;
 }
 
-pm_float sat_
+pm_v2 sat_ortho_projection(pm_v2 p, pm_v2 v1, pm_v2 v2, pm_float* t)
+{
+    pm_v2 e = pm_v2_sub(v2, v1);
 
+    *t = pm_v2_dot(pm_v2_sub(p, v1), e) / pm_v2_dot(e, e);
+
+    return pm_v2_add(v1, pm_v2_scale(e, *t));
+}
 
 sat_circle_t sat_make_cicle(pm_v2 pos, pm_float radius)
 {
@@ -207,10 +213,28 @@ bool sat_test_poly_circle(const sat_poly_t* p,
                           const sat_circle_t* c,
                           sat_manifold_t* manifold)
 {
+    int count = p->vertex_count;
 
+    for (int i = 0; i < count; i++)
+    {
+        if (pm_v2_dist(p->vertices[i], c->pos) < c->radius)
+            return true;
+    }
 
+    pm_float t = 0;
+
+    for (int i = 0; i < count; i++)
+    {
+        int next = (i + 1) == count ? 0 : i + 1;
+
+        pm_v2 v = sat_ortho_projection(c->pos, p->vertices[i], p->vertices[next], &t);
+
+        if (0.0 < t && t < 1.0 && pm_v2_dist(v, c->pos) < c->radius)
+            return true;
+    }
+
+    return false;
 }
-
 
 #endif // PICO_SAT_IMPLEMENTATION
 
