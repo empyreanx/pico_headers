@@ -9,7 +9,7 @@
 #define PICO_UNIT_IMPLEMENTATION
 #include "../pico_unit.h"
 
-PU_TEST(test_collide)
+PU_TEST(test_aabb_collide)
 {
     pm_b2 aabb1 = pm_b2_make(5, 5, 2, 2);
     pm_b2 aabb2 = pm_b2_make(6, 6, 2, 2);
@@ -22,7 +22,7 @@ PU_TEST(test_collide)
     return true;
 }
 
-PU_TEST(test_not_collide)
+PU_TEST(test_aabb_not_collide)
 {
     pm_b2 aabb1 = pm_b2_make(5, 5, 2, 2);
     pm_b2 aabb2 = pm_b2_make(9, 9, 2, 2);
@@ -35,10 +35,36 @@ PU_TEST(test_not_collide)
     return true;
 }
 
+PU_TEST(test_aabb_circle_collide)
+{
+    pm_b2 aabb = pm_b2_make(5, 5, 3, 3);
+
+    sat_poly_t p = sat_aabb_to_poly(&aabb);
+    sat_circle_t c = sat_make_circle(pm_v2_make(8, 6.5), 1.0f);
+
+    PU_ASSERT(sat_test_poly_circle(&p, &c, NULL));
+
+    return true;
+}
+
+PU_TEST(test_aabb_circle_not_collide)
+{
+    pm_b2 aabb = pm_b2_make(5, 5, 3, 3);
+
+    sat_poly_t p = sat_aabb_to_poly(&aabb);
+    sat_circle_t c = sat_make_circle(pm_v2_make(8, 10), 1.0f);
+
+    PU_ASSERT(!sat_test_poly_circle(&p, &c, NULL));
+
+    return true;
+}
+
 static PU_SUITE(suite_sat)
 {
-    PU_RUN_TEST(test_collide);
-    PU_RUN_TEST(test_not_collide);
+    PU_RUN_TEST(test_aabb_collide);
+    PU_RUN_TEST(test_aabb_not_collide);
+    PU_RUN_TEST(test_aabb_circle_collide);
+    PU_RUN_TEST(test_aabb_circle_not_collide);
 }
 
 int main()

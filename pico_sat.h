@@ -44,7 +44,7 @@ typedef struct
 //pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
 //pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
 
-sat_circle_t sat_make_cicle(pm_v2 pos, pm_float radius);
+sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius);
 sat_poly_t sat_make_polygon(int vertex_count, pm_v2 vertices[]);
 sat_poly_t sat_aabb_to_poly(const pm_b2* aabb);
 
@@ -118,7 +118,7 @@ pm_v2 sat_ortho_projection(pm_v2 p, pm_v2 v1, pm_v2 v2, pm_float* t)
     return pm_v2_add(v1, pm_v2_scale(e, *t));
 }
 
-sat_circle_t sat_make_cicle(pm_v2 pos, pm_float radius)
+sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius)
 {
     sat_circle_t circle;
     circle.pos = pos;
