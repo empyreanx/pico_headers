@@ -89,10 +89,9 @@ void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
     range[1] = max;
 }
 
-bool sat_is_separating_axis(const sat_poly_t* p1,
-                            const sat_poly_t* p2,
-                            pm_v2 axis,
-                            pm_float* depth)
+pm_float sat_axis_overlap(const sat_poly_t* p1,
+                          const sat_poly_t* p2,
+                          pm_v2 axis)
 
 {
     pm_float range1[2];
@@ -102,17 +101,16 @@ bool sat_is_separating_axis(const sat_poly_t* p1,
     sat_axis_range(p2, axis, range2);
 
     if (range1[1] < range2[0] || range2[1] < range1[0])
-        return true;
+        return 0.0f;
 
-    if (depth)
-    {
-        pm_float depth1 = range1[1] - range2[0];
-        pm_float depth2 = range2[1] - range1[0];
-        *depth = (depth2 > depth1) ? depth1 : -depth2;
-    }
+    pm_float depth1 = range1[1] - range2[0];
+    pm_float depth2 = range2[1] - range1[0];
 
-    return false;
+    return (depth2 > depth1) ? depth1 : -depth2;
 }
+
+pm_float sat_
+
 
 sat_circle_t sat_make_cicle(pm_v2 pos, pm_float radius)
 {
@@ -163,7 +161,7 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
     return sat_make_poly(4, vertices);
 }
 
-void sat_update_normal(pm_float signed_depth,
+/*void sat_update_normal(pm_float signed_depth,
                        pm_float* depth,
                        pm_v2 normal_in,
                        pm_v2* normal_out)
@@ -179,50 +177,40 @@ void sat_update_normal(pm_float signed_depth,
         else
             *normal_out = normal_in;
     }
-}
+}*/
 
 bool sat_test_poly_poly(const sat_poly_t* p1,
                         const sat_poly_t* p2,
                         sat_manifold_t* manifold)
 {
-    pm_float depth = FLT_MAX;
-    pm_v2 normal = pm_v2_zero();
-
     for (int i = 0; i < p1->vertex_count - 1; i++)
     {
-        pm_float signed_depth;
+        pm_float overlap = sat_axis_overlap(p1, p2, p1->normals[i]);
 
-        if (sat_is_separating_axis(p1, p2, p1->normals[i], &signed_depth))
+        if (overlap == 0.0f)
             return false;
 
-        if (manifold)
-        {
-            sat_update_normal(signed_depth, &depth, p1->normals[i], &normal);
-        }
     }
 
     for (int i = 0; i < p2->vertex_count - 1; i++)
     {
-        pm_float signed_depth;
+        pm_float overlap = sat_axis_overlap(p2, p1, p2->normals[i]);
 
-        if (sat_is_separating_axis(p2, p1, p2->normals[i], &signed_depth))
+        if (overlap == 0.0f)
             return false;
-
-        if (manifold)
-        {
-            sat_update_normal(signed_depth, &depth, p2->normals[i], &normal);
-        }
-    }
-
-    if (manifold)
-    {
-        manifold->normal = normal;
-
-        // Get contact points...
     }
 
     return true;
 }
+
+bool sat_test_poly_circle(const sat_poly_t* p,
+                          const sat_circle_t* c,
+                          sat_manifold_t* manifold)
+{
+
+
+}
+
 
 #endif // PICO_SAT_IMPLEMENTATION
 
