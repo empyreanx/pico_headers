@@ -17,7 +17,11 @@ PU_TEST(test_aabb_collide)
     sat_poly_t p1 = sat_aabb_to_poly(&aabb1);
     sat_poly_t p2 = sat_aabb_to_poly(&aabb2);
 
-    PU_ASSERT(sat_test_poly_poly(&p1, &p2, NULL));
+    sat_manifold_t manifold;
+
+    PU_ASSERT(sat_test_poly_poly(&p1, &p2, &manifold));
+
+    //printf("n.x: %f, n.y: %f, overlap: %f\n", manifold.normal.x, manifold.normal.y, manifold.overlap);
 
     return true;
 }

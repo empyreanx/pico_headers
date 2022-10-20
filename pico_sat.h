@@ -35,9 +35,7 @@ typedef struct
 typedef struct
 {
     pm_v2    normal;
-    pm_float depth[2];
-    pm_v2    contacts[2];
-    int      count;
+    pm_float overlap;
 } sat_manifold_t;
 
 //later
@@ -141,8 +139,10 @@ sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
 
     for (int i = 0; i < vertex_count; i++)
     {
+        int next = (i + 1) == vertex_count ? 0 : i + 1;
+
         pm_v2 v1 = vertices[i];
-        pm_v2 v2 = (i < vertex_count - 1) ? vertices[i + 1] : vertices[0];
+        pm_v2 v2 = vertices[next];
         poly.edges[i] = pm_v2_sub(v2, v1);
         poly.normals[i] = pm_v2_neg(pm_v2_perp(poly.edges[i]));
         poly.normals[i] = pm_v2_normalize(poly.normals[i]);
@@ -185,16 +185,42 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
     }
 }*/
 
+void sat_update_manifold(pm_v2 normal, pm_float overlap, sat_manifold_t* manifold)
+{
+    if (!manifold)
+        return;
+
+    pm_float abs_overlap = pm_abs(overlap);
+
+    if (abs_overlap < manifold->overlap)
+    {
+        manifold->overlap = abs_overlap;
+
+        if (overlap < 0.0f)
+            manifold->normal = pm_v2_neg(normal);
+        else if (overlap > 0.0f)
+            manifold->normal = normal;
+    }
+}
+
 bool sat_test_poly_poly(const sat_poly_t* p1,
                         const sat_poly_t* p2,
                         sat_manifold_t* manifold)
 {
+    if (manifold)
+    {
+        manifold->overlap = FLT_MAX;
+        manifold->normal  = pm_v2_zero();
+    }
+
     for (int i = 0; i < p1->vertex_count; i++)
     {
         pm_float overlap = sat_axis_overlap(p1, p2, p1->normals[i]);
 
         if (overlap == 0.0f)
             return false;
+
+        sat_update_manifold(p1->normals[i], overlap, manifold);
 
     }
 
@@ -204,6 +230,8 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
 
         if (overlap == 0.0f)
             return false;
+
+        sat_update_manifold(p2->normals[i], overlap, manifold);
     }
 
     return true;
