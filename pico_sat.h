@@ -101,10 +101,10 @@ pm_float sat_axis_overlap(const sat_poly_t* p1,
     if (range1[1] < range2[0] || range2[1] < range1[0])
         return 0.0f;
 
-    pm_float depth1 = range1[1] - range2[0];
-    pm_float depth2 = range2[1] - range1[0];
+    pm_float overlap1 = range1[1] - range2[0];
+    pm_float overlap2 = range2[1] - range1[0];
 
-    return (depth2 > depth1) ? depth1 : -depth2;
+    return (overlap2 > overlap1) ? overlap1 : -overlap2;
 }
 
 pm_v2 sat_ortho_projection(pm_v2 p, pm_v2 v1, pm_v2 v2, pm_float* t)
