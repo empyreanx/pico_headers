@@ -220,6 +220,8 @@ bool sat_test_poly_circle(const sat_poly_t* p,
                           const sat_circle_t* c,
                           sat_manifold_t* manifold)
 {
+    static const pm_float epsilon = PM_EPSILON;
+
     if (manifold)
     {
         manifold->overlap = FLT_MAX;
@@ -272,7 +274,7 @@ bool sat_test_poly_circle(const sat_poly_t* p,
 
         pm_float dist = pm_v2_dist(v, c->pos);
 
-        if (0.0 < t && t < 1.0 && dist < c->radius)
+        if (epsilon < t && t < 1.0f - epsilon && dist < c->radius)
         {
             touching = true;
 
