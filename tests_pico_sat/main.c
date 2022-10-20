@@ -40,9 +40,11 @@ PU_TEST(test_aabb_circle_collide)
     pm_b2 aabb = pm_b2_make(5, 5, 3, 3);
 
     sat_poly_t p = sat_aabb_to_poly(&aabb);
-    sat_circle_t c = sat_make_circle(pm_v2_make(8, 6.5), 1.0f);
+    sat_circle_t c1 = sat_make_circle(pm_v2_make(8, 6.5), 1.0f);
+    sat_circle_t c2 = sat_make_circle(pm_v2_make(5, 5), 1.0f);
 
-    PU_ASSERT(sat_test_poly_circle(&p, &c, NULL));
+    PU_ASSERT(sat_test_poly_circle(&p, &c1, NULL));
+    PU_ASSERT(sat_test_poly_circle(&p, &c2, NULL));
 
     return true;
 }
