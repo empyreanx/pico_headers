@@ -139,7 +139,7 @@ sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
         poly.vertices[i] = vertices[i];
     }
 
-    for (int i = 0; i < vertex_count - 1; i++)
+    for (int i = 0; i < vertex_count; i++)
     {
         pm_v2 v1 = vertices[i];
         pm_v2 v2 = (i < vertex_count - 1) ? vertices[i + 1] : vertices[0];
@@ -189,7 +189,7 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
                         const sat_poly_t* p2,
                         sat_manifold_t* manifold)
 {
-    for (int i = 0; i < p1->vertex_count - 1; i++)
+    for (int i = 0; i < p1->vertex_count; i++)
     {
         pm_float overlap = sat_axis_overlap(p1, p2, p1->normals[i]);
 
@@ -198,7 +198,7 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
 
     }
 
-    for (int i = 0; i < p2->vertex_count - 1; i++)
+    for (int i = 0; i < p2->vertex_count; i++)
     {
         pm_float overlap = sat_axis_overlap(p2, p1, p2->normals[i]);
 
