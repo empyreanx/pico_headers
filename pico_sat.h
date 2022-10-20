@@ -166,30 +166,8 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
 
     return sat_make_poly(4, vertices);
 }
-
-/*void sat_update_normal(pm_float signed_depth,
-                       pm_float* depth,
-                       pm_v2 normal_in,
-                       pm_v2* normal_out)
-{
-    pm_float abs_depth = pm_abs(signed_depth);
-
-    if (abs_depth < *depth)
-    {
-        *depth = abs_depth;
-
-        if (signed_depth < 0.0f)
-            *normal_out = pm_v2_neg(normal_in);
-        else
-            *normal_out = normal_in;
-    }
-}*/
-
 void sat_update_manifold(pm_v2 normal, pm_float overlap, sat_manifold_t* manifold)
 {
-    if (!manifold)
-        return;
-
     pm_float abs_overlap = pm_abs(overlap);
 
     if (abs_overlap < manifold->overlap)
@@ -220,8 +198,8 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
         if (overlap == 0.0f)
             return false;
 
-        sat_update_manifold(p1->normals[i], overlap, manifold);
-
+        if (manifold)
+            sat_update_manifold(p2->normals[i], overlap, manifold);
     }
 
     for (int i = 0; i < p2->vertex_count; i++)
@@ -231,7 +209,8 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
         if (overlap == 0.0f)
             return false;
 
-        sat_update_manifold(p2->normals[i], overlap, manifold);
+        if (manifold)
+            sat_update_manifold(p2->normals[i], overlap, manifold);
     }
 
     return true;
