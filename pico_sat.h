@@ -241,7 +241,22 @@ bool sat_test_poly_circle(const sat_poly_t* p,
             if (manifold)
             {
                 pm_float overlap = pm_clamp(c->radius - dist, 0.0f, c->radius);
-                pm_v2 normal = pm_v2_normalize(pm_v2_sub(c->pos, p->vertices[i]));
+                pm_v2 normal = pm_v2_zero();
+
+                if (pm_equal(dist, 0.0f))
+                {
+                    int prev = (i - 1) <= 0 ? count - 1 : i - 1;
+
+                    pm_v2 n1 = p->normals[prev];
+                    pm_v2 n2 = p->normals[i];
+
+                    normal = pm_v2_normalize(pm_v2_scale(pm_v2_add(n1, n2), 0.5f));
+                }
+                else
+                {
+                    normal = pm_v2_normalize(pm_v2_sub(c->pos, p->vertices[i]));
+                }
+
                 sat_update_manifold(normal, overlap, manifold);
             }
         }
