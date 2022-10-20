@@ -241,12 +241,31 @@ bool sat_test_poly_circle(const sat_poly_t* p,
                           const sat_circle_t* c,
                           sat_manifold_t* manifold)
 {
+    if (manifold)
+    {
+        manifold->overlap = FLT_MAX;
+        manifold->normal  = pm_v2_zero();
+    }
+
+    bool touching = false;
+
     int count = p->vertex_count;
 
     for (int i = 0; i < count; i++)
     {
-        if (pm_v2_dist(p->vertices[i], c->pos) < c->radius)
-            return true;
+        pm_float dist = pm_v2_dist(p->vertices[i], c->pos);
+
+        if (dist < c->radius)
+        {
+            touching = true;
+
+            if (manifold)
+            {
+                pm_float overlap = c->radius - dist;
+                pm_v2 normal = pm_v2_normalize(pm_v2_sub(c->pos, p->vertices[i]));
+                sat_update_manifold(normal, overlap, manifold);
+            }
+        }
     }
 
     pm_float t = 0;
@@ -257,11 +276,22 @@ bool sat_test_poly_circle(const sat_poly_t* p,
 
         pm_v2 v = sat_ortho_projection(c->pos, p->vertices[i], p->vertices[next], &t);
 
-        if (0.0 < t && t < 1.0 && pm_v2_dist(v, c->pos) < c->radius)
-            return true;
+        pm_float dist = pm_v2_dist(v, c->pos);
+
+        if (0.0 < t && t < 1.0 && dist < c->radius)
+        {
+            touching = true;
+
+            if (manifold)
+            {
+                pm_float overlap = c->radius - dist;
+                pm_v2 normal = p->normals[i];
+                sat_update_manifold(normal, overlap, manifold);
+            }
+        }
     }
 
-    return false;
+    return touching;
 }
 
 #endif // PICO_SAT_IMPLEMENTATION
