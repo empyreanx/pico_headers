@@ -226,7 +226,7 @@ bool sat_test_poly_circle(const sat_poly_t* p,
         manifold->normal  = pm_v2_zero();
     }
 
-    bool touching = false;
+    bool contact = false;
 
     int count = p->vertex_count;
 
@@ -236,7 +236,7 @@ bool sat_test_poly_circle(const sat_poly_t* p,
 
         if (dist < c->radius)
         {
-            touching = true;
+            contact = true;
 
             if (manifold)
             {
@@ -249,8 +249,9 @@ bool sat_test_poly_circle(const sat_poly_t* p,
 
                     pm_v2 n1 = p->normals[prev];
                     pm_v2 n2 = p->normals[i];
+                    pm_v2 avg = pm_v2_scale(pm_v2_add(n1, n2), 0.5f);
 
-                    normal = pm_v2_normalize(pm_v2_scale(pm_v2_add(n1, n2), 0.5f));
+                    normal = pm_v2_normalize(avg);
                 }
                 else
                 {
@@ -274,7 +275,7 @@ bool sat_test_poly_circle(const sat_poly_t* p,
 
         if (0.0 < t && t < 1.0 && dist < c->radius)
         {
-            touching = true;
+            contact = true;
 
             if (manifold)
             {
@@ -285,7 +286,7 @@ bool sat_test_poly_circle(const sat_poly_t* p,
         }
     }
 
-    return touching;
+    return contact;
 }
 
 #endif // PICO_SAT_IMPLEMENTATION
