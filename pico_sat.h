@@ -181,7 +181,59 @@ void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overla
     }
 }
 
+int sat_support(const sat_poly_t* p, pm_v2 n)
+{
+    int max_index = 0;
+    pm_float max_dot = pm_v2_dot(p->vertices[0], n);
+
+    for (int i = 1; i < p->vertex_count; i++)
+    {
+        pm_float dot = pm_v2_dot(p->vertices[i], n);
+
+        if (dot > max_dot)
+        {
+            max_index = i;
+            max_dot = dot;
+        }
+    }
+
+    return max_index;
+}
+
+bool sat_is_axis_separating(const sat_poly_t* p1, const sat_poly_t* p2)
+{
+    for (int i = 0; i < p1->vertex_count; i++)
+    {
+        pm_v2 n = pm_v2_neg(p1->normals[i]); // TODO: revisit normal directions
+
+        pm_float c = pm_v2_dot(p1->vertices[i], n);
+        int index = sat_support(p2, pm_v2_neg(n));
+        pm_float d = pm_v2_dot(p2->vertices[index], n) - c;
+
+        if (d >= 0)
+            return true;
+    }
+
+    return false;
+}
+
 bool sat_test_poly_poly(const sat_poly_t* p1,
+                        const sat_poly_t* p2,
+                        sat_manifold_t* manifold)
+{
+    if (manifold)
+    {
+        manifold->overlap = FLT_MAX;
+        manifold->normal  = pm_v2_zero();
+    }
+
+    if (sat_is_axis_separating(p1, p2)) return false;
+    if (sat_is_axis_separating(p2, p1)) return false;
+
+    return true;
+}
+
+/*bool sat_test_poly_poly(const sat_poly_t* p1,
                         const sat_poly_t* p2,
                         sat_manifold_t* manifold)
 {
@@ -214,7 +266,7 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
     }
 
     return true;
-}
+}*/
 
 typedef enum
 {
