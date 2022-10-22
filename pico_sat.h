@@ -166,7 +166,7 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
 
     return sat_make_poly(4, vertices);
 }
-void sat_update_manifold(pm_v2 normal, pm_float overlap, sat_manifold_t* manifold)
+void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overlap)
 {
     pm_float abs_overlap = pm_abs(overlap);
 
@@ -199,7 +199,7 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
             return false;
 
         if (manifold)
-            sat_update_manifold(p2->normals[i], overlap, manifold);
+            sat_update_manifold(manifold, p2->normals[i], overlap);
     }
 
     for (int i = 0; i < p2->vertex_count; i++)
@@ -210,11 +210,33 @@ bool sat_test_poly_poly(const sat_poly_t* p1,
             return false;
 
         if (manifold)
-            sat_update_manifold(p2->normals[i], overlap, manifold);
+            sat_update_manifold(manifold, p2->normals[i], overlap);
     }
 
     return true;
 }
+
+typedef enum
+{
+    VORONOI_LEFT,
+    VORONOI_RIGHT,
+    VORONOI_MIDDLE
+} sat_voronoi_region_t;
+
+sat_voronoi_region_t sat_voronoi_region(pm_v2 point, pm_v2 line)
+{
+    pm_float len2 = pm_v2_len2(line);
+    pm_float dot  = pm_v2_dot(point, line);
+
+    if (dot < 0.0f)
+        return VORONOI_LEFT;
+    else if (dot > len2)
+        return VORONOI_RIGHT;
+    else
+        return VORONOI_MIDDLE;
+}
+
+
 
 bool sat_test_poly_circle(const sat_poly_t* p,
                           const sat_circle_t* c,
@@ -226,67 +248,84 @@ bool sat_test_poly_circle(const sat_poly_t* p,
         manifold->normal  = pm_v2_zero();
     }
 
-    bool contact = false;
+    pm_float radius2 = c->radius * c->radius;
 
     int count = p->vertex_count;
 
     for (int i = 0; i < count; i++)
     {
-        pm_float dist = pm_v2_dist(p->vertices[i], c->pos);
-
-        if (dist < c->radius)
-        {
-            contact = true;
-
-            if (manifold)
-            {
-                pm_float overlap = pm_clamp(c->radius - dist, 0.0f, c->radius);
-                pm_v2 normal = pm_v2_zero();
-
-                if (pm_equal(dist, 0.0f))
-                {
-                    int prev = (i - 1) <= 0 ? count - 1 : i - 1;
-
-                    pm_v2 n1 = p->normals[prev];
-                    pm_v2 n2 = p->normals[i];
-                    pm_v2 avg = pm_v2_scale(pm_v2_add(n1, n2), 0.5f);
-
-                    normal = pm_v2_normalize(avg);
-                }
-                else
-                {
-                    normal = pm_v2_normalize(pm_v2_sub(c->pos, p->vertices[i]));
-                }
-
-                sat_update_manifold(normal, overlap, manifold);
-            }
-        }
-    }
-
-    pm_float t = 0;
-
-    for (int i = 0; i < count; i++)
-    {
         int next = (i + 1) == count ? 0 : i + 1;
+        int prev = (i - 1) <= 0 ? count - 1 : i - 1;
 
-        pm_v2 v = sat_ortho_projection(c->pos, p->vertices[i], p->vertices[next], &t);
+        pm_v2 normal = pm_v2_zero();
+        pm_float overlap = FLT_MAX;
 
-        pm_float dist = pm_v2_dist(v, c->pos);
+        pm_v2 edge = p->edges[i];
+        pm_v2 point = pm_v2_sub(c->pos, p->vertices[i]);
 
-        if (0.0 < t && t < 1.0 && dist < c->radius)
+        sat_voronoi_region_t region = sat_voronoi_region(point, edge);
+
+        if (region == VORONOI_LEFT)
         {
-            contact = true;
+            pm_v2 point2 = pm_v2_sub(c->pos, p->vertices[prev]);
+            edge = p->edges[prev];
 
-            if (manifold)
+            region = sat_voronoi_region(point2, edge);
+
+            if (region == VORONOI_RIGHT)
             {
-                pm_float overlap = pm_clamp(c->radius - dist, 0.0f, c->radius);
-                pm_v2 normal = p->normals[i];
-                sat_update_manifold(normal, overlap, manifold);
+                pm_float diff2 = pm_v2_len2(point);
+
+                if (diff2 > radius2)
+                    return false;
+
+                if (manifold)
+                {
+                    pm_float diff = pm_sqrt(diff2);
+                    overlap = c->radius - diff;
+                    normal = pm_v2_normalize(point);
+                }
             }
         }
+        else if (region == VORONOI_RIGHT)
+        {
+            pm_v2 point2 = pm_v2_sub(c->pos, p->vertices[next]);
+            edge = p->edges[next];
+
+            region = sat_voronoi_region(point2, edge);
+
+            if (region == VORONOI_LEFT)
+            {
+                pm_float diff2 = pm_v2_len2(point);
+
+                if (diff2 > radius2)
+                    return false;
+
+                if (manifold)
+                {
+                    pm_float diff = pm_sqrt(diff2);
+                    overlap = c->radius - diff;
+                    normal = pm_v2_normalize(point);
+                }
+            }
+        }
+        else // VORONOI_MIDDLE
+        {
+            normal = pm_v2_normalize(pm_v2_perp(edge));
+            pm_float diff = pm_v2_dot(normal, point);
+            pm_float abs_diff = pm_abs(diff);
+
+            if (diff > 0.0f && abs_diff > c->radius)
+                return false;
+
+            overlap = c->radius - diff;
+        }
+
+        if (manifold)
+            sat_update_manifold(manifold, normal, overlap);
     }
 
-    return contact;
+    return true;
 }
 
 #endif // PICO_SAT_IMPLEMENTATION

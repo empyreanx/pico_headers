@@ -52,7 +52,7 @@ PU_TEST(test_aabb_circle_collide)
     PU_ASSERT(sat_test_poly_circle(&p, &c1, &manifold));
     PU_ASSERT(sat_test_poly_circle(&p, &c2, &manifold));
 
-    printf("n.x: %f, n.y: %f, overlap: %f\n", manifold.normal.x, manifold.normal.y, manifold.overlap);
+    //printf("\nn.x: %f, n.y: %f, overlap: %f\n", manifold.normal.x, manifold.normal.y, manifold.overlap);
 
     return true;
 }
