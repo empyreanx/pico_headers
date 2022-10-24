@@ -36,6 +36,7 @@ typedef struct
 {
     pm_v2    normal;
     pm_float overlap;
+    pm_v2    vector;
 } sat_manifold_t;
 
 //later
@@ -162,6 +163,7 @@ void sat_init_manifold(sat_manifold_t* manifold)
 {
     manifold->overlap = FLT_MAX;
     manifold->normal  = pm_v2_zero();
+    manifold->vector  = pm_v2_zero();
 }
 
 void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overlap)
@@ -176,6 +178,8 @@ void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overla
             manifold->normal = pm_v2_neg(normal);
         else if (overlap > 0.0f)
             manifold->normal = normal;
+
+        manifold->vector = pm_v2_scale(manifold->normal, manifold->overlap);
     }
 }
 
