@@ -135,7 +135,7 @@ sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
         pm_v2 v1 = vertices[i];
         pm_v2 v2 = vertices[next];
         poly.edges[i] = pm_v2_sub(v2, v1);
-        poly.normals[i] = pm_v2_neg(pm_v2_perp(poly.edges[i]));
+        poly.normals[i] = pm_v2_perp(poly.edges[i]);
         poly.normals[i] = pm_v2_normalize(poly.normals[i]);
     }
 
@@ -324,7 +324,7 @@ bool sat_test_poly_circle(const sat_poly_t* p,
         }
         else // SAT_VORONOI_MIDDLE
         {
-            normal = pm_v2_normalize(pm_v2_perp(edge));
+            normal = p->normals[i];
             pm_float diff = pm_v2_dot(normal, point);
             pm_float abs_diff = pm_abs(diff);
 
