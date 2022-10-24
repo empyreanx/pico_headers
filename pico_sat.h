@@ -47,20 +47,20 @@ sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius);
 sat_poly_t sat_make_polygon(int vertex_count, pm_v2 vertices[]);
 sat_poly_t sat_aabb_to_poly(const pm_b2* aabb);
 
-bool sat_test_poly_poly(const sat_poly_t* p1,
-                        const sat_poly_t* p2,
+bool sat_test_poly_poly(const sat_poly_t* poly1,
+                        const sat_poly_t* poly2,
                         sat_manifold_t* manifold);
 
-bool sat_test_circle_poly(const sat_circle_t* c,
-                          const sat_poly_t* p,
+bool sat_test_circle_poly(const sat_circle_t* circle,
+                          const sat_poly_t* poly,
                           sat_manifold_t* manifold);
 
-bool sat_test_poly_circle(const sat_poly_t* p,
-                          const sat_circle_t* c,
+bool sat_test_poly_circle(const sat_poly_t* poly,
+                          const sat_circle_t* circle,
                           sat_manifold_t* manifold);
 
-bool sat_test_circle_circle(const sat_circle_t* c1,
-                            const sat_circle_t* c2,
+bool sat_test_circle_circle(const sat_circle_t* circle1,
+                            const sat_circle_t* circle2,
                             sat_manifold_t* manifold);
 
 #endif // PICO_SAT_H
@@ -88,16 +88,16 @@ void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
     range[1] = max;
 }
 
-pm_float sat_axis_overlap(const sat_poly_t* p1,
-                          const sat_poly_t* p2,
+pm_float sat_axis_overlap(const sat_poly_t* poly1,
+                          const sat_poly_t* poly2,
                           pm_v2 axis)
 
 {
     pm_float range1[2];
     pm_float range2[2];
 
-    sat_axis_range(p1, axis, range1);
-    sat_axis_range(p2, axis, range2);
+    sat_axis_range(poly1, axis, range1);
+    sat_axis_range(poly2, axis, range2);
 
     if (range1[1] < range2[0] || range2[1] < range1[0])
         return 0.0f;
@@ -183,13 +183,13 @@ void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overla
     }
 }
 
-bool sat_test_circle_circle(const sat_circle_t* c1,
-                            const sat_circle_t* c2,
+bool sat_test_circle_circle(const sat_circle_t* circle1,
+                            const sat_circle_t* circle2,
                             sat_manifold_t* manifold)
 {
-    pm_v2 diff = pm_v2_sub(c2->pos, c1->pos);
+    pm_v2 diff = pm_v2_sub(circle2->pos, circle1->pos);
     pm_float dist2 = pm_v2_len2(diff);
-    pm_float total_radius = c1->radius + c2->radius;
+    pm_float total_radius = circle1->radius + circle2->radius;
     pm_float total_radius2 = total_radius;
 
     if (dist2 > total_radius2)
@@ -206,33 +206,33 @@ bool sat_test_circle_circle(const sat_circle_t* c1,
     return true;
 }
 
-bool sat_test_poly_poly(const sat_poly_t* p1,
-                        const sat_poly_t* p2,
+bool sat_test_poly_poly(const sat_poly_t* poly1,
+                        const sat_poly_t* poly2,
                         sat_manifold_t* manifold)
 {
     if (manifold)
         sat_init_manifold(manifold);
 
-    for (int i = 0; i < p1->vertex_count; i++)
+    for (int i = 0; i < poly1->vertex_count; i++)
     {
-        pm_float overlap = sat_axis_overlap(p1, p2, p1->normals[i]);
+        pm_float overlap = sat_axis_overlap(poly1, poly2, poly1->normals[i]);
 
         if (overlap == 0.0f)
             return false;
 
         if (manifold)
-            sat_update_manifold(manifold, p2->normals[i], overlap);
+            sat_update_manifold(manifold, poly2->normals[i], overlap);
     }
 
-    for (int i = 0; i < p2->vertex_count; i++)
+    for (int i = 0; i < poly2->vertex_count; i++)
     {
-        pm_float overlap = sat_axis_overlap(p2, p1, p2->normals[i]);
+        pm_float overlap = sat_axis_overlap(poly2, poly1, poly2->normals[i]);
 
         if (overlap == 0.0f)
             return false;
 
         if (manifold)
-            sat_update_manifold(manifold, p2->normals[i], overlap);
+            sat_update_manifold(manifold, poly2->normals[i], overlap);
     }
 
     return true;
@@ -258,16 +258,16 @@ sat_voronoi_region_t sat_voronoi_region(pm_v2 point, pm_v2 line)
         return SAT_VORONOI_MIDDLE;
 }
 
-bool sat_test_poly_circle(const sat_poly_t* p,
-                          const sat_circle_t* c,
+bool sat_test_poly_circle(const sat_poly_t* poly,
+                          const sat_circle_t* circle,
                           sat_manifold_t* manifold)
 {
     if (manifold)
         sat_init_manifold(manifold);
 
-    pm_float radius2 = c->radius * c->radius;
+    pm_float radius2 = circle->radius * circle->radius;
 
-    int count = p->vertex_count;
+    int count = poly->vertex_count;
 
     for (int i = 0; i < count; i++)
     {
@@ -277,15 +277,15 @@ bool sat_test_poly_circle(const sat_poly_t* p,
         pm_v2 normal = pm_v2_zero();
         pm_float overlap = FLT_MAX;
 
-        pm_v2 edge = p->edges[i];
-        pm_v2 point = pm_v2_sub(c->pos, p->vertices[i]);
+        pm_v2 edge = poly->edges[i];
+        pm_v2 point = pm_v2_sub(circle->pos, poly->vertices[i]);
 
         sat_voronoi_region_t region = sat_voronoi_region(point, edge);
 
         if (region == SAT_VORONOI_LEFT)
         {
-            pm_v2 point2 = pm_v2_sub(c->pos, p->vertices[prev]);
-            edge = p->edges[prev];
+            pm_v2 point2 = pm_v2_sub(circle->pos, poly->vertices[prev]);
+            edge = poly->edges[prev];
 
             region = sat_voronoi_region(point2, edge);
 
@@ -299,15 +299,15 @@ bool sat_test_poly_circle(const sat_poly_t* p,
                 if (manifold)
                 {
                     pm_float diff = pm_sqrt(diff2);
-                    overlap = c->radius - diff;
+                    overlap = circle->radius - diff;
                     normal = pm_v2_normalize(point);
                 }
             }
         }
         else if (region == SAT_VORONOI_RIGHT)
         {
-            pm_v2 point2 = pm_v2_sub(c->pos, p->vertices[next]);
-            edge = p->edges[next];
+            pm_v2 point2 = pm_v2_sub(circle->pos, poly->vertices[next]);
+            edge = poly->edges[next];
 
             region = sat_voronoi_region(point2, edge);
 
@@ -321,21 +321,21 @@ bool sat_test_poly_circle(const sat_poly_t* p,
                 if (manifold)
                 {
                     pm_float diff = pm_sqrt(diff2);
-                    overlap = c->radius - diff;
+                    overlap = circle->radius - diff;
                     normal = pm_v2_normalize(point);
                 }
             }
         }
         else // SAT_VORONOI_MIDDLE
         {
-            normal = p->normals[i];
+            normal = poly->normals[i];
             pm_float diff = pm_v2_dot(normal, point);
             pm_float abs_diff = pm_abs(diff);
 
-            if (diff > 0.0f && abs_diff > c->radius)
+            if (diff > 0.0f && abs_diff > circle->radius)
                 return false;
 
-            overlap = c->radius - diff;
+            overlap = circle->radius - diff;
         }
 
         if (manifold)
