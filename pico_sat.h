@@ -345,5 +345,20 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
     return true;
 }
 
+bool sat_test_circle_poly(const sat_circle_t* circle,
+                          const sat_poly_t* poly,
+                          sat_manifold_t* manifold)
+{
+    bool collides = sat_test_poly_circle(poly, circle, (manifold) ? manifold : NULL);
+
+    if (manifold)
+    {
+        manifold->normal = pm_v2_neg(manifold->normal);
+        manifold->vector = pm_v2_neg(manifold->vector);
+    }
+
+    return collides;
+}
+
 #endif // PICO_SAT_IMPLEMENTATION
 
