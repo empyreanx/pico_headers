@@ -142,6 +142,11 @@ PU_TEST(test_circle_cicle_collide)
 
 PU_TEST(test_circle_cicle_not_collide)
 {
+    sat_circle_t c1 = sat_make_circle(pm_v2_make(5, 5), 2.0);
+    sat_circle_t c2 = sat_make_circle(pm_v2_make(2, 5), 1.0);
+
+    PU_ASSERT(!sat_test_circle_circle(&c1, &c2, NULL));
+
     return true;
 }
 

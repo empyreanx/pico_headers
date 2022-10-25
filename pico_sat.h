@@ -195,7 +195,7 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
     pm_float total_radius = circle1->radius + circle2->radius;
     pm_float total_radius2 = total_radius * total_radius;
 
-    if (dist2 > total_radius2)
+    if (dist2 >= total_radius2)
         return false;
 
     if (manifold)
