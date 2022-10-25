@@ -18,7 +18,7 @@
 #define PICO_SAT_MAX_POLY_VERTS 8
 #endif
 
-//later
+//Later
 //pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
 //pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
 
@@ -45,7 +45,7 @@ typedef struct
 
 /**
  * @brief A collision manifold
- * Provides information about a given collision
+ * Provides information about a collision
  */
 typedef struct
 {
@@ -55,28 +55,67 @@ typedef struct
 } sat_manifold_t;
 
 /**
- * @brief Convenience method to initialize circle
- * @param pos Circle center
+ * @brief Initializes a circle
+ * @param pos    Circle center
  * @param radius Circle radius
  */
 sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius);
 
-
+/**
+ * @brief Initializes a polygon
+ * @param vertex_count The number of vertices of the polygon
+ * @param vertices     The vertices of the polygon (must use CCW winding)
+ * @returns The polygon with the given vertices
+ */
 sat_poly_t sat_make_polygon(int vertex_count, pm_v2 vertices[]);
+
+/**
+ * @brief Converts and axis-aligned bounding box (AABB) to a polygon
+ * @brief aabb The AABB
+ * @returns the AABB as a polygon
+ */
 sat_poly_t sat_aabb_to_poly(const pm_b2* aabb);
 
+/**
+ * @brief Tests to see if one polygon overlaps with another
+ * @param poly1    The colliding polygon
+ * @param poly2    The target polygon
+ * @param manifold The collision information (or NULL)
+ * @returns True if the polygons overlap and false otherwise
+ */
 bool sat_test_poly_poly(const sat_poly_t* poly1,
                         const sat_poly_t* poly2,
                         sat_manifold_t* manifold);
 
-bool sat_test_circle_poly(const sat_circle_t* circle,
-                          const sat_poly_t* poly,
-                          sat_manifold_t* manifold);
-
+/**
+ * @brief Tests to see if a polygon overlaps a circle
+ * @param poly     The colliding polygon
+ * @param circle   The target circle
+ * @param manifold The collision information (or NULL)
+ * @returns True if the polygon and circle overlap, and false otherwise
+ */
 bool sat_test_poly_circle(const sat_poly_t* poly,
                           const sat_circle_t* circle,
                           sat_manifold_t* manifold);
 
+/**
+ * @brief Tests to see if a circle overlaps a polygon
+ * @param circle   The colliding circle
+ * @param poly     The target polygon
+ * @param manifold The collision information (or NULL)
+ * @returns True if the circle overlaps the polygon, and false otherwise
+ */
+bool sat_test_circle_poly(const sat_circle_t* circle,
+                          const sat_poly_t* poly,
+                          sat_manifold_t* manifold);
+
+/**
+ * @brief Tests to see if two circles overlap
+ * @param circle1  The colliding circle
+ * @param circle2  The target circle
+ * @param manifold The collision information (or NULL)
+ * @returns True if the circle the other circle, and false otherwise
+ */
 bool sat_test_circle_circle(const sat_circle_t* circle1,
                             const sat_circle_t* circle2,
                             sat_manifold_t* manifold);
