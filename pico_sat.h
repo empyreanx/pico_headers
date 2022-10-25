@@ -1,5 +1,5 @@
 /*
-    @file pico_unit.h
+    @file pico_sat.h
     @brief Separating Axis Test (SAT) written in C99.
 
     ----------------------------------------------------------------------------
@@ -18,32 +18,50 @@
 #define PICO_SAT_MAX_POLY_VERTS 8
 #endif
 
-typedef struct
-{
-    pm_v2  pos;
-    pm_float radius;
-} sat_circle_t;
-
-typedef struct
-{
-    int   vertex_count;
-    pm_v2 vertices[PICO_SAT_MAX_POLY_VERTS];
-    pm_v2 normals[PICO_SAT_MAX_POLY_VERTS];
-    pm_v2 edges[PICO_SAT_MAX_POLY_VERTS];
-} sat_poly_t;
-
-typedef struct
-{
-    pm_v2    normal;
-    pm_float overlap;
-    pm_v2    vector;
-} sat_manifold_t;
-
 //later
 //pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
 //pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
 
+/**
+ * @brief A circle shape
+ */
+typedef struct
+{
+    pm_v2  pos;      //!< Center of circle
+    pm_float radius; //!< Radius of the circle
+} sat_circle_t;
+
+/**
+ * @brief A polygon shape
+ * Must use CCW (counter-clockwise) winding
+ */
+typedef struct
+{
+    int   vertex_count;                      //!< Number of vertices in polygon
+    pm_v2 vertices[PICO_SAT_MAX_POLY_VERTS]; //!< Polygon vertices
+    pm_v2 normals[PICO_SAT_MAX_POLY_VERTS];  //!< Polygon face normals
+    pm_v2 edges[PICO_SAT_MAX_POLY_VERTS];    //!< Edges of polygon
+} sat_poly_t;
+
+/**
+ * @brief A collision manifold
+ * Provides information about a given collision
+ */
+typedef struct
+{
+    pm_v2    normal;  //!< Normal to colliding edge (in direction of MTV)
+    pm_float overlap; //!< Amount of overlap between two shapes along colliding axis (MTD)
+    pm_v2    vector;  //!< Vector defined by `vector = normal * overlap`
+} sat_manifold_t;
+
+/**
+ * @brief Convenience method to initialize circle
+ * @param pos Circle center
+ * @param radius Circle radius
+ */
 sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius);
+
+
 sat_poly_t sat_make_polygon(int vertex_count, pm_v2 vertices[]);
 sat_poly_t sat_aabb_to_poly(const pm_b2* aabb);
 
