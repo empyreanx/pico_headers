@@ -187,10 +187,13 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
                             const sat_circle_t* circle2,
                             sat_manifold_t* manifold)
 {
+    if (manifold)
+        sat_init_manifold(manifold);
+
     pm_v2 diff = pm_v2_sub(circle2->pos, circle1->pos);
     pm_float dist2 = pm_v2_len2(diff);
     pm_float total_radius = circle1->radius + circle2->radius;
-    pm_float total_radius2 = total_radius;
+    pm_float total_radius2 = total_radius * total_radius;
 
     if (dist2 > total_radius2)
         return false;

@@ -124,12 +124,35 @@ PU_TEST(test_aabb_circle_not_collide)
     return true;
 }
 
+PU_TEST(test_circle_cicle_collide)
+{
+    sat_circle_t c1 = sat_make_circle(pm_v2_make(5, 5), 2.0);
+    sat_circle_t c2 = sat_make_circle(pm_v2_make(3, 5), 1.0);
+
+    sat_manifold_t manifold;
+
+    PU_ASSERT(sat_test_circle_circle(&c1, &c2, &manifold));
+
+    PU_ASSERT(pm_equal(manifold.overlap, 1));
+    PU_ASSERT(pm_v2_equal(manifold.normal, pm_v2_make(-1, 0)));
+    PU_ASSERT(pm_v2_equal(manifold.vector, pm_v2_make(-1, 0)));
+
+    return true;
+}
+
+PU_TEST(test_circle_cicle_not_collide)
+{
+    return true;
+}
+
 static PU_SUITE(suite_sat)
 {
     PU_RUN_TEST(test_aabb_aabb_collide);
     PU_RUN_TEST(test_aabb_aabb_not_collide);
     PU_RUN_TEST(test_aabb_circle_collide);
     PU_RUN_TEST(test_aabb_circle_not_collide);
+    PU_RUN_TEST(test_circle_cicle_collide);
+    PU_RUN_TEST(test_circle_cicle_not_collide);
 }
 
 int main()
