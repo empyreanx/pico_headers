@@ -226,6 +226,7 @@ sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius)
 sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
 {
     SAT_ASSERT(vertex_count <= PICO_SAT_MAX_POLY_VERTS);
+    SAT_ASSERT(vertices);
 
     sat_poly_t poly;
 
@@ -252,6 +253,8 @@ sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
 
 sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
 {
+    SAT_ASSERT(aabb);
+
     pm_v2 pos = pm_b2_pos(aabb);
     pm_v2 size = pm_b2_size(aabb);
 
@@ -266,36 +269,13 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
     return sat_make_poly(4, vertices);
 }
 
-bool sat_test_circle_circle(const sat_circle_t* circle1,
-                            const sat_circle_t* circle2,
-                            sat_manifold_t* manifold)
-{
-    if (manifold)
-        sat_init_manifold(manifold);
-
-    pm_v2 diff = pm_v2_sub(circle2->pos, circle1->pos);
-    pm_float dist2 = pm_v2_len2(diff);
-    pm_float total_radius = circle1->radius + circle2->radius;
-    pm_float total_radius2 = total_radius * total_radius;
-
-    if (dist2 >= total_radius2)
-        return false;
-
-    if (manifold)
-    {
-        pm_float dist = pm_sqrt(dist2);
-        pm_float overlap = total_radius - dist;
-        pm_v2 normal = pm_v2_normalize(diff);
-        sat_update_manifold(manifold, normal, overlap);
-    }
-
-    return true;
-}
-
 bool sat_test_poly_poly(const sat_poly_t* poly1,
                         const sat_poly_t* poly2,
                         sat_manifold_t* manifold)
 {
+    SAT_ASSERT(poly1);
+    SAT_ASSERT(poly2);
+
     if (manifold)
         sat_init_manifold(manifold);
 
@@ -328,6 +308,9 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
                           const sat_circle_t* circle,
                           sat_manifold_t* manifold)
 {
+    SAT_ASSERT(poly);
+    SAT_ASSERT(circle);
+
     if (manifold)
         sat_init_manifold(manifold);
 
@@ -415,6 +398,9 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
                           const sat_poly_t* poly,
                           sat_manifold_t* manifold)
 {
+    SAT_ASSERT(poly);
+    SAT_ASSERT(circle);
+
     bool collides = sat_test_poly_circle(poly, circle, (manifold) ? manifold : NULL);
 
     if (manifold)
@@ -426,12 +412,43 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
     return collides;
 }
 
+bool sat_test_circle_circle(const sat_circle_t* circle1,
+                            const sat_circle_t* circle2,
+                            sat_manifold_t* manifold)
+{
+    SAT_ASSERT(circle1);
+    SAT_ASSERT(circle2);
+
+    if (manifold)
+        sat_init_manifold(manifold);
+
+    pm_v2 diff = pm_v2_sub(circle2->pos, circle1->pos);
+    pm_float dist2 = pm_v2_len2(diff);
+    pm_float total_radius = circle1->radius + circle2->radius;
+    pm_float total_radius2 = total_radius * total_radius;
+
+    if (dist2 >= total_radius2)
+        return false;
+
+    if (manifold)
+    {
+        pm_float dist = pm_sqrt(dist2);
+        pm_float overlap = total_radius - dist;
+        pm_v2 normal = pm_v2_normalize(diff);
+        sat_update_manifold(manifold, normal, overlap);
+    }
+
+    return true;
+}
+
 /*=============================================================================
  * Internal function definitions
  *============================================================================*/
 
 static void sat_init_manifold(sat_manifold_t* manifold)
 {
+    SAT_ASSERT(manifold);
+
     manifold->overlap = FLT_MAX;
     manifold->normal  = pm_v2_zero();
     manifold->vector  = pm_v2_zero();
@@ -439,6 +456,8 @@ static void sat_init_manifold(sat_manifold_t* manifold)
 
 static void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overlap)
 {
+    SAT_ASSERT(manifold);
+
     pm_float abs_overlap = pm_abs(overlap);
 
     if (abs_overlap < manifold->overlap)
@@ -456,6 +475,9 @@ static void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float
 
 static void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
 {
+    SAT_ASSERT(poly);
+    SAT_ASSERT(range);
+
     pm_float dot = pm_v2_dot(poly->vertices[0], normal);
     pm_float min = dot;
     pm_float max = dot;
@@ -480,6 +502,9 @@ static pm_float sat_axis_overlap(const sat_poly_t* poly1,
                                  pm_v2 axis)
 
 {
+    SAT_ASSERT(poly1);
+    SAT_ASSERT(poly2);
+
     pm_float range1[2];
     pm_float range2[2];
 
