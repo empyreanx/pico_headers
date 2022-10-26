@@ -5,6 +5,11 @@
     ----------------------------------------------------------------------------
     Licensing information at end of header
     ----------------------------------------------------------------------------
+
+    Later:
+    pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
+    pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
+
 */
 
 #ifndef PICO_SAT_H
@@ -14,13 +19,14 @@
 
 #include "pico_math.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Maximum number of vertices in a polygon
 #ifndef PICO_SAT_MAX_POLY_VERTS
 #define PICO_SAT_MAX_POLY_VERTS 8
 #endif
-
-//Later
-//pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
-//pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
 
 /**
  * @brief A circle shape
@@ -120,50 +126,47 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
                             const sat_circle_t* circle2,
                             sat_manifold_t* manifold);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif // PICO_SAT_H
 
-#ifdef PICO_SAT_IMPLEMENTATION
+#ifdef PICO_SAT_IMPLEMENTATION // Define once
 
-void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
+#ifdef NDEBUG
+    #define PICO_SAT_ASSERT(expr) ((void)0)
+#else
+    #ifndef PICO_SAT_ASSERT
+        #include <assert.h>
+        #define PICO_SAT_ASSERT(expr) (assert(expr))
+    #endif
+#endif
+
+#define SAT_ASSERT PICO_SAT_ASSERT
+
+/*=============================================================================
+ * Internal function declarations
+ *============================================================================*/
+
+static void sat_init_manifold(sat_manifold_t* manifold);
+static void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overlap);
+
+static void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2]);
+static pm_float sat_axis_overlap(const sat_poly_t* poly1, const sat_poly_t* poly2, pm_v2 axis);
+
+typedef enum
 {
-    pm_float dot = pm_v2_dot(poly->vertices[0], normal);
-    pm_float min = dot;
-    pm_float max = dot;
+    SAT_VORONOI_LEFT,
+    SAT_VORONOI_RIGHT,
+    SAT_VORONOI_MIDDLE
+} sat_voronoi_region_t;
 
-    for (int i = 1; i < poly->vertex_count; i++)
-    {
-        dot = pm_v2_dot(poly->vertices[i], normal);
+static sat_voronoi_region_t sat_voronoi_region(pm_v2 point, pm_v2 line);
 
-        if (dot < min)
-            min = dot;
-
-        if (dot > max)
-            max = dot;
-    }
-
-    range[0] = min;
-    range[1] = max;
-}
-
-pm_float sat_axis_overlap(const sat_poly_t* poly1,
-                          const sat_poly_t* poly2,
-                          pm_v2 axis)
-
-{
-    pm_float range1[2];
-    pm_float range2[2];
-
-    sat_axis_range(poly1, axis, range1);
-    sat_axis_range(poly2, axis, range2);
-
-    if (range1[1] < range2[0] || range2[1] < range1[0])
-        return 0.0f;
-
-    pm_float overlap1 = range1[1] - range2[0];
-    pm_float overlap2 = range2[1] - range1[0];
-
-    return (overlap2 > overlap1) ? overlap1 : -overlap2;
-}
+/*=============================================================================
+ * Public API implementation
+ *============================================================================*/
 
 sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius)
 {
@@ -175,7 +178,7 @@ sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius)
 
 sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
 {
-    //assert(vertex_count <= PICO_SAT_MAX_POLY_VERTS);
+    SAT_ASSERT(vertex_count <= PICO_SAT_MAX_POLY_VERTS);
 
     sat_poly_t poly;
 
@@ -214,30 +217,6 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
     };
 
     return sat_make_poly(4, vertices);
-}
-
-void sat_init_manifold(sat_manifold_t* manifold)
-{
-    manifold->overlap = FLT_MAX;
-    manifold->normal  = pm_v2_zero();
-    manifold->vector  = pm_v2_zero();
-}
-
-void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overlap)
-{
-    pm_float abs_overlap = pm_abs(overlap);
-
-    if (abs_overlap < manifold->overlap)
-    {
-        manifold->overlap = abs_overlap;
-
-        if (overlap < 0.0f)
-            manifold->normal = pm_v2_neg(normal);
-        else if (overlap > 0.0f)
-            manifold->normal = normal;
-
-        manifold->vector = pm_v2_scale(manifold->normal, manifold->overlap);
-    }
 }
 
 bool sat_test_circle_circle(const sat_circle_t* circle1,
@@ -296,26 +275,6 @@ bool sat_test_poly_poly(const sat_poly_t* poly1,
     }
 
     return true;
-}
-
-typedef enum
-{
-    SAT_VORONOI_LEFT,
-    SAT_VORONOI_RIGHT,
-    SAT_VORONOI_MIDDLE
-} sat_voronoi_region_t;
-
-sat_voronoi_region_t sat_voronoi_region(pm_v2 point, pm_v2 line)
-{
-    pm_float len2 = pm_v2_len2(line);
-    pm_float dot  = pm_v2_dot(point, line);
-
-    if (dot < 0.0f)
-        return SAT_VORONOI_LEFT;
-    else if (dot > len2)
-        return SAT_VORONOI_RIGHT;
-    else
-        return SAT_VORONOI_MIDDLE;
 }
 
 bool sat_test_poly_circle(const sat_poly_t* poly,
@@ -418,6 +377,88 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
     }
 
     return collides;
+}
+
+/*=============================================================================
+ * Internal function definitions
+ *============================================================================*/
+
+static void sat_init_manifold(sat_manifold_t* manifold)
+{
+    manifold->overlap = FLT_MAX;
+    manifold->normal  = pm_v2_zero();
+    manifold->vector  = pm_v2_zero();
+}
+
+static void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overlap)
+{
+    pm_float abs_overlap = pm_abs(overlap);
+
+    if (abs_overlap < manifold->overlap)
+    {
+        manifold->overlap = abs_overlap;
+
+        if (overlap < 0.0f)
+            manifold->normal = pm_v2_neg(normal);
+        else if (overlap > 0.0f)
+            manifold->normal = normal;
+
+        manifold->vector = pm_v2_scale(manifold->normal, manifold->overlap);
+    }
+}
+
+static void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2])
+{
+    pm_float dot = pm_v2_dot(poly->vertices[0], normal);
+    pm_float min = dot;
+    pm_float max = dot;
+
+    for (int i = 1; i < poly->vertex_count; i++)
+    {
+        dot = pm_v2_dot(poly->vertices[i], normal);
+
+        if (dot < min)
+            min = dot;
+
+        if (dot > max)
+            max = dot;
+    }
+
+    range[0] = min;
+    range[1] = max;
+}
+
+static pm_float sat_axis_overlap(const sat_poly_t* poly1,
+                                 const sat_poly_t* poly2,
+                                 pm_v2 axis)
+
+{
+    pm_float range1[2];
+    pm_float range2[2];
+
+    sat_axis_range(poly1, axis, range1);
+    sat_axis_range(poly2, axis, range2);
+
+    if (range1[1] < range2[0] || range2[1] < range1[0])
+        return 0.0f;
+
+    pm_float overlap1 = range1[1] - range2[0];
+    pm_float overlap2 = range2[1] - range1[0];
+
+    return (overlap2 > overlap1) ? overlap1 : -overlap2;
+}
+
+static sat_voronoi_region_t sat_voronoi_region(pm_v2 point, pm_v2 line)
+{
+    pm_float len2 = pm_v2_len2(line);
+    pm_float dot  = pm_v2_dot(point, line);
+
+    if (dot < 0.0f)
+        return SAT_VORONOI_LEFT;
+    else if (dot > len2)
+        return SAT_VORONOI_RIGHT;
+    else
+        return SAT_VORONOI_MIDDLE;
 }
 
 #endif // PICO_SAT_IMPLEMENTATION
