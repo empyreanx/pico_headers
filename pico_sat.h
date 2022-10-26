@@ -190,18 +190,25 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
     #endif
 #endif
 
-#define SAT_ASSERT PICO_SAT_ASSERT
+#define SAT_ASSERT PICO_SAT_ASSERT // Alias
 
 /*=============================================================================
  * Internal function declarations
  *============================================================================*/
 
+// Initializes a manifold
 static void sat_init_manifold(sat_manifold_t* manifold);
+
+// Updates manifold if requried
 static void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overlap);
 
+// Determines the polygon's limits when projected onto the normal vector
 static void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2]);
+
+// Determines the amount overlap of the polygons along the specified axis
 static pm_float sat_axis_overlap(const sat_poly_t* poly1, const sat_poly_t* poly2, pm_v2 axis);
 
+// Line Voronoi regions
 typedef enum
 {
     SAT_VORONOI_LEFT,
@@ -209,6 +216,7 @@ typedef enum
     SAT_VORONOI_MIDDLE
 } sat_voronoi_region_t;
 
+// Determines the Voronoi region the point falls into along the specified line
 static sat_voronoi_region_t sat_voronoi_region(pm_v2 point, pm_v2 line);
 
 /*=============================================================================
