@@ -1,15 +1,62 @@
 /*
     @file pico_sat.h
-    @brief Separating Axis Test (SAT) written in C99.
+    @brief Separating Axis Theorem (SAT) Tests written in C99.
 
     ----------------------------------------------------------------------------
     Licensing information at end of header
     ----------------------------------------------------------------------------
 
+    Features:
+    ---------
+    - Written in ANSI C
+    - Single header library for easy build system integration
+    - Tests overlaps for AABBs, polygons, circles using SAT
+    - Provides collision information including the normal and amount of overlap
+    - Perissive license (MIT)
+
+    Summary:
+    --------
+    The Separating Axis Theorem roughly states that two convex shapes do not
+    intersect if there is no axis separating the two. In the case of simple
+    shapes the theorem provides necessary and sufficient conditions. For
+    example, in the case of convex polygons, it is sufficient to test the axises
+    along the face-normals of the polygons.
+
+    SATs tests are reasonably efficient and are frequently used as static,
+    narrow phase, collision tests in games.
+
+    This library provides SAT tests for polygons, AABBs (which are, or course,
+    polygons), and circles. Manifolds can be specified so that, in the case of
+    a collision, they will contain the collision face normal, overlap (minimum
+    translational distance), and a vector (minimum translational vector).
+
+    IMPORTANT: Polygons in this library use counter-clockwise (CCW) winding.
+
+    Usage:
+    ------
+
+    To use this library in your project, add the following
+
+    > #define PICO_SAT_IMPLEMENTATION
+    > #include "pico_sat.h"
+
+    to a source file (once), then simply include the header normally.
+
+    Dependencies:
+    -------------
+
+    This library depends on "pico_math.h", which must be in the include path.
+    You must also add
+
+    > #define PICO_MATH_IMPLEMENTATION
+    > #include "pico_math.h"
+
+    to the same or other source file (once).
+
     Later:
+    -----
     pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
     pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
-
 */
 
 #ifndef PICO_SAT_H
