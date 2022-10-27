@@ -20,15 +20,15 @@
     intersect if there is no axis separating the them. In the case of simple
     shapes the theorem provides necessary and sufficient conditions. For
     example, in the case of convex polygons, it is sufficient to test the axises
-    along the face-normals of the polygons.
+    along the face-normals of both polygons.
 
     SATs tests are reasonably efficient and are frequently used as static,
     narrow phase, collision tests in games.
 
     This library provides SAT tests for polygons, AABBs (which are, or course,
     polygons), and circles. Manifolds can be specified so that, in the case of
-    a collision, they will contain the collision face normal, overlap (minimum
-    translational distance), and a vector (minimum translational vector).
+    a collision, they will contain the colliding face normal, overlap (minimum
+    translational distance), and a vector (minimum translation vector).
 
     IMPORTANT: Polygons in this library use counter-clockwise (CCW) winding.
 
@@ -217,6 +217,11 @@ typedef enum
 } sat_voronoi_region_t;
 
 // Determines the Voronoi region the point falls into along the specified line
+//
+//            |       (0)      |
+//     (-1)  [L]--------------[R]  (1)
+//            |       (0)      |
+//
 static sat_voronoi_region_t sat_voronoi_region(pm_v2 point, pm_v2 line);
 
 /*=============================================================================
@@ -263,9 +268,11 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
 {
     SAT_ASSERT(aabb);
 
+    // Get AABB properties
     pm_v2 pos = pm_b2_pos(aabb);
     pm_v2 size = pm_b2_size(aabb);
 
+    // Specify AABB vertices using CCW winding
     pm_v2 vertices[] =
     {
         { pos.x, pos.y                   },
@@ -289,22 +296,28 @@ bool sat_test_poly_poly(const sat_poly_t* poly1,
 
     for (int i = 0; i < poly1->vertex_count; i++)
     {
+        // Get signed overlap of poly1 on poly2 along specified normal direction
         pm_float overlap = sat_axis_overlap(poly1, poly2, poly1->normals[i]);
 
+        // No overlap, axis is separating, polygons do not overlap
         if (overlap == 0.0f)
             return false;
 
+        // Update manifold information with new overlap and normal
         if (manifold)
             sat_update_manifold(manifold, poly2->normals[i], overlap);
     }
 
     for (int i = 0; i < poly2->vertex_count; i++)
     {
+        // Get signed overlap of poly2 on poly1 along specified normal direction
         pm_float overlap = sat_axis_overlap(poly2, poly1, poly2->normals[i]);
 
+        // No overlap, axis is separating, polygons do not overlap
         if (overlap == 0.0f)
             return false;
 
+        // Update manifold information with new overlap and normal
         if (manifold)
             sat_update_manifold(manifold, poly2->normals[i], overlap);
     }
