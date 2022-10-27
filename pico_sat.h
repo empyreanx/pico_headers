@@ -344,9 +344,6 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
         int next = (i + 1) == count ? 0 : i + 1;
         int prev = (i - 1) <= 0 ? count - 1 : i - 1;
 
-        pm_v2 normal = pm_v2_zero();
-        pm_float overlap = FLT_MAX;
-
         pm_v2 edge = poly->edges[i];
         pm_v2 point = pm_v2_sub(circle->pos, poly->vertices[i]);
 
@@ -369,8 +366,9 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
                 if (manifold)
                 {
                     pm_float diff = pm_sqrt(diff2);
-                    overlap = circle->radius - diff;
-                    normal = pm_v2_normalize(point);
+                    pm_float overlap = circle->radius - diff;
+                    pm_v2 normal = pm_v2_normalize(point);
+                    sat_update_manifold(manifold, normal, overlap);
                 }
             }
         }
@@ -391,25 +389,27 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
                 if (manifold)
                 {
                     pm_float diff = pm_sqrt(diff2);
-                    overlap = circle->radius - diff;
-                    normal = pm_v2_normalize(point);
+                    pm_float overlap = circle->radius - diff;
+                    pm_v2 normal = pm_v2_normalize(point);
+                    sat_update_manifold(manifold, normal, overlap);
                 }
             }
         }
         else // SAT_VORONOI_MIDDLE
         {
-            normal = poly->normals[i];
+            pm_v2 normal = poly->normals[i];
             pm_float diff = pm_v2_dot(normal, point);
             pm_float abs_diff = pm_abs(diff);
 
             if (diff > 0.0f && abs_diff > circle->radius)
                 return false;
 
-            overlap = circle->radius - diff;
+            if (manifold)
+            {
+                pm_float overlap = circle->radius - diff;
+                sat_update_manifold(manifold, normal, overlap);
+            }
         }
-
-        if (manifold)
-            sat_update_manifold(manifold, normal, overlap);
     }
 
     return true;
