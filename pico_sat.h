@@ -461,6 +461,7 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
 
     if (manifold)
     {
+        // Reversing the vectors is all that is required
         manifold->normal = pm_v2_neg(manifold->normal);
         manifold->vector = pm_v2_neg(manifold->vector);
     }
@@ -531,10 +532,13 @@ static void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float
 
     pm_float abs_overlap = pm_abs(overlap);
 
+    // Only update if the new overlap is smaller that the old one
     if (abs_overlap < manifold->overlap)
     {
+        // Update overlap (always positive)
         manifold->overlap = abs_overlap;
 
+        // If the overlap is less that zero the normal must be reversed
         if (overlap < 0.0f)
             manifold->normal = pm_v2_neg(normal);
         else if (overlap > 0.0f)
@@ -553,6 +557,7 @@ static void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[
     pm_float min = dot;
     pm_float max = dot;
 
+    // Find the minimum and maximum distance of the polygon along the normal
     for (int i = 1; i < poly->vertex_count; i++)
     {
         dot = pm_v2_dot(poly->vertices[i], normal);
@@ -564,6 +569,8 @@ static void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[
             max = dot;
     }
 
+    // The range defines the interval induced by the polygon projected onto the
+    // normal vector
     range[0] = min;
     range[1] = max;
 }
@@ -582,12 +589,15 @@ static pm_float sat_axis_overlap(const sat_poly_t* poly1,
     sat_axis_range(poly1, axis, range1);
     sat_axis_range(poly2, axis, range2);
 
+    // Ranges do not overlaps
     if (range1[1] < range2[0] || range2[1] < range1[0])
         return 0.0f;
 
+    // Calculate overlap candidates
     pm_float overlap1 = range1[1] - range2[0];
     pm_float overlap2 = range2[1] - range1[0];
 
+    // Return the smaller overlap
     return (overlap2 > overlap1) ? overlap1 : -overlap2;
 }
 
@@ -596,12 +606,12 @@ static sat_voronoi_region_t sat_voronoi_region(pm_v2 point, pm_v2 line)
     pm_float len2 = pm_v2_len2(line);
     pm_float dot  = pm_v2_dot(point, line);
 
-    if (dot < 0.0f)
+    if (dot < 0.0f)                 // Point is to the left of the line
         return SAT_VORONOI_LEFT;
-    else if (dot > len2)
+    else if (dot > len2)            // Point is to the right of the line
         return SAT_VORONOI_RIGHT;
     else
-        return SAT_VORONOI_MIDDLE;
+        return SAT_VORONOI_MIDDLE;  // Point is somewhere in the middle
 }
 
 #endif // PICO_SAT_IMPLEMENTATION
