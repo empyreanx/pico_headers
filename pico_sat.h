@@ -337,6 +337,11 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
 
     pm_float radius2 = circle->radius * circle->radius;
 
+    // The main idea behind this function is to classify the position of the
+    // circle according to the Voronoi region(s) it is part of using inexpensive
+    // checks. Essentially it efficiently narrows down the position of the
+    // circle so that the correct separating axis test can be invoked.
+
     int count = poly->vertex_count;
 
     for (int i = 0; i < count; i++)
@@ -344,13 +349,24 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
         int next = (i + 1) == count ? 0 : i + 1;
         int prev = (i - 1) <= 0 ? count - 1 : i - 1;
 
+        // Edge to test
         pm_v2 edge = poly->edges[i];
+
+        // Postion of circle relative to vertex
         pm_v2 point = pm_v2_sub(circle->pos, poly->vertices[i]);
 
+        // Find the Voronoi region of the point (circle relative to vertex)
+        // with respect to edge
         sat_voronoi_region_t region = sat_voronoi_region(point, edge);
 
+        // Test if point is in the left Voronoi region
         if (region == SAT_VORONOI_LEFT)
         {
+            // If it is, check if it is in the right Voronoi region of the
+            // previous edge. If this is the case, the circle is "sandwiched"
+            // in the intersection of the Voronoi regions defined by the
+            // endpoints of the edges.
+
             pm_v2 point2 = pm_v2_sub(circle->pos, poly->vertices[prev]);
             edge = poly->edges[prev];
 
@@ -358,20 +374,31 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
 
             if (region == SAT_VORONOI_RIGHT)
             {
+                // The circle center is in the left/right Voronoi region, so
+                // check to see if it intersects the vertex
                 pm_float diff2 = pm_v2_len2(point);
 
+                // Equivalent to diff > radius
                 if (diff2 > radius2)
                     return false;
 
                 if (manifold)
                 {
+                    // Calculate distance because we need it now
                     pm_float diff = pm_sqrt(diff2);
+
+                    // Calculate overlap
                     pm_float overlap = circle->radius - diff;
+
+                    // Normal direction is just the circle relative to the vertex
                     pm_v2 normal = pm_v2_normalize(point);
+
+                    // Update manifold
                     sat_update_manifold(manifold, normal, overlap);
                 }
             }
         }
+        // This case is symmetric to the above
         else if (region == SAT_VORONOI_RIGHT)
         {
             pm_v2 point2 = pm_v2_sub(circle->pos, poly->vertices[next]);
@@ -397,16 +424,24 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
         }
         else // SAT_VORONOI_MIDDLE
         {
+            // In this case, the location of the circle is between the endpoints
+            // of an edge.
             pm_v2 normal = poly->normals[i];
+
+            // Location of center of circle along the face normal
             pm_float diff = pm_v2_dot(normal, point);
             pm_float abs_diff = pm_abs(diff);
 
+            // Test if circle does not intersect edge
             if (diff > 0.0f && abs_diff > circle->radius)
                 return false;
 
             if (manifold)
             {
+                // Calculate overlap
                 pm_float overlap = circle->radius - diff;
+
+                // Update manifold
                 sat_update_manifold(manifold, normal, overlap);
             }
         }
