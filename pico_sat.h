@@ -1,4 +1,4 @@
-/*
+/**
     @file pico_sat.h
     @brief Separating Axis Theorem (SAT) Tests written in C99.
 
@@ -8,29 +8,31 @@
 
     Features:
     ---------
-    - Written in ANSI C
+    - Written in C99
     - Single header library for easy build system integration
-    - Tests overlaps for AABBs, polygons, circles using SAT
+    - Tests overlaps for AABBs, polygons, and circles using SAT
     - Provides collision information including the normal and amount of overlap
     - Perissive license (MIT)
 
     Summary:
     --------
-    The Separating Axis Theorem roughly states that two convex shapes do not
-    intersect if there is no axis separating the them. In the case of simple
+    The Separating Axis Theorem (SAT) roughly states that two convex shapes do
+    not intersect if there is no axis separating the them. In the case of simple
     shapes the theorem provides necessary and sufficient conditions. For
     example, in the case of convex polygons, it is sufficient to test the axises
-    along the face-normals of both polygons.
+    along the edge normals of both polygons.
 
-    SATs tests are reasonably efficient and are frequently used as static,
-    narrow phase, collision tests in games.
+    SAT tests are reasonably efficient and are frequently used for static,
+    narrow phase, collision detection in games.
 
-    This library provides SAT tests for polygons, AABBs (which are, or course,
-    polygons), and circles. Manifolds can be specified so that, in the case of
-    a collision, they will contain the colliding face normal, overlap (minimum
-    translational distance), and a vector (minimum translation vector).
+    This library provides SAT tests for polygons, AABBs (which are, of course,
+    polygons), and circles. Manifold objects can be passed to test functions so
+    that, in the case of a collision, they will contain the colliding edge
+    normal, overlap (minimum translational distance), and a vector (minimum
+    translation vector).
 
-    IMPORTANT: Polygons in this library use counter-clockwise (CCW) winding.
+    IMPORTANT: Polygons in this library use counter-clockwise (CCW) winding. See
+    the `sat_aabb_to_poly` for an example.
 
     Usage:
     ------
@@ -53,10 +55,10 @@
 
     to the same or other source file (once).
 
-    Later:
+    Todo:
     -----
-    pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
-    pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
+    - pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
+    - pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
 */
 
 #ifndef PICO_SAT_H
@@ -92,7 +94,7 @@ typedef struct
 {
     int   vertex_count;                      //!< Number of vertices in polygon
     pm_v2 vertices[PICO_SAT_MAX_POLY_VERTS]; //!< Polygon vertices
-    pm_v2 normals[PICO_SAT_MAX_POLY_VERTS];  //!< Polygon face normals
+    pm_v2 normals[PICO_SAT_MAX_POLY_VERTS];  //!< Polygon edge normals
     pm_v2 edges[PICO_SAT_MAX_POLY_VERTS];    //!< Edges of polygon
 } sat_poly_t;
 
@@ -243,6 +245,7 @@ sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
 
     sat_poly_t poly;
 
+    // Copy vertices
     poly.vertex_count = vertex_count;
 
     for (int i = 0; i < vertex_count; i++)
@@ -250,6 +253,7 @@ sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
         poly.vertices[i] = vertices[i];
     }
 
+    // Cache edges and edge normals
     for (int i = 0; i < vertex_count; i++)
     {
         int next = (i + 1) == vertex_count ? 0 : i + 1;
@@ -428,7 +432,7 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
             // of an edge.
             pm_v2 normal = poly->normals[i];
 
-            // Location of center of circle along the face normal
+            // Location of center of circle along the edge normal
             pm_float diff = pm_v2_dot(normal, point);
             pm_float abs_diff = pm_abs(diff);
 
