@@ -12,12 +12,12 @@
     - Single header library for easy build system integration
     - Tests overlaps for AABBs, polygons, and circles using SAT
     - Provides collision information including the normal and amount of overlap
-    - Perissive license (MIT)
+    - Permissive license (MIT)
 
     Summary:
     --------
     The Separating Axis Theorem (SAT) roughly states that two convex shapes do
-    not intersect if there is no axis separating the them. In the case of simple
+    not intersect if there is no axis separating them. In the case of simple
     shapes the theorem provides necessary and sufficient conditions. For
     example, in the case of convex polygons, it is sufficient to test the axises
     along the edge normals of both polygons.
@@ -169,7 +169,7 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
  * @param circle1  The colliding circle
  * @param circle2  The target circle
  * @param manifold The collision manifold to populate (or NULL)
- * @returns True if the circle the other circle, and false otherwise
+ * @returns True if the circle and the other circle, and false otherwise
  */
 bool sat_test_circle_circle(const sat_circle_t* circle1,
                             const sat_circle_t* circle2,
@@ -218,7 +218,7 @@ typedef enum
     SAT_VORONOI_MIDDLE
 } sat_voronoi_region_t;
 
-// Determines the Voronoi region the point falls into along the specified line
+// Determines the Voronoi region the point belongs to along the specified line
 //
 //            |       (0)      |
 //     (-1)  [L]--------------[R]  (1)
@@ -298,12 +298,13 @@ bool sat_test_poly_poly(const sat_poly_t* poly1,
     if (manifold)
         sat_init_manifold(manifold);
 
+    // Test axises on poly1
     for (int i = 0; i < poly1->vertex_count; i++)
     {
         // Get signed overlap of poly1 on poly2 along specified normal direction
         pm_float overlap = sat_axis_overlap(poly1, poly2, poly1->normals[i]);
 
-        // No overlap, axis is separating, polygons do not overlap
+        // Axis is separating, polygons do not overlap
         if (overlap == 0.0f)
             return false;
 
@@ -312,12 +313,13 @@ bool sat_test_poly_poly(const sat_poly_t* poly1,
             sat_update_manifold(manifold, poly2->normals[i], overlap);
     }
 
+    // Test axises on poly2
     for (int i = 0; i < poly2->vertex_count; i++)
     {
         // Get signed overlap of poly2 on poly1 along specified normal direction
         pm_float overlap = sat_axis_overlap(poly2, poly1, poly2->normals[i]);
 
-        // No overlap, axis is separating, polygons do not overlap
+        // Axis is separating, polygons do not overlap
         if (overlap == 0.0f)
             return false;
 
@@ -359,8 +361,8 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
         // Postion of circle relative to vertex
         pm_v2 point = pm_v2_sub(circle->pos, poly->vertices[i]);
 
-        // Find the Voronoi region of the point (circle relative to vertex)
-        // with respect to edge
+        // Find the Voronoi region of the point (circle center relative to
+        // vertex)  with respect to edge
         sat_voronoi_region_t region = sat_voronoi_region(point, edge);
 
         // Test if point is in the left Voronoi region
@@ -379,12 +381,15 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
             if (region == SAT_VORONOI_RIGHT)
             {
                 // The circle center is in the left/right Voronoi region, so
-                // check to see if it intersects the vertex
+                // check to see if it contains the vertex
                 pm_float diff2 = pm_v2_len2(point);
 
                 // Equivalent to diff > radius
                 if (diff2 > radius2)
                     return false;
+
+                // Vertex is contained within circle, so the circle overlaps the
+                // polygon
 
                 if (manifold)
                 {
@@ -465,7 +470,8 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
 
     if (manifold)
     {
-        // Reversing the vectors is all that is required
+        // Since arguments were swapped, reversing the vectors is all that is
+        // required
         manifold->normal = pm_v2_neg(manifold->normal);
         manifold->vector = pm_v2_neg(manifold->vector);
     }
@@ -483,7 +489,7 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
     if (manifold)
         sat_init_manifold(manifold);
 
-    // POsition of circle2 relative to circle1
+    // Position of circle2 relative to circle1
     pm_v2 diff = pm_v2_sub(circle2->pos, circle1->pos);
 
     // Squared distance between circle centers
@@ -495,7 +501,7 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
     // Square sum of radii for optimization
     pm_float total_radius2 = total_radius * total_radius;
 
-    // Equivalent to dist >= total_radius2
+    // Equivalent to dist >= total_radius
     if (dist2 >= total_radius2)
         return false;
 
@@ -536,7 +542,7 @@ static void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float
 
     pm_float abs_overlap = pm_abs(overlap);
 
-    // Only update if the new overlap is smaller that the old one
+    // Only update if the new overlap is smaller than the old one
     if (abs_overlap < manifold->overlap)
     {
         // Update overlap (always positive)
@@ -590,6 +596,7 @@ static pm_float sat_axis_overlap(const sat_poly_t* poly1,
     pm_float range1[2];
     pm_float range2[2];
 
+    // Get the ranges of polygons projected onto the axis vector
     sat_axis_range(poly1, axis, range1);
     sat_axis_range(poly2, axis, range2);
 
