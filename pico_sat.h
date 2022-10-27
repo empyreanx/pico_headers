@@ -17,7 +17,7 @@
     Summary:
     --------
     The Separating Axis Theorem roughly states that two convex shapes do not
-    intersect if there is no axis separating the two. In the case of simple
+    intersect if there is no axis separating the them. In the case of simple
     shapes the theorem provides necessary and sufficient conditions. For
     example, in the case of convex polygons, it is sufficient to test the axises
     along the face-normals of the polygons.
@@ -133,7 +133,7 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb);
  * @brief Tests to see if one polygon overlaps with another
  * @param poly1    The colliding polygon
  * @param poly2    The target polygon
- * @param manifold The collision information (or NULL)
+ * @param manifold The collision manifold to populate (or NULL)
  * @returns True if the polygons overlap and false otherwise
  */
 bool sat_test_poly_poly(const sat_poly_t* poly1,
@@ -144,7 +144,7 @@ bool sat_test_poly_poly(const sat_poly_t* poly1,
  * @brief Tests to see if a polygon overlaps a circle
  * @param poly     The colliding polygon
  * @param circle   The target circle
- * @param manifold The collision information (or NULL)
+ * @param manifold The collision manifold to populate (or NULL)
  * @returns True if the polygon and circle overlap, and false otherwise
  */
 bool sat_test_poly_circle(const sat_poly_t* poly,
@@ -155,7 +155,7 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
  * @brief Tests to see if a circle overlaps a polygon
  * @param circle   The colliding circle
  * @param poly     The target polygon
- * @param manifold The collision information (or NULL)
+ * @param manifold The collision manifold to populate (or NULL)
  * @returns True if the circle overlaps the polygon, and false otherwise
  */
 bool sat_test_circle_poly(const sat_circle_t* circle,
@@ -166,7 +166,7 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
  * @brief Tests to see if two circles overlap
  * @param circle1  The colliding circle
  * @param circle2  The target circle
- * @param manifold The collision information (or NULL)
+ * @param manifold The collision manifold to populate (or NULL)
  * @returns True if the circle the other circle, and false otherwise
  */
 bool sat_test_circle_circle(const sat_circle_t* circle1,
