@@ -323,6 +323,7 @@ size_t b64_decode(unsigned char* dst, const char * src, size_t len)
 /*
 The MIT License (MIT)
 
+Copyright (c) 2022 James McLean
 Copyright (c) 2014 Little Star Media, Inc. (Joseph Werle)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
