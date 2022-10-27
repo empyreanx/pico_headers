@@ -443,19 +443,34 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
     if (manifold)
         sat_init_manifold(manifold);
 
+    // POsition of circle2 relative to circle1
     pm_v2 diff = pm_v2_sub(circle2->pos, circle1->pos);
+
+    // Squared distance between circle centers
     pm_float dist2 = pm_v2_len2(diff);
+
+    // Sum of radii
     pm_float total_radius = circle1->radius + circle2->radius;
+
+    // Square sum of radii for optimization
     pm_float total_radius2 = total_radius * total_radius;
 
+    // Equivalent to dist >= total_radius2
     if (dist2 >= total_radius2)
         return false;
 
     if (manifold)
     {
+         // Calculate distance because we need it now
         pm_float dist = pm_sqrt(dist2);
+
+        // Calculate overlap
         pm_float overlap = total_radius - dist;
+
+        // Normal direction is just circle2 relative to circle1
         pm_v2 normal = pm_v2_normalize(diff);
+
+        // Update manifold
         sat_update_manifold(manifold, normal, overlap);
     }
 
