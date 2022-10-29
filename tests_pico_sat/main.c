@@ -45,6 +45,36 @@ PU_TEST(test_aabb_aabb_collide)
     return true;
 }
 
+PU_TEST(test_poly_poly)
+{
+    pm_v2 vertices1[] =
+    {
+        { 0,  0  },
+        { 0,  40 },
+        { 40, 40 },
+        { 40, 0  }
+    };
+
+    pm_v2 vertices2[] =
+    {
+        { 30, 0  },
+        { 30, 30 },
+        { 60, 0  }
+    };
+
+    sat_poly_t p1 = sat_make_poly(4, vertices1);
+    sat_poly_t p2 = sat_make_poly(3, vertices2);
+
+    sat_manifold_t manifold;
+
+    PU_ASSERT(sat_test_poly_poly(&p1, &p2, &manifold));
+
+    PU_ASSERT(pm_equal(manifold.overlap, 10));
+    PU_ASSERT(pm_v2_equal(manifold.normal, pm_v2_make(1, 0)));
+
+    return true;
+}
+
 PU_TEST(test_aabb_aabb_not_collide)
 {
     pm_b2 aabb1 = pm_b2_make(5, 5, 2, 2);
@@ -154,6 +184,7 @@ static PU_SUITE(suite_sat)
 {
     PU_RUN_TEST(test_aabb_aabb_collide);
     PU_RUN_TEST(test_aabb_aabb_not_collide);
+    PU_RUN_TEST(test_poly_poly);
     PU_RUN_TEST(test_aabb_circle_collide);
     PU_RUN_TEST(test_aabb_circle_not_collide);
     PU_RUN_TEST(test_circle_cicle_collide);
