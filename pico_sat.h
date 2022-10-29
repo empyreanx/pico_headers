@@ -107,7 +107,8 @@ typedef struct
 
 /**
  * @brief A collision manifold
- * Provides information about a collision
+ * Provides information about a collision. Normals always point from shape 1 to
+ * shape 2.
  */
 typedef struct
 {
@@ -209,13 +210,17 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
 static void sat_init_manifold(sat_manifold_t* manifold);
 
 // Updates manifold if requried
-static void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float overlap);
+static void sat_update_manifold(sat_manifold_t* manifold,
+                                pm_v2 normal,
+                                pm_float overlap);
 
 // Determines the polygon's limits when projected onto the normal vector
 static void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2]);
 
 // Determines the amount overlap of the polygons along the specified axis
-static pm_float sat_axis_overlap(const sat_poly_t* poly1, const sat_poly_t* poly2, pm_v2 axis);
+static pm_float sat_axis_overlap(const sat_poly_t* poly1,
+                                 const sat_poly_t* poly2,
+                                 pm_v2 axis);
 
 // Line Voronoi regions
 typedef enum
@@ -370,7 +375,7 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
         pm_v2 point = pm_v2_sub(circle->pos, poly->vertices[i]);
 
         // Find the Voronoi region of the point (circle center relative to
-        // vertex)  with respect to edge
+        // vertex)  with respect to the edge
         sat_voronoi_region_t region = sat_voronoi_region(point, edge);
 
         // Test if point is in the left Voronoi region
@@ -478,7 +483,7 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
 
     if (manifold)
     {
-        // Since arguments were swapped, reversing the vectors is all that is
+        // Since arguments were swapped, reversing these vectors is all that is
         // required
         manifold->normal = pm_v2_neg(manifold->normal);
         manifold->vector = pm_v2_neg(manifold->vector);
