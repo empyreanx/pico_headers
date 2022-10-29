@@ -17,7 +17,7 @@
     Summary:
     --------
     The Separating Axis Theorem (SAT) roughly states that two convex shapes do
-    not intersect if there is no axis separating them. In the case of simple
+    not intersect if there is an axis separating them. In the case of simple
     shapes the theorem provides necessary and sufficient conditions. For
     example, in the case of convex polygons, it is sufficient to test the axises
     along the edge normals of both polygons.
@@ -222,8 +222,8 @@ typedef enum
 //
 //            |       (0)      |
 //     (-1)  [L]--------------[R]  (1)
-//            |       (0)      |
-//
+//            |    ^  (0)      |
+//               line
 static sat_voronoi_region_t sat_voronoi_region(pm_v2 point, pm_v2 line);
 
 /*=============================================================================
@@ -344,9 +344,10 @@ bool sat_test_poly_circle(const sat_poly_t* poly,
     pm_float radius2 = circle->radius * circle->radius;
 
     // The main idea behind this function is to classify the position of the
-    // circle according to the Voronoi region(s) it is part of using inexpensive
-    // checks. Essentially it efficiently narrows down the position of the
-    // circle so that the correct separating axis test can be invoked.
+    // circle relative to the Voronoi region(s) it is part of. This uses very
+    // inexpensive operations. Essentially it efficiently narrows down the
+    // position of the circle so that the correct separating axis test can be
+    // performed.
 
     int count = poly->vertex_count;
 
@@ -498,7 +499,8 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
     // Sum of radii
     pm_float total_radius = circle1->radius + circle2->radius;
 
-    // Square sum of radii for optimization
+    // Square sum of radii for optimization (avoid calculating length until we
+    // have to)
     pm_float total_radius2 = total_radius * total_radius;
 
     // Equivalent to dist >= total_radius

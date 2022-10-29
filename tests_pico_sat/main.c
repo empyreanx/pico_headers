@@ -92,7 +92,7 @@ PU_TEST(test_aabb_circle_collide)
 
     }
 
-    // On Vertex (TODO: revisit this)
+    // On Vertex
     {
         sat_circle_t c = sat_make_circle(pm_v2_make(5, 5), 1.0f);
 
