@@ -28,8 +28,8 @@
     This library provides SAT tests for polygons, AABBs (which are, of course,
     polygons), and circles. Manifold objects can be passed to test functions so
     that, in the case of a collision, they will contain the colliding edge
-    normal, overlap (minimum translational distance), and a vector (minimum
-    translation vector).
+    normal, overlap (minimum translational distance or MTD), and a vector
+    (minimum translation vector or MTV).
 
     IMPORTANT: Polygons in this library use counter-clockwise (CCW) winding. See
     the `sat_aabb_to_poly` for an example.
@@ -59,6 +59,13 @@
     -----
     - pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
     - pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
+    - void sat_transform_poly(const pm_t2* transform,
+                              const sat_poly_t* poly_in
+                              sat_poly_t* poly_out);
+
+    - void sat_transfom_circle(const pm_t2* transform,
+                               const sat_circle_t* circle_in,
+                               sat_circle* circle_out);
 */
 
 #ifndef PICO_SAT_H
@@ -122,7 +129,7 @@ sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius);
  * @param vertices     The vertices of the polygon (must use CCW winding)
  * @returns The polygon with the given vertices
  */
-sat_poly_t sat_make_polygon(int vertex_count, pm_v2 vertices[]);
+sat_poly_t sat_make_poly(pm_v2 vertices[], int vertex_count);
 
 /**
  * @brief Converts and axis-aligned bounding box (AABB) to a polygon
@@ -238,7 +245,7 @@ sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius)
     return circle;
 }
 
-sat_poly_t sat_make_poly(int vertex_count, pm_v2 vertices[])
+sat_poly_t sat_make_poly(pm_v2 vertices[], int vertex_count)
 {
     SAT_ASSERT(vertex_count <= PICO_SAT_MAX_POLY_VERTS);
     SAT_ASSERT(vertices);
@@ -285,7 +292,7 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
         { pos.x + size.x, pos.y          }
     };
 
-    return sat_make_poly(4, vertices);
+    return sat_make_poly(vertices, 4);
 }
 
 bool sat_test_poly_poly(const sat_poly_t* poly1,

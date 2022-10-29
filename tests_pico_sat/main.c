@@ -1,12 +1,7 @@
 #include <stdio.h>
 
-#define PICO_SAT_IMPLEMENTATION
 #include "../pico_sat.h"
-
-#define PICO_MATH_IMPLEMENTATION
 #include "../pico_math.h"
-
-#define PICO_UNIT_IMPLEMENTATION
 #include "../pico_unit.h"
 
 PU_TEST(test_aabb_aabb_collide)
@@ -62,8 +57,8 @@ PU_TEST(test_poly_poly)
         { 60, 0  }
     };
 
-    sat_poly_t p1 = sat_make_poly(4, vertices1);
-    sat_poly_t p2 = sat_make_poly(3, vertices2);
+    sat_poly_t p1 = sat_make_poly(vertices1, 4);
+    sat_poly_t p2 = sat_make_poly(vertices2, 3);
 
     sat_manifold_t manifold;
 
@@ -198,3 +193,12 @@ int main()
     pu_print_stats();
     return pu_test_failed();
 }
+
+#define PICO_SAT_IMPLEMENTATION
+#include "../pico_sat.h"
+
+#define PICO_MATH_IMPLEMENTATION
+#include "../pico_math.h"
+
+#define PICO_UNIT_IMPLEMENTATION
+#include "../pico_unit.h"
