@@ -71,8 +71,6 @@
 #ifndef PICO_SAT_H
 #define PICO_SAT_H
 
-#include <float.h>
-
 #include "pico_math.h"
 
 #ifdef __cplusplus
@@ -545,7 +543,7 @@ static void sat_init_manifold(sat_manifold_t* manifold)
 {
     SAT_ASSERT(manifold);
 
-    manifold->overlap = FLT_MAX;
+    manifold->overlap = PM_FLOAT_MAX;
     manifold->normal  = pm_v2_zero();
     manifold->vector  = pm_v2_zero();
 }

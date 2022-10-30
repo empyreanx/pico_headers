@@ -70,6 +70,7 @@
 #ifndef PICO_MATH_H
 #define PICO_MATH_H
 
+#include <float.h>   // FLT_MIN/MAX, DBL_MIN/MAX
 #include <math.h>    // sqrt(f), cos(f), sin(f), atan2(f)...
 #include <stdbool.h> // bool, true, false
 #include <stdint.h>  // uint32_t
@@ -100,6 +101,9 @@ extern "C" {
     #define PM_PI2 (2.0 * PM_PI)
     #define PM_E    2.71828182845904523536028747135266250
 
+    #define PM_FLOAT_MIN DBL_MIN
+    #define PM_FLOAT_MAX DBL_MAX
+
     #define pm_sqrt  sqrt
     #define pm_cos   cos
     #define pm_sin   sin
@@ -123,6 +127,9 @@ extern "C" {
     #define PM_PI   3.14159265359f
     #define PM_PI2 (2.0f * PM_PI)
     #define PM_E    2.71828182845f
+
+    #define PM_FLOAT_MIN FLT_MIN
+    #define PM_FLOAT_MAX FLT_MAX
 
     #define pm_sqrt  sqrtf
     #define pm_cos   cosf
