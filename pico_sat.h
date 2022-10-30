@@ -483,8 +483,8 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
     {
         // Since arguments were swapped, reversing these vectors is all that is
         // required
-        manifold->normal = pm_v2_neg(manifold->normal);
-        manifold->vector = pm_v2_neg(manifold->vector);
+        manifold->normal = pm_v2_reflect(manifold->normal);
+        manifold->vector = pm_v2_reflect(manifold->vector);
     }
 
     return collides;
@@ -562,7 +562,7 @@ static void sat_update_manifold(sat_manifold_t* manifold, pm_v2 normal, pm_float
 
         // If the overlap is less that zero the normal must be reversed
         if (overlap < 0.0f)
-            manifold->normal = pm_v2_neg(normal);
+            manifold->normal = pm_v2_reflect(normal);
         else if (overlap > 0.0f)
             manifold->normal = normal;
 

@@ -358,7 +358,7 @@ PM_INLINE pm_v2 pm_v2_normalize(pm_v2 v)
   * @param The vector to negate
   * @returns The negated vecotor
   */
-PM_INLINE pm_v2 pm_v2_neg(pm_v2 v)
+PM_INLINE pm_v2 pm_v2_reflect(pm_v2 v)
 {
     return pm_v2_scale(v, -1.0f);
 }
