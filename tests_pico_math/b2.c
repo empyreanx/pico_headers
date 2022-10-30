@@ -127,7 +127,7 @@ PU_TEST(test_b2_enclosing)
     verts[2] = pm_v2_make(1.0f + 3.0f, 2.0f + 4.0f);
     verts[3] = pm_v2_make(1.0f + 3.0f, 4.0f);
 
-    pm_b2 res = pm_b2_enclosing(verts, 4);
+    pm_b2 res = pm_b2_min_enclosing(verts, 4);
     pm_b2 exp = pm_b2_make(1.0f, 2.0f, 3.0f, 4.0f);
 
     PU_ASSERT(pm_b2_equal(&res, &exp));
