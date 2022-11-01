@@ -1,3 +1,4 @@
+#include "../pico_qt.h"
 #include "../pico_unit.h"
 
 static PU_SUITE(suite_qt)
@@ -13,7 +14,7 @@ int main()
     return pu_test_failed();
 }
 
-#define PICO_SAT_IMPLEMENTATION
+#define PICO_QT_IMPLEMENTATION
 #include "../pico_qt.h"
 
 #define PICO_UNIT_IMPLEMENTATION
