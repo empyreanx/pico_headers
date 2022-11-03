@@ -78,6 +78,7 @@ struct qt_node_t
 struct qt_t
 {
     qt_node_t* root;
+    qt_array_t tmp_items;
 };
 
 qt_array_t* qt_array_new(int capacity)
@@ -93,6 +94,26 @@ qt_array_t* qt_array_new(int capacity)
         array->items = NULL;
 
     return array;
+}
+
+void qt_array_init(qt_array_t* array, int capacity)
+{
+    array->size = 0;
+    array->capacity = capacity;
+
+    if (capacity > 0)
+        array->items = QT_MALLOC(capacity * sizeof(qt_item_t));
+    else
+        array->items = NULL;
+}
+
+void qt_array_destroy(qt_array_t* array)
+{
+    QT_FREE(array->items);
+    array->items = NULL;
+
+    array->capacity = 0;
+    array->size = 0;
 }
 
 void qt_array_free(qt_array_t* array)
@@ -143,15 +164,10 @@ void qt_array_cat(qt_array_t* dst, qt_array_t* src)
     dst->size += src->size;
 }
 
-qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h)
-{
-    qt_rect_t r = { x, y, w, h };
-    return r;
-}
-
 qt_rect_t qt_rect_scale(qt_rect_t* r, qt_float c)
 {
-    return qt_make_rect(r->x, r->y, r->w * c, r->h * c);
+    qt_rect_t s = { r->x, r->y, r->w * c, r->h * c };
+    return s;
 }
 
 bool qt_rect_contains(qt_rect_t* r1, qt_rect_t* r2)
