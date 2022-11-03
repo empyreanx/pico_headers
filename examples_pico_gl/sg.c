@@ -424,10 +424,10 @@ int main(int argc, char *argv[])
 
     pgl_set_projection(ctx, (pgl_m4_t)
     {
-        2.0f / w, 0.0f,     0.0f,         -1.0f,
-        0.0f,    -2.0f / h, 0.0f,          1.0f,
-        0.0f,     0.0f,     1.0f / 256.0f, 0.0f,
-        0.0f,     0.0f,     0.0f,          1.0f
+        2.0f / w, 0.0f,     0.0f,      -1.0f,
+        0.0f,    -2.0f / h, 0.0f,       1.0f,
+        0.0f,     0.0f,     1.0f / 256, 0.0f,
+        0.0f,     0.0f,     0.0f,       1.0f
     });
 
     // Build scene graph
