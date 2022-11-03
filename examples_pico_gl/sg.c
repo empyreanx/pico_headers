@@ -190,7 +190,7 @@ void node_render(node_t* node, double alpha)
             0.0f,       0.0f,       0.0f, 1.0f
         });*/
 
-        pgl_set_transform_3d(ctx, (pgl_m4_t)
+        pgl_set_transform_3d(ctx, (pgl_m3_t)
         {
             render.t00, render.t01, render.tx,
             render.t10, render.t11, render.ty,
@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
     {
         2.0f / w, 0.0f,     0.0f,      -1.0f,
         0.0f,    -2.0f / h, 0.0f,       1.0f,
-        0.0f,     0.0f,     2.0f / 256, 0.0f,
+        0.0f,     0.0f,     1.0f / 256, 0.0f,
         0.0f,     0.0f,     0.0f,       1.0f
     });
 
