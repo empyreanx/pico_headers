@@ -139,6 +139,35 @@ void qt_array_cat(qt_array_t* dst, qt_array_t* src)
     }
 
     memcpy(&dst->items[dst->size], src->items, src->size * sizeof(qt_item_t));
+
+    dst->size += src->size;
+}
+
+qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h)
+{
+    qt_rect_t r = { x, y, w, h };
+    return r;
+}
+
+qt_rect_t qt_rect_scale(qt_rect_t* r, qt_float c)
+{
+    return qt_make_rect(r->x, r->y, r->w * c, r->h * c);
+}
+
+bool qt_rect_contains(qt_rect_t* r1, qt_rect_t* r2)
+{
+    return r1->x <= r2->x &&
+           r1->y <= r2->y &&
+           r1->x + r1->w >= r2->x + r2->w &&
+           r1->y + r1->h >= r2->y + r2->h;
+}
+
+bool qt_rect_overlaps(qt_rect_t* r1, qt_rect_t* r2)
+{
+    return r1->x + r1->w >= r2->x &&
+           r1->y + r1->h >= r2->y &&
+           r2->x + r2->w >= r1->x &&
+           r2->y + r2->h >= r1->y;
 }
 
 // qt_create
@@ -147,10 +176,6 @@ void qt_array_cat(qt_array_t* dst, qt_array_t* src)
 // qt_insert(qt, bounds, value)
 // qt_remove(qt, value)
 // qt_query(qt, area, array) // or qt_value_t* qt_query(qt, area, &size)
-
-// qt_rect scale
-// qt_rect_contains
-// qt_rect_overlaps
 
 
 // qt_node_new
