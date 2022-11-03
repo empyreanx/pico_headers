@@ -17,9 +17,15 @@ typedef struct
     qt_float x, y, w, h;
 } qt_rect_t;
 
+typedef struct qt_t qt_t;
+
 qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
 
-typedef struct qt_t qt_t;
+qt_t* qt_create(qt_rect_t bounds);
+void qt_destroy(qt_t* qt);
+void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value);
+bool qt_remove(qt_t* qt, qt_value_t value);
+qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
 
 #endif // PICO_QT_H
 
@@ -81,7 +87,76 @@ struct qt_t
     qt_array_t tmp;
 };
 
-void qt_array_init(qt_array_t* array, int capacity)
+static void qt_array_init(qt_array_t* array, int capacity);
+static void qt_array_destroy(qt_array_t* array);
+static void qt_array_resize(qt_array_t* array, int size);
+static void qt_array_push(qt_array_t* array, qt_rect_t bounds, qt_value_t value);
+static void qt_array_cat(qt_array_t* dst, qt_array_t* src);
+static void qt_array_remove(qt_array_t* array, int index);
+static bool qt_rect_contains(qt_rect_t* r1, qt_rect_t* r2);
+static bool qt_rect_overlaps(qt_rect_t* r1, qt_rect_t* r2);
+static qt_node_t* qt_node_create(qt_rect_t bounds, int depth);
+static void qt_node_destroy(qt_node_t* node);
+static void qt_node_insert(qt_node_t* node, qt_rect_t* bounds, qt_value_t value);
+static bool qt_node_remove(qt_node_t* node, qt_value_t value);
+static void qt_node_all(qt_node_t* node, qt_array_t* array);
+static void qt_node_query(qt_node_t* node, qt_rect_t* area, qt_array_t* array);
+
+qt_t* qt_create(qt_rect_t bounds)
+{
+    qt_t* qt = QT_MALLOC(sizeof(sizeof(qt_t)));
+
+    qt->bounds = bounds;
+    qt->root = qt_node_create(bounds, 0);
+
+    qt_array_init(&qt->tmp, 32);
+
+    return qt;
+}
+
+void qt_destroy(qt_t* qt)
+{
+    qt_array_destroy(&qt->tmp);
+    qt_node_destroy(qt->root);
+    QT_FREE(qt);
+}
+
+// qt_reset
+
+void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value)
+{
+    qt_node_insert(qt->root, &bounds, value);
+}
+
+bool qt_remove(qt_t* qt, qt_value_t value)
+{
+    return qt_node_remove(qt->root, value);
+}
+
+qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
+{
+    qt->tmp.size = 0;
+
+    qt_node_query(qt->root, &area, &qt->tmp);
+
+    qt_value_t* values = QT_MALLOC(qt->tmp.size * sizeof(qt_value_t));
+
+    for (int i = 0; i < qt->tmp.size; i++)
+    {
+        values[i] = qt->tmp.items[i].value;
+    }
+
+    *size = qt->tmp.size;
+
+    return values;
+}
+
+void qt_free(void* ptr)
+{
+    QT_FREE(ptr);
+}
+
+static void qt_array_init(qt_array_t* array, int capacity)
 {
     array->size = 0;
     array->capacity = capacity;
@@ -92,7 +167,7 @@ void qt_array_init(qt_array_t* array, int capacity)
         array->items = NULL;
 }
 
-void qt_array_destroy(qt_array_t* array)
+static void qt_array_destroy(qt_array_t* array)
 {
     QT_FREE(array->items);
 
@@ -101,7 +176,7 @@ void qt_array_destroy(qt_array_t* array)
     array->size = 0;
 }
 
-void qt_array_resize(qt_array_t* array, int size)
+static void qt_array_resize(qt_array_t* array, int size)
 {
     if (size < array->capacity)
     {
@@ -118,7 +193,7 @@ void qt_array_resize(qt_array_t* array, int size)
     array->size = size;
 }
 
-void qt_array_push(qt_array_t* array, qt_rect_t bounds, qt_value_t value)
+static void qt_array_push(qt_array_t* array, qt_rect_t bounds, qt_value_t value)
 {
     int size = array->size;
 
@@ -128,7 +203,7 @@ void qt_array_push(qt_array_t* array, qt_rect_t bounds, qt_value_t value)
     array->items[size].bounds = bounds;
 }
 
-void qt_array_cat(qt_array_t* dst, qt_array_t* src)
+static void qt_array_cat(qt_array_t* dst, qt_array_t* src)
 {
     int total_capacity = dst->capacity + src->capacity;
 
@@ -143,7 +218,7 @@ void qt_array_cat(qt_array_t* dst, qt_array_t* src)
     dst->size += src->size;
 }
 
-void qt_array_remove(qt_array_t* array, int index)
+static void qt_array_remove(qt_array_t* array, int index)
 {
     QT_ASSERT(index < array->size);
 
@@ -162,7 +237,7 @@ qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h)
     return r;
 }
 
-bool qt_rect_contains(qt_rect_t* r1, qt_rect_t* r2)
+static bool qt_rect_contains(qt_rect_t* r1, qt_rect_t* r2)
 {
     return r1->x <= r2->x &&
            r1->y <= r2->y &&
@@ -170,7 +245,7 @@ bool qt_rect_contains(qt_rect_t* r1, qt_rect_t* r2)
            r1->y + r1->h >= r2->y + r2->h;
 }
 
-bool qt_rect_overlaps(qt_rect_t* r1, qt_rect_t* r2)
+static bool qt_rect_overlaps(qt_rect_t* r1, qt_rect_t* r2)
 {
     return r1->x + r1->w >= r2->x &&
            r1->y + r1->h >= r2->y &&
@@ -178,7 +253,7 @@ bool qt_rect_overlaps(qt_rect_t* r1, qt_rect_t* r2)
            r2->y + r2->h >= r1->y;
 }
 
-qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
+static qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
 {
     qt_node_t* node = QT_MALLOC(sizeof(qt_node_t));
 
@@ -214,11 +289,12 @@ qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
     return node;
 }
 
-void qt_node_destroy(qt_node_t* node)
+static void qt_node_destroy(qt_node_t* node)
 {
     for (int i = 0; i < 4; i++)
     {
-        qt_node_destroy(node->nodes[i]);
+        if (node->nodes[i])
+            qt_node_destroy(node->nodes[i]);
     }
 
     qt_array_destroy(&node->items);
@@ -226,11 +302,11 @@ void qt_node_destroy(qt_node_t* node)
     QT_FREE(node);
 }
 
-void qt_node_insert(qt_node_t* node, qt_rect_t bounds, qt_value_t value)
+static void qt_node_insert(qt_node_t* node, qt_rect_t* bounds, qt_value_t value)
 {
     for (int i = 0; i < 4; i++)
     {
-        if (qt_rect_contains(&node->bounds[i], &bounds))
+        if (qt_rect_contains(&node->bounds[i], bounds))
         {
             if (node->depth + 1 < QT_MAX_DEPTH)
             {
@@ -245,10 +321,10 @@ void qt_node_insert(qt_node_t* node, qt_rect_t bounds, qt_value_t value)
         }
     }
 
-    qt_array_push(&node->items, bounds, value);
+    qt_array_push(&node->items, *bounds, value);
 }
 
-bool qt_node_remove(qt_node_t* node, qt_value_t value)
+static bool qt_node_remove(qt_node_t* node, qt_value_t value)
 {
     for (int i = 0; i < node->items.size; i++)
     {
@@ -273,7 +349,7 @@ bool qt_node_remove(qt_node_t* node, qt_value_t value)
     return false;
 }
 
-void qt_node_all(qt_node_t* node, qt_array_t* array)
+static void qt_node_all(qt_node_t* node, qt_array_t* array)
 {
     qt_array_cat(array, &node->items);
 
@@ -284,13 +360,13 @@ void qt_node_all(qt_node_t* node, qt_array_t* array)
     }
 }
 
-void qt_node_query(qt_node_t* node, qt_rect_t bounds, qt_array_t* array)
+static void qt_node_query(qt_node_t* node, qt_rect_t* area, qt_array_t* array)
 {
     for (int i = 0; i < node->items.size; i++)
     {
         qt_item_t* item = &node->items.items[i];
 
-        if (qt_rect_overlaps(&bounds, &item->bounds))
+        if (qt_rect_overlaps(area, &item->bounds))
             qt_array_push(array, item->bounds, item->value);
     }
 
@@ -298,66 +374,19 @@ void qt_node_query(qt_node_t* node, qt_rect_t bounds, qt_array_t* array)
     {
         if (node->nodes[i])
         {
-            if (qt_rect_contains(&bounds, &node->bounds[i]))
+            if (qt_rect_contains(area, &node->bounds[i]))
             {
                 qt_node_all(node->nodes[i], array);
             }
             else
             {
-                if (qt_rect_overlaps(&bounds, &node->bounds[i]))
+                if (qt_rect_overlaps(area, &node->bounds[i]))
                 {
-                    qt_node_query(node->nodes[i], bounds, array);
+                    qt_node_query(node->nodes[i], area, array);
                 }
             }
         }
     }
-}
-
-qt_t* qt_create(qt_rect_t bounds)
-{
-    qt_t* qt = QT_MALLOC(sizeof(sizeof(qt_t)));
-
-    qt->bounds = bounds;
-    qt->root = qt_node_create(bounds, 0);
-
-    qt_array_init(&qt->tmp, 32);
-
-    return qt;
-}
-
-void qt_destroy(qt_t* qt)
-{
-    qt_array_destroy(&qt->tmp);
-    qt_node_destroy(qt->root);
-    QT_FREE(qt);
-}
-
-// qt_reset
-
-void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value)
-{
-    qt_node_insert(qt->root, bounds, value);
-}
-
-bool qt_remove(qt_t* qt, qt_value_t value)
-{
-    return qt_node_remove(qt->root, value);
-}
-
-qt_value_t* qt_query(qt_t* qt, qt_rect_t area)
-{
-    qt->tmp.size = 0;
-
-    qt_node_query(qt->root, area, &qt->tmp);
-
-    qt_value_t* values = QT_MALLOC(qt->tmp.size * sizeof(qt_value_t));
-
-    for (int i = 0; i < qt->tmp.size; i++)
-    {
-        values[i] = qt->tmp.items[i].value;
-    }
-
-    return values;
 }
 
 #endif // PICO_QT_IMPLEMENTATION
