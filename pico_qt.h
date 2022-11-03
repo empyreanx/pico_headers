@@ -178,7 +178,7 @@ bool qt_rect_overlaps(qt_rect_t* r1, qt_rect_t* r2)
            r2->y + r2->h >= r1->y;
 }
 
-qt_node_t* qt_node_new(qt_rect_t bounds, int depth)
+qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
 {
     qt_node_t* node = QT_MALLOC(sizeof(qt_node_t));
 
@@ -214,11 +214,11 @@ qt_node_t* qt_node_new(qt_rect_t bounds, int depth)
     return node;
 }
 
-void qt_node_free(qt_node_t* node)
+void qt_node_destroy(qt_node_t* node)
 {
     for (int i = 0; i < 4; i++)
     {
-        qt_node_free(node->nodes[i]);
+        qt_node_destroy(node->nodes[i]);
     }
 
     qt_array_destroy(&node->items);
@@ -236,7 +236,7 @@ void qt_node_insert(qt_node_t* node, qt_rect_t bounds, qt_value_t value)
             {
                 if (!node->nodes[i])
                 {
-                    node->nodes[i] = qt_node_new(node->bounds[i], node->depth + 1);
+                    node->nodes[i] = qt_node_create(node->bounds[i], node->depth + 1);
                 }
 
                 qt_node_insert(node->nodes[i], bounds, value);
@@ -313,11 +313,51 @@ void qt_node_query(qt_node_t* node, qt_rect_t bounds, qt_array_t* array)
     }
 }
 
-// qt_create
-// qt_destroy
+qt_t* qt_create(qt_rect_t bounds)
+{
+    qt_t* qt = QT_MALLOC(sizeof(sizeof(qt_t)));
+
+    qt->bounds = bounds;
+    qt->root = qt_node_create(bounds, 0);
+
+    qt_array_init(&qt->tmp, 32);
+
+    return qt;
+}
+
+void qt_destroy(qt_t* qt)
+{
+    qt_array_destroy(&qt->tmp);
+    qt_node_destroy(qt->root);
+    QT_FREE(qt);
+}
+
 // qt_reset
-// qt_insert(qt, bounds, value)
-// qt_remove(qt, value)
-// qt_query(qt, area, array) // or qt_value_t* qt_query(qt, area, &size)
+
+void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value)
+{
+    qt_node_insert(qt->root, bounds, value);
+}
+
+bool qt_remove(qt_t* qt, qt_value_t value)
+{
+    return qt_node_remove(qt->root, value);
+}
+
+qt_value_t* qt_query(qt_t* qt, qt_rect_t area)
+{
+    qt->tmp.size = 0;
+
+    qt_node_query(qt->root, area, &qt->tmp);
+
+    qt_value_t* values = QT_MALLOC(qt->tmp.size * sizeof(qt_value_t));
+
+    for (int i = 0; i < qt->tmp.size; i++)
+    {
+        values[i] = qt->tmp.items[i].value;
+    }
+
+    return values;
+}
 
 #endif // PICO_QT_IMPLEMENTATION
