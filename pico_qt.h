@@ -78,22 +78,8 @@ struct qt_t
 {
     qt_rect_t  bounds;
     qt_node_t* root;
+    qt_array_t tmp;
 };
-
-qt_array_t* qt_array_new(int capacity)
-{
-    qt_array_t* array = QT_MALLOC(sizeof(qt_array_t));
-
-    array->size = 0;
-    array->capacity = capacity;
-
-    if (capacity > 0)
-        array->items = QT_MALLOC(capacity * sizeof(qt_item_t));
-    else
-        array->items = NULL;
-
-    return array;
-}
 
 void qt_array_init(qt_array_t* array, int capacity)
 {
@@ -109,16 +95,10 @@ void qt_array_init(qt_array_t* array, int capacity)
 void qt_array_destroy(qt_array_t* array)
 {
     QT_FREE(array->items);
-    array->items = NULL;
 
+    array->items = NULL;
     array->capacity = 0;
     array->size = 0;
-}
-
-void qt_array_free(qt_array_t* array)
-{
-    QT_FREE(array->items);
-    QT_FREE(array);
 }
 
 void qt_array_resize(qt_array_t* array, int size)
@@ -172,7 +152,7 @@ void qt_array_remove(qt_array_t* array, int index)
     if (size > 0)
     {
         array->items[index] = array->items[size - 1];
-        qt_array_resize(array, size - 1);
+        array->size--;
     }
 }
 
@@ -272,7 +252,9 @@ bool qt_node_remove(qt_node_t* node, qt_value_t value)
 {
     for (int i = 0; i < node->items.size; i++)
     {
-        if (node->items.items[i].value == value)
+        qt_item_t* item = &node->items.items[i];
+
+        if (item->value == value)
         {
             qt_array_remove(&node->items, i);
             return true;
@@ -291,7 +273,45 @@ bool qt_node_remove(qt_node_t* node, qt_value_t value)
     return false;
 }
 
-// qt_node_query
+void qt_node_all(qt_node_t* node, qt_array_t* array)
+{
+    qt_array_cat(array, &node->items);
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (node->nodes[i])
+            qt_node_all(node->nodes[i], array);
+    }
+}
+
+void qt_node_query(qt_node_t* node, qt_rect_t bounds, qt_array_t* array)
+{
+    for (int i = 0; i < node->items.size; i++)
+    {
+        qt_item_t* item = &node->items.items[i];
+
+        if (qt_rect_overlaps(&bounds, &item->bounds))
+            qt_array_push(array, item->bounds, item->value);
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (node->nodes[i])
+        {
+            if (qt_rect_contains(&bounds, &node->bounds[i]))
+            {
+                qt_node_all(node->nodes[i], array);
+            }
+            else
+            {
+                if (qt_rect_overlaps(&bounds, &node->bounds[i]))
+                {
+                    qt_node_query(node->nodes[i], bounds, array);
+                }
+            }
+        }
+    }
+}
 
 // qt_create
 // qt_destroy
