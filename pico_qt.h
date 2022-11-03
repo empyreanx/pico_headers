@@ -69,16 +69,15 @@ typedef struct
 struct qt_node_t
 {
     int        depth;
-    qt_rect_t  bounds;
-    qt_rect_t  child_bounds[4];
-    qt_node_t* child_nodes[4];
+    qt_rect_t  bounds[4];
+    qt_node_t* nodes[4];
     qt_array_t items;
 };
 
 struct qt_t
 {
+    qt_rect_t  bounds;
     qt_node_t* root;
-    qt_array_t tmp_items;
 };
 
 qt_array_t* qt_array_new(int capacity)
@@ -139,7 +138,7 @@ void qt_array_resize(qt_array_t* array, int size)
     array->size = size;
 }
 
-void qt_array_push(qt_array_t* array, qt_value_t value, qt_rect_t bounds)
+void qt_array_push(qt_array_t* array, qt_rect_t bounds, qt_value_t value)
 {
     int size = array->size;
 
@@ -177,10 +176,10 @@ void qt_array_remove(qt_array_t* array, int index)
     }
 }
 
-qt_rect_t qt_rect_scale(qt_rect_t* r, qt_float c)
+qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h)
 {
-    qt_rect_t s = { r->x, r->y, r->w * c, r->h * c };
-    return s;
+    qt_rect_t r = { x, y, w, h };
+    return r;
 }
 
 bool qt_rect_contains(qt_rect_t* r1, qt_rect_t* r2)
@@ -205,6 +204,33 @@ qt_node_t* qt_node_new(qt_rect_t bounds, int depth)
 
     memset(node, 0, sizeof(qt_node_t));
 
+    node->depth = depth;
+
+    bounds.w /= 2.0f;
+    bounds.h /= 2.0f;
+
+    node->bounds[0] = qt_make_rect(bounds.x,
+                                   bounds.y,
+                                   bounds.w,
+                                   bounds.h);
+
+    node->bounds[1] = qt_make_rect(bounds.x + bounds.w,
+                                   bounds.y,
+                                   bounds.w,
+                                   bounds.h);
+
+    node->bounds[2] = qt_make_rect(bounds.x,
+                                   bounds.y + bounds.h,
+                                   bounds.w,
+                                   bounds.h);
+
+    node->bounds[3] = qt_make_rect(bounds.x + bounds.w,
+                                   bounds.y + bounds.h,
+                                   bounds.w,
+                                   bounds.h);
+
+    qt_array_init(&node->items, 8);
+
     return node;
 }
 
@@ -212,20 +238,57 @@ void qt_node_free(qt_node_t* node)
 {
     for (int i = 0; i < 4; i++)
     {
-        qt_node_free(node->child_nodes[i]);
+        qt_node_free(node->nodes[i]);
     }
+
+    qt_array_destroy(&node->items);
 
     QT_FREE(node);
 }
 
 void qt_node_insert(qt_node_t* node, qt_rect_t bounds, qt_value_t value)
 {
+    for (int i = 0; i < 4; i++)
+    {
+        if (qt_rect_contains(&node->bounds[i], &bounds))
+        {
+            if (node->depth + 1 < QT_MAX_DEPTH)
+            {
+                if (!node->nodes[i])
+                {
+                    node->nodes[i] = qt_node_new(node->bounds[i], node->depth + 1);
+                }
 
+                qt_node_insert(node->nodes[i], bounds, value);
+                return;
+            }
+        }
+    }
+
+    qt_array_push(&node->items, bounds, value);
 }
 
 bool qt_node_remove(qt_node_t* node, qt_value_t value)
 {
+    for (int i = 0; i < node->items.size; i++)
+    {
+        if (node->items.items[i].value == value)
+        {
+            qt_array_remove(&node->items, i);
+            return true;
+        }
+    }
 
+    for (int i = 0; i < 4; i++)
+    {
+        if (node->nodes[i])
+        {
+            if (qt_node_remove(node->nodes[i], value))
+                return true;
+        }
+    }
+
+    return false;
 }
 
 // qt_node_query
