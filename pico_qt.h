@@ -10,46 +10,61 @@
     typedef float  qt_float;
 #endif
 
-typedef uint32_t qt_id_t;
+typedef uint32_t qt_value_t;
 
 typedef struct
 {
     qt_float x, y, w, h;
 } qt_rect_t;
 
+qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
+
 typedef struct qt_t qt_t;
-typedef struct qt_node_t qt_node_t;
 
 #endif // PICO_QT_H
 
 #ifdef PICO_QT_IMPLEMENTATION
 
-// PICO_QT_MAX_DEPTH
-// PICO_QT_MALLOC
-// PICO_QT FREE
-// PICO_QT_REALLOC
-// PICO_QT_ASSERT
+#ifdef NDEBUG
+    #define PICO_QT_ASSERT(expr) ((void)0)
+#else
+    #ifndef PICO_QT_ASSERT
+        #include <assert.h>
+        #define PICO_QT_ASSERT(expr) (assert(expr))
+    #endif
+#endif
 
-typedef struct qt_array_t qt_array_t; // Array of ids
+#if !defined(PICO_QT_MALLOC) || !defined(PICO_QT_REALLOC) || !defined(PICO_QT_FREE)
+#include <stdlib.h>
+#define PICO_QT_MALLOC(size)       (malloc(size))
+#define PICO_QT_REALLOC(ptr, size) (realloc(ptr, size))
+#define PICO_QT_FREE(ptr)          (free(ptr))
+#endif
+
+#ifndef PICO_QT_MAX_DEPTH
+#define PICO_QT_MAX_DEPTH 8
+#endif
+
+#define QT_ASSERT    PICO_QT_ASSERT
+#define QT_MALLOC    PICO_QT_MALLOC
+#define QT_REALLOC   PICO_QT_REALLOC
+#define QT_FREE      PICO_QT_FREE
+#define QT_MAX_DEPTH PICO_QT_MAX_DEPTH
+
+typedef struct qt_node_t qt_node_t;
 
 typedef struct
 {
-    qt_rect_t bounds;
-    qt_id_t id;
-} qt_node_item;
+    qt_value_t value;
+    qt_rect_t  bounds;
+} qt_item_t;
 
-// Don't expose array externally mean I need a qt_free function
-struct qt_array_t
+typedef struct
 {
-    int size;
-    int capacity;
-    qt_node_item* array;
-};
-
-struct qt_t
-{
-    qt_node_t* root;
-};
+    int        capacity;
+    int        size;
+    qt_item_t* items;
+} qt_array_t;
 
 struct qt_node_t
 {
@@ -60,24 +75,83 @@ struct qt_node_t
     qt_array_t items;
 };
 
+struct qt_t
+{
+    qt_node_t* root;
+};
+
+qt_array_t* qt_array_new(int capacity)
+{
+    qt_array_t* array = QT_MALLOC(sizeof(qt_array_t));
+
+    array->size = 0;
+    array->capacity = capacity;
+
+    if (capacity > 0)
+        array->items = QT_MALLOC(capacity * sizeof(qt_item_t));
+    else
+        array->items = NULL;
+
+    return array;
+}
+
+void qt_array_free(qt_array_t* array)
+{
+    QT_FREE(array->items);
+    QT_FREE(array);
+}
+
+void qt_array_resize(qt_array_t* array, int size)
+{
+    if (size < array->capacity)
+    {
+        array->size = size;
+        return;
+    }
+
+    while (array->capacity <= size)
+    {
+        array->capacity += (array->capacity / 2) + 2;
+    }
+
+    array->items = QT_REALLOC(array->items, array->capacity * sizeof(qt_item_t));
+    array->size = size;
+}
+
+void qt_array_push(qt_array_t* array, qt_value_t value, qt_rect_t bounds)
+{
+    int size = array->size;
+
+    qt_array_resize(array, size + 1);
+
+    array->items[size].value  = value;
+    array->items[size].bounds = bounds;
+}
+
+void qt_array_cat(qt_array_t* dst, qt_array_t* src)
+{
+    int total_capacity = dst->capacity + src->capacity;
+
+    if (dst->capacity < total_capacity)
+    {
+        dst->items = QT_REALLOC(dst->items, total_capacity * sizeof(qt_item_t));
+        dst->capacity = total_capacity;
+    }
+
+    memcpy(&dst->items[dst->size], src->items, src->size * sizeof(qt_item_t));
+}
+
 // qt_create
 // qt_destroy
 // qt_reset
 // qt_insert(qt, bounds, value)
 // qt_remove(qt, value)
-// qt_query(qt, area, array) // or qt_id_t* qt_query(qt, area, &size)
+// qt_query(qt, area, array) // or qt_value_t* qt_query(qt, area, &size)
 
-// qt_rect_make
+// qt_rect scale
 // qt_rect_contains
 // qt_rect_overlaps
 
-// qt_array_new(capacity)
-// qt_array_free(array)
-// qt_array_size(array)
-// qt_array_values(array)
-// qt_array_resize
-// qt_array_push
-// qt_array_concat
 
 // qt_node_new
 // qt_node_free
@@ -86,25 +160,3 @@ struct qt_node_t
 // qt_node_query
 
 #endif // PICO_QT_IMPLEMENTATION
-
-/*typedef enum
-{
-    QT_VALUE_ID,
-    QT_VALUE_PTR
-} qt_type_t;
-
-typedef struct
-{
-    qt_type_t type;
-
-    union
-    {
-        qt_id_t id;
-        void*   ptr;
-    } value;
-
-} qt_value_t;*/
-
-//qt_value_t qt_make_id(qt_id_t id)
-//qt_value_t qt_make_ptr(void* ptr)
-//qt_value_equal(qt_value_t v1, qt_value_t v2);
