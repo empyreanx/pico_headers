@@ -4,22 +4,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef PICO_QT_USE_DOUBLE
-    typedef double qt_float;
-#else
-    typedef float  qt_float;
-#endif
-
 typedef uint32_t qt_value_t;
 
 typedef struct qt_t qt_t;
 
 typedef struct
 {
-    qt_float x, y, w, h;
+    float x, y, w, h;
 } qt_rect_t;
 
-qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
+qt_rect_t qt_make_rect(float x, float y, float w, float h);
 
 qt_t* qt_create(qt_rect_t bounds);
 void qt_destroy(qt_t* qt);
@@ -91,7 +85,7 @@ struct qt_t
 static void qt_array_init(qt_array_t* array, int capacity);
 static void qt_array_destroy(qt_array_t* array);
 static void qt_array_resize(qt_array_t* array, int size);
-static void qt_array_push(qt_array_t* array, qt_rect_t bounds, qt_value_t value);
+static void qt_array_push(qt_array_t* array, qt_rect_t* bounds, qt_value_t value);
 static void qt_array_cat(qt_array_t* dst, qt_array_t* src);
 static void qt_array_remove(qt_array_t* array, int index);
 static bool qt_rect_contains(qt_rect_t* r1, qt_rect_t* r2);
@@ -193,14 +187,14 @@ static void qt_array_resize(qt_array_t* array, int size)
     array->size = size;
 }
 
-static void qt_array_push(qt_array_t* array, qt_rect_t bounds, qt_value_t value)
+static void qt_array_push(qt_array_t* array, qt_rect_t* bounds, qt_value_t value)
 {
     int size = array->size;
 
     qt_array_resize(array, size + 1);
 
-    array->items[size].value  = value;
-    array->items[size].bounds = bounds;
+    array->items[size].value  =  value;
+    array->items[size].bounds = *bounds;
 }
 
 static void qt_array_cat(qt_array_t* dst, qt_array_t* src)
@@ -231,7 +225,7 @@ static void qt_array_remove(qt_array_t* array, int index)
     }
 }
 
-qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h)
+qt_rect_t qt_make_rect(float x, float y, float w, float h)
 {
     qt_rect_t r = { x, y, w, h };
     return r;
@@ -321,7 +315,7 @@ static void qt_node_insert(qt_node_t* node, qt_rect_t* bounds, qt_value_t value)
         }
     }
 
-    qt_array_push(&node->items, *bounds, value);
+    qt_array_push(&node->items, bounds, value);
 }
 
 static bool qt_node_remove(qt_node_t* node, qt_value_t value)
@@ -367,7 +361,7 @@ static void qt_node_query(qt_node_t* node, qt_rect_t* area, qt_array_t* array)
         qt_item_t* item = &node->items.items[i];
 
         if (qt_rect_overlaps(area, &item->bounds))
-            qt_array_push(array, item->bounds, item->value);
+            qt_array_push(array, &item->bounds, item->value);
     }
 
     for (int i = 0; i < 4; i++)
