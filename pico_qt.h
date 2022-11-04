@@ -105,9 +105,9 @@ static void qt_node_query(qt_node_t* node, qt_rect_t* area, qt_array_t* array);
 
 qt_t* qt_create(qt_rect_t bounds)
 {
-    qt_t* qt = QT_MALLOC(sizeof(sizeof(qt_t)));
+    qt_t* qt = QT_MALLOC(sizeof(qt_t));
 
-//    qt->bounds = bounds;
+    qt->bounds = bounds;
     qt->root = qt_node_create(bounds, 0);
     qt_array_init(&qt->tmp, 32);
 
