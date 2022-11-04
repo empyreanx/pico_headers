@@ -12,12 +12,12 @@
 
 typedef uint32_t qt_value_t;
 
+typedef struct qt_t qt_t;
+
 typedef struct
 {
     qt_float x, y, w, h;
 } qt_rect_t;
-
-typedef struct qt_t qt_t;
 
 qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
 
@@ -82,7 +82,6 @@ struct qt_node_t
 
 struct qt_t
 {
-    qt_rect_t  bounds;
     qt_node_t* root;
     qt_array_t tmp;
 };
@@ -99,16 +98,14 @@ static qt_node_t* qt_node_create(qt_rect_t bounds, int depth);
 static void qt_node_destroy(qt_node_t* node);
 static void qt_node_insert(qt_node_t* node, qt_rect_t* bounds, qt_value_t value);
 static bool qt_node_remove(qt_node_t* node, qt_value_t value);
-static void qt_node_all(qt_node_t* node, qt_array_t* array);
+static void qt_node_all_items(qt_node_t* node, qt_array_t* array);
 static void qt_node_query(qt_node_t* node, qt_rect_t* area, qt_array_t* array);
 
 qt_t* qt_create(qt_rect_t bounds)
 {
     qt_t* qt = QT_MALLOC(sizeof(sizeof(qt_t)));
 
-    qt->bounds = bounds;
     qt->root = qt_node_create(bounds, 0);
-
     qt_array_init(&qt->tmp, 32);
 
     return qt;
@@ -349,14 +346,14 @@ static bool qt_node_remove(qt_node_t* node, qt_value_t value)
     return false;
 }
 
-static void qt_node_all(qt_node_t* node, qt_array_t* array)
+static void qt_node_all_items(qt_node_t* node, qt_array_t* array)
 {
     qt_array_cat(array, &node->items);
 
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
-            qt_node_all(node->nodes[i], array);
+            qt_node_all_items(node->nodes[i], array);
     }
 }
 
@@ -376,7 +373,7 @@ static void qt_node_query(qt_node_t* node, qt_rect_t* area, qt_array_t* array)
         {
             if (qt_rect_contains(area, &node->bounds[i]))
             {
-                qt_node_all(node->nodes[i], array);
+                qt_node_all_items(node->nodes[i], array);
             }
             else
             {
