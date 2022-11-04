@@ -83,8 +83,9 @@ struct qt_node_t
 
 struct qt_t
 {
-    qt_node_t* root;
     qt_array_t tmp;
+    qt_rect_t  bounds;
+    qt_node_t* root;
 };
 
 static void qt_array_init(qt_array_t* array, int capacity);
@@ -106,6 +107,7 @@ qt_t* qt_create(qt_rect_t bounds)
 {
     qt_t* qt = QT_MALLOC(sizeof(sizeof(qt_t)));
 
+//    qt->bounds = bounds;
     qt->root = qt_node_create(bounds, 0);
     qt_array_init(&qt->tmp, 32);
 
