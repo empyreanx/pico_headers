@@ -1,8 +1,14 @@
 #include "../pico_qt.h"
 #include "../pico_unit.h"
 
+#include <stdlib.h>
+
 qt_t* qt;
 qt_value_t* values;
+
+static int cmp_values(const void * a, const void * b);
+static void sort_values(qt_value_t* values, int size);
+static int random_int(int min, int max);
 
 PU_TEST(test_insert_single_contained)
 {
@@ -32,7 +38,6 @@ PU_TEST(test_insert_single_no_fit)
     return true;
 }
 
-
 static PU_SUITE(suite_qt)
 {
     PU_RUN_TEST(test_insert_single_contained);
@@ -59,6 +64,21 @@ int main()
     PU_RUN_SUITE(suite_qt);
     pu_print_stats();
     return pu_test_failed();
+}
+
+static int cmp_values(const void * a, const void * b)
+{
+   return ( *(qt_value_t*)a - *(qt_value_t*)b );
+}
+
+static void sort_values(qt_value_t* values, int size)
+{
+   qsort(values, size, sizeof(qt_value_t), cmp_values);
+}
+
+static int random_int(int min, int max)
+{
+    return rand() % (max + 1 - min) + min;
 }
 
 #define PICO_QT_IMPLEMENTATION
