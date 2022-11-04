@@ -3,12 +3,13 @@
 
 #include <stdlib.h>
 
-qt_t* qt;
-qt_value_t* values;
-
+// Helper functions
 static int cmp_values(const void * a, const void * b);
 static void sort_values(qt_value_t* values, int size);
 static int random_int(int min, int max);
+
+qt_t* qt;
+qt_value_t* values;
 
 PU_TEST(test_insert_single_contained)
 {
@@ -16,10 +17,20 @@ PU_TEST(test_insert_single_contained)
 
     int size;
 
-    values = qt_query(qt, qt_make_rect(-7, -7, 5, 5), &size);
+    // Found
+    {
+        values = qt_query(qt, qt_make_rect(-7, -7, 5, 5), &size);
 
-    PU_ASSERT(size == 1);
-    PU_ASSERT(values[0] == 0);
+        PU_ASSERT(size == 1);
+        PU_ASSERT(values[0] == 0);
+    }
+
+    // Not found
+    {
+        values = qt_query(qt, qt_make_rect(5, 5, 5, 5), &size);
+
+        PU_ASSERT(size == 0);
+    }
 
     return true;
 }
