@@ -26,6 +26,7 @@ void qt_destroy(qt_t* qt);
 void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value);
 bool qt_remove(qt_t* qt, qt_value_t value);
 qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
+void qt_free(void* ptr);
 
 #endif // PICO_QT_H
 
