@@ -21,12 +21,11 @@
     queries. Items (values + bounds) are inserted into the tree. During this
     process, space in a quadtree is subdivided to make subsequent retrieval
     fast. Queries return values for all items that are contained within or
-    overlapping a search area. In some ways, the algorithm is analogous to a
-    binary search.
+    overlap the search area.
 
     Currently, values are numeric. If uintptr_t is used they can also store a
     pointer. An integer value could represent an entity ID, and array index,
-    or keys for a hashtable etc...
+    or key for a hashtable etc...
 
     Usage:
     ------
@@ -63,21 +62,18 @@ typedef float  qt_float;
 
 #ifdef PICO_QT_USE_UINTPTR
 /**
- * @brief Value stored in a quadtree item
- * This value could be a pointer or integer value like an entity ID, array
- * index, hashtable key, etc...
+ * @brief Value data type that can store an integer or pointer
  */
 typedef uintptr_t qt_value_t;
 #else
 /**
- * @brief Value stored in a quadtree item
- * This value could be used for an entity ID, array index, hashtable key, etc...
+ * @brief Value data type that can store an integer
  */
 typedef uint32_t qt_value_t;
 #endif
 
 /**
- * @brief Quadtree datatype
+ * @brief Quadtree data type
  */
 typedef struct qt_t qt_t;
 
@@ -108,7 +104,7 @@ qt_t* qt_create(qt_rect_t bounds);
 void qt_destroy(qt_t* qt);
 
 /**
- * @brief Clears the tree of all nodes
+ * @brief Clears all nodes in the tree
  * @param qt The quadtree instance
  */
 void qt_reset(qt_t* qt);
@@ -125,7 +121,7 @@ void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value);
  * @brief Searches for and removes a value in a quadtree
  *
  * Warning: This function is very inefficient. If numerous values need to be
- * removed and reinserted it is advisable to simply rebuild the tree
+ * removed and reinserted it is advisable to simply rebuild the tree.
  *
  * @param qt    The quadtree instance
  * @param value The value to remove
@@ -139,7 +135,7 @@ bool qt_remove(qt_t* qt, qt_value_t value);
  * @param qt   The quadtree instance
  * @param area The search area
  * @param size The number of values returned
- * @returns The values of items contained within the search area. This value is
+ * @returns The values of items contained within the search area. This array is
  * dynamically allocated and should be freed by `qt_free` after use
  */
 qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
@@ -147,7 +143,7 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
 /**
  * @brief Free function alias intended to be used with the output of `qt_query`
  */
-void qt_free(void* ptr);
+void qt_free(qt_value_t* array);
 
 #ifdef __cplusplus
 }
@@ -329,12 +325,12 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
     return values;
 }
 
-void qt_free(void* ptr)
+void qt_free(qt_value_t* array)
 {
-    if (!ptr)
+    if (!array)
         return;
 
-    QT_FREE(ptr);
+    QT_FREE(array);
 }
 
 /*=============================================================================
@@ -409,7 +405,7 @@ static void qt_array_cat(qt_array_t* dst, const qt_array_t* src)
     int total_capacity = dst->capacity + src->capacity;
 
     // Resize the array if dst capacity is less than the sum of the capacities
-    // This is the most likely case.
+    // This is the most likely case
     if (dst->capacity < total_capacity)
     {
         dst->items = QT_REALLOC(dst->items, total_capacity * sizeof(qt_item_t));
@@ -431,7 +427,7 @@ static void qt_array_remove(qt_array_t* array, int index)
     int size = array->size;
 
     // Overwrites the item at the index with the item at the end of the array
-    // This is fast, but it changes the order of the array, however, order
+    // This is fast, but it changes the order of the array Fortunately, order
     // doesn't matter in this case
     if (size > 0)
     {
@@ -479,6 +475,7 @@ static qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
     bounds.w /= 2.0f;
     bounds.h /= 2.0f;
 
+    // Calculates bounds of subtrees
     node->bounds[0] = qt_make_rect(bounds.x,
                                    bounds.y,
                                    bounds.w,
@@ -516,7 +513,7 @@ static void qt_node_destroy(qt_node_t* node)
             qt_node_destroy(node->nodes[i]);
     }
 
-    // Deallocate array
+    // Deallocate item array
     qt_array_destroy(&node->items);
 
     // Free current node
@@ -531,19 +528,20 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
     // Loop over child nodes
     for (int i = 0; i < 4; i++)
     {
-        // Child node contains new bounds
+        // Check if child node contains new bounds
         if (qt_rect_contains(&node->bounds[i], bounds))
         {
-            // Max depth has not been reached
+            // Check if max depth has not been reached
             if (node->depth + 1 < QT_MAX_DEPTH)
             {
-                // Node doesn't exist, so create it
+                // If max depth is has not been reached, try to recursively fit
+                // the item into a child at a greater depth
                 if (!node->nodes[i])
                 {
                     node->nodes[i] = qt_node_create(node->bounds[i], node->depth + 1);
                 }
 
-                // Recursively insert into child node
+                // Try recursive insert into child node
                 qt_node_insert(node->nodes[i], bounds, value);
                 return;
             }
@@ -559,12 +557,13 @@ static bool qt_node_remove(qt_node_t* node, qt_value_t value)
 {
     QT_ASSERT(node);
 
-    // Searches the items at this level and removes the item with the specified
-    // value, if found
+    // Searches the items at this depth and, if found, removes the item with the
+    // specified value
     for (int i = 0; i < node->items.size; i++)
     {
         qt_item_t* item = &node->items.items[i];
 
+        // If value is found, then remove the node from the items array
         if (item->value == value)
         {
             qt_array_remove(&node->items, i);
@@ -591,10 +590,10 @@ static void qt_node_all_items(const qt_node_t* node, qt_array_t* array)
     QT_ASSERT(node);
     QT_ASSERT(array);
 
-    // Add all items at this level to the array
+    // Add all items at this depth into the array
     qt_array_cat(array, &node->items);
 
-    // Recursively add all items from in the subtree
+    // Recursively add all items found in the subtrees
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
@@ -608,8 +607,8 @@ static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array
     QT_ASSERT(area);
     QT_ASSERT(array);
 
-    // Searches this level for items that intersect the area an add them to the
-    // array
+    // Searches at this depth for items that intersect the area and adds them to
+    // the array
     for (int i = 0; i < node->items.size; i++)
     {
         qt_item_t* item = &node->items.items[i];
@@ -624,7 +623,7 @@ static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array
         if (node->nodes[i])
         {
             // If the area contains the the entire subtree, all items in the
-            // subtree match and are added to the list
+            // subtree match and are recursively added to the list
             if (qt_rect_contains(area, &node->bounds[i]))
             {
                 qt_node_all_items(node->nodes[i], array);
