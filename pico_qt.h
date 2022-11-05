@@ -4,27 +4,94 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @brief Value stored in a quadtree item
+ * This value could be an entity ID, array index, hashtable key, etc...
+ */
 typedef uint32_t qt_value_t;
 
+/**
+ * @brief Quadtree datatype
+ */
 typedef struct qt_t qt_t;
 
+/**
+ * @brief Rectangle for bounds checking
+ */
 typedef struct
 {
     float x, y, w, h;
 } qt_rect_t;
 
+/**
+ * @brief Function for creating a rectangle
+ */
 qt_rect_t qt_make_rect(float x, float y, float w, float h);
 
+/**
+ * @brief Creates a quadtree with the specified global bounds
+ * @param bounds The global bounds
+ * @returns A quadtree instance
+ */
 qt_t* qt_create(qt_rect_t bounds);
+
+/**
+ * @brief Destroys a quadtree
+ * @param qt The quadtree instance to destroy
+ */
 void qt_destroy(qt_t* qt);
+
+/**
+ * @brief Inserts a value with the specified bounds into a quadtree
+ * @param qt     The quadtree instance
+ * @param bounds The bounds associated with the value
+ * @param value  The value to store in the tree
+ */
 void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value);
+
+/**
+ * @brief Searches for and removes a value in a quadtree
+ *
+ * Warning: This function is very inefficient. If numerous values need to be
+ * removed and reinserted it is advisable to simply rebuild the tree
+ *
+ * @param qt    The quadtree instance
+ * @param value The value to remove
+ * @returns True if the item was found, and false otherwise
+ */
 bool qt_remove(qt_t* qt, qt_value_t value);
+
+/**
+ * @brief Returns all values associated with items that are either overlapping
+ * or contained within the search area
+ * @param qt   The quadtree instance
+ * @param area The search area
+ * @param size The number of values returned
+ * @returns The values of items contained within the search area. This value is
+ * dynamically allocated and should be freed by `qt_free` after use
+ */
 qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
+
+/**
+ * @brief Free function alias intended to be used with the output of `qt_query`
+ */
 void qt_free(void* ptr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // PICO_QT_H
 
 #ifdef PICO_QT_IMPLEMENTATION
+
+/*=============================================================================
+ * Macros and constants
+ *============================================================================*/
 
 #ifdef NDEBUG
     #define PICO_QT_ASSERT(expr) ((void)0)
@@ -46,11 +113,19 @@ void qt_free(void* ptr);
 #define PICO_QT_MAX_DEPTH 8
 #endif
 
+/*=============================================================================
+ * Internal aliases
+ *============================================================================*/
+
 #define QT_ASSERT    PICO_QT_ASSERT
 #define QT_MALLOC    PICO_QT_MALLOC
 #define QT_REALLOC   PICO_QT_REALLOC
 #define QT_FREE      PICO_QT_FREE
 #define QT_MAX_DEPTH PICO_QT_MAX_DEPTH
+
+/*=============================================================================
+ * Internal data structures
+ *============================================================================*/
 
 typedef struct qt_node_t qt_node_t;
 
@@ -82,6 +157,10 @@ struct qt_t
     qt_node_t* root;
 };
 
+/*=============================================================================
+ * Internal function declarations
+ *============================================================================*/
+
 static void qt_array_init(qt_array_t* array, int capacity);
 static void qt_array_destroy(qt_array_t* array);
 static void qt_array_resize(qt_array_t* array, int size);
@@ -96,6 +175,10 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
 static bool qt_node_remove(qt_node_t* node, qt_value_t value);
 static void qt_node_all_items(const qt_node_t* node, qt_array_t* array);
 static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array_t* array);
+
+/*=============================================================================
+ * Public API implementation
+ *============================================================================*/
 
 qt_t* qt_create(qt_rect_t bounds)
 {
@@ -149,6 +232,10 @@ void qt_free(void* ptr)
 {
     QT_FREE(ptr);
 }
+
+/*=============================================================================
+ * Internal function definitions
+ *============================================================================*/
 
 static void qt_array_init(qt_array_t* array, int capacity)
 {
