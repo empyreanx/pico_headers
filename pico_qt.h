@@ -549,7 +549,7 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
     QT_ASSERT(node);
     QT_ASSERT(bounds);
 
-    // Checks to see if item can possibly be inserted into subtree
+    // Checks to see if item can possibly be inserted into a subtree
     if (node->depth + 1 < QT_MAX_DEPTH)
     {
         // Loop over child nodes
