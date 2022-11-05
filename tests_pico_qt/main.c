@@ -32,6 +32,7 @@ PU_TEST(test_insert_single)
         values = qt_query(qt, qt_make_rect(6, 6, 5, 5), &size);
 
         PU_ASSERT(size == 0);
+        PU_ASSERT(values == NULL);
     }
 
     return true;
@@ -56,6 +57,7 @@ PU_TEST(test_insert_single_contained)
         values = qt_query(qt, qt_make_rect(5, 5, 5, 5), &size);
 
         PU_ASSERT(size == 0);
+        PU_ASSERT(values == NULL);
     }
 
     return true;
@@ -126,6 +128,7 @@ PU_TEST(test_insert_multiple_random_contained)
         values = qt_query(qt, qt_make_rect(-7, -7, 3, 3), &size);
 
         PU_ASSERT(size == 0);
+        PU_ASSERT(values == NULL);
     }
 
     return true;
@@ -152,7 +155,9 @@ PU_TEST(test_remove)
     qt_remove(qt, 3);
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+
     PU_ASSERT(size == 0);
+    PU_ASSERT(values == NULL);
 
     return true;
 }
@@ -183,6 +188,7 @@ PU_TEST(test_reset)
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
 
     PU_ASSERT(size == 0);
+    PU_ASSERT(values == NULL);
 
     return true;
 }

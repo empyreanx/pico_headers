@@ -284,23 +284,29 @@ bool qt_remove(qt_t* qt, qt_value_t value)
 
 qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
 {
+    // Reset the internal array
     qt->tmp.size = 0;
 
+    // Start query the root node
     qt_node_query(qt->root, &area, &qt->tmp);
 
+    // If no results then return NULL
     if (qt->tmp.size == 0)
     {
         *size = 0;
         return NULL;
     }
 
+    // Allocate value array
     qt_value_t* values = QT_MALLOC(qt->tmp.size * sizeof(qt_value_t));
 
+    // Fill value array
     for (int i = 0; i < qt->tmp.size; i++)
     {
         values[i] = qt->tmp.items[i].value;
     }
 
+    // Set size and return
     *size = qt->tmp.size;
 
     return values;
@@ -340,17 +346,20 @@ static void qt_array_destroy(qt_array_t* array)
 
 static void qt_array_resize(qt_array_t* array, int size)
 {
+    // No change if size is below the capacity
     if (size < array->capacity)
     {
         array->size = size;
         return;
     }
 
+    // Calculate new capacity
     while (array->capacity <= size)
     {
         array->capacity += (array->capacity / 2) + 2;
     }
 
+    // Reallocate the array and set the new size
     array->items = QT_REALLOC(array->items, array->capacity * sizeof(qt_item_t));
     array->size = size;
 }
@@ -359,8 +368,10 @@ static void qt_array_push(qt_array_t* array, const qt_rect_t* bounds, qt_value_t
 {
     int size = array->size;
 
+    // Resize the array by one
     qt_array_resize(array, size + 1);
 
+    // Store new item
     array->items[size].value  =  value;
     array->items[size].bounds = *bounds;
 }
@@ -369,14 +380,18 @@ static void qt_array_cat(qt_array_t* dst, const qt_array_t* src)
 {
     int total_capacity = dst->capacity + src->capacity;
 
+    // Resize the array if dst capacity is less than the sum of the capacities
+    // This is the most likely case.
     if (dst->capacity < total_capacity)
     {
         dst->items = QT_REALLOC(dst->items, total_capacity * sizeof(qt_item_t));
         dst->capacity = total_capacity;
     }
 
+    // Copy the contents of the src array onto the end of the dst array
     memcpy(&dst->items[dst->size], src->items, src->size * sizeof(qt_item_t));
 
+    // Increase the size to match
     dst->size += src->size;
 }
 
@@ -386,6 +401,9 @@ static void qt_array_remove(qt_array_t* array, int index)
 
     int size = array->size;
 
+    // Overwrites the item at the index with the item at the end of the array
+    // This is fast, but it changes the order of the array, however, order
+    // doesn't matter in this case
     if (size > 0)
     {
         array->items[index] = array->items[size - 1];
@@ -423,6 +441,7 @@ static qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
 
     node->depth = depth;
 
+    // Calculate subdivided bounds
     bounds.w /= 2.0f;
     bounds.h /= 2.0f;
 
@@ -446,6 +465,7 @@ static qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
                                    bounds.w,
                                    bounds.h);
 
+    // Initialize item array with default capacity
     qt_array_init(&node->items, 8);
 
     return node;
@@ -453,41 +473,53 @@ static qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
 
 static void qt_node_destroy(qt_node_t* node)
 {
+    // Recursively destroy nodes
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
             qt_node_destroy(node->nodes[i]);
     }
 
+    // Deallocate array
     qt_array_destroy(&node->items);
 
+    // Free current node
     QT_FREE(node);
 }
 
 static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t value)
 {
+    // Loop over child nodes
     for (int i = 0; i < 4; i++)
     {
+        // Child node contains new bounds
         if (qt_rect_contains(&node->bounds[i], bounds))
         {
+            // Max depth has not been reached
             if (node->depth + 1 < QT_MAX_DEPTH)
             {
+                // Node doesn't exist, so create it
                 if (!node->nodes[i])
                 {
                     node->nodes[i] = qt_node_create(node->bounds[i], node->depth + 1);
                 }
 
+                // Recursively insert into child node
                 qt_node_insert(node->nodes[i], bounds, value);
                 return;
             }
         }
     }
 
+    // If none of the children contain the bounds, or the maximum depth has been
+    // reached, then the item belongs to this node
     qt_array_push(&node->items, bounds, value);
 }
 
 static bool qt_node_remove(qt_node_t* node, qt_value_t value)
 {
+    // Searches the items at this level and removes the item with the specified
+    // value, if found
     for (int i = 0; i < node->items.size; i++)
     {
         qt_item_t* item = &node->items.items[i];
@@ -499,6 +531,7 @@ static bool qt_node_remove(qt_node_t* node, qt_value_t value)
         }
     }
 
+    // If the item wasn't found, recursively search the subtrees of this node
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
@@ -508,13 +541,16 @@ static bool qt_node_remove(qt_node_t* node, qt_value_t value)
         }
     }
 
+    // Value wasn't found
     return false;
 }
 
 static void qt_node_all_items(const qt_node_t* node, qt_array_t* array)
 {
+    // Add all items at this level to the array
     qt_array_cat(array, &node->items);
 
+    // Recursively add all items from in the subtree
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
@@ -524,6 +560,8 @@ static void qt_node_all_items(const qt_node_t* node, qt_array_t* array)
 
 static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array_t* array)
 {
+    // Searches this level for items that intersect the area an add them to the
+    // array
     for (int i = 0; i < node->items.size; i++)
     {
         qt_item_t* item = &node->items.items[i];
@@ -532,16 +570,21 @@ static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array
             qt_array_push(array, &item->bounds, item->value);
     }
 
+    // Loop over children
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
         {
+            // If the area contains the the entire subtree, all items in the
+            // subtree are added to the list
             if (qt_rect_contains(area, &node->bounds[i]))
             {
                 qt_node_all_items(node->nodes[i], array);
             }
             else
             {
+                // Otherwise, if the area intersects the bounds of the subtree,
+                // the substree is recursively searched for items
                 if (qt_rect_overlaps(area, &node->bounds[i]))
                 {
                     qt_node_query(node->nodes[i], area, array);
