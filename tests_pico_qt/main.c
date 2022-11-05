@@ -1,3 +1,5 @@
+#define PICO_QT_USE_UINTPTR
+
 #include "../pico_qt.h"
 #include "../pico_unit.h"
 

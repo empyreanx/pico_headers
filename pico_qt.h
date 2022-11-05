@@ -252,8 +252,12 @@ qt_t* qt_create(qt_rect_t bounds)
 {
     qt_t* qt = QT_MALLOC(sizeof(qt_t));
 
+    if (!qt)
+        return NULL;
+
     qt->bounds = bounds;
     qt->root = qt_node_create(bounds, 0);
+
     qt_array_init(&qt->tmp, 32);
 
     return qt;
@@ -261,6 +265,8 @@ qt_t* qt_create(qt_rect_t bounds)
 
 void qt_destroy(qt_t* qt)
 {
+    QT_ASSERT(qt);
+
     qt_array_destroy(&qt->tmp);
     qt_node_destroy(qt->root);
     QT_FREE(qt);
@@ -268,22 +274,33 @@ void qt_destroy(qt_t* qt)
 
 void qt_reset(qt_t* qt)
 {
+    QT_ASSERT(qt);
+
     qt_node_destroy(qt->root);
     qt->root = qt_node_create(qt->bounds, 0);
 }
 
 void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value)
 {
+    QT_ASSERT(qt);
     qt_node_insert(qt->root, &bounds, value);
 }
 
 bool qt_remove(qt_t* qt, qt_value_t value)
 {
+    QT_ASSERT(qt);
     return qt_node_remove(qt->root, value);
 }
 
 qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
 {
+    QT_ASSERT(qt);
+    QT_ASSERT(size);
+
+    // Size must be valid
+    if (!size)
+        return NULL;
+
     // Reset the internal array
     qt->tmp.size = 0;
 
@@ -326,6 +343,8 @@ void qt_free(void* ptr)
 
 static void qt_array_init(qt_array_t* array, int capacity)
 {
+    QT_ASSERT(array);
+
     array->size = 0;
     array->capacity = capacity;
 
@@ -337,6 +356,7 @@ static void qt_array_init(qt_array_t* array, int capacity)
 
 static void qt_array_destroy(qt_array_t* array)
 {
+    QT_ASSERT(array);
     QT_FREE(array->items);
 
     array->items = NULL;
@@ -346,6 +366,8 @@ static void qt_array_destroy(qt_array_t* array)
 
 static void qt_array_resize(qt_array_t* array, int size)
 {
+    QT_ASSERT(array);
+
     // No change if size is below the capacity
     if (size < array->capacity)
     {
@@ -366,6 +388,9 @@ static void qt_array_resize(qt_array_t* array, int size)
 
 static void qt_array_push(qt_array_t* array, const qt_rect_t* bounds, qt_value_t value)
 {
+    QT_ASSERT(array);
+    QT_ASSERT(bounds);
+
     int size = array->size;
 
     // Resize the array by one
@@ -378,6 +403,9 @@ static void qt_array_push(qt_array_t* array, const qt_rect_t* bounds, qt_value_t
 
 static void qt_array_cat(qt_array_t* dst, const qt_array_t* src)
 {
+    QT_ASSERT(dst);
+    QT_ASSERT(src);
+
     int total_capacity = dst->capacity + src->capacity;
 
     // Resize the array if dst capacity is less than the sum of the capacities
@@ -397,6 +425,7 @@ static void qt_array_cat(qt_array_t* dst, const qt_array_t* src)
 
 static void qt_array_remove(qt_array_t* array, int index)
 {
+    QT_ASSERT(array);
     QT_ASSERT(index < array->size);
 
     int size = array->size;
@@ -413,12 +442,14 @@ static void qt_array_remove(qt_array_t* array, int index)
 
 qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h)
 {
-    qt_rect_t r = { x, y, w, h };
-    return r;
+    qt_rect_t r = { x, y, w, h }; return r;
 }
 
 static bool qt_rect_contains(const qt_rect_t* r1, const qt_rect_t* r2)
 {
+    QT_ASSERT(r1);
+    QT_ASSERT(r2);
+
     return r1->x <= r2->x &&
            r1->y <= r2->y &&
            r1->x + r1->w >= r2->x + r2->w &&
@@ -427,6 +458,9 @@ static bool qt_rect_contains(const qt_rect_t* r1, const qt_rect_t* r2)
 
 static bool qt_rect_overlaps(const qt_rect_t* r1, const qt_rect_t* r2)
 {
+    QT_ASSERT(r1);
+    QT_ASSERT(r2);
+
     return r1->x + r1->w >= r2->x &&
            r1->y + r1->h >= r2->y &&
            r2->x + r2->w >= r1->x &&
@@ -473,6 +507,8 @@ static qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
 
 static void qt_node_destroy(qt_node_t* node)
 {
+    QT_ASSERT(node);
+
     // Recursively destroy nodes
     for (int i = 0; i < 4; i++)
     {
@@ -489,6 +525,9 @@ static void qt_node_destroy(qt_node_t* node)
 
 static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t value)
 {
+    QT_ASSERT(node);
+    QT_ASSERT(bounds);
+
     // Loop over child nodes
     for (int i = 0; i < 4; i++)
     {
@@ -518,6 +557,8 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
 
 static bool qt_node_remove(qt_node_t* node, qt_value_t value)
 {
+    QT_ASSERT(node);
+
     // Searches the items at this level and removes the item with the specified
     // value, if found
     for (int i = 0; i < node->items.size; i++)
@@ -547,6 +588,9 @@ static bool qt_node_remove(qt_node_t* node, qt_value_t value)
 
 static void qt_node_all_items(const qt_node_t* node, qt_array_t* array)
 {
+    QT_ASSERT(node);
+    QT_ASSERT(array);
+
     // Add all items at this level to the array
     qt_array_cat(array, &node->items);
 
@@ -560,6 +604,10 @@ static void qt_node_all_items(const qt_node_t* node, qt_array_t* array)
 
 static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array_t* array)
 {
+    QT_ASSERT(node);
+    QT_ASSERT(area);
+    QT_ASSERT(array);
+
     // Searches this level for items that intersect the area an add them to the
     // array
     for (int i = 0; i < node->items.size; i++)
@@ -570,13 +618,13 @@ static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array
             qt_array_push(array, &item->bounds, item->value);
     }
 
-    // Loop over children
+    // Loop over subtrees
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
         {
             // If the area contains the the entire subtree, all items in the
-            // subtree are added to the list
+            // subtree match and are added to the list
             if (qt_rect_contains(area, &node->bounds[i]))
             {
                 qt_node_all_items(node->nodes[i], array);
