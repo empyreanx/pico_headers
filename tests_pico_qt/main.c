@@ -10,8 +10,8 @@ static int cmp_values(const void * a, const void * b);
 static void sort_values(qt_value_t* values, int size);
 static int random_int(int min, int max);
 
-qt_t* qt;
-qt_value_t* values;
+static qt_t* qt;
+static qt_value_t* values;
 
 PU_TEST(test_insert_single)
 {
