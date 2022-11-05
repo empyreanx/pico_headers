@@ -307,18 +307,6 @@ void qt_reset(qt_t* qt)
     qt->root = qt_node_create(qt->bounds, 0);
 }
 
-void qt_clean(qt_t* qt)
-{
-    qt_node_all_items(qt->root, &qt->tmp);
-    qt_reset(qt);
-
-    for (int i = 0; i < qt->tmp.size; i++)
-    {
-        qt_item_t* item = &qt->tmp.items[i];
-        qt_node_insert(qt->root, &item->bounds, item->value);
-    }
-}
-
 /*=============================================================================
  * Internal function definitions
  *============================================================================*/
