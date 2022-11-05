@@ -11,31 +11,7 @@ static int random_int(int min, int max);
 qt_t* qt;
 qt_value_t* values;
 
-PU_TEST(test_insert_single_contained)
-{
-    qt_insert(qt, qt_make_rect(-5, -5, 3, 3), 0);
-
-    int size;
-
-    // Found
-    {
-        values = qt_query(qt, qt_make_rect(-7, -7, 5, 5), &size);
-
-        PU_ASSERT(size == 1);
-        PU_ASSERT(values[0] == 0);
-    }
-
-    // Not found
-    {
-        values = qt_query(qt, qt_make_rect(5, 5, 5, 5), &size);
-
-        PU_ASSERT(size == 0);
-    }
-
-    return true;
-}
-
-PU_TEST(test_insert_single_no_fit)
+PU_TEST(test_insert_single)
 {
     qt_insert(qt, qt_make_rect(-5, -5, 10, 10), 0);
 
@@ -54,6 +30,30 @@ PU_TEST(test_insert_single_no_fit)
     // Not found
     {
         values = qt_query(qt, qt_make_rect(6, 6, 5, 5), &size);
+
+        PU_ASSERT(size == 0);
+    }
+
+    return true;
+}
+
+PU_TEST(test_insert_single_contained)
+{
+    qt_insert(qt, qt_make_rect(-5, -5, 3, 3), 0);
+
+    int size;
+
+    // Found
+    {
+        values = qt_query(qt, qt_make_rect(-7, -7, 5, 5), &size);
+
+        PU_ASSERT(size == 1);
+        PU_ASSERT(values[0] == 0);
+    }
+
+    // Not found
+    {
+        values = qt_query(qt, qt_make_rect(5, 5, 5, 5), &size);
 
         PU_ASSERT(size == 0);
     }
@@ -90,7 +90,7 @@ PU_TEST(test_insert_multiple_random)
     return true;
 }
 
-PU_TEST(test_insert_multiple_random_quadrant)
+PU_TEST(test_insert_multiple_random_contained)
 {
     srand(42);
 
@@ -131,7 +131,33 @@ PU_TEST(test_insert_multiple_random_quadrant)
     return true;
 }
 
-PU_TEST(test_reset_multiple_random)
+PU_TEST(test_remove)
+{
+    qt_insert(qt, qt_make_rect(-3, -3, 2, 2), 0);
+    qt_insert(qt, qt_make_rect( 5,  5, 3, 3), 1);
+    qt_insert(qt, qt_make_rect( 3, -5, 4, 3), 2);
+    qt_insert(qt, qt_make_rect(-5,  3, 3, 5), 3);
+
+    qt_remove(qt, 0);
+    qt_remove(qt, 1);
+
+    int size;
+
+    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    qt_free(values);
+
+    PU_ASSERT(size == 2);
+
+    qt_remove(qt, 2);
+    qt_remove(qt, 3);
+
+    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    PU_ASSERT(size == 0);
+
+    return true;
+}
+
+PU_TEST(test_reset)
 {
     srand(42);
 
@@ -163,11 +189,12 @@ PU_TEST(test_reset_multiple_random)
 
 static PU_SUITE(suite_qt)
 {
+    PU_RUN_TEST(test_insert_single);
     PU_RUN_TEST(test_insert_single_contained);
-    PU_RUN_TEST(test_insert_single_no_fit);
     PU_RUN_TEST(test_insert_multiple_random);
-    PU_RUN_TEST(test_insert_multiple_random_quadrant);
-    PU_RUN_TEST(test_reset_multiple_random);
+    PU_RUN_TEST(test_insert_multiple_random_contained);
+    PU_RUN_TEST(test_remove);
+    PU_RUN_TEST(test_reset);
 }
 
 void setup()
