@@ -1,3 +1,46 @@
+/**
+    @file pico_qt.h
+    @brief A simple quadtree library
+
+    ----------------------------------------------------------------------------
+    Licensing information at end of header
+    ----------------------------------------------------------------------------
+
+    Features:
+    ---------
+    - Written in C99
+    - Single header library for easy build system integration
+    - Simple and concise API
+    - Permissive license (zlib or public domain)
+
+    Summary:
+    --------
+    This library builds and manages [Quadtrees](https://en.wikipedia.org/wiki/Quadtree).
+
+    A quadtree is a data structure that can be used to perform efficient spatial
+    queries. Items (values + bounds) are inserted into the tree. During this
+    process space in a quadtree is subdivided to make retrieval fast. Queries
+    return values for all items that are contained or overlapping a search area.
+    In some ways this resembles a binary search. In some ways, this resembles a
+    binary search.
+
+    Usage:
+    ------
+
+    To use this library in your project, add the following
+
+    > #define PICO_QT_IMPLEMENTATION
+    > #include "pico_qt.h"
+
+    to a source file (once), then simply include the header normally.
+
+    Constants:
+    --------
+    - PICO_QT_MAX_DEPTH (default: 8)
+
+    Must be defined before PICO_QT_IMPLEMENTATION
+*/
+
 #ifndef PICO_QT_H
 #define PICO_QT_H
 
@@ -471,3 +514,56 @@ static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array
 }
 
 #endif // PICO_QT_IMPLEMENTATION
+
+/*
+    ----------------------------------------------------------------------------
+    This software is available under two licenses (A) or (B). You may choose
+    either one as you wish:
+    ----------------------------------------------------------------------------
+
+    (A) The zlib License
+
+    Copyright (c) 2022 James McLean
+
+    This software is provided 'as-is', without any express or implied warranty.
+    In no event will the authors be held liable for any damages arising from the
+    use of this software.
+
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+
+    1. The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software in a
+    product, an acknowledgment in the product documentation would be appreciated
+    but is not required.
+
+    2. Altered source versions must be plainly marked as such, and must not be
+    misrepresented as being the original software.
+
+    3. This notice may not be removed or altered from any source distribution.
+
+    ----------------------------------------------------------------------------
+
+    (B) Public Domain (www.unlicense.org)
+
+    This is free and unencumbered software released into the public domain.
+
+    Anyone is free to copy, modify, publish, use, compile, sell, or distribute
+    this software, either in source code form or as a compiled binary, for any
+    purpose, commercial or non-commercial, and by any means.
+
+    In jurisdictions that recognize copyright laws, the author or authors of
+    this software dedicate any and all copyright interest in the software to the
+    public domain. We make this dedication for the benefit of the public at
+    large and to the detriment of our heirs and successors. We intend this
+    dedication to be an overt act of relinquishment in perpetuity of all present
+    and future rights to this software under copyright law.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+    ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
