@@ -19,10 +19,13 @@
 
     A quadtree is a data structure that can be used to perform efficient spatial
     queries. Items (values + bounds) are inserted into the tree. During this
-    process space in a quadtree is subdivided to make retrieval fast. Queries
-    return values for all items that are contained or overlapping a search area.
-    In some ways this resembles a binary search. In some ways, this resembles a
-    binary search.
+    process, space in a quadtree is subdivided to make subsequent retrieval
+    fast. Queries return values for all items that are contained within or
+    overlapping a search area. In some ways, this resembles a binary search.
+
+    Currently, values are numeric. If uintptr_t is used they can also store a
+    pointer. An integer value could represent an entity ID, and array index,
+    or keys for a hashtable etc...
 
     Usage:
     ------
@@ -51,11 +54,26 @@
 extern "C" {
 #endif
 
+#ifdef PICO_QT_USE_DOUBLE
+typedef double qt_float;
+#else
+typedef float  qt_float;
+#endif
+
+#ifdef PICO_QT_USE_UINTPTR
 /**
  * @brief Value stored in a quadtree item
- * This value could be an entity ID, array index, hashtable key, etc...
+ * This value could be a pointer or integral value like an entity ID,
+ * array index, hashtable key, etc...
+ */
+typedef uintptr_t qt_value_t;
+#else
+/**
+ * @brief Value stored in a quadtree item
+ * This value could be used for an entity ID, array index, hashtable key, etc...
  */
 typedef uint32_t qt_value_t;
+#endif
 
 /**
  * @brief Quadtree datatype
@@ -67,13 +85,13 @@ typedef struct qt_t qt_t;
  */
 typedef struct
 {
-    float x, y, w, h;
+    qt_float x, y, w, h;
 } qt_rect_t;
 
 /**
  * @brief Function for creating a rectangle
  */
-qt_rect_t qt_make_rect(float x, float y, float w, float h);
+qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
 
 /**
  * @brief Creates a quadtree with the specified global bounds
@@ -355,7 +373,7 @@ static void qt_array_remove(qt_array_t* array, int index)
     }
 }
 
-qt_rect_t qt_make_rect(float x, float y, float w, float h)
+qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h)
 {
     qt_rect_t r = { x, y, w, h };
     return r;
