@@ -543,24 +543,26 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
     QT_ASSERT(node);
     QT_ASSERT(bounds);
 
-    // TODO: Move depth check outside of loop
-    // Loop over child nodes
-    for (int i = 0; i < 4; i++)
+    // Checks to see if item can possibly be inserted into subtree
+    if (node->depth + 1 < QT_MAX_DEPTH)
     {
-        // Check if child node contains the bounds
-        if (qt_rect_contains(&node->bounds[i], bounds))
+        // Loop over child nodes
+        for (int i = 0; i < 4; i++)
         {
-            // If so, check if max depth has not been reached
-            if (node->depth + 1 < QT_MAX_DEPTH)
+            // Check if child node contains the bounds
+            if (qt_rect_contains(&node->bounds[i], bounds))
             {
-                // If max depth is has not been reached and the bounds are fully
+                // If max depth has not been reached and the bounds are fully
                 // contained within the child's bounds, then try to recursively
-                // fit the item into a node at a greater depth
+                // fit the item into a node at a greater depth.
+
+                // If child node does not exist, then create it
                 if (!node->nodes[i])
                 {
                     node->nodes[i] = qt_node_create(node->bounds[i], node->depth + 1);
                 }
 
+                // The recursive call
                 qt_node_insert(node->nodes[i], bounds, value);
                 return;
             }
