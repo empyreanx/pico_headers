@@ -131,12 +131,43 @@ PU_TEST(test_insert_multiple_random_quadrant)
     return true;
 }
 
+PU_TEST(test_reset_multiple_random)
+{
+    srand(42);
+
+    for (int i = 0; i < 32; i++)
+    {
+        int x = random_int(-9, 9);
+        int y = random_int(-9, 9);
+        int w = random_int( 1, 10 - x);
+        int h = random_int( 1, 10 - y);
+        qt_insert(qt, qt_make_rect(x, y, w, h), i);
+    }
+
+    int size;
+
+    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+
+    PU_ASSERT(size == 32);
+
+    qt_free(values);
+
+    qt_reset(qt);
+
+    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+
+    PU_ASSERT(size == 0);
+
+    return true;
+}
+
 static PU_SUITE(suite_qt)
 {
     PU_RUN_TEST(test_insert_single_contained);
     PU_RUN_TEST(test_insert_single_no_fit);
     PU_RUN_TEST(test_insert_multiple_random);
     PU_RUN_TEST(test_insert_multiple_random_quadrant);
+    PU_RUN_TEST(test_reset_multiple_random);
 }
 
 void setup()

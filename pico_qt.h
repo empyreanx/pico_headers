@@ -108,6 +108,12 @@ qt_t* qt_create(qt_rect_t bounds);
 void qt_destroy(qt_t* qt);
 
 /**
+ * @brief Clears the tree of all nodes
+ * @param qt The quadtree instance
+ */
+void qt_reset(qt_t* qt);
+
+/**
  * @brief Inserts a value with the specified bounds into a quadtree
  * @param qt     The quadtree instance
  * @param bounds The bounds associated with the value
@@ -142,12 +148,6 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
  * @brief Free function alias intended to be used with the output of `qt_query`
  */
 void qt_free(void* ptr);
-
-/**
- * @brief Clears the tree of all nodes
- * @param qt The quadtree instance
- */
-void qt_reset(qt_t* qt);
 
 #ifdef __cplusplus
 }
@@ -266,7 +266,11 @@ void qt_destroy(qt_t* qt)
     QT_FREE(qt);
 }
 
-// qt_reset
+void qt_reset(qt_t* qt)
+{
+    qt_node_destroy(qt->root);
+    qt->root = qt_node_create(qt->bounds, 0);
+}
 
 void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value)
 {
@@ -284,6 +288,12 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
 
     qt_node_query(qt->root, &area, &qt->tmp);
 
+    if (qt->tmp.size == 0)
+    {
+        *size = 0;
+        return NULL;
+    }
+
     qt_value_t* values = QT_MALLOC(qt->tmp.size * sizeof(qt_value_t));
 
     for (int i = 0; i < qt->tmp.size; i++)
@@ -298,13 +308,10 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
 
 void qt_free(void* ptr)
 {
-    QT_FREE(ptr);
-}
+    if (!ptr)
+        return;
 
-void qt_reset(qt_t* qt)
-{
-    qt_node_destroy(qt->root);
-    qt->root = qt_node_create(qt->bounds, 0);
+    QT_FREE(ptr);
 }
 
 /*=============================================================================
