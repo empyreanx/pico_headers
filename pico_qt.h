@@ -57,8 +57,14 @@ extern "C" {
 #endif
 
 #ifdef PICO_QT_USE_DOUBLE
+/**
+ * @brief Double precision floating point type
+ */
 typedef double qt_float;
 #else
+/**
+ * @brief Single precision floating point type
+ */
 typedef float  qt_float;
 #endif
 
@@ -80,7 +86,7 @@ typedef uint32_t qt_value_t;
 typedef struct qt_t qt_t;
 
 /**
- * @brief Rectangle for bounds checking
+ * @brief Rectangle for representing bounds
  */
 typedef struct
 {
@@ -88,7 +94,7 @@ typedef struct
 } qt_rect_t;
 
 /**
- * @brief Function for creating a rectangle
+ * @brief Utility function for creating a rectangle
  */
 qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
 
