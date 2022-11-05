@@ -21,7 +21,8 @@
     queries. Items (values + bounds) are inserted into the tree. During this
     process, space in a quadtree is subdivided to make subsequent retrieval
     fast. Queries return values for all items that are contained within or
-    overlapping a search area. In some ways, this resembles a binary search.
+    overlapping a search area. In some ways, the algorithm is analogous to a
+    binary search.
 
     Currently, values are numeric. If uintptr_t is used they can also store a
     pointer. An integer value could represent an entity ID, and array index,
@@ -63,8 +64,8 @@ typedef float  qt_float;
 #ifdef PICO_QT_USE_UINTPTR
 /**
  * @brief Value stored in a quadtree item
- * This value could be a pointer or integral value like an entity ID,
- * array index, hashtable key, etc...
+ * This value could be a pointer or integer value like an entity ID, array
+ * index, hashtable key, etc...
  */
 typedef uintptr_t qt_value_t;
 #else
@@ -141,6 +142,12 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
  * @brief Free function alias intended to be used with the output of `qt_query`
  */
 void qt_free(void* ptr);
+
+/**
+ * @brief Clears the tree of all nodes
+ * @param qt The quadtree instance
+ */
+void qt_reset(qt_t* qt);
 
 #ifdef __cplusplus
 }
@@ -292,6 +299,24 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
 void qt_free(void* ptr)
 {
     QT_FREE(ptr);
+}
+
+void qt_reset(qt_t* qt)
+{
+    qt_node_destroy(qt->root);
+    qt->root = qt_node_create(qt->bounds, 0);
+}
+
+void qt_clean(qt_t* qt)
+{
+    qt_node_all_items(qt->root, &qt->tmp);
+    qt_reset(qt);
+
+    for (int i = 0; i < qt->tmp.size; i++)
+    {
+        qt_item_t* item = &qt->tmp.items[i];
+        qt_node_insert(qt->root, &item->bounds, item->value);
+    }
 }
 
 /*=============================================================================
