@@ -24,8 +24,8 @@
     overlap the search area.
 
     Currently, values are numeric. If uintptr_t is used they can also store a
-    pointer. An integer value could represent an entity ID, and array index,
-    or key for a hashtable etc...
+    pointer. An integer value could represent an entity ID, and array index, a
+    key for a hashtable etc...
 
     Usage:
     ------
@@ -175,16 +175,22 @@ void qt_free(qt_value_t* array);
 #define PICO_QT_FREE(ptr)          (free(ptr))
 #endif
 
+// Maximum depth of a quadtree
+// There is a tradeoff between decreased search accuracy for small values, and
+// increased insert and search complexity for larger ones. The default value
+// represents a good balance between the two
 #ifndef PICO_QT_MAX_DEPTH
-#define PICO_QT_MAX_DEPTH 8
+#define PICO_QT_MAX_DEPTH 6
 #endif
 
+// Minimum capacity of array containing node items
 #ifndef PICO_QT_MIN_NODE_CAPACITY
-#define PICO_QT_MIN_NODE_CAPACITY 8
+#define PICO_QT_MIN_NODE_CAPACITY 16
 #endif
 
+// Minimum capacity of quadtree's internal array
 #ifndef PICO_QT_MIN_CAPACITY
-#define PICO_QT_MIN_CAPACITY 32
+#define PICO_QT_MIN_CAPACITY 256
 #endif
 
 /*=============================================================================
@@ -537,31 +543,32 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
     QT_ASSERT(node);
     QT_ASSERT(bounds);
 
+    // TODO: Move depth check outside of loop
     // Loop over child nodes
     for (int i = 0; i < 4; i++)
     {
-        // Check if child node contains new bounds
+        // Check if child node contains the bounds
         if (qt_rect_contains(&node->bounds[i], bounds))
         {
-            // Check if max depth has not been reached
+            // If so, check if max depth has not been reached
             if (node->depth + 1 < QT_MAX_DEPTH)
             {
-                // If max depth is has not been reached, try to recursively fit
-                // the item into a child at a greater depth
+                // If max depth is has not been reached and the bounds are fully
+                // contained within the child's bounds, then try to recursively
+                // fit the item into a node at a greater depth
                 if (!node->nodes[i])
                 {
                     node->nodes[i] = qt_node_create(node->bounds[i], node->depth + 1);
                 }
 
-                // Try recursive insert into child node
                 qt_node_insert(node->nodes[i], bounds, value);
                 return;
             }
         }
     }
 
-    // If none of the children contain the bounds, or the maximum depth has been
-    // reached, then the item belongs to this node
+    // If none of the children fully contain the bounds, or the maximum depth
+    // has been reached, then the item belongs to this node
     qt_array_push(&node->items, bounds, value);
 }
 
@@ -569,7 +576,7 @@ static bool qt_node_remove(qt_node_t* node, qt_value_t value)
 {
     QT_ASSERT(node);
 
-    // Searches the items at this depth and, if found, removes the item with the
+    // Searches the items in this node and, if found, removes the item with the
     // specified value
     for (int i = 0; i < node->items.size; i++)
     {
@@ -602,7 +609,7 @@ static void qt_node_all_items(const qt_node_t* node, qt_array_t* array)
     QT_ASSERT(node);
     QT_ASSERT(array);
 
-    // Add all items at this depth into the array
+    // Add all items in this node into the array
     qt_array_cat(array, &node->items);
 
     // Recursively add all items found in the subtrees
@@ -619,7 +626,7 @@ static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array
     QT_ASSERT(area);
     QT_ASSERT(array);
 
-    // Searches at this depth for items that intersect the area and adds them to
+    // Searches for items in this node that intersect the area and adds them to
     // the array
     for (int i = 0; i < node->items.size; i++)
     {
@@ -635,7 +642,7 @@ static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array
         if (node->nodes[i])
         {
             // If the area contains the the entire subtree, all items in the
-            // subtree match and are recursively added to the list
+            // subtree match and are recursively added to the array
             if (qt_rect_contains(area, &node->bounds[i]))
             {
                 qt_node_all_items(node->nodes[i], array);
@@ -643,7 +650,8 @@ static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array
             else
             {
                 // Otherwise, if the area intersects the bounds of the subtree,
-                // the substree is recursively searched for items
+                // the subtree is recursively searched for items intersecting
+                // or contained within the area
                 if (qt_rect_overlaps(area, &node->bounds[i]))
                 {
                     qt_node_query(node->nodes[i], area, array);
