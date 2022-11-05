@@ -24,7 +24,7 @@
     overlap the search area.
 
     Currently, values are numeric. If uintptr_t is used they can also store a
-    pointer. An integer value could represent an entity ID, and array index, a
+    pointer. An integer value could represent an entity ID, an array index, a
     key for a hashtable etc...
 
     Usage:
@@ -40,8 +40,8 @@
     Constants:
     --------
     - PICO_QT_MAX_DEPTH (default: 8)
-    - PICO_QT_MIN_NODE_CAPACITY (default: 8)
-    - PICO_QT_MIN_CAPACITY (default: 32)
+    - PICO_QT_MIN_NODE_CAPACITY (default: 16)
+    - PICO_QT_MIN_CAPACITY (default: 256)
 
     Must be defined before PICO_QT_IMPLEMENTATION
 */
