@@ -48,7 +48,7 @@ PU_TEST(test_insert_single_contained)
 
     // Found
     {
-        values = qt_query(qt, qt_make_rect(-7, -7, 5, 5), &size);
+        values = qt_query(qt, qt_make_rect(-7, -7, 7, 7), &size);
 
         PU_ASSERT(size == 1);
         PU_ASSERT(values[0] == 0);
@@ -61,6 +61,28 @@ PU_TEST(test_insert_single_contained)
         PU_ASSERT(size == 0);
         PU_ASSERT(values == NULL);
     }
+
+    return true;
+}
+
+PU_TEST(test_insert_multiple)
+{
+    qt_insert(qt, qt_make_rect(-7, -7, 2, 2), 0);
+    qt_insert(qt, qt_make_rect(-5, -5, 3, 3), 1);
+    qt_insert(qt, qt_make_rect(-3, -5, 4, 4), 2);
+    qt_insert(qt, qt_make_rect( 3,  3, 3, 5), 3);
+
+    int size;
+
+    values = qt_query(qt, qt_make_rect(-6, -6, 5, 5), &size);
+
+    PU_ASSERT(size == 3);
+
+    sort_values(values, size);
+
+    PU_ASSERT(values[0] == 0);
+    PU_ASSERT(values[1] == 1);
+    PU_ASSERT(values[2] == 2);
 
     return true;
 }
@@ -199,6 +221,7 @@ static PU_SUITE(suite_qt)
 {
     PU_RUN_TEST(test_insert_single);
     PU_RUN_TEST(test_insert_single_contained);
+    PU_RUN_TEST(test_insert_multiple);
     PU_RUN_TEST(test_insert_multiple_random);
     PU_RUN_TEST(test_insert_multiple_random_contained);
     PU_RUN_TEST(test_remove);
