@@ -181,10 +181,15 @@ void qt_free(qt_value_t* array);
 #define PICO_QT_FREE(ptr)          (free(ptr))
 #endif
 
-// Maximum depth of a quadtree
-// There is a tradeoff between decreased search accuracy for small values, and
-// increased insert and search complexity for larger ones. The default value
-// represents a good balance between the two
+// Maximum depth of a quadtree:
+// There is a tradeoff between space and time complexity. Lower values have
+// smaller space requirements, but higher search times. Indeed, a tree with
+// a max depth of zero reduces to simple bounds check. Higher values speed up
+// searches, but at the cost of increased space. There are diminishing returns
+// with regard to increasing the max depth too high. Eventually all of the space
+// is wasted with no benefit to performance. The default value represents a good
+// balance between the two, however it may need to be increased or decreased
+// somewhat if the  global bounds is particularly large or small, respectively.
 #ifndef PICO_QT_MAX_DEPTH
 #define PICO_QT_MAX_DEPTH 6
 #endif
