@@ -27,6 +27,16 @@
     pointer. An integer value could represent an entity ID, an array index, a
     key for a hashtable etc...
 
+    Depth:
+    ------
+    There is a tradeoff between space and time complexity. Lower depth values
+    have smaller space requirements, but higher search times. Indeed, a tree
+    with a depth of zero reduces to a linear bounds check. Higher values speed
+    up searches, but at the cost of increased space. There are, however,
+    diminishing returns with regard to increasing the max depth too high.
+    Eventually all of the additional space is wasted with no benefit to
+    performance.
+
     Usage:
     ------
 
@@ -39,9 +49,8 @@
 
     Constants:
     --------
-    - PICO_QT_MAX_DEPTH (default: 8)
-    - PICO_QT_MIN_NODE_CAPACITY (default: 16)
-    - PICO_QT_MIN_CAPACITY (default: 256)
+    - PICO_QT_NODE_CAPACITY (default: 16)
+    - PICO_QT_MIN_TMP_CAPACITY (default: 256)
 
     Must be defined before PICO_QT_IMPLEMENTATION
 */
@@ -101,10 +110,12 @@ qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
 /**
  * @brief Creates a quadtree with the specified global bounds
  *
- * @param bounds The global bounds
+ * @param bounds    The global bounds
+ * @param max_depth Maximum height of the quadtree. See the summary for more
+ *
  * @returns A quadtree instance
  */
-qt_t* qt_create(qt_rect_t bounds);
+qt_t* qt_create(qt_rect_t bounds, int max_depth);
 
 /**
  * @brief Destroys a quadtree
@@ -209,40 +220,28 @@ void qt_clean(qt_t* qt);
 #define PICO_QT_FREE(ptr)          (free(ptr))
 #endif
 
-// Maximum depth of a quadtree:
-// There is a tradeoff between space and time complexity. Lower values have
-// smaller space requirements, but higher search times. Indeed, a tree with
-// a max depth of zero reduces to a linear bounds check. Higher values speed up
-// searches, but at the cost of increased space. There are, however, diminishing
-// returns with regard to increasing the max depth too much. Eventually all of
-// the space is wasted with no benefit to performance. The default value strikes
-// a balance between the two, however it may need to be increased or decreased
-// somewhat if the global bounds is particularly large or small, respectively.
-#ifndef PICO_QT_MAX_DEPTH
-#define PICO_QT_MAX_DEPTH 6
-#endif
 
 // Minimum capacity of array containing node items
-#ifndef PICO_QT_MIN_NODE_CAPACITY
-#define PICO_QT_MIN_NODE_CAPACITY 16
+#ifndef PICO_QT_NODE_CAPACITY
+#define PICO_QT_NODE_CAPACITY 16
 #endif
 
 // Minimum capacity of quadtree's internal array
-#ifndef PICO_QT_MIN_CAPACITY
-#define PICO_QT_MIN_CAPACITY 256
+#ifndef PICO_QT_MIN_TMP_CAPACITY
+#define PICO_QT_MIN_TMP_CAPACITY 256
 #endif
 
 /*=============================================================================
  * Internal aliases
  *============================================================================*/
 
-#define QT_ASSERT            PICO_QT_ASSERT
-#define QT_MALLOC            PICO_QT_MALLOC
-#define QT_REALLOC           PICO_QT_REALLOC
-#define QT_FREE              PICO_QT_FREE
-#define QT_MAX_DEPTH         PICO_QT_MAX_DEPTH
-#define QT_MIN_NODE_CAPACITY PICO_QT_MIN_NODE_CAPACITY
-#define QT_MIN_CAPACITY      PICO_QT_MIN_CAPACITY
+#define QT_ASSERT           PICO_QT_ASSERT
+#define QT_MALLOC           PICO_QT_MALLOC
+#define QT_REALLOC          PICO_QT_REALLOC
+#define QT_FREE             PICO_QT_FREE
+#define QT_MAX_DEPTH        PICO_QT_MAX_DEPTH
+#define QT_NODE_CAPACITY    PICO_QT_NODE_CAPACITY
+#define QT_MIN_TMP_CAPACITY PICO_QT_MIN_TMP_CAPACITY
 
 /*=============================================================================
  * Internal data structures
@@ -266,6 +265,7 @@ typedef struct
 struct qt_node_t
 {
     int        depth;
+    int        max_depth;
     qt_rect_t  bounds[4];
     qt_node_t* nodes[4];
     qt_array_t items;
@@ -290,7 +290,7 @@ static void qt_array_cat(qt_array_t* dst, const qt_array_t* src);
 static void qt_array_remove(qt_array_t* array, int index);
 static bool qt_rect_contains(const qt_rect_t* r1, const qt_rect_t* r2);
 static bool qt_rect_overlaps(const qt_rect_t* r1, const qt_rect_t* r2);
-static qt_node_t* qt_node_create(qt_rect_t bounds, int depth);
+static qt_node_t* qt_node_create(qt_rect_t bounds, int depth, int max_depth);
 static void qt_node_destroy(qt_node_t* node);
 static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t value);
 static bool qt_node_remove(qt_node_t* node, qt_value_t value);
@@ -302,7 +302,7 @@ static void qt_node_clear(qt_node_t* node);
  * Public API implementation
  *============================================================================*/
 
-qt_t* qt_create(qt_rect_t bounds)
+qt_t* qt_create(qt_rect_t bounds, int max_depth)
 {
     qt_t* qt = QT_MALLOC(sizeof(qt_t));
 
@@ -310,9 +310,9 @@ qt_t* qt_create(qt_rect_t bounds)
         return NULL;
 
     qt->bounds = bounds;
-    qt->root = qt_node_create(bounds, 0);
+    qt->root = qt_node_create(bounds, 0, max_depth);
 
-    qt_array_init(&qt->tmp, QT_MIN_CAPACITY);
+    qt_array_init(&qt->tmp, QT_MIN_TMP_CAPACITY);
 
     return qt;
 }
@@ -330,8 +330,11 @@ void qt_reset(qt_t* qt)
 {
     QT_ASSERT(qt);
 
+    int max_depth = qt->root->max_depth;
+
     qt_node_destroy(qt->root);
-    qt->root = qt_node_create(qt->bounds, 0);
+
+    qt->root = qt_node_create(qt->bounds, 0, max_depth);
 }
 
 void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value)
@@ -391,7 +394,6 @@ void qt_free(qt_value_t* array)
     QT_FREE(array);
 }
 
-
 void qt_clear(qt_t* qt)
 {
     QT_ASSERT(qt);
@@ -403,7 +405,7 @@ void qt_clean(qt_t* qt)
     QT_ASSERT(qt);
 
     qt_array_t array;
-    qt_array_init(&array, QT_MIN_CAPACITY);
+    qt_array_init(&array, QT_MIN_TMP_CAPACITY);
 
     qt_node_all_items(qt->root, &array);
     qt_reset(qt);
@@ -547,13 +549,14 @@ static bool qt_rect_overlaps(const qt_rect_t* r1, const qt_rect_t* r2)
            r2->y + r2->h >= r1->y;
 }
 
-static qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
+static qt_node_t* qt_node_create(qt_rect_t bounds, int depth, int  max_depth)
 {
     qt_node_t* node = QT_MALLOC(sizeof(qt_node_t));
 
     memset(node, 0, sizeof(qt_node_t));
 
     node->depth = depth;
+    node->max_depth = max_depth;
 
     // Calculate subdivided bounds
     bounds.w /= 2.0f;
@@ -581,7 +584,7 @@ static qt_node_t* qt_node_create(qt_rect_t bounds, int depth)
                                    bounds.h);
 
     // Initialize item array with default capacity
-    qt_array_init(&node->items, QT_MIN_NODE_CAPACITY);
+    qt_array_init(&node->items, QT_NODE_CAPACITY);
 
     return node;
 }
@@ -615,7 +618,7 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
 
     // Checks to see if the depth limit has been reached. If it hasn't, try to
     // fit the item into a subtree
-    if (node->depth + 1 < QT_MAX_DEPTH)
+    if (node->depth + 1 < node->max_depth)
     {
         // Loop over child nodes
         for (int i = 0; i < 4; i++)
@@ -626,7 +629,9 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
                 // If child node does not exist, then create it
                 if (!node->nodes[i])
                 {
-                    node->nodes[i] = qt_node_create(node->bounds[i], node->depth + 1);
+                    node->nodes[i] = qt_node_create(node->bounds[i],
+                                                    node->depth + 1,
+                                                    node->max_depth);
                 }
 
                 // Recursively try to insert the item into the subtree

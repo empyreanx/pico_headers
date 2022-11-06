@@ -293,7 +293,7 @@ static PU_SUITE(suite_qt)
 
 void setup()
 {
-    qt = qt_create(qt_make_rect(-10, -10, 20, 20));
+    qt = qt_create(qt_make_rect(-10, -10, 20, 20), 6);
     values = NULL;
 }
 
