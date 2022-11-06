@@ -100,6 +100,7 @@ qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
 
 /**
  * @brief Creates a quadtree with the specified global bounds
+ *
  * @param bounds The global bounds
  * @returns A quadtree instance
  */
@@ -112,13 +113,14 @@ qt_t* qt_create(qt_rect_t bounds);
 void qt_destroy(qt_t* qt);
 
 /**
- * @brief Clears all nodes in the tree
+ * @brief Removes all nodes in the tree
  * @param qt The quadtree instance
  */
 void qt_reset(qt_t* qt);
 
 /**
  * @brief Inserts a value with the specified bounds into a quadtree
+ *
  * @param qt     The quadtree instance
  * @param bounds The bounds associated with the value
  * @param value  The value to store in the tree
@@ -128,8 +130,8 @@ void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value);
 /**
  * @brief Searches for and removes a value in a quadtree
  *
- * Warning: This function is very inefficient. If numerous values need to be
- * removed and reinserted it is advisable to simply rebuild the tree.
+ * This function is very inefficient. If numerous values need to be removed and
+ * reinserted it is advisable to simply rebuild the tree.
  *
  * @param qt    The quadtree instance
  * @param value The value to remove
@@ -140,9 +142,11 @@ bool qt_remove(qt_t* qt, qt_value_t value);
 /**
  * @brief Returns all values associated with items that are either overlapping
  * or contained within the search area
+ *
  * @param qt   The quadtree instance
  * @param area The search area
  * @param size The number of values returned
+ *
  * @returns The values of items contained within the search area. This array is
  * dynamically allocated and should be freed by `qt_free` after use
  */
@@ -152,6 +156,28 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
  * @brief Free function alias intended to be used with the output of `qt_query`
  */
 void qt_free(qt_value_t* array);
+
+/**
+ * @brief Removes all items in the tree
+ *
+ * This function preserves the internal structure of the tree making it much
+ * faster than `qt_reset`. Reinserting values is probably faster too, however,
+ * repeated call to this function may result in fragmentation of the tree. The
+ * function `qt_clean` can repair this fragmentation, however, it is expensive.
+ *
+ * @param qt The quadtree instance
+ */
+void qt_clear(qt_t* qt);
+
+/**
+ * @brief Resets the tree and reinserts all items
+ *
+ * This function can repair fragmentation resulting from repeated use of
+ * `qt_remove` or `qt_clear`. This is an expensive operation.
+ *
+ * @param qt The quadtree instance
+ */
+void qt_clean(qt_t* qt);
 
 #ifdef __cplusplus
 }
@@ -268,6 +294,7 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
 static bool qt_node_remove(qt_node_t* node, qt_value_t value);
 static void qt_node_all_items(const qt_node_t* node, qt_array_t* array);
 static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array_t* array);
+static void qt_node_clear(qt_node_t* node);
 
 /*=============================================================================
  * Public API implementation
@@ -360,6 +387,32 @@ void qt_free(qt_value_t* array)
         return;
 
     QT_FREE(array);
+}
+
+
+void qt_clear(qt_t* qt)
+{
+    QT_ASSERT(qt);
+    qt_node_clear(qt->root);
+}
+
+void qt_clean(qt_t* qt)
+{
+    QT_ASSERT(qt);
+
+    qt_array_t array;
+    qt_array_init(&array, QT_MIN_CAPACITY);
+
+    qt_node_all_items(qt->root, &array);
+    qt_reset(qt);
+
+    for (int i = 0; i < array.size; i++)
+    {
+        qt_item_t* item = &array.items[i];
+        qt_insert(qt, item->bounds, item->value);
+    }
+
+    qt_array_destroy(&array);
 }
 
 /*=============================================================================
@@ -554,26 +607,26 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
     QT_ASSERT(node);
     QT_ASSERT(bounds);
 
-    // Checks to see if item can possibly be inserted into a subtree
+    // The purpose of this function is to optimally fit the item into a subtree.
+    // This occurs when the item is no longer fully contained within a subtree,
+    // or the depth limit has been reached.
+
+    // Checks to see if the depth limit has been reached
     if (node->depth + 1 < QT_MAX_DEPTH)
     {
         // Loop over child nodes
         for (int i = 0; i < 4; i++)
         {
-            // Check if child node contains the bounds
+            // Check if subtree contains the bounds
             if (qt_rect_contains(&node->bounds[i], bounds))
             {
-                // If max depth has not been reached and the bounds are fully
-                // contained within the child's bounds, then try to recursively
-                // fit the item into a node at a greater depth.
-
                 // If child node does not exist, then create it
                 if (!node->nodes[i])
                 {
                     node->nodes[i] = qt_node_create(node->bounds[i], node->depth + 1);
                 }
 
-                // The recursive call
+                // Recursively try to insert the item into the subtree
                 qt_node_insert(node->nodes[i], bounds, value);
                 return;
             }
@@ -671,6 +724,16 @@ static void qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array
                 }
             }
         }
+    }
+}
+
+static void qt_node_clear(qt_node_t* node)
+{
+    node->items.size = 0;
+
+    for (int i = 0; i < 4; i++)
+    {
+        qt_node_clear(node->nodes[i]);
     }
 }
 
