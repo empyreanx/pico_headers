@@ -736,7 +736,8 @@ static void qt_node_clear(qt_node_t* node)
 
     for (int i = 0; i < 4; i++)
     {
-        qt_node_clear(node->nodes[i]);
+        if (node->nodes[i])
+            qt_node_clear(node->nodes[i]);
     }
 }
 
