@@ -148,12 +148,12 @@ bool qt_remove(qt_t* qt, qt_value_t value);
  * @param size The number of values returned
  *
  * @returns The values of items contained within the search area. This array is
- * dynamically allocated and should be freed by `qt_free` after use
+ * dynamically allocated and should be deallocated by using `qt_free` after use
  */
 qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
 
 /**
- * @brief Free function alias intended to be used with the output of `qt_query`
+ * @brief Function for deallocating the output of `qt_query`
  */
 void qt_free(qt_value_t* array);
 
@@ -162,7 +162,7 @@ void qt_free(qt_value_t* array);
  *
  * This function preserves the internal structure of the tree making it much
  * faster than `qt_reset`. Reinserting values is probably faster too, however,
- * repeated call to this function may result in fragmentation of the tree. The
+ * repeated calls to this function may result in fragmentation of the tree. The
  * function `qt_clean` can repair this fragmentation, however, it is expensive.
  *
  * @param qt The quadtree instance
@@ -173,7 +173,9 @@ void qt_clear(qt_t* qt);
  * @brief Resets the tree and reinserts all items
  *
  * This function can repair fragmentation resulting from repeated use of
- * `qt_remove` or `qt_clear`. This is an expensive operation.
+ * `qt_remove` or `qt_clear`. This is an expensive operation since it must
+ * extract all of the items from the tree, remove all of the nodes, and then
+ * reinsert all of the items.
  *
  * @param qt The quadtree instance
  */
@@ -611,7 +613,8 @@ static void qt_node_insert(qt_node_t* node, const qt_rect_t* bounds, qt_value_t 
     // This occurs when the item is no longer fully contained within a subtree,
     // or the depth limit has been reached.
 
-    // Checks to see if the depth limit has been reached
+    // Checks to see if the depth limit has been reached. If it hasn't, try to
+    // fit the item into a subtree
     if (node->depth + 1 < QT_MAX_DEPTH)
     {
         // Loop over child nodes
