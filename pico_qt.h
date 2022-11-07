@@ -50,7 +50,7 @@
     Constants:
     --------
     - PICO_QT_NODE_CAPACITY (default: 16)
-    - PICO_QT_MIN_TMP_CAPACITY (default: 256)
+    - PICO_QT_TMP_CAPACITY (default: 256)
 
     Must be defined before PICO_QT_IMPLEMENTATION
 */
@@ -227,21 +227,21 @@ void qt_clean(qt_t* qt);
 #endif
 
 // Minimum capacity of quadtree's internal array
-#ifndef PICO_QT_MIN_TMP_CAPACITY
-#define PICO_QT_MIN_TMP_CAPACITY 256
+#ifndef PICO_QT_TMP_CAPACITY
+#define PICO_QT_TMP_CAPACITY 256
 #endif
 
 /*=============================================================================
  * Internal aliases
  *============================================================================*/
 
-#define QT_ASSERT           PICO_QT_ASSERT
-#define QT_MALLOC           PICO_QT_MALLOC
-#define QT_REALLOC          PICO_QT_REALLOC
-#define QT_FREE             PICO_QT_FREE
-#define QT_MAX_DEPTH        PICO_QT_MAX_DEPTH
-#define QT_NODE_CAPACITY    PICO_QT_NODE_CAPACITY
-#define QT_MIN_TMP_CAPACITY PICO_QT_MIN_TMP_CAPACITY
+#define QT_ASSERT        PICO_QT_ASSERT
+#define QT_MALLOC        PICO_QT_MALLOC
+#define QT_REALLOC       PICO_QT_REALLOC
+#define QT_FREE          PICO_QT_FREE
+#define QT_MAX_DEPTH     PICO_QT_MAX_DEPTH
+#define QT_NODE_CAPACITY PICO_QT_NODE_CAPACITY
+#define QT_TMP_CAPACITY  PICO_QT_TMP_CAPACITY
 
 /*=============================================================================
  * Internal data structures
@@ -312,7 +312,7 @@ qt_t* qt_create(qt_rect_t bounds, int max_depth)
     qt->bounds = bounds;
     qt->root = qt_node_create(bounds, 0, max_depth);
 
-    qt_array_init(&qt->tmp, QT_MIN_TMP_CAPACITY);
+    qt_array_init(&qt->tmp, QT_TMP_CAPACITY);
 
     return qt;
 }
@@ -405,7 +405,7 @@ void qt_clean(qt_t* qt)
     QT_ASSERT(qt);
 
     qt_array_t array;
-    qt_array_init(&array, QT_MIN_TMP_CAPACITY);
+    qt_array_init(&array, QT_TMP_CAPACITY);
 
     qt_node_all_items(qt->root, &array);
     qt_reset(qt);
