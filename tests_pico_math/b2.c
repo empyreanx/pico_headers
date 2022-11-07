@@ -119,7 +119,7 @@ PU_TEST(test_b2_contains_point)
     return true;
 }
 
-PU_TEST(test_b2_min_enclosing)
+PU_TEST(test_b2_enclosing)
 {
     pm_v2 verts[4];
     verts[0] = pm_v2_make(1.0f, 2.0f);
@@ -127,7 +127,7 @@ PU_TEST(test_b2_min_enclosing)
     verts[2] = pm_v2_make(1.0f + 3.0f, 2.0f + 4.0f);
     verts[3] = pm_v2_make(1.0f + 3.0f, 4.0f);
 
-    pm_b2 res = pm_b2_min_enclosing(verts, 4);
+    pm_b2 res = pm_b2_enclosing(verts, 4);
     pm_b2 exp = pm_b2_make(1.0f, 2.0f, 3.0f, 4.0f);
 
     PU_ASSERT(pm_b2_equal(&res, &exp));
@@ -161,6 +161,6 @@ PU_SUITE(suite_b2)
     PU_RUN_TEST(test_b2_overlaps);
     PU_RUN_TEST(test_b2_overlap);
     PU_RUN_TEST(test_b2_contains_point);
-    PU_RUN_TEST(test_b2_min_enclosing);
+    PU_RUN_TEST(test_b2_enclosing);
     PU_RUN_TEST(test_b2_transform);
 }

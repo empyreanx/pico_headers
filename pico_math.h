@@ -760,7 +760,7 @@ PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
  * @param verts The vertices
  * @param count The number of vertices
  */
-pm_b2 pm_b2_min_enclosing(const pm_v2 verts[], int count);
+pm_b2 pm_b2_enclosing(const pm_v2 verts[], int count);
 
 /**
  * @brief Computes the minimum AABB obtained by transforming the vertices of
@@ -993,7 +993,7 @@ pm_b2 pm_b2_overlap(const pm_b2* b1, const pm_b2* b2)
     return pm_b2_make_minmax(min, max);
 }
 
-pm_b2 pm_b2_min_enclosing(const pm_v2 verts[], int count)
+pm_b2 pm_b2_enclosing(const pm_v2 verts[], int count)
 {
     if (0 == count)
         return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
@@ -1030,7 +1030,7 @@ pm_b2 pm_b2_transform(const pm_t2* t, const pm_b2* b)
     verts[2] = pm_t2_map(t, verts[2]);
     verts[3] = pm_t2_map(t, verts[3]);
 
-    return pm_b2_min_enclosing(verts, 4);
+    return pm_b2_enclosing(verts, 4);
 }
 
 /*
