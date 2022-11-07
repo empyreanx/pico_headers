@@ -727,7 +727,7 @@ PM_INLINE bool pm_b2_overlaps(const pm_b2* b1, const pm_b2* b2)
 /**
  * @brief Returns `true` if the box contains the point `v`
  */
-PM_INLINE bool pm_b2_contains(const pm_b2* b, pm_v2 v)
+PM_INLINE bool pm_b2_contains_point(const pm_b2* b, pm_v2 v)
 {
     pm_float x = v.x;
     pm_float y = v.y;
