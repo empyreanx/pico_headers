@@ -15,7 +15,7 @@ Library | Docs | Description | Version
 **[pico_time](pico_time.h)** | **[docs](https://empyreanx.github.io/docs/ph/pico__time_8h.html)** | Simple time management library              | 0.1
 **[pico_unit](pico_unit.h)** | **[docs](https://empyreanx.github.io/docs/ph/pico__unit_8h.html)** | Bare-bones unit testing framework           | 0.1
 
-These libraries are as-is, however, suggestions for improvements or bug fixes are welcome. Please raise an issue before submitting a PR with new features. Bug fixes are always welcome!
+These libraries are as-is, however, suggestions for improvements or bug fixes are appreciated. Please raise an issue before submitting a PR with new features. Bug fixes are always welcome!
 
 The examples and tests compile and run on Linux (GCC), Windows (MSYS2/MinGW64), and MacOS (Clang). The only exception is the Rogue demo, which only compiles/runs on Linux and MacOS.
 
