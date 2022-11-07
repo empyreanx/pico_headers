@@ -19,6 +19,6 @@ These libraries are as-is, however, suggestions for improvements or bug fixes ar
 
 The examples and tests compile and run on Linux (GCC), Windows (MSYS2/MinGW64), and MacOS (Clang). The only exception is the Rogue demo, which only compiles/runs on Linux and MacOS.
 
-All libraries are licensed under your choice of zlib or the public domain.
+Most libraries are licensed under your choice of zlib or the public domain. The remaining libraries are licensed under the MIT license.
 
 I give my thanks to [Randy Gaul](https://github.com/RandyGaul) for inspiration, answering my questions, and the template for this project.
