@@ -103,6 +103,29 @@ TEST_CASE(test_b2_overlap)
     return true;
 }
 
+TEST_CASE(test_b2_contains)
+{
+    { // Contains
+        pm_b2 b1 = pm_b2_make(2.0f, 2.0f, 4.0f, 4.0f);
+        pm_b2 b2 = pm_b2_make(3.0f, 3.0f, 2.0f, 2.0f);
+        REQUIRE(pm_b2_contains(&b1, &b2));
+    }
+
+    { // Overlaps
+        pm_b2 b1 = pm_b2_make(2.0f, 2.0f, 4.0f, 4.0f);
+        pm_b2 b2 = pm_b2_make(1.0f, 1.0f, 2.0f, 2.0f);
+        REQUIRE(!pm_b2_contains(&b1, &b2));
+    }
+
+    { // Does not overlap
+        pm_b2 b1 = pm_b2_make(2.0f, 2.0f, 4.0f, 4.0f);
+        pm_b2 b2 = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
+        REQUIRE(!pm_b2_contains(&b1, &b2));
+    }
+
+    return true;
+}
+
 TEST_CASE(test_b2_contains_point)
 {
     pm_b2 b = pm_b2_make(1.0f, 1.0f, 2.0f, 2.0f);
@@ -160,6 +183,7 @@ TEST_SUITE(suite_b2)
     RUN_TEST_CASE(test_b2_combine);
     RUN_TEST_CASE(test_b2_overlaps);
     RUN_TEST_CASE(test_b2_overlap);
+    RUN_TEST_CASE(test_b2_contains);
     RUN_TEST_CASE(test_b2_contains_point);
     RUN_TEST_CASE(test_b2_enclosing);
     RUN_TEST_CASE(test_b2_transform);
