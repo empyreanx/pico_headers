@@ -177,13 +177,13 @@ TEST_CASE(test_circle_cicle_not_collide)
 
 static TEST_SUITE(suite_sat)
 {
-    RUN_TEST(test_aabb_aabb_collide);
-    RUN_TEST(test_aabb_aabb_not_collide);
-    RUN_TEST(test_poly_poly);
-    RUN_TEST(test_aabb_circle_collide);
-    RUN_TEST(test_aabb_circle_not_collide);
-    RUN_TEST(test_circle_cicle_collide);
-    RUN_TEST(test_circle_cicle_not_collide);
+    RUN_TEST_CASE(test_aabb_aabb_collide);
+    RUN_TEST_CASE(test_aabb_aabb_not_collide);
+    RUN_TEST_CASE(test_poly_poly);
+    RUN_TEST_CASE(test_aabb_circle_collide);
+    RUN_TEST_CASE(test_aabb_circle_not_collide);
+    RUN_TEST_CASE(test_circle_cicle_collide);
+    RUN_TEST_CASE(test_circle_cicle_not_collide);
 }
 
 int main()

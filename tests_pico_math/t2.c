@@ -275,16 +275,16 @@ TEST_CASE(test_t2_lerp_identity)
 
 TEST_SUITE(suite_t2)
 {
-    RUN_TEST(test_t2_equal);
-    RUN_TEST(test_t2_identity);
-    RUN_TEST(test_t2_get_pos);
-    RUN_TEST(test_t2_set_pos);
-    RUN_TEST(test_t2_get_angle);
-    RUN_TEST(test_t2_get_scale);
-    RUN_TEST(test_t2_set_angle);
-    RUN_TEST(test_t2_map);
-    RUN_TEST(test_t2_compose);
-    RUN_TEST(test_t2_inv);
-    RUN_TEST(test_t2_lerp);
-    RUN_TEST(test_t2_lerp_identity);
+    RUN_TEST_CASE(test_t2_equal);
+    RUN_TEST_CASE(test_t2_identity);
+    RUN_TEST_CASE(test_t2_get_pos);
+    RUN_TEST_CASE(test_t2_set_pos);
+    RUN_TEST_CASE(test_t2_get_angle);
+    RUN_TEST_CASE(test_t2_get_scale);
+    RUN_TEST_CASE(test_t2_set_angle);
+    RUN_TEST_CASE(test_t2_map);
+    RUN_TEST_CASE(test_t2_compose);
+    RUN_TEST_CASE(test_t2_inv);
+    RUN_TEST_CASE(test_t2_lerp);
+    RUN_TEST_CASE(test_t2_lerp_identity);
 }

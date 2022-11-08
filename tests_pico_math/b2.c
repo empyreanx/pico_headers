@@ -154,13 +154,13 @@ TEST_CASE(test_b2_transform)
 
 TEST_SUITE(suite_b2)
 {
-    RUN_TEST(test_b2_pos);
-    RUN_TEST(test_b2_size);
-    RUN_TEST(test_b2_equal);
-    RUN_TEST(test_b2_combine);
-    RUN_TEST(test_b2_overlaps);
-    RUN_TEST(test_b2_overlap);
-    RUN_TEST(test_b2_contains_point);
-    RUN_TEST(test_b2_enclosing);
-    RUN_TEST(test_b2_transform);
+    RUN_TEST_CASE(test_b2_pos);
+    RUN_TEST_CASE(test_b2_size);
+    RUN_TEST_CASE(test_b2_equal);
+    RUN_TEST_CASE(test_b2_combine);
+    RUN_TEST_CASE(test_b2_overlaps);
+    RUN_TEST_CASE(test_b2_overlap);
+    RUN_TEST_CASE(test_b2_contains_point);
+    RUN_TEST_CASE(test_b2_enclosing);
+    RUN_TEST_CASE(test_b2_transform);
 }

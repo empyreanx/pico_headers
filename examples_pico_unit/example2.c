@@ -72,9 +72,9 @@ test_suite1 ()
 {
     pu_setup(test_setup, test_teardown);
 
-    RUN_TEST(test_passing1);
-    RUN_TEST(test_passing2);
-    RUN_TEST(test_failing1);
+    RUN_TEST_CASE(test_passing1);
+    RUN_TEST_CASE(test_passing2);
+    RUN_TEST_CASE(test_failing1);
 
     pu_clear_setup();
 }
@@ -83,9 +83,9 @@ test_suite1 ()
 static void
 test_suite2 ()
 {
-    RUN_TEST(test_passing1);
-    RUN_TEST(test_failing2);
-    RUN_TEST(test_passing1);
+    RUN_TEST_CASE(test_passing1);
+    RUN_TEST_CASE(test_failing2);
+    RUN_TEST_CASE(test_passing1);
 }
 
 /* Run all test suites and print test statistics. */

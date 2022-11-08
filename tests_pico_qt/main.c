@@ -280,15 +280,15 @@ TEST_CASE(test_clean)
 
 static TEST_SUITE(suite_qt)
 {
-    RUN_TEST(test_insert_single);
-    RUN_TEST(test_insert_single_contained);
-    RUN_TEST(test_insert_multiple);
-    RUN_TEST(test_insert_multiple_random);
-    RUN_TEST(test_insert_multiple_random_contained);
-    RUN_TEST(test_remove);
-    RUN_TEST(test_reset);
-    RUN_TEST(test_clear);
-    RUN_TEST(test_clean);
+    RUN_TEST_CASE(test_insert_single);
+    RUN_TEST_CASE(test_insert_single_contained);
+    RUN_TEST_CASE(test_insert_multiple);
+    RUN_TEST_CASE(test_insert_multiple_random);
+    RUN_TEST_CASE(test_insert_multiple_random_contained);
+    RUN_TEST_CASE(test_remove);
+    RUN_TEST_CASE(test_reset);
+    RUN_TEST_CASE(test_clear);
+    RUN_TEST_CASE(test_clean);
 }
 
 void setup()
