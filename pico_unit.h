@@ -29,7 +29,7 @@
 
     Writing tests is simple: 1) Use the TEST_CASE macro and define the test using
     using REQUIRE to test boolean expressions; 2) Run the test inside the
-    body of a test suite or other function (e.g. main) using RUN_TEST_CASE. How
+    body of a test suite or other function (e.g. main) using RUN_TEST. How
     you group tests and test suites is entirely up to you.
 
     In order to keep the library portable and nimble, certain features were
@@ -39,7 +39,7 @@
     There are a number of display options available: color coded output, test
     elapsed time (unless PICO_UNIT_NO_CLOCK is defined), and printing test statistics.
 
-    A test suite is simply a group of tests. These contain calls to RUN_TEST_CASE.
+    A test suite is simply a group of tests. These contain calls to RUN_TEST.
     The advantage of using test suites is that it divides unit tests into
     logical groups. There are helper macros for declaring and defining test
     suites. Test suites help with formatting the output and the number of suites
@@ -100,7 +100,7 @@ extern "C" {
  *
  * @param test_fp The test function to execute
  */
-#define RUN_TEST_CASE(test_fp) (pu_run_test(#test_fp, test_fp))
+#define RUN_TEST(test_fp) (pu_run_test(#test_fp, test_fp))
 
 /**
  * @brief Declares a test suite

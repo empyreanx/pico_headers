@@ -75,8 +75,8 @@ TEST_CASE(test_decode)
 int main()
 {
     pu_display_colors(true);
-    RUN_TEST_CASE(test_encode);
-    RUN_TEST_CASE(test_decode);
+    RUN_TEST(test_encode);
+    RUN_TEST(test_decode);
     pu_print_stats();
     return pu_test_failed();
 }

@@ -60,10 +60,10 @@ int main (int argc, char* argv[])
     (void)argv;
 
     pu_display_colors(true);
-    RUN_TEST_CASE(test_sleep);
-    RUN_TEST_CASE(test_usec);
-    RUN_TEST_CASE(test_msec);
-    RUN_TEST_CASE(test_sec);
+    RUN_TEST(test_sleep);
+    RUN_TEST(test_usec);
+    RUN_TEST(test_msec);
+    RUN_TEST(test_sec);
     pu_print_stats();
 
     return pu_test_failed();

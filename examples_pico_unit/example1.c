@@ -47,9 +47,9 @@ TEST_CASE(test3)
 /* Test suite container function (multiple test suites can be specified. */
 static TEST_SUITE(test_suite)
 {
-    RUN_TEST_CASE(test1);
-    RUN_TEST_CASE(test2);
-    RUN_TEST_CASE(test3);
+    RUN_TEST(test1);
+    RUN_TEST(test2);
+    RUN_TEST(test3);
 }
 
 int

@@ -531,17 +531,17 @@ TEST_CASE(test_add_remove_callbacks)
 
 static TEST_SUITE(suite_ecs)
 {
-    RUN_TEST_CASE(test_create_destroy);
-    RUN_TEST_CASE(test_add_remove);
-    RUN_TEST_CASE(test_add_systems);
-    RUN_TEST_CASE(test_remove);
-    RUN_TEST_CASE(test_destroy);
-    RUN_TEST_CASE(test_destroy_system);
-    RUN_TEST_CASE(test_remove_system);
-    RUN_TEST_CASE(test_queue_destroy_system);
-    RUN_TEST_CASE(test_queue_remove_system);
-    RUN_TEST_CASE(test_enable_disable);
-    RUN_TEST_CASE(test_add_remove_callbacks);
+    RUN_TEST(test_create_destroy);
+    RUN_TEST(test_add_remove);
+    RUN_TEST(test_add_systems);
+    RUN_TEST(test_remove);
+    RUN_TEST(test_destroy);
+    RUN_TEST(test_destroy_system);
+    RUN_TEST(test_remove_system);
+    RUN_TEST(test_queue_destroy_system);
+    RUN_TEST(test_queue_remove_system);
+    RUN_TEST(test_enable_disable);
+    RUN_TEST(test_add_remove_callbacks);
 }
 
 int main ()

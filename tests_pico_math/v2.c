@@ -261,23 +261,23 @@ TEST_CASE(test_v2_ceil)
 
 TEST_SUITE(suite_v2)
 {
-    RUN_TEST_CASE(test_v2_equal);
-    RUN_TEST_CASE(test_v2_add);
-    RUN_TEST_CASE(test_v2_scale);
-    RUN_TEST_CASE(test_v2_sub);
-    RUN_TEST_CASE(test_v2_dot);
-    RUN_TEST_CASE(test_v2_len);
-    RUN_TEST_CASE(test_v2_normalize);
-    RUN_TEST_CASE(test_v2_reflect);
-    RUN_TEST_CASE(test_v2_perp);
-    RUN_TEST_CASE(test_v2_cross);
-    RUN_TEST_CASE(test_v2_angle);
-    RUN_TEST_CASE(test_v2_proj);
-    RUN_TEST_CASE(test_v2_dist);
-    RUN_TEST_CASE(test_v2_lerp);
-    RUN_TEST_CASE(test_v2_polar);
-    RUN_TEST_CASE(test_v2_min);
-    RUN_TEST_CASE(test_v2_max);
-    RUN_TEST_CASE(test_v2_floor);
-    RUN_TEST_CASE(test_v2_ceil);
+    RUN_TEST(test_v2_equal);
+    RUN_TEST(test_v2_add);
+    RUN_TEST(test_v2_scale);
+    RUN_TEST(test_v2_sub);
+    RUN_TEST(test_v2_dot);
+    RUN_TEST(test_v2_len);
+    RUN_TEST(test_v2_normalize);
+    RUN_TEST(test_v2_reflect);
+    RUN_TEST(test_v2_perp);
+    RUN_TEST(test_v2_cross);
+    RUN_TEST(test_v2_angle);
+    RUN_TEST(test_v2_proj);
+    RUN_TEST(test_v2_dist);
+    RUN_TEST(test_v2_lerp);
+    RUN_TEST(test_v2_polar);
+    RUN_TEST(test_v2_min);
+    RUN_TEST(test_v2_max);
+    RUN_TEST(test_v2_floor);
+    RUN_TEST(test_v2_ceil);
 }

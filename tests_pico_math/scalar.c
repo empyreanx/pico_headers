@@ -60,9 +60,9 @@ TEST_CASE(test_lerp_angle)
 
 TEST_SUITE(suite_scalar)
 {
-    RUN_TEST_CASE(test_min);
-    RUN_TEST_CASE(test_max);
-    RUN_TEST_CASE(test_clamp);
-    RUN_TEST_CASE(test_next_pow2);
-    RUN_TEST_CASE(test_lerp_angle);
+    RUN_TEST(test_min);
+    RUN_TEST(test_max);
+    RUN_TEST(test_clamp);
+    RUN_TEST(test_next_pow2);
+    RUN_TEST(test_lerp_angle);
 }

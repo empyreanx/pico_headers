@@ -33,5 +33,5 @@ TEST_CASE(test_random)
 
 TEST_SUITE(suite_rng)
 {
-    RUN_TEST_CASE(test_random);
+    RUN_TEST(test_random);
 }
