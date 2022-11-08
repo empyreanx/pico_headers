@@ -725,6 +725,17 @@ PM_INLINE bool pm_b2_overlaps(const pm_b2* b1, const pm_b2* b2)
 }
 
 /**
+ * @brief Returns `true` if the first box is contained within the second.
+ */
+PM_INLINE bool pm_b2_contains(const pm_b2* b1, const pm_b2* b2)
+{
+    return b2->min.x >= b1->min.x &&
+           b2->min.y >= b1->min.y &&
+           b2->max.x <= b1->max.x &&
+           b2->max.y <= b1->max.y;
+}
+
+/**
  * @brief Returns `true` if the box contains the point `v`
  */
 PM_INLINE bool pm_b2_contains_point(const pm_b2* b, pm_v2 v)
