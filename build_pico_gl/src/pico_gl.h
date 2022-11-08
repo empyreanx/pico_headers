@@ -347,6 +347,16 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
 void pgl_destroy_context(pgl_ctx_t* ctx);
 
 /**
+ * @brief Resizes the drawable dimensions
+ *
+ * @param ctx A pointer to the context
+ * @param w The drawable width of the window in pixels
+ * @param h The drawable height of the window in pixels
+ * @pawram reset_vewport Resets the viewport if true
+ */
+void pgl_resize(pgl_ctx_t* ctx, uint32_t w, uint32_t h, bool reset_viewport);
+
+/**
  * @brief Creates a shader program
  *
  * If `vert_src` and `frag_src` are both `NULL`, then the shader is compiled
@@ -508,7 +518,6 @@ void pgl_get_max_texture_size(int* w, int* h);
  * @returns An unsigned 64-bit ID value
  */
 uint64_t pgl_get_texture_id(const pgl_texture_t* texture);
-
 
 /**
  * @brief Activates a texture for rendering
@@ -1446,6 +1455,15 @@ void pgl_destroy_context(pgl_ctx_t* ctx)
     PGL_CHECK(glDeleteBuffers(1, &ctx->vbo));
     PGL_CHECK(glDeleteVertexArrays(1, &ctx->vao));
     PGL_FREE(ctx, ctx->mem_ctx);
+}
+
+void pgl_resize(pgl_ctx_t* ctx, uint32_t w, uint32_t h, bool reset_viewport)
+{
+    ctx->w = w;
+    ctx->h = h;
+
+    if (reset_viewport)
+        pgl_reset_viewport(ctx);
 }
 
 pgl_shader_t* pgl_create_shader(pgl_ctx_t* ctx, const char* vert_src,
