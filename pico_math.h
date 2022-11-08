@@ -779,11 +779,6 @@ pm_b2 pm_b2_enclosing(const pm_v2 verts[], int count);
  */
 pm_b2 pm_b2_transform(const pm_t2* t, const pm_b2* b);
 
-/*
- * MT state vector length (internal)
- */
-#define PM_STATE_VECTOR_LEN 624
-
 /**
  * @brief The pseudo random number generator (RNG) state
  */
