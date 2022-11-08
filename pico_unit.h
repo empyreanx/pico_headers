@@ -244,7 +244,7 @@ pu_display_time (bool enabled)
 }
 
 bool
-TEST_CASE_failed(void)
+pu_test_failed(void)
 {
     return (pu_num_failed != 0);
 }

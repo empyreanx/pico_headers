@@ -14,11 +14,11 @@ int main()
 {
     pu_display_colors(true);
 
-    PU_RUN_SUITE(suite_scalar);
-    PU_RUN_SUITE(suite_v2);
-    PU_RUN_SUITE(suite_t2);
-    PU_RUN_SUITE(suite_b2);
-    PU_RUN_SUITE(suite_rng);
+    RUN_TEST_SUITE(suite_scalar);
+    RUN_TEST_SUITE(suite_v2);
+    RUN_TEST_SUITE(suite_t2);
+    RUN_TEST_SUITE(suite_b2);
+    RUN_TEST_SUITE(suite_rng);
 
     pu_print_stats();
 

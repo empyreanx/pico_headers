@@ -17,7 +17,7 @@ static const uint32_t vector[] =
     1070118630, 2111543209, 1129029736, 2769716594,  198749844, 2123740404
 };
 
-PU_TEST(test_random)
+TEST_CASE(test_random)
 {
     pm_rng_t rng;
 
@@ -25,13 +25,13 @@ PU_TEST(test_random)
 
     for (size_t i = 0; i < 6 * 10; i++)
     {
-        PU_ASSERT(vector[i] == pm_random(&rng));
+        REQUIRE(vector[i] == pm_random(&rng));
     }
 
     return true;
 }
 
-PU_SUITE(suite_rng)
+TEST_SUITE(suite_rng)
 {
-    PU_RUN_TEST(test_random);
+    RUN_TEST_CASE(test_random);
 }
