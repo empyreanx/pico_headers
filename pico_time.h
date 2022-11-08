@@ -124,6 +124,10 @@ ptime_t pt_from_sec(double sec);
     #error "Unsupported platform"
 #endif
 
+/*==============================================================================
+ * Windows (pt_now/pt_sleep)
+ *============================================================================*/
+
 #if PT_PLATFORM == PT_WINDOWS
 
 #include <windows.h>
@@ -151,6 +155,10 @@ void pt_sleep(ptime_t duration)
     timeEndPeriod(tc.wPeriodMin);
 }
 
+/*==============================================================================
+ * Apple (pt_now)
+ *============================================================================*/
+
 #elif PT_PLATFORM == PT_APPLE
 
 #include <mach/mach_time.h>
@@ -166,6 +174,10 @@ ptime_t pt_now()
     return nsec / 1000;
 }
 
+/*==============================================================================
+ * Unix (pt_now)
+ *============================================================================*/
+
 #elif PT_PLATFORM == PT_UNIX
 
 #include <errno.h>
@@ -179,6 +191,10 @@ ptime_t pt_now()
 }
 
 #endif // PT_PLATFORM
+
+/*==============================================================================
+ * Unix and Apple (pt_sleep)
+ *============================================================================*/
 
 #if PT_PLATFORM == PT_UNIX || PT_PLATFORM == PT_APPLE
 
