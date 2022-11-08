@@ -8,7 +8,7 @@
 #include <string.h>  /* strcmp */
 
 /*
- * Used to extend PU_ASSERT
+ * Used to extend REQUIRE
  */
 static bool str_eq(const char* str1, const char* str2)
 {
@@ -21,41 +21,41 @@ static bool str_eq(const char* str1, const char* str2)
  * true.
  */
 
-PU_TEST(test1)
+TEST_CASE(test1)
 {
-    PU_ASSERT(2 + 2 == 4);                /* Boolean assertion (ok)         */
-    PU_ASSERT(str_eq("apples", "apples"));  /* String equality assertion (ok) */
+    REQUIRE(2 + 2 == 4);                /* Boolean assertion (ok)         */
+    REQUIRE(str_eq("apples", "apples"));  /* String equality assertion (ok) */
     return true;
 }
 
 /* Failing test */
-PU_TEST(test2)
+TEST_CASE(test2)
 {
-    PU_ASSERT(2 + 2 != 4);                /* Boolean assertion (fails) */
-    PU_ASSERT(str_eq("apples", "oranges")); /* String equality (fails */
+    REQUIRE(2 + 2 != 4);                /* Boolean assertion (fails) */
+    REQUIRE(str_eq("apples", "oranges")); /* String equality (fails */
     return true;
 }
 
 /* Mixed results */
-PU_TEST(test3)
+TEST_CASE(test3)
 {
-    PU_ASSERT(2 + 2 == 4);                 /* Boolean assertion (ok) */
-    PU_ASSERT(str_eq("apples", "oranges"));  /* String equality fails */
+    REQUIRE(2 + 2 == 4);                 /* Boolean assertion (ok) */
+    REQUIRE(str_eq("apples", "oranges"));  /* String equality fails */
     return true;
 }
 
 /* Test suite container function (multiple test suites can be specified. */
-static PU_SUITE(test_suite)
+static TEST_SUITE(test_suite)
 {
-    PU_RUN_TEST(test1);
-    PU_RUN_TEST(test2);
-    PU_RUN_TEST(test3);
+    RUN_TEST_CASE(test1);
+    RUN_TEST_CASE(test2);
+    RUN_TEST_CASE(test3);
 }
 
 int
 main ()
 {
-    PU_RUN_SUITE(test_suite);
+    RUN_TEST_SUITE(test_suite);
     pu_print_stats(); /* Optional */
     return 0;
 }

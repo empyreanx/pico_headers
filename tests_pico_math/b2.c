@@ -1,56 +1,56 @@
 #include "../pico_math.h"
 #include "../pico_unit.h"
 
-PU_TEST(test_b2_pos)
+TEST_CASE(test_b2_pos)
 {
     pm_b2 b = pm_b2_make(1.0f, 2.0f, 3.0f, 4.0f);
 
     pm_v2 res = pm_b2_pos(&b);
     pm_v2 exp = pm_v2_make(1.0f, 2.0f);
 
-    PU_ASSERT(pm_v2_equal(res, exp));
+    REQUIRE(pm_v2_equal(res, exp));
 
     return true;
 }
 
-PU_TEST(test_b2_size)
+TEST_CASE(test_b2_size)
 {
     pm_b2 b = pm_b2_make(1.0f, 2.0f, 3.0f, 4.0f);
 
     pm_v2 res = pm_b2_size(&b);
     pm_v2 exp = pm_v2_make(3.0f, 4.0f);
 
-    PU_ASSERT(pm_v2_equal(res, exp));
+    REQUIRE(pm_v2_equal(res, exp));
 
     return true;
 }
 
-PU_TEST(test_b2_equal)
+TEST_CASE(test_b2_equal)
 {
     { // Should be true
 
         pm_b2 b1 = pm_b2_make(1, 2, 3, 4);
         pm_b2 b2 = pm_b2_make(1, 2, 3, 4);
-        PU_ASSERT(pm_b2_equal(&b1, &b2));
+        REQUIRE(pm_b2_equal(&b1, &b2));
     }
 
     { // Should be false
         pm_b2 b1 = pm_b2_make(0, 2, 3, 4);
         pm_b2 b2 = pm_b2_make(1, 2, 3, 4);
-        PU_ASSERT(!pm_b2_equal(&b1, &b2));
+        REQUIRE(!pm_b2_equal(&b1, &b2));
     }
 
     return true;
 }
 
-PU_TEST(test_b2_combine)
+TEST_CASE(test_b2_combine)
 {
     { // Case 1
         pm_b2 b1  = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 b2  = pm_b2_make(0.5f, 0.5f, 1.0f, 1.0f);
         pm_b2 exp = pm_b2_make(0.0f, 0.0f, 1.5f, 1.5f);
         pm_b2 res = pm_b2_combine(&b1, &b2);
-        PU_ASSERT(pm_b2_equal(&res, &exp));
+        REQUIRE(pm_b2_equal(&res, &exp));
     }
 
     { // Case 2
@@ -58,38 +58,38 @@ PU_TEST(test_b2_combine)
         pm_b2 b2  = pm_b2_make(1.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 exp = pm_b2_make(0.0f, 0.0f, 2.0f, 1.0f);
         pm_b2 res = pm_b2_combine(&b1, &b2);
-        PU_ASSERT(pm_b2_equal(&res, &exp));
+        REQUIRE(pm_b2_equal(&res, &exp));
     }
 
 
     return true;
 }
 
-PU_TEST(test_b2_overlaps)
+TEST_CASE(test_b2_overlaps)
 {
     { // Case 1
         pm_b2 b1 = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 b2 = pm_b2_make(0.5f, 0.5f, 1.0f, 1.0f);
-        PU_ASSERT(pm_b2_overlaps(&b1, &b2));
+        REQUIRE(pm_b2_overlaps(&b1, &b2));
     }
 
     { // Case 2
         pm_b2 b1 = pm_b2_make(1000.0f, 0.0f, 800.0f, 600.0f);
         pm_b2 b2 = pm_b2_make(813.0f, 100.0f, 192.0f, 192.0f);
-        PU_ASSERT(pm_b2_overlaps(&b1, &b2));
+        REQUIRE(pm_b2_overlaps(&b1, &b2));
     }
 
     return true;
 }
 
-PU_TEST(test_b2_overlap)
+TEST_CASE(test_b2_overlap)
 {
     { // Case 1
         pm_b2 b1  = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 b2  = pm_b2_make(0.5f, 0.5f, 1.0f, 1.0f);
         pm_b2 exp = pm_b2_make(0.5f, 0.5f, 0.5f, 0.5f);
         pm_b2 res = pm_b2_overlap(&b1, &b2);
-        PU_ASSERT(pm_b2_equal(&res, &exp));
+        REQUIRE(pm_b2_equal(&res, &exp));
     }
 
     { // Case 2
@@ -97,29 +97,29 @@ PU_TEST(test_b2_overlap)
         pm_b2 b2 =  pm_b2_make(2.0f, 0.0f, 1.0f, 1.0f);
         pm_b2 exp = pm_b2_make(0, 0, 0, 0);
         pm_b2 res = pm_b2_overlap(&b1, &b2);
-        PU_ASSERT(pm_b2_equal(&res, &exp));
+        REQUIRE(pm_b2_equal(&res, &exp));
     }
 
     return true;
 }
 
-PU_TEST(test_b2_contains_point)
+TEST_CASE(test_b2_contains_point)
 {
     pm_b2 b = pm_b2_make(1.0f, 1.0f, 2.0f, 2.0f);
 
     { // Should contain
-        PU_ASSERT(pm_b2_contains_point(&b, pm_v2_make(1.5f, 1.5f)));
-        PU_ASSERT(pm_b2_contains_point(&b, pm_v2_make(1.56f, 1.8f)));
+        REQUIRE(pm_b2_contains_point(&b, pm_v2_make(1.5f, 1.5f)));
+        REQUIRE(pm_b2_contains_point(&b, pm_v2_make(1.56f, 1.8f)));
     }
 
     { // Should not contain
-        PU_ASSERT(!pm_b2_contains_point(&b, pm_v2_make(0.0f, 1.8f)));
+        REQUIRE(!pm_b2_contains_point(&b, pm_v2_make(0.0f, 1.8f)));
     }
 
     return true;
 }
 
-PU_TEST(test_b2_enclosing)
+TEST_CASE(test_b2_enclosing)
 {
     pm_v2 verts[4];
     verts[0] = pm_v2_make(1.0f, 2.0f);
@@ -130,12 +130,12 @@ PU_TEST(test_b2_enclosing)
     pm_b2 res = pm_b2_enclosing(verts, 4);
     pm_b2 exp = pm_b2_make(1.0f, 2.0f, 3.0f, 4.0f);
 
-    PU_ASSERT(pm_b2_equal(&res, &exp));
+    REQUIRE(pm_b2_equal(&res, &exp));
 
     return true;
 }
 
-PU_TEST(test_b2_transform)
+TEST_CASE(test_b2_transform)
 {
     pm_b2 b = pm_b2_make(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -147,20 +147,20 @@ PU_TEST(test_b2_transform)
     pm_float len = pm_sin(PM_PI / 4.0f);
     pm_b2 exp = pm_b2_make(-len, -len, 2.0f * len, 2.0f * len);
 
-    PU_ASSERT(pm_b2_equal(&res, &exp));
+    REQUIRE(pm_b2_equal(&res, &exp));
 
     return true;
 }
 
-PU_SUITE(suite_b2)
+TEST_SUITE(suite_b2)
 {
-    PU_RUN_TEST(test_b2_pos);
-    PU_RUN_TEST(test_b2_size);
-    PU_RUN_TEST(test_b2_equal);
-    PU_RUN_TEST(test_b2_combine);
-    PU_RUN_TEST(test_b2_overlaps);
-    PU_RUN_TEST(test_b2_overlap);
-    PU_RUN_TEST(test_b2_contains_point);
-    PU_RUN_TEST(test_b2_enclosing);
-    PU_RUN_TEST(test_b2_transform);
+    RUN_TEST_CASE(test_b2_pos);
+    RUN_TEST_CASE(test_b2_size);
+    RUN_TEST_CASE(test_b2_equal);
+    RUN_TEST_CASE(test_b2_combine);
+    RUN_TEST_CASE(test_b2_overlaps);
+    RUN_TEST_CASE(test_b2_overlap);
+    RUN_TEST_CASE(test_b2_contains_point);
+    RUN_TEST_CASE(test_b2_enclosing);
+    RUN_TEST_CASE(test_b2_transform);
 }

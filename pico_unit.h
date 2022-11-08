@@ -27,19 +27,19 @@
     This library is a minimal unit testing framework. It should compile and run
     on just about any platform with a standard C99 compiler.
 
-    Writing tests is simple: 1) Use the PU_TEST macro and define the test using
-    using PU_ASSERT to test boolean expressions; 2) Run the test inside the
-    body of a test suite or other function (e.g. main) using PU_RUN_TEST. How
+    Writing tests is simple: 1) Use the TEST_CASE macro and define the test using
+    using REQUIRE to test boolean expressions; 2) Run the test inside the
+    body of a test suite or other function (e.g. main) using RUN_TEST_CASE. How
     you group tests and test suites is entirely up to you.
 
     In order to keep the library portable and nimble, certain features were
     dispensed with, namely automatic test registration and predicates more
-    complex than PU_ASSERT. Experience has shown these are not serious defects.
+    complex than REQUIRE. Experience has shown these are not serious defects.
 
     There are a number of display options available: color coded output, test
     elapsed time (unless PICO_UNIT_NO_CLOCK is defined), and printing test statistics.
 
-    A test suite is simply a group of tests. These contain calls to PU_RUN_TEST.
+    A test suite is simply a group of tests. These contain calls to RUN_TEST_CASE.
     The advantage of using test suites is that it divides unit tests into
     logical groups. There are helper macros for declaring and defining test
     suites. Test suites help with formatting the output and the number of suites
@@ -75,7 +75,7 @@ extern "C" {
  *
  * @param name The name of the test. Must be a valid C function name
  */
-#define PU_TEST(name) static bool name()
+#define TEST_CASE(name) static bool name()
 
 /**
  * @brief Asserts that a condition is true
@@ -86,9 +86,9 @@ extern "C" {
  *
  * @param expr The expression to evaluate
  */
-#define PU_ASSERT(expr) \
+#define REQUIRE(expr) \
     do  { \
-        if (!pu_assert((expr) ? true : false, (#expr), __FILE__, __LINE__)) \
+        if (!pu_require((expr) ? true : false, (#expr), __FILE__, __LINE__)) \
             return false; \
     } while(false)
 
@@ -100,14 +100,14 @@ extern "C" {
  *
  * @param test_fp The test function to execute
  */
-#define PU_RUN_TEST(test_fp) (pu_run_test(#test_fp, test_fp))
+#define RUN_TEST_CASE(test_fp) (pu_run_test(#test_fp, test_fp))
 
 /**
  * @brief Declares a test suite
  *
  * @param name The name of the test suite
  */
-#define PU_SUITE(name) void name()
+#define TEST_SUITE(name) void name()
 
 /**
  * @brief Runs a series of unit tests. The test suite function has the signature,
@@ -115,7 +115,7 @@ extern "C" {
  *
  * @param suite_fp The test suite function to run
  */
-#define PU_RUN_SUITE(suite_fp) pu_run_suite(#suite_fp, suite_fp)
+#define RUN_TEST_SUITE(suite_fp) pu_run_suite(#suite_fp, suite_fp)
 
 /**
  * @brief Functions that are run before or after a number of unit tests execute.
@@ -157,7 +157,7 @@ void pu_print_stats(void);
 
 /**
  * @brief Check whether at least one test failed.
- * 
+ *
  * @return true if any test failed, false if they all passed
  */
 bool pu_test_failed(void);
@@ -172,10 +172,10 @@ typedef void (*pu_suite_fn)(void);
 /**
  * @brief Used internally
  */
-bool pu_assert(bool passed,
-               const char* const expr,
-               const char* const file,
-               int line);
+bool pu_require(bool passed,
+                const char* const expr,
+                const char* const file,
+                int line);
 
 /**
  * @brief Used internally
@@ -243,14 +243,14 @@ pu_display_time (bool enabled)
     pu_time = enabled;
 }
 
-bool 
+bool
 pu_test_failed(void)
 {
     return (pu_num_failed != 0);
 }
 
 bool
-pu_assert (bool passed,
+pu_require(bool passed,
            const char* const expr,
            const char* const file,
            int line)

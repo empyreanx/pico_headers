@@ -13,7 +13,7 @@ static int random_int(int min, int max);
 static qt_t* qt;
 static qt_value_t* values;
 
-PU_TEST(test_insert_single)
+TEST_CASE(test_insert_single)
 {
     qt_insert(qt, qt_make_rect(-5, -5, 10, 10), 0);
 
@@ -23,8 +23,8 @@ PU_TEST(test_insert_single)
     {
         values = qt_query(qt, qt_make_rect(-7, -7, 5, 5), &size);
 
-        PU_ASSERT(size == 1);
-        PU_ASSERT(values[0] == 0);
+        REQUIRE(size == 1);
+        REQUIRE(values[0] == 0);
 
         qt_free(values);
     }
@@ -33,14 +33,14 @@ PU_TEST(test_insert_single)
     {
         values = qt_query(qt, qt_make_rect(6, 6, 5, 5), &size);
 
-        PU_ASSERT(size == 0);
-        PU_ASSERT(values == NULL);
+        REQUIRE(size == 0);
+        REQUIRE(values == NULL);
     }
 
     return true;
 }
 
-PU_TEST(test_insert_single_contained)
+TEST_CASE(test_insert_single_contained)
 {
     qt_insert(qt, qt_make_rect(-5, -5, 3, 3), 0);
 
@@ -50,22 +50,22 @@ PU_TEST(test_insert_single_contained)
     {
         values = qt_query(qt, qt_make_rect(-7, -7, 7, 7), &size);
 
-        PU_ASSERT(size == 1);
-        PU_ASSERT(values[0] == 0);
+        REQUIRE(size == 1);
+        REQUIRE(values[0] == 0);
     }
 
     // Not found
     {
         values = qt_query(qt, qt_make_rect(5, 5, 5, 5), &size);
 
-        PU_ASSERT(size == 0);
-        PU_ASSERT(values == NULL);
+        REQUIRE(size == 0);
+        REQUIRE(values == NULL);
     }
 
     return true;
 }
 
-PU_TEST(test_insert_multiple)
+TEST_CASE(test_insert_multiple)
 {
     qt_insert(qt, qt_make_rect(-7, -7, 2, 2), 0);
     qt_insert(qt, qt_make_rect(-5, -5, 3, 3), 1);
@@ -76,18 +76,18 @@ PU_TEST(test_insert_multiple)
 
     values = qt_query(qt, qt_make_rect(-6, -6, 5, 5), &size);
 
-    PU_ASSERT(size == 3);
+    REQUIRE(size == 3);
 
     sort_values(values, size);
 
-    PU_ASSERT(values[0] == 0);
-    PU_ASSERT(values[1] == 1);
-    PU_ASSERT(values[2] == 2);
+    REQUIRE(values[0] == 0);
+    REQUIRE(values[1] == 1);
+    REQUIRE(values[2] == 2);
 
     return true;
 }
 
-PU_TEST(test_insert_multiple_random)
+TEST_CASE(test_insert_multiple_random)
 {
     srand(42);
 
@@ -104,19 +104,19 @@ PU_TEST(test_insert_multiple_random)
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
 
-    PU_ASSERT(size == 32);
+    REQUIRE(size == 32);
 
     sort_values(values, size);
 
     for (int i = 0; i < size; i++)
     {
-        PU_ASSERT(values[i] == (qt_value_t)i);
+        REQUIRE(values[i] == (qt_value_t)i);
     }
 
     return true;
 }
 
-PU_TEST(test_insert_multiple_random_contained)
+TEST_CASE(test_insert_multiple_random_contained)
 {
     srand(42);
 
@@ -135,13 +135,13 @@ PU_TEST(test_insert_multiple_random_contained)
     {
         values = qt_query(qt, qt_make_rect(-1, -1, 11, 11), &size);
 
-        PU_ASSERT(size == 8);
+        REQUIRE(size == 8);
 
         sort_values(values, size);
 
         for (int i = 0; i < size; i++)
         {
-            PU_ASSERT(values[i] == (qt_value_t)i);
+            REQUIRE(values[i] == (qt_value_t)i);
         }
 
         qt_free(values);
@@ -151,14 +151,14 @@ PU_TEST(test_insert_multiple_random_contained)
     {
         values = qt_query(qt, qt_make_rect(-7, -7, 3, 3), &size);
 
-        PU_ASSERT(size == 0);
-        PU_ASSERT(values == NULL);
+        REQUIRE(size == 0);
+        REQUIRE(values == NULL);
     }
 
     return true;
 }
 
-PU_TEST(test_remove)
+TEST_CASE(test_remove)
 {
     qt_insert(qt, qt_make_rect(-3, -3, 2, 2), 0);
     qt_insert(qt, qt_make_rect( 5,  5, 3, 3), 1);
@@ -173,20 +173,20 @@ PU_TEST(test_remove)
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
     qt_free(values);
 
-    PU_ASSERT(size == 2);
+    REQUIRE(size == 2);
 
     qt_remove(qt, 2);
     qt_remove(qt, 3);
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
 
-    PU_ASSERT(size == 0);
-    PU_ASSERT(values == NULL);
+    REQUIRE(size == 0);
+    REQUIRE(values == NULL);
 
     return true;
 }
 
-PU_TEST(test_reset)
+TEST_CASE(test_reset)
 {
     srand(42);
 
@@ -203,7 +203,7 @@ PU_TEST(test_reset)
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
 
-    PU_ASSERT(size == 32);
+    REQUIRE(size == 32);
 
     qt_free(values);
 
@@ -211,13 +211,13 @@ PU_TEST(test_reset)
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
 
-    PU_ASSERT(size == 0);
-    PU_ASSERT(values == NULL);
+    REQUIRE(size == 0);
+    REQUIRE(values == NULL);
 
     return true;
 }
 
-PU_TEST(test_clear)
+TEST_CASE(test_clear)
 {
     srand(42);
 
@@ -234,7 +234,7 @@ PU_TEST(test_clear)
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
 
-    PU_ASSERT(size == 32);
+    REQUIRE(size == 32);
 
     qt_free(values);
 
@@ -242,13 +242,13 @@ PU_TEST(test_clear)
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
 
-    PU_ASSERT(size == 0);
-    PU_ASSERT(values == NULL);
+    REQUIRE(size == 0);
+    REQUIRE(values == NULL);
 
     return true;
 }
 
-PU_TEST(test_clean)
+TEST_CASE(test_clean)
 {
     srand(42);
 
@@ -265,7 +265,7 @@ PU_TEST(test_clean)
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
 
-    PU_ASSERT(size == 32);
+    REQUIRE(size == 32);
 
     qt_free(values);
 
@@ -273,22 +273,22 @@ PU_TEST(test_clean)
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
 
-    PU_ASSERT(size == 32);
+    REQUIRE(size == 32);
 
     return true;
 }
 
-static PU_SUITE(suite_qt)
+static TEST_SUITE(suite_qt)
 {
-    PU_RUN_TEST(test_insert_single);
-    PU_RUN_TEST(test_insert_single_contained);
-    PU_RUN_TEST(test_insert_multiple);
-    PU_RUN_TEST(test_insert_multiple_random);
-    PU_RUN_TEST(test_insert_multiple_random_contained);
-    PU_RUN_TEST(test_remove);
-    PU_RUN_TEST(test_reset);
-    PU_RUN_TEST(test_clear);
-    PU_RUN_TEST(test_clean);
+    RUN_TEST_CASE(test_insert_single);
+    RUN_TEST_CASE(test_insert_single_contained);
+    RUN_TEST_CASE(test_insert_multiple);
+    RUN_TEST_CASE(test_insert_multiple_random);
+    RUN_TEST_CASE(test_insert_multiple_random_contained);
+    RUN_TEST_CASE(test_remove);
+    RUN_TEST_CASE(test_reset);
+    RUN_TEST_CASE(test_clear);
+    RUN_TEST_CASE(test_clean);
 }
 
 void setup()
@@ -308,7 +308,7 @@ int main()
 {
     pu_display_colors(true);
     pu_setup(setup, teardown);
-    PU_RUN_SUITE(suite_qt);
+    RUN_TEST_SUITE(suite_qt);
     pu_print_stats();
     return pu_test_failed();
 }
