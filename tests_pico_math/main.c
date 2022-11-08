@@ -4,11 +4,11 @@
 #define PICO_UNIT_IMPLEMENTATION
 #include "../pico_unit.h"
 
-void suite_scalar();
-void suite_v2();
-void suite_t2();
-void suite_b2();
-void suite_rng();
+TEST_SUITE(suite_scalar);
+TEST_SUITE(suite_v2);
+TEST_SUITE(suite_t2);
+TEST_SUITE(suite_b2);
+TEST_SUITE(suite_rng);
 
 int main()
 {
