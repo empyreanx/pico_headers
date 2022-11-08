@@ -13,7 +13,7 @@ Library | Docs | Description | Version
 **[pico_qt](pico_qt.h)**     | **[docs](https://empyreanx.github.io/docs/ph/pico__qt_8h.html)**   | A simple quadtree library                   | 0.1
 **[pico_sat](pico_sat.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__sat_8h.html)**  | 2D collision detection library based on SAT | 0.1
 **[pico_time](pico_time.h)** | **[docs](https://empyreanx.github.io/docs/ph/pico__time_8h.html)** | Simple time management library              | 0.1
-**[pico_unit](pico_unit.h)** | **[docs](https://empyreanx.github.io/docs/ph/pico__unit_8h.html)** | Bare-bones unit testing framework           | 0.1
+**[pico_unit](pico_unit.h)** | **[docs](https://empyreanx.github.io/docs/ph/pico__unit_8h.html)** | Bare-bones unit testing framework           | 1.0
 
 These libraries are as-is, however, suggestions for improvements or bug fixes are appreciated. Please raise an issue before submitting a PR with new features. Bug fixes are always welcome!
 
