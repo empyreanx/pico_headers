@@ -778,8 +778,7 @@ pm_b2 pm_b2_transform(const pm_t2* t, const pm_b2* b);
  */
 typedef struct
 {
-  uint32_t mt[PM_STATE_VECTOR_LEN];
-  int index;
+    uint32_t s[4];
 } pm_rng_t;
 
 /**
@@ -787,7 +786,7 @@ typedef struct
  * @param rng A reference to the RNG
  * @param seed The seed (choosing the same seed will yield identical sequences)
  */
-void pm_rng_seed(pm_rng_t* rng, uint32_t seed);
+void pm_rng_seed(pm_rng_t* rng, uint64_t seed);
 
 /**
  * @brief Generates a pseudo random number in [0, UINT32_MAX]
@@ -1034,73 +1033,52 @@ pm_b2 pm_b2_transform(const pm_t2* t, const pm_b2* b)
 }
 
 /*
- * Mersenne Twister random number generator. Based on
- * https://github.com/ESultanik/mtwister by Evan Sultanik (Public Domain).
+ * Implementation of the xoshiro128** algorithm
+ * https://en.wikipedia.org/wiki/Xorshift
  */
 
-#define PM_STATE_VECTOR_LEN 624
-#define PM_STATE_VECTOR_M   397
-#define PM_UPPER_MASK       0x80000000
-#define PM_LOWER_MASK       0x7fffffff
-#define PM_TEMPERING_MASK_B 0x9d2c5680
-#define PM_TEMPERING_MASK_C 0xefc60000
-
-void pm_rng_seed(pm_rng_t* rng, uint32_t seed)
+void pm_rng_seed(pm_rng_t* rng, uint64_t seed)
 {
-    rng->mt[0] = seed & 0xffffffff;
-
-    for (rng->index = 1; rng->index < PM_STATE_VECTOR_LEN; rng->index++)
+    for (int i = 0; i < 2; i++)
     {
-        rng->mt[rng->index] = (69069 * rng->mt[rng->index - 1]) & 0xffffffff;
+        uint64_t result  = (seed += 0x9E3779B97f4A7C15);
+        result = (result ^ (result >> 30)) * 0xBF58476D1CE4E5B9;
+        result = (result ^ (result >> 27)) * 0x94D049BB133111EB;
+        result = result  ^ (result >> 31);
+
+        int j = i * 2;
+
+        rng->s[j]     = (uint32_t)result;
+        rng->s[j + 1] = (uint32_t)(result >> 32);
     }
+}
+
+static uint32_t rng_rol32(uint32_t x, int k)
+{
+	return (x << k) | (x >> (32 - k));
 }
 
 uint32_t pm_random(pm_rng_t* rng)
 {
-    uint32_t y;
-    static const uint32_t mag[2] = {0x0, 0x9908b0df};
+	uint32_t *s = rng->s;
+	uint32_t const result = rng_rol32(s[1] * 5, 7) * 9;
+	uint32_t const t = s[1] << 17;
 
-    if (rng->index >= PM_STATE_VECTOR_LEN || rng->index < 0)
-    {
-        int kk;
+	s[2] ^= s[0];
+	s[3] ^= s[1];
+	s[1] ^= s[2];
+	s[0] ^= s[3];
 
-        if (rng->index >= PM_STATE_VECTOR_LEN + 1 || rng->index < 0)
-        {
-            pm_rng_seed(rng, 4357);
-        }
+	s[2] ^= t;
+	s[3] = rng_rol32(s[3], 45);
 
-        for (kk = 0; kk < PM_STATE_VECTOR_LEN - PM_STATE_VECTOR_M; kk++)
-        {
-            y = (rng->mt[kk] & PM_UPPER_MASK) | (rng->mt[kk + 1] & PM_LOWER_MASK);
-            rng->mt[kk] = rng->mt[kk + PM_STATE_VECTOR_M] ^ (y >> 1) ^ mag[y & 0x1];
-        }
-
-        for(; kk < PM_STATE_VECTOR_LEN - 1; kk++)
-        {
-            y = (rng->mt[kk] & PM_UPPER_MASK) | (rng->mt[kk + 1] & PM_LOWER_MASK);
-            rng->mt[kk] = rng->mt[kk + (PM_STATE_VECTOR_M - PM_STATE_VECTOR_LEN)] ^ (y >> 1) ^ mag[y & 0x1];
-        }
-
-        y = (rng->mt[PM_STATE_VECTOR_LEN - 1] & PM_UPPER_MASK) | (rng->mt[0] & PM_LOWER_MASK);
-
-        rng->mt[PM_STATE_VECTOR_LEN - 1] = rng->mt[PM_STATE_VECTOR_M - 1] ^ (y >> 1) ^ mag[y & 0x1];
-        rng->index = 0;
-    }
-
-    y = rng->mt[rng->index++];
-    y ^= (y >> 11);
-    y ^= (y << 7)  & PM_TEMPERING_MASK_B;
-    y ^= (y << 15) & PM_TEMPERING_MASK_C;
-    y ^= (y >> 18);
-
-    return y;
+	return result;
 }
 
 pm_float pm_random_float(pm_rng_t* rng)
 {
     return (pm_float)pm_random(rng) / (pm_float)UINT32_MAX;
 }
-
 
 #endif // PICO_MATH_IMPLEMENTATION
 

@@ -8,7 +8,6 @@ void suite_scalar();
 void suite_v2();
 void suite_t2();
 void suite_b2();
-void suite_rng();
 
 int main()
 {
@@ -18,7 +17,6 @@ int main()
     PU_RUN_SUITE(suite_v2);
     PU_RUN_SUITE(suite_t2);
     PU_RUN_SUITE(suite_b2);
-    PU_RUN_SUITE(suite_rng);
 
     pu_print_stats();
 
