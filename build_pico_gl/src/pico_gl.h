@@ -63,7 +63,7 @@
     - PICO_GL_MAX_UNIFORMS (default: 32)
     - PICO_GL_MAX_STATES (default: 32)
 
-    Must be defined before PGL_IMPLEMENTATION
+    Must be defined before PICO_GL_IMPLEMENTATION
 
     Todo:
     -----

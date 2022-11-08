@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 24/03/2022 14:37:18.
+/// WARNING: This file was automatically generated on 08/11/2022 15:30:24.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -68,7 +68,7 @@
     - PICO_GL_MAX_UNIFORMS (default: 32)
     - PICO_GL_MAX_STATES (default: 32)
 
-    Must be defined before PGL_IMPLEMENTATION
+    Must be defined before PICO_GL_IMPLEMENTATION
 
     Todo:
     -----
