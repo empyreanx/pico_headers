@@ -50,7 +50,7 @@
     Constants:
     --------
     - PICO_QT_NODE_CAPACITY (default: 16)
-    - PICO_QT_TMP_CAPACITY (default: 256)
+    - PICO_QT_QUERY_CAPACITY (default: 256)
 
     Must be defined before PICO_QT_IMPLEMENTATION
 */
@@ -227,8 +227,8 @@ void qt_clean(qt_t* qt);
 #endif
 
 // Minimum capacity of quadtree's internal array
-#ifndef PICO_QT_TMP_CAPACITY
-#define PICO_QT_TMP_CAPACITY 256
+#ifndef PICO_QT_QUERY_CAPACITY
+#define PICO_QT_QUERY_CAPACITY 256
 #endif
 
 /*=============================================================================
@@ -241,7 +241,7 @@ void qt_clean(qt_t* qt);
 #define QT_FREE          PICO_QT_FREE
 #define QT_MAX_DEPTH     PICO_QT_MAX_DEPTH
 #define QT_NODE_CAPACITY PICO_QT_NODE_CAPACITY
-#define QT_TMP_CAPACITY  PICO_QT_TMP_CAPACITY
+#define QT_QUERY_CAPACITY  PICO_QT_QUERY_CAPACITY
 
 /*=============================================================================
  * Internal data structures
@@ -273,7 +273,7 @@ struct qt_node_t
 
 struct qt_t
 {
-    qt_array_t tmp;
+    qt_array_t query;
     qt_rect_t  bounds;
     qt_node_t* root;
 };
@@ -312,7 +312,7 @@ qt_t* qt_create(qt_rect_t bounds, int max_depth)
     qt->bounds = bounds;
     qt->root = qt_node_create(bounds, 0, max_depth);
 
-    qt_array_init(&qt->tmp, QT_TMP_CAPACITY);
+    qt_array_init(&qt->query, QT_QUERY_CAPACITY);
 
     return qt;
 }
@@ -321,7 +321,7 @@ void qt_destroy(qt_t* qt)
 {
     QT_ASSERT(qt);
 
-    qt_array_destroy(&qt->tmp);
+    qt_array_destroy(&qt->query);
     qt_node_destroy(qt->root);
     QT_FREE(qt);
 }
@@ -359,29 +359,29 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
         return NULL;
 
     // Reset the internal array
-    qt->tmp.size = 0;
+    qt->query.size = 0;
 
     // Start query the root node
-    qt_node_query(qt->root, &area, &qt->tmp);
+    qt_node_query(qt->root, &area, &qt->query);
 
     // If no results then return NULL
-    if (qt->tmp.size == 0)
+    if (qt->query.size == 0)
     {
         *size = 0;
         return NULL;
     }
 
     // Allocate value array
-    qt_value_t* values = QT_MALLOC(qt->tmp.size * sizeof(qt_value_t));
+    qt_value_t* values = QT_MALLOC(qt->query.size * sizeof(qt_value_t));
 
     // Fill value array
-    for (int i = 0; i < qt->tmp.size; i++)
+    for (int i = 0; i < qt->query.size; i++)
     {
-        values[i] = qt->tmp.items[i].value;
+        values[i] = qt->query.items[i].value;
     }
 
     // Set size and return
-    *size = qt->tmp.size;
+    *size = qt->query.size;
 
     return values;
 }
@@ -405,7 +405,7 @@ void qt_clean(qt_t* qt)
     QT_ASSERT(qt);
 
     qt_array_t array;
-    qt_array_init(&array, QT_TMP_CAPACITY);
+    qt_array_init(&array, QT_QUERY_CAPACITY);
 
     qt_node_all_items(qt->root, &array);
     qt_reset(qt);
