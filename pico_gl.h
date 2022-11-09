@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 08/11/2022 20:17:23.
+/// WARNING: This file was automatically generated on 08/11/2022 20:51:32.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -3912,6 +3912,8 @@ struct pgl_texture_t
     GLuint     fbo;
     GLuint     fbo_msaa;
     GLuint     rbo_msaa;
+    GLuint     depth_id;
+    GLuint     depth_rbo_msaa;
 };
 
 struct pgl_buffer_t
@@ -4219,6 +4221,23 @@ void pgl_bind_shader(pgl_ctx_t* ctx, pgl_shader_t* shader)
     }
 }
 
+static void pgl_set_texture_params(GLuint tex_id, bool smooth, bool repeat)
+{
+    PGL_CHECK(glBindTexture(GL_TEXTURE_2D, tex_id));
+
+    PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                              smooth ? GL_LINEAR : GL_NEAREST));
+
+    PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                              smooth ? GL_LINEAR : GL_NEAREST));
+
+    PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                              repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE));
+
+    PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+                              repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE));
+}
+
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                   bool target,
                                   pgl_format_t fmt, bool srgb,
@@ -4264,29 +4283,26 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
         return NULL;
     }
 
-    pgl_bind_texture(ctx, tex);
-
-    PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                              smooth ? GL_LINEAR : GL_NEAREST));
-
-    PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                              smooth ? GL_LINEAR : GL_NEAREST));
-
-    PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                              repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE));
-
-    PGL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                              repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE));
+    pgl_set_texture_params(tex->id, smooth, repeat);
 
     // TODO: Create another function that executes these steps
     if (target)
     {
+        PGL_CHECK(glGenTextures(1, &tex->depth_id));
         PGL_CHECK(glGenFramebuffers(1, &tex->fbo));
+
+        pgl_set_texture_params(tex->depth_id, smooth, repeat);
+
+        PGL_CHECK(glBindTexture(GL_TEXTURE_2D, tex->depth_id));
+        PGL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL));
 
         if (ctx->samples > 0)
         {
             PGL_CHECK(glGenFramebuffers(1, &tex->fbo_msaa));
             PGL_CHECK(glGenRenderbuffers(1, &tex->rbo_msaa));
+
+            if (ctx->depth)
+                PGL_CHECK(glGenRenderbuffers(1, &tex->depth_rbo_msaa));
         }
     }
 
@@ -4302,19 +4318,10 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 
         if (ctx->depth)
         {
-            GLuint depth_id = 0;
-            PGL_CHECK(glGenTextures(1, &depth_id));
-
-            glBindTexture(GL_TEXTURE_2D, depth_id);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
 
             PGL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER,
                                              GL_DEPTH_ATTACHMENT,
-                                             GL_TEXTURE_2D, depth_id, 0));
+                                             GL_TEXTURE_2D, tex->depth_id, 0));
         }
 
         if (ctx->samples > 0)
@@ -4334,9 +4341,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                                 GL_RENDERBUFFER, tex->rbo_msaa));
             if (ctx->depth)
             {
-                GLuint depth_rbo_msaa;
-                PGL_CHECK(glGenRenderbuffers(1, &depth_rbo_msaa));
-                PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_msaa));
+                PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, tex->depth_rbo_msaa));
 
                 PGL_CHECK(glRenderbufferStorageMultisample(GL_RENDERBUFFER,
                                                            ctx->samples,
@@ -4346,9 +4351,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                 PGL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                                     GL_DEPTH_ATTACHMENT,
                                                     GL_RENDERBUFFER,
-                                                    depth_rbo_msaa));
-
-                                                    printf("here\n");
+                                                    tex->depth_rbo_msaa));
             }
         }
 
