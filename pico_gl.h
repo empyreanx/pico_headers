@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 09/11/2022 15:25:16.
+/// WARNING: This file was automatically generated on 09/11/2022 15:41:37.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4655,7 +4655,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
-    //PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
+    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
     PGL_CHECK(glDrawArrays(pgl_primitive_map[primitive], 0, count));
     PGL_CHECK(glBindVertexArray(0));
