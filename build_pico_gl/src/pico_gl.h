@@ -1624,6 +1624,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 {
     PGL_ASSERT(NULL != ctx);
 
+    // Check texture dimensions
     if (w <= 0 || h <= 0)
     {
         PGL_LOG("Texture dimensions must be positive (w: %i, h: %i)", w, h);
@@ -1641,6 +1642,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
         return NULL;
     }
 
+    // Allocate texture
     pgl_texture_t* tex = PGL_MALLOC(sizeof(pgl_texture_t), ctx->mem_ctx);
 
     if (!tex)
@@ -1663,35 +1665,49 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 
     pgl_set_texture_params(tex->id, smooth, repeat);
 
-    // TODO: Create another function that executes these steps
+    // Generate objects for render target
     if (target)
     {
-        PGL_CHECK(glGenTextures(1, &tex->depth_id));
+        // Generate framebuffer
         PGL_CHECK(glGenFramebuffers(1, &tex->fbo));
 
-        pgl_set_texture_params(tex->depth_id, smooth, repeat);
+        // Create depth texture
+        if (ctx->depth)
+        {
+            PGL_CHECK(glGenTextures(1, &tex->depth_id));
 
-        PGL_CHECK(glBindTexture(GL_TEXTURE_2D, tex->depth_id));
-        PGL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL));
+            pgl_set_texture_params(tex->depth_id, smooth, repeat);
 
+            PGL_CHECK(glBindTexture(GL_TEXTURE_2D, tex->depth_id));
+            PGL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0,
+                                   GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL));
+        }
+
+        // Generate multi-sample buffers for MSAA
         if (ctx->samples > 0)
         {
             PGL_CHECK(glGenFramebuffers(1, &tex->fbo_msaa));
             PGL_CHECK(glGenRenderbuffers(1, &tex->rbo_msaa));
 
+            // Generate depth buffer for MSAA
             if (ctx->depth)
                 PGL_CHECK(glGenRenderbuffers(1, &tex->depth_rbo_msaa));
         }
     }
 
+    // Create attachments
     if (target)
     {
+        // Bind framebuffer
         PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, tex->fbo));
 
+        // Create framebuffer attachment
         PGL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER,
                                          GL_COLOR_ATTACHMENT0,
                                          GL_TEXTURE_2D, tex->id, 0));
 
+
+        // Create framebuffer depth attachment
         if (ctx->depth)
         {
 
@@ -1700,9 +1716,13 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                              GL_TEXTURE_2D, tex->depth_id, 0));
         }
 
+        // Create attachments for MSAA
         if (ctx->samples > 0)
         {
+            // Bind MSAA render buffer
             PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, tex->rbo_msaa));
+
+            // Create multi-sample buffer storage
             PGL_CHECK(glRenderbufferStorageMultisample(GL_RENDERBUFFER,
                                                        ctx->samples,
                                                        ctx->srgb ?
@@ -1711,19 +1731,27 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 
             PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
+            // Bind MSAA framebuffer
             PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, tex->fbo_msaa));
+
+            // Create color attachment
             PGL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                                 GL_COLOR_ATTACHMENT0,
                                                 GL_RENDERBUFFER, tex->rbo_msaa));
+
+            // Create attachment for MSAA with depth test
             if (ctx->depth)
             {
+                // Bind MSAA depth buffer
                 PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, tex->depth_rbo_msaa));
 
+                // Create multi-sample depth buffer storage
                 PGL_CHECK(glRenderbufferStorageMultisample(GL_RENDERBUFFER,
                                                            ctx->samples,
                                                            GL_DEPTH_COMPONENT24,
                                                            tex->w, tex->h));
 
+                // Create depth attachment
                 PGL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                                     GL_DEPTH_ATTACHMENT,
                                                     GL_RENDERBUFFER,
@@ -1731,6 +1759,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
             }
         }
 
+        // Check to see if framebuffer is complete
         GLenum status;
         PGL_CHECK(status = glCheckFramebufferStatus(GL_FRAMEBUFFER));
 
@@ -1739,13 +1768,25 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
             PGL_LOG("Framebuffer incomplete");
             pgl_set_error(ctx, PGL_FRAMEBUFFER_INCOMPLETE);
 
+            // Framebuffer is incomplete, so release resources
+
             PGL_CHECK(glDeleteTextures(1, &tex->id));
             PGL_CHECK(glDeleteFramebuffers(1, &tex->fbo));
+
+            if (ctx->depth)
+            {
+                PGL_CHECK(glDeleteTextures(1, &tex->depth_id));
+            }
 
             if (ctx->samples > 0)
             {
                 PGL_CHECK(glDeleteRenderbuffers(1, &tex->rbo_msaa));
                 PGL_CHECK(glDeleteFramebuffers(1, &tex->fbo_msaa));
+
+                if (ctx->depth)
+                {
+                    PGL_CHECK(glDeleteRenderbuffers(1, &tex->depth_rbo_msaa));
+                }
             }
 
             PGL_FREE(tex, ctx->mem_ctx);
@@ -1754,6 +1795,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 
         }
 
+        // Ensure framebuffer objects are not bound
         PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
         PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
     }
@@ -1858,10 +1900,20 @@ void pgl_destroy_texture(pgl_texture_t* tex)
     {
         PGL_CHECK(glDeleteFramebuffers(1, &tex->fbo));
 
+        if (tex->ctx->depth)
+        {
+            PGL_CHECK(glDeleteTextures(1, &tex->depth_id));
+        }
+
         if (tex->ctx->samples > 0)
         {
             PGL_CHECK(glDeleteRenderbuffers(1, &tex->rbo_msaa));
             PGL_CHECK(glDeleteFramebuffers(1, &tex->fbo_msaa));
+
+            if (tex->ctx->depth)
+            {
+                PGL_CHECK(glDeleteRenderbuffers(1, &tex->depth_rbo_msaa));
+            }
         }
     }
 
