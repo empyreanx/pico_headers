@@ -567,6 +567,14 @@ void pgl_draw_array(pgl_ctx_t* ctx,
                     pgl_texture_t* texture,
                     pgl_shader_t* shader);
 
+
+void pgl_draw_indexed(pgl_ctx_t* ctx,
+                      pgl_primitive_t primitive,
+                      const pgl_vertex_t* vertices, pgl_size_t vertex_count,
+                      uint32_t* indices, pgl_size_t index_count,
+                      pgl_texture_t* texture,
+                      pgl_shader_t* shader);
+
 /**
  * @brief Creates a buffer in VRAM to store an array of vertices that can then
  * be rendered without having upload the vertices every time they are drawn
@@ -1257,6 +1265,7 @@ struct pgl_ctx_t
     pgl_state_stack_t target_stack;
     GLuint            vao;
     GLuint            vbo;
+    GLuint            ebo;
     uint32_t          w, h;
     uint32_t          samples;
     bool              srgb;
@@ -1428,10 +1437,13 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
 
     PGL_CHECK(glGenVertexArrays(1, &ctx->vao));
     PGL_CHECK(glGenBuffers(1, &ctx->vbo));
+    PGL_CHECK(glGenBuffers(1, &ctx->ebo));
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
-    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_DYNAMIC_DRAW));
+    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW));
+    PGL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo));
+    PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW));
     pgl_bind_attributes();
     PGL_CHECK(glBindVertexArray(0));
 
@@ -1655,6 +1667,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 
     tex->w = w;
     tex->h = h;
+    tex->ctx = ctx;
 
     if (-1 == pgl_upload_texture(ctx, tex, fmt, srgb, w, h, NULL))
     {
@@ -2014,8 +2027,26 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
-    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_DYNAMIC_DRAW));
+    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
     PGL_CHECK(glDrawArrays(pgl_primitive_map[primitive], 0, count));
+    PGL_CHECK(glBindVertexArray(0));
+
+    pgl_after_draw(ctx);
+}
+
+void pgl_draw_indexed(pgl_ctx_t* ctx,
+                      pgl_primitive_t primitive,
+                      const pgl_vertex_t* vertices, pgl_size_t vertex_count,
+                      uint32_t* indices, pgl_size_t index_count,
+                      pgl_texture_t* texture,
+                      pgl_shader_t* shader)
+{
+    pgl_before_draw(ctx, texture, shader);
+
+    PGL_CHECK(glBindVertexArray(ctx->vao));
+    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
+    PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), indices, GL_STATIC_DRAW));
+    PGL_CHECK(glDrawElements(pgl_primitive_map[primitive], index_count, GL_UNSIGNED_INT, 0));
     PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);

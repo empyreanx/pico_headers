@@ -135,6 +135,16 @@ int main(int argc, char *argv[])
         { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
     };
 
+    pgl_vertex_t indexed_vertices[4] =
+    {
+        { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
+        { {-1.0f, -1.0f }, { 1, 1, 1, 1 }, { 0, 0} },
+        { { 1.0f, -1.0f }, { 1, 1, 1, 1 }, { 1, 0} },
+        { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
+    };
+
+    uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
+
     bool done = false;
 
     while (!done)
@@ -163,7 +173,7 @@ int main(int argc, char *argv[])
 
         pgl_clear(1, 1, 1, 1);
 
-        pgl_draw_array(ctx, PGL_TRIANGLES, vertices, 6, tex, shader);
+        pgl_draw_indexed(ctx, PGL_TRIANGLES, indexed_vertices, 4, indices, 6, tex, shader);
 
         pgl_set_render_target(ctx, NULL);
 
