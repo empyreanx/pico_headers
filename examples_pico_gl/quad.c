@@ -51,8 +51,8 @@ int main(int argc, char *argv[])
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,   8);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
 
-    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
 
     if (gles)
     {
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
     // Print maximum texture size
 
-    pgl_ctx_t* ctx = pgl_create_context(screen_w, screen_h, false, 0, false, NULL);
+    pgl_ctx_t* ctx = pgl_create_context(screen_w, screen_h, true, 8, false, NULL);
     assert(ctx);
 
     pgl_set_viewport(ctx, 0, 0, screen_w, screen_h);

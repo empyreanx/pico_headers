@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 08/11/2022 18:25:15.
+/// WARNING: This file was automatically generated on 08/11/2022 20:17:23.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4293,9 +4293,29 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
     if (target)
     {
         PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, tex->fbo));
+
+
+
         PGL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER,
                                          GL_COLOR_ATTACHMENT0,
                                          GL_TEXTURE_2D, tex->id, 0));
+
+        if (ctx->depth)
+        {
+            GLuint depth_id = 0;
+            PGL_CHECK(glGenTextures(1, &depth_id));
+
+            glBindTexture(GL_TEXTURE_2D, depth_id);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+
+            PGL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                             GL_DEPTH_ATTACHMENT,
+                                             GL_TEXTURE_2D, depth_id, 0));
+        }
 
         if (ctx->samples > 0)
         {
@@ -4312,6 +4332,24 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
             PGL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                                 GL_COLOR_ATTACHMENT0,
                                                 GL_RENDERBUFFER, tex->rbo_msaa));
+            if (ctx->depth)
+            {
+                GLuint depth_rbo_msaa;
+                PGL_CHECK(glGenRenderbuffers(1, &depth_rbo_msaa));
+                PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_msaa));
+
+                PGL_CHECK(glRenderbufferStorageMultisample(GL_RENDERBUFFER,
+                                                           ctx->samples,
+                                                           GL_DEPTH_COMPONENT24,
+                                                           tex->w, tex->h));
+
+                PGL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                                                    GL_DEPTH_ATTACHMENT,
+                                                    GL_RENDERBUFFER,
+                                                    depth_rbo_msaa));
+
+                                                    printf("here\n");
+            }
         }
 
         GLenum status;
