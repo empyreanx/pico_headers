@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 09/11/2022 10:22:50.
+/// WARNING: This file was automatically generated on 09/11/2022 10:26:42.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4317,6 +4317,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
         }
     }
 
+    // TODO: Consider breaking up this function in the future
     // Create attachments
     if (target)
     {

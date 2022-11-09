@@ -1695,6 +1695,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
         }
     }
 
+    // TODO: Consider breaking up this function in the future
     // Create attachments
     if (target)
     {
