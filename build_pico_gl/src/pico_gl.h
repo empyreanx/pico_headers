@@ -2052,6 +2052,7 @@ void pgl_draw_indexed(pgl_ctx_t* ctx,
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
     //PGL_CHECK(glBindVertexArray(ctx->indexed_vao));
+    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo)); // FIXME
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
     PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), indices, GL_STATIC_DRAW));
     PGL_CHECK(glDrawElements(pgl_primitive_map[primitive], index_count, GL_UNSIGNED_INT, 0));

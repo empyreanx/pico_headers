@@ -177,6 +177,7 @@ int main(int argc, char *argv[])
 
         pgl_draw_buffer(ctx, buffer, 0, 6, tex, shader);
 
+        //pgl_draw_array(ctx, PGL_TRIANGLES, vertices, 6, tex, shader);
         pgl_draw_indexed(ctx, PGL_TRIANGLES, indexed_vertices, 4, indices, 6, tex, shader);
 
         pgl_set_render_target(ctx, NULL);
@@ -184,6 +185,7 @@ int main(int argc, char *argv[])
         pgl_clear(1, 1, 1, 1);
 
         pgl_draw_array(ctx, PGL_TRIANGLES, vertices, 6, target_tex, shader);
+        //pgl_draw_indexed(ctx, PGL_TRIANGLES, indexed_vertices, 4, indices, 6, tex, shader);
 
         SDL_GL_SwapWindow(window);
     }
