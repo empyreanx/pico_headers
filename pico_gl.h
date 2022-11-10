@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 09/11/2022 19:39:21.
+/// WARNING: This file was automatically generated on 10/11/2022 12:02:32.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -556,14 +556,14 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* texture);
 void pgl_clear(float r, float g, float b, float a);
 
 /**
- * Draws an array of primitives to the framebuffer
+ * Draws the pecified primivites acccording to the vertex array
  *
- * @param ctx The relevant context
+ * @param ctx       The relevant context
  * @param primitive The primitives type (@see pgl_primitive_t)
- * @param vertices A vertex array
- * @param count The number of vertices
- * @param texture The texture to draw from (can be `NULL`)
- * @param shader The shader used to draw the array (cannot be `NULL`)
+ * @param vertices  A vertex array
+ * @param count     The number of vertices
+ * @param texture   The texture to draw from (can be `NULL`)
+ * @param shader    The shader used to draw the array (cannot be `NULL`)
  */
 void pgl_draw_array(pgl_ctx_t* ctx,
                     pgl_primitive_t primitive,
@@ -572,13 +572,24 @@ void pgl_draw_array(pgl_ctx_t* ctx,
                     pgl_texture_t* texture,
                     pgl_shader_t* shader);
 
-
-void pgl_draw_indexed(pgl_ctx_t* ctx,
-                      pgl_primitive_t primitive,
-                      const pgl_vertex_t* vertices, pgl_size_t vertex_count,
-                      uint32_t* indices, pgl_size_t index_count,
-                      pgl_texture_t* texture,
-                      pgl_shader_t* shader);
+/**
+ * Draws the pecified primivites acccording to the vertex and index arrays
+ *
+ * @param ctx          The relevant context
+ * @param primitive    The primitives type (@see pgl_primitive_t)
+ * @param vertices     An array of vertex array
+ * @param vertex_count The number of vertices
+ * @param indices      An array of indices
+ * @param index_ count The number of indicies
+ * @param texture      The texture to draw from (can be `NULL`)
+ * @param shader       The shader used to draw the array (cannot be `NULL`)
+ */
+void pgl_draw_indexed_array(pgl_ctx_t* ctx,
+                            pgl_primitive_t primitive,
+                            const pgl_vertex_t* vertices, pgl_size_t vertex_count,
+                            const uint32_t* indices, pgl_size_t index_count,
+                            pgl_texture_t* texture,
+                            pgl_shader_t* shader);
 
 /**
  * @brief Creates a buffer in VRAM to store an array of vertices that can then
@@ -4655,7 +4666,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
-    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo)); // FIXME
+    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
     PGL_CHECK(glDrawArrays(pgl_primitive_map[primitive], 0, count));
     PGL_CHECK(glBindVertexArray(0));
@@ -4663,17 +4674,17 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     pgl_after_draw(ctx);
 }
 
-void pgl_draw_indexed(pgl_ctx_t* ctx,
-                      pgl_primitive_t primitive,
-                      const pgl_vertex_t* vertices, pgl_size_t vertex_count,
-                      uint32_t* indices, pgl_size_t index_count,
-                      pgl_texture_t* texture,
-                      pgl_shader_t* shader)
+void pgl_draw_indexed_array(pgl_ctx_t* ctx,
+                            pgl_primitive_t primitive,
+                            const pgl_vertex_t* vertices, pgl_size_t vertex_count,
+                            const uint32_t* indices, pgl_size_t index_count,
+                            pgl_texture_t* texture,
+                            pgl_shader_t* shader)
 {
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
-    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo)); // FIXME
+    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
     PGL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo));
     PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), indices, GL_STATIC_DRAW));
