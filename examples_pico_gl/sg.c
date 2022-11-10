@@ -90,7 +90,7 @@ sprite_t* sprite_new(int w, int h, float d, pgl_texture_t* tex)
         { { w, 0, d }, { 1, 1, 1, 1 }, { 1, 1 } }
     };
 
-    sprite->buf = pgl_create_buffer(ctx, PGL_TRIANGLES, vertices, 6);
+    sprite->buf = pgl_create_buffer(ctx, vertices, 6);
 
     return sprite;
 }
@@ -215,9 +215,8 @@ pgl_texture_t* load_texture(const char* file, int* w, int* h)
     unsigned char* bitmap = stbi_load(file, w, h, &c, 0);
     assert(bitmap);
 
-    pgl_texture_t* tex = pgl_texture_from_bitmap(ctx, PGL_RGBA, false,
-                                                 *w, *h,
-                                                 false, false, bitmap);
+    pgl_texture_t* tex = pgl_texture_from_bitmap(ctx, *w, *h,
+                                                 false, false, false, bitmap);
 
     assert(tex);
     free(bitmap);

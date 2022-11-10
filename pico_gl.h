@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 10/11/2022 13:07:48.
+/// WARNING: This file was automatically generated on 10/11/2022 13:30:02.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -131,19 +131,6 @@ typedef enum
 } pgl_version_t;
 
 /**
- * @brief Pixel formats
- */
-typedef enum
-{
-    PGL_RED,         //!< (red, 0, 0, 1)
-    PGL_RGB,         //!< (red, green, blue, 1)
-    PGL_RGBA,        //!< (red, green, blue, alpha)
-    PGL_BGR,         //!< (blue, green, red, 1)
-    PGL_BGRA,        //!< (blue, green, red, alpha)
-    PGL_FORMAT_COUNT
-} pgl_format_t;
-
-/**
  * @brief Blend factors
  */
 typedef enum
@@ -188,20 +175,6 @@ typedef struct
     pgl_blend_factor_t alpha_dst; //!< Alpha destination blending factor
     pgl_blend_eq_t     alpha_eq;  //!< Equation for blending alpha values
 } pgl_blend_mode_t;
-
-/**
- * @brief Drawing primitives
- */
-typedef enum
-{
-    PGL_POINTS,        //!< Array of points
-    PGL_LINES,         //!< Each adjacent pair of points forms a line
-    PGL_LINE_STRIP,    //!< Array of points where every pair forms a lines
-    PGL_TRIANGLES,     //!< Each adjacent triple forms an individual triangle
-    GL_TRIANGLE_STRIP, //!< Array of points where every triple forms a triangle
-    GL_TRIANGLE_FAN,   //!< The first vertex is held fixed. Every pair of
-                       // adjacent vertices form a triangle with the first
-} pgl_primitive_t;
 
 /**
  * @brief A vertex describes a point and the data associated with it (color and
@@ -419,9 +392,8 @@ uint64_t pgl_get_shader_id(const pgl_shader_t* shader);
  */
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                   bool target,
-                                  pgl_format_t fmt, bool srgb,
                                   int32_t w, int32_t h,
-                                  bool smooth, bool repeat);
+                                  bool srgb, bool smooth, bool repeat);
 
 /**
  * @brief Creates a texture from a bitmap
@@ -436,9 +408,8 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
  * @param bitmap Bitmap data corresponding to the specified format
  */
 pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
-                                       pgl_format_t fmt, bool srgb,
                                        int32_t w, int32_t h,
-                                       bool smooth, bool repeat,
+                                       bool srgb, bool smooth, bool repeat,
                                        const uint8_t* bitmap);
 
 /**
@@ -454,7 +425,6 @@ pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
  */
 int pgl_upload_texture(pgl_ctx_t* ctx,
                        pgl_texture_t* texture,
-                       pgl_format_t fmt, bool srgb,
                        int32_t w, int32_t h,
                        const uint8_t* bitmap);
 
@@ -472,7 +442,6 @@ int pgl_upload_texture(pgl_ctx_t* ctx,
  */
 void pgl_update_texture(pgl_ctx_t* ctx,
                         pgl_texture_t* texture,
-                        pgl_format_t fmt,
                         int x, int y,
                         int w, int h,
                         const uint8_t* bitmap);
@@ -566,7 +535,6 @@ void pgl_clear(float r, float g, float b, float a);
  * @param shader    The shader used to draw the array (cannot be `NULL`)
  */
 void pgl_draw_array(pgl_ctx_t* ctx,
-                    pgl_primitive_t primitive,
                     const pgl_vertex_t* vertices,
                     pgl_size_t count,
                     pgl_texture_t* texture,
@@ -576,7 +544,6 @@ void pgl_draw_array(pgl_ctx_t* ctx,
  * Draws the pecified primivites acccording to the vertex and index arrays
  *
  * @param ctx          The relevant context
- * @param primitive    The primitives type (@see pgl_primitive_t)
  * @param vertices     An array of vertex array
  * @param vertex_count The number of vertices
  * @param indices      An array of indices
@@ -585,7 +552,6 @@ void pgl_draw_array(pgl_ctx_t* ctx,
  * @param shader       The shader used to draw the array (cannot be `NULL`)
  */
 void pgl_draw_indexed_array(pgl_ctx_t* ctx,
-                            pgl_primitive_t primitive,
                             const pgl_vertex_t* vertices, pgl_size_t vertex_count,
                             const uint32_t* indices, pgl_size_t index_count,
                             pgl_texture_t* texture,
@@ -596,14 +562,12 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
  * be rendered without having upload the vertices every time they are drawn
  *
  * @param ctx The relevant context
- * @param primitive The primitives type (@see pgl_primitive_t)
  * @param vertices A vertex array
  * @param count The number of vertices
  *
  * @returns A pointer to the buffer or `NULL` on error
  */
 pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
-                                pgl_primitive_t primitive,
                                 const pgl_vertex_t* vertices,
                                 pgl_size_t count);
 
@@ -3697,15 +3661,6 @@ static const char* pgl_error_msg_map[] =
     0
 };
 
-static const GLenum pgl_format_map[] =
-{
-    GL_RED,
-    GL_RGB,
-    GL_RGBA,
-    GL_BGR,
-    GL_BGRA
-};
-
 static const GLenum pgl_blend_factor_map[] =
 {
     GL_ZERO,
@@ -3728,17 +3683,6 @@ static const GLenum pgl_blend_eq_map[] =
     GL_MIN,
     GL_MAX
 };
-
-static const GLenum pgl_primitive_map[] =
-{
-    GL_POINTS,
-    GL_LINES,
-    GL_LINE_STRIP,
-    GL_TRIANGLES,
-    GL_TRIANGLE_STRIP,
-    GL_TRIANGLE_FAN
-};
-
 
 /*=============================================================================
  * Internal struct declarations
@@ -3927,6 +3871,7 @@ struct pgl_texture_t
     pgl_ctx_t* ctx;
     bool       target;
     int32_t    w, h;
+    bool       srgb;
     bool       smooth;
     bool       mipmap;
     GLuint     fbo;
@@ -4264,9 +4209,8 @@ static void pgl_set_texture_params(GLuint tex_id, bool smooth, bool repeat)
 
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                   bool target,
-                                  pgl_format_t fmt, bool srgb,
                                   int32_t w, int32_t h,
-                                  bool smooth, bool repeat)
+                                  bool srgb, bool smooth, bool repeat)
 {
     PGL_ASSERT(NULL != ctx);
 
@@ -4299,11 +4243,12 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 
     PGL_CHECK(glGenTextures(1, &tex->id));
 
+    tex->ctx = ctx;
     tex->w = w;
     tex->h = h;
-    tex->ctx = ctx;
+    tex->srgb = srgb;
 
-    if (-1 == pgl_upload_texture(ctx, tex, fmt, srgb, w, h, NULL))
+    if (-1 == pgl_upload_texture(ctx, tex, w, h, NULL))
     {
         PGL_CHECK(glDeleteTextures(1, &tex->id));
         PGL_FREE(tex, ctx->mem_ctx);
@@ -4456,17 +4401,16 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 }
 
 pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
-                                       pgl_format_t fmt, bool srgb,
                                        int32_t w, int32_t h,
-                                       bool smooth, bool repeat,
+                                       bool srgb, bool smooth, bool repeat,
                                        const unsigned char* bitmap)
 {
-    pgl_texture_t* tex = pgl_create_texture(ctx, false, fmt, srgb, w, h, smooth, repeat);
+    pgl_texture_t* tex = pgl_create_texture(ctx, false, w, h, srgb, smooth, repeat);
 
     if (!tex)
         return NULL;
 
-    if (-1 == pgl_upload_texture(ctx, tex, fmt, srgb, w, h, bitmap))
+    if (-1 == pgl_upload_texture(ctx, tex, w, h, bitmap))
     {
         PGL_CHECK(glDeleteTextures(1, &tex->id));
         PGL_FREE(tex, ctx->mem_ctx);
@@ -4478,22 +4422,14 @@ pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
 
 int pgl_upload_texture(pgl_ctx_t* ctx,
                        pgl_texture_t* texture,
-                       pgl_format_t fmt,
-                       bool srgb,
                        int32_t w, int32_t h,
                        const unsigned char* bitmap)
 {
     pgl_bind_texture(ctx, texture);
 
-    if (fmt >= PGL_FORMAT_COUNT)
-    {
-        pgl_set_error(ctx, PGL_INVALID_TEXTURE_FORMAT);
-        return -1;
-    }
-
-    PGL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, srgb ? GL_SRGB8_ALPHA8 : GL_RGBA,
-                                             w, h, 0,
-                                             pgl_format_map[fmt],
+    PGL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, texture->srgb ?
+                                             GL_SRGB8_ALPHA8 : GL_RGBA,
+                                             w, h, 0, GL_RGBA,
                                              GL_UNSIGNED_BYTE, bitmap));
 
     return 0;
@@ -4501,14 +4437,13 @@ int pgl_upload_texture(pgl_ctx_t* ctx,
 
 void pgl_update_texture(pgl_ctx_t* ctx,
                        pgl_texture_t* texture,
-                       pgl_format_t fmt,
                        int x, int y,
                        int w, int h,
                        const uint8_t* bitmap)
 {
     pgl_bind_texture(ctx, texture);
 
-    PGL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, pgl_format_map[fmt],
+    PGL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA,
                               GL_UNSIGNED_BYTE, bitmap));
 }
 
@@ -4652,7 +4587,6 @@ void pgl_clear(float r, float g, float b, float a)
 }
 
 void pgl_draw_array(pgl_ctx_t* ctx,
-                   pgl_primitive_t primitive,
                    const pgl_vertex_t* vertices,
                    pgl_size_t count,
                    pgl_texture_t* texture,
@@ -4665,14 +4599,13 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
 
-    PGL_CHECK(glDrawArrays(pgl_primitive_map[primitive], 0, count));
+    PGL_CHECK(glDrawArrays(GL_TRIANGLES, 0, count));
     PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);
 }
 
 void pgl_draw_indexed_array(pgl_ctx_t* ctx,
-                            pgl_primitive_t primitive,
                             const pgl_vertex_t* vertices, pgl_size_t vertex_count,
                             const uint32_t* indices, pgl_size_t index_count,
                             pgl_texture_t* texture,
@@ -4688,14 +4621,13 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
     PGL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo));
     PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), indices, GL_STATIC_DRAW));
 
-    PGL_CHECK(glDrawElements(pgl_primitive_map[primitive], index_count, GL_UNSIGNED_INT, 0));
+    PGL_CHECK(glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0));
     PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);
 }
 
 pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
-                                pgl_primitive_t primitive,
                                 const pgl_vertex_t* vertices,
                                 pgl_size_t count)
 {
@@ -4706,8 +4638,6 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
         pgl_set_error(ctx, PGL_OUT_OF_MEMORY);
         return NULL;
     }
-
-    buffer->primitive = pgl_primitive_map[primitive];
 
     PGL_CHECK(glGenVertexArrays(1, &buffer->vao));
     PGL_CHECK(glGenBuffers(1, &buffer->vbo));
@@ -4744,7 +4674,7 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(buffer->vao));
-    PGL_CHECK(glDrawArrays(buffer->primitive, start, count));
+    PGL_CHECK(glDrawArrays(GL_TRIANGLES, start, count));
     PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);
