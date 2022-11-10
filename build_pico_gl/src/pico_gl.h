@@ -551,7 +551,7 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* texture);
 void pgl_clear(float r, float g, float b, float a);
 
 /**
- * Draws the pecified primivites acccording to the vertex array
+ * Draws the specified primivites acccording to the vertex array
  *
  * @param ctx       The relevant context
  * @param primitive The primitives type (@see pgl_primitive_t)
@@ -568,7 +568,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
                     pgl_shader_t* shader);
 
 /**
- * Draws the pecified primivites acccording to the vertex and index arrays
+ * Draws the specified primivites acccording to the vertex and index arrays
  *
  * @param ctx          The relevant context
  * @param primitive    The primitives type (@see pgl_primitive_t)
