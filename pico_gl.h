@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 10/11/2022 14:49:12.
+/// WARNING: This file was automatically generated on 10/11/2022 16:09:32.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -175,6 +175,18 @@ typedef struct
     pgl_blend_factor_t alpha_dst; //!< Alpha destination blending factor
     pgl_blend_eq_t     alpha_eq;  //!< Equation for blending alpha values
 } pgl_blend_mode_t;
+
+/**
+ * @brief Drawing primitives
+ */
+typedef enum
+{
+    PGL_POINTS,         //!< Array of points
+    PGL_LINES,          //!< Each adjacent pair of points forms a line
+    PGL_LINE_STRIP,     //!< Array of points where every pair forms a lines
+    PGL_TRIANGLES,      //!< Each adjacent triple forms an individual triangle
+    PGL_TRIANGLE_STRIP, //!< Array of points where every triple forms a triangle
+} pgl_primitive_t;
 
 /**
  * @brief A vertex describes a point and the data associated with it (color and
@@ -529,6 +541,7 @@ void pgl_clear(float r, float g, float b, float a);
  * @param shader    The shader used to draw the array (cannot be `NULL`)
  */
 void pgl_draw_array(pgl_ctx_t* ctx,
+                    pgl_primitive_t primitive,
                     const pgl_vertex_t* vertices,
                     pgl_size_t count,
                     pgl_texture_t* texture,
@@ -546,6 +559,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
  * @param shader       The shader used to draw the array (cannot be `NULL`)
  */
 void pgl_draw_indexed_array(pgl_ctx_t* ctx,
+                            pgl_primitive_t primitive,
                             const pgl_vertex_t* vertices, pgl_size_t vertex_count,
                             const uint32_t* indices, pgl_size_t index_count,
                             pgl_texture_t* texture,
@@ -562,6 +576,7 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
  * @returns A pointer to the buffer or `NULL` on error
  */
 pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
+                                pgl_primitive_t primitive,
                                 const pgl_vertex_t* vertices,
                                 pgl_size_t count);
 
@@ -3678,6 +3693,15 @@ static const GLenum pgl_blend_eq_map[] =
     GL_MAX
 };
 
+static const GLenum pgl_primitive_map[] =
+{
+    GL_POINTS,
+    GL_LINES,
+    GL_LINE_STRIP,
+    GL_TRIANGLES,
+    GL_TRIANGLE_STRIP
+};
+
 /*=============================================================================
  * Internal struct declarations
  *============================================================================*/
@@ -4581,6 +4605,7 @@ void pgl_clear(float r, float g, float b, float a)
 }
 
 void pgl_draw_array(pgl_ctx_t* ctx,
+                   pgl_primitive_t primitive,
                    const pgl_vertex_t* vertices,
                    pgl_size_t count,
                    pgl_texture_t* texture,
@@ -4593,13 +4618,14 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
 
-    PGL_CHECK(glDrawArrays(GL_TRIANGLES, 0, count));
+    PGL_CHECK(glDrawArrays(pgl_primitive_map[primitive], 0, count));
     PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);
 }
 
 void pgl_draw_indexed_array(pgl_ctx_t* ctx,
+                            pgl_primitive_t primitive,
                             const pgl_vertex_t* vertices, pgl_size_t vertex_count,
                             const uint32_t* indices, pgl_size_t index_count,
                             pgl_texture_t* texture,
@@ -4615,13 +4641,14 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
     PGL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo));
     PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), indices, GL_STATIC_DRAW));
 
-    PGL_CHECK(glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0));
+    PGL_CHECK(glDrawElements(pgl_primitive_map[primitive], index_count, GL_UNSIGNED_INT, 0));
     PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);
 }
 
 pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
+                                pgl_primitive_t primitive,
                                 const pgl_vertex_t* vertices,
                                 pgl_size_t count)
 {
@@ -4644,6 +4671,7 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
     pgl_bind_attributes();
     PGL_CHECK(glBindVertexArray(0));
 
+    buffer->primitive = pgl_primitive_map[primitive];
     buffer->count = count;
 
     return buffer;

@@ -90,7 +90,7 @@ sprite_t* sprite_new(int w, int h, float d, pgl_texture_t* tex)
         { { w, 0, d }, { 1, 1, 1, 1 }, { 1, 1 } }
     };
 
-    sprite->buf = pgl_create_buffer(ctx, vertices, 6);
+    sprite->buf = pgl_create_buffer(ctx, PGL_TRIANGLES, vertices, 6);
 
     return sprite;
 }
