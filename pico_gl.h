@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 10/11/2022 13:30:02.
+/// WARNING: This file was automatically generated on 10/11/2022 14:49:12.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -383,10 +383,9 @@ uint64_t pgl_get_shader_id(const pgl_shader_t* shader);
  *
  * @param ctx The relevant context
  * @param target If true, the texture can be used as a render target
- * @param fmt The texture pixel format
- * @param srgb True is the internal format is sRGB
  * @param w The texture's width
  * @param h The texture's height
+ * @param srgb True if the internal format is sRGB
  * @param smooth High (true) or low (false) quality filtering
  * @param repeat Repeats or clamps when uv coordinates exceed 1.0
  */
@@ -399,10 +398,9 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
  * @brief Creates a texture from a bitmap
  *
  * @param ctx The relevant context
- * @param fmt The texture's pixel format
- * @param srgb True is the internal format is sRGB
  * @param w The texture's width
  * @param h The texture's height
+ * @param srgb True if the internal format is sRGB
  * @param smooth High (true) or low (false) quality filtering
  * @param repeat Repeats or clamps when uv coordinates exceed 1.0
  * @param bitmap Bitmap data corresponding to the specified format
@@ -417,8 +415,6 @@ pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
  *
  * @param ctx The relevant context
  * @param texture The target texture
- * @param fmt The bitmap's pixel format
- * @param srgb True is the internal format is sRGB
  * @param w The texture's width
  * @param h The texture's height
  * @param bitmap The pixel data
@@ -433,7 +429,6 @@ int pgl_upload_texture(pgl_ctx_t* ctx,
  *
  * @param ctx The relevant context
  * @param texture The texture to update
- * @param fmt The bitmap's pixel format
  * @param x The x offset of the region
  * @param y The y offset of the region
  * @param w The width of the region
@@ -525,10 +520,9 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* texture);
 void pgl_clear(float r, float g, float b, float a);
 
 /**
- * Draws the specified primivites acccording to the vertex array
+ * Draws triangles specified by the vertex array
  *
  * @param ctx       The relevant context
- * @param primitive The primitives type (@see pgl_primitive_t)
  * @param vertices  A vertex array
  * @param count     The number of vertices
  * @param texture   The texture to draw from (can be `NULL`)
@@ -541,7 +535,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
                     pgl_shader_t* shader);
 
 /**
- * Draws the pecified primivites acccording to the vertex and index arrays
+ * Draws triangles specified by the vertex and index arrays
  *
  * @param ctx          The relevant context
  * @param vertices     An array of vertex array

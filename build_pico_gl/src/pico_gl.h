@@ -380,7 +380,7 @@ uint64_t pgl_get_shader_id(const pgl_shader_t* shader);
  * @param target If true, the texture can be used as a render target
  * @param w The texture's width
  * @param h The texture's height
- * @param srgb True is the internal format is sRGB
+ * @param srgb True if the internal format is sRGB
  * @param smooth High (true) or low (false) quality filtering
  * @param repeat Repeats or clamps when uv coordinates exceed 1.0
  */
@@ -395,7 +395,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
  * @param ctx The relevant context
  * @param w The texture's width
  * @param h The texture's height
- * @param srgb True is the internal format is sRGB
+ * @param srgb True if the internal format is sRGB
  * @param smooth High (true) or low (false) quality filtering
  * @param repeat Repeats or clamps when uv coordinates exceed 1.0
  * @param bitmap Bitmap data corresponding to the specified format
