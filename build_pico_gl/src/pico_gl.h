@@ -568,7 +568,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
                     pgl_shader_t* shader);
 
 /**
- * Draws the specified primivites acccording to the vertex and index arrays
+ * Draws the pecified primivites acccording to the vertex and index arrays
  *
  * @param ctx          The relevant context
  * @param primitive    The primitives type (@see pgl_primitive_t)
@@ -1277,11 +1277,6 @@ struct pgl_ctx_t
     GLuint            vao;
     GLuint            vbo;
     GLuint            ebo;
-
-    /*GLuint            indexed_vao;
-    GLuint            indexed_vbo;
-    GLuint            indexed_ebo;*/
-
     uint32_t          w, h;
     uint32_t          samples;
     bool              srgb;
@@ -1725,7 +1720,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
         }
     }
 
-    // TODO: Consider breaking up this function in the future
+    // TODO: Consider breaking up this function
     // Create attachments
     if (target)
     {
@@ -2044,8 +2039,10 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
+
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
+
     PGL_CHECK(glDrawArrays(pgl_primitive_map[primitive], 0, count));
     PGL_CHECK(glBindVertexArray(0));
 
@@ -2062,10 +2059,13 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
+
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
+
     PGL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo));
     PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), indices, GL_STATIC_DRAW));
+
     PGL_CHECK(glDrawElements(pgl_primitive_map[primitive], index_count, GL_UNSIGNED_INT, 0));
     PGL_CHECK(glBindVertexArray(0));
 
@@ -2091,8 +2091,10 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
     PGL_CHECK(glGenBuffers(1, &buffer->vbo));
 
     PGL_CHECK(glBindVertexArray(buffer->vao));
+
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
+
     pgl_bind_attributes();
     PGL_CHECK(glBindVertexArray(0));
 
