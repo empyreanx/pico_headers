@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 10/11/2022 16:09:32.
+/// WARNING: This file was automatically generated on 10/11/2022 16:12:31.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -532,9 +532,10 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* texture);
 void pgl_clear(float r, float g, float b, float a);
 
 /**
- * Draws triangles specified by the vertex array
+ * Draws primitives according to the vertex array
  *
  * @param ctx       The relevant context
+ * @param primitive The type of geometry to draw
  * @param vertices  A vertex array
  * @param count     The number of vertices
  * @param texture   The texture to draw from (can be `NULL`)
@@ -548,9 +549,10 @@ void pgl_draw_array(pgl_ctx_t* ctx,
                     pgl_shader_t* shader);
 
 /**
- * Draws triangles specified by the vertex and index arrays
+ * Draws primvities according to the vertex and index arrays
  *
  * @param ctx          The relevant context
+ * @param primitive    The type of geometry to draw
  * @param vertices     An array of vertex array
  * @param vertex_count The number of vertices
  * @param indices      An array of indices
@@ -569,9 +571,10 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
  * @brief Creates a buffer in VRAM to store an array of vertices that can then
  * be rendered without having upload the vertices every time they are drawn
  *
- * @param ctx The relevant context
- * @param vertices A vertex array
- * @param count The number of vertices
+ * @param ctx       The relevant context
+ * @param primitive The type of geometry to draw
+ * @param vertices  A vertex array
+ * @param count     The number of vertices to store in the buffer
  *
  * @returns A pointer to the buffer or `NULL` on error
  */
