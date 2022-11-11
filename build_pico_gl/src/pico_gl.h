@@ -1444,6 +1444,8 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
 
 void pgl_destroy_context(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     PGL_CHECK(glDeleteBuffers(1, &ctx->vbo));
     PGL_CHECK(glDeleteVertexArrays(1, &ctx->vao));
     PGL_FREE(ctx, ctx->mem_ctx);
@@ -1451,6 +1453,8 @@ void pgl_destroy_context(pgl_ctx_t* ctx)
 
 void pgl_resize(pgl_ctx_t* ctx, uint32_t w, uint32_t h, bool reset_vp)
 {
+    PGL_ASSERT(ctx);
+
     ctx->w = w;
     ctx->h = h;
 
@@ -1461,6 +1465,8 @@ void pgl_resize(pgl_ctx_t* ctx, uint32_t w, uint32_t h, bool reset_vp)
 pgl_shader_t* pgl_create_shader(pgl_ctx_t* ctx, const char* vert_src,
                                                 const char* frag_src)
 {
+    PGL_ASSERT(ctx);
+
     if (!vert_src && !frag_src)
     {
         vert_src = pgl_get_default_vert_shader();
@@ -1560,7 +1566,10 @@ pgl_shader_t* pgl_create_shader(pgl_ctx_t* ctx, const char* vert_src,
 }
 
 void pgl_destroy_shader(pgl_shader_t* shader)
+
 {
+    PGL_ASSERT(shader);
+
     pgl_bind_shader(shader->ctx, NULL);
     PGL_CHECK(glDeleteProgram(shader->program));
     PGL_FREE(shader, shader->ctx->mem_ctx);
@@ -1568,12 +1577,15 @@ void pgl_destroy_shader(pgl_shader_t* shader)
 
 uint64_t pgl_get_shader_id(const pgl_shader_t* shader)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+
     return shader->program;
 }
 
 void pgl_bind_shader(pgl_ctx_t* ctx, pgl_shader_t* shader)
 {
+    PGL_ASSERT(ctx);
+
     if (ctx->shader == shader)
         return;
 
@@ -1611,7 +1623,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                   int32_t w, int32_t h,
                                   bool srgb, bool smooth, bool repeat)
 {
-    PGL_ASSERT(NULL != ctx);
+    PGL_ASSERT(ctx);
 
     // Check texture dimensions
     if (w <= 0 || h <= 0)
@@ -1803,7 +1815,11 @@ pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
                                        int32_t w, int32_t h,
                                        bool srgb, bool smooth, bool repeat,
                                        const unsigned char* bitmap)
+
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(bitmap);
+
     pgl_texture_t* tex = pgl_create_texture(ctx, false, w, h, srgb, smooth, repeat);
 
     if (!tex)
@@ -1824,6 +1840,9 @@ int pgl_upload_texture(pgl_ctx_t* ctx,
                        int32_t w, int32_t h,
                        const unsigned char* bitmap)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(texture);
+
     pgl_bind_texture(ctx, texture);
 
     PGL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, texture->srgb ?
@@ -1840,6 +1859,10 @@ void pgl_update_texture(pgl_ctx_t* ctx,
                        int w, int h,
                        const uint8_t* bitmap)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(texture);
+    PGL_ASSERT(bitmap);
+
     pgl_bind_texture(ctx, texture);
 
     PGL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA,
@@ -1848,6 +1871,8 @@ void pgl_update_texture(pgl_ctx_t* ctx,
 
 int pgl_generate_mipmap(pgl_texture_t* texture, bool linear)
 {
+    PGL_ASSERT(texture);
+
     if (texture->mipmap) // TODO: Return error? void?
         return 0;
 
@@ -1875,6 +1900,8 @@ int pgl_generate_mipmap(pgl_texture_t* texture, bool linear)
 
 void pgl_destroy_texture(pgl_texture_t* tex)
 {
+    PGL_ASSERT(tex);
+
     pgl_bind_texture(tex->ctx, NULL);
     PGL_CHECK(glDeleteTextures(1, &tex->id));
 
@@ -1904,6 +1931,8 @@ void pgl_destroy_texture(pgl_texture_t* tex)
 
 void pgl_get_texture_size(const pgl_texture_t* texture, int* w, int* h)
 {
+    PGL_ASSERT(texture);
+
     if (w) *w = texture->w;
     if (h) *h = texture->h;
 }
@@ -1919,12 +1948,14 @@ void pgl_get_max_texture_size(int* w, int* h)
 
 uint64_t pgl_get_texture_id(const pgl_texture_t* texture)
 {
-    PGL_ASSERT(NULL != texture);
+    PGL_ASSERT(texture);
     return texture->id;
 }
 
 void pgl_bind_texture(pgl_ctx_t* ctx, pgl_texture_t* texture)
 {
+    PGL_ASSERT(ctx);
+
     if (ctx->texture == texture)
         return;
 
@@ -1942,6 +1973,8 @@ void pgl_bind_texture(pgl_ctx_t* ctx, pgl_texture_t* texture)
 
 int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
 {
+    PGL_ASSERT(ctx);
+
     if (ctx->target == target)
         return 0;
 
@@ -1992,6 +2025,10 @@ void pgl_draw_array(pgl_ctx_t* ctx,
                    pgl_texture_t* texture,
                    pgl_shader_t* shader)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(vertices);
+    PGL_ASSERT(shader);
+
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
@@ -2012,6 +2049,11 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
                             pgl_texture_t* texture,
                             pgl_shader_t* shader)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(vertices);
+    PGL_ASSERT(indices);
+    PGL_ASSERT(shader);
+
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(ctx->vao));
@@ -2033,6 +2075,9 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
                                 const pgl_vertex_t* vertices,
                                 pgl_size_t count)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(vertices);
+
     pgl_buffer_t* buffer = PGL_MALLOC(sizeof(pgl_buffer_t), ctx->mem_ctx);
 
     if (!buffer)
@@ -2060,7 +2105,7 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
 
 void pgl_destroy_buffer(pgl_buffer_t* buffer)
 {
-    PGL_ASSERT(NULL != buffer);
+    PGL_ASSERT(buffer);
 
     glDeleteBuffers(1, &buffer->vbo);
     PGL_FREE(buffer, buffer->ctx->mem_ctx);
@@ -2072,6 +2117,10 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
                      pgl_texture_t* texture,
                      pgl_shader_t* shader)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(buffer);
+    PGL_ASSERT(shader);
+
     PGL_ASSERT(start + count <= (pgl_size_t)buffer->count);
 
     pgl_before_draw(ctx, texture, shader);
@@ -2085,17 +2134,22 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
 
 void pgl_set_transpose(pgl_ctx_t* ctx, bool enabled)
 {
+    PGL_ASSERT(ctx);
     ctx->transpose = enabled;
 }
 
 void pgl_set_blend_mode(pgl_ctx_t* ctx, pgl_blend_mode_t mode)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_t* state = pgl_get_active_state(ctx);
     state->blend_mode = mode;
 }
 
 void pgl_reset_blend_mode(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_t* state = pgl_get_active_state(ctx);
 
     pgl_blend_mode_t mode = {
@@ -2112,12 +2166,18 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx)
 
 void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(matrix);
+
     pgl_state_t* state = pgl_get_active_state(ctx);
     memcpy(state->transform, matrix, sizeof(pgl_m4_t));
 }
 
 void pgl_set_transform_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(matrix);
+
     if (ctx->transpose)
     {
         const pgl_m4_t matrix4 =
@@ -2146,6 +2206,8 @@ void pgl_set_transform_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 
 void pgl_reset_transform(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_t* state = pgl_get_active_state(ctx);
 
     const pgl_m4_t matrix =
@@ -2161,12 +2223,18 @@ void pgl_reset_transform(pgl_ctx_t* ctx)
 
 void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(matrix);
+
     pgl_state_t* state = pgl_get_active_state(ctx);
     memcpy(state->projection, matrix, sizeof(pgl_m4_t));
 }
 
 void pgl_set_projection_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 {
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(matrix);
+
     if (ctx->transpose)
     {
         const pgl_m4_t matrix4 =
@@ -2195,6 +2263,8 @@ void pgl_set_projection_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix)
 
 void pgl_reset_projection(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_t* state = pgl_get_active_state(ctx);
 
     const pgl_m4_t matrix =
@@ -2211,30 +2281,39 @@ void pgl_reset_projection(pgl_ctx_t* ctx)
 void pgl_set_viewport(pgl_ctx_t* ctx, int32_t x, int32_t y,
                                       int32_t w, int32_t h)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_t* state = pgl_get_active_state(ctx);
     state->viewport = (pgl_viewport_t){ x, y, w, h };
 }
 
 void pgl_reset_viewport(pgl_ctx_t* ctx) // TODO: get GL viewport?
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_t* state = pgl_get_active_state(ctx);
     state->viewport = (pgl_viewport_t){ 0, 0, ctx->w, ctx->h };
 }
 
 void pgl_set_line_width(pgl_ctx_t* ctx, float width)
 {
-   pgl_state_t* state = pgl_get_active_state(ctx);
-   state->line_width = width;
+    PGL_ASSERT(ctx);
+
+    pgl_state_t* state = pgl_get_active_state(ctx);
+    state->line_width = width;
 }
 
 void pgl_reset_line_width(pgl_ctx_t* ctx)
 {
-   pgl_state_t* state = pgl_get_active_state(ctx);
-   state->line_width = 1.0f;
+    PGL_ASSERT(ctx);
+
+    pgl_state_t* state = pgl_get_active_state(ctx);
+    state->line_width = 1.0f;
 }
 
 void pgl_reset_state(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
     pgl_reset_blend_mode(ctx);
     pgl_reset_transform(ctx);
     pgl_reset_projection(ctx);
@@ -2244,6 +2323,8 @@ void pgl_reset_state(pgl_ctx_t* ctx)
 
 void pgl_push_state(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_stack_t* stack = pgl_get_active_stack(ctx);
     PGL_ASSERT(stack->size < PGL_MAX_STATES);
 
@@ -2253,6 +2334,8 @@ void pgl_push_state(pgl_ctx_t* ctx)
 
 void pgl_pop_state(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_stack_t* stack = pgl_get_active_stack(ctx);
 
     PGL_ASSERT(stack->size > 0);
@@ -2263,13 +2346,16 @@ void pgl_pop_state(pgl_ctx_t* ctx)
 
 void pgl_clear_stack(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_stack_t* stack = pgl_get_active_stack(ctx);
     stack->size = 0;
 }
 
 void pgl_set_bool(pgl_shader_t* shader, const char* name, bool value)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2282,7 +2368,8 @@ void pgl_set_bool(pgl_shader_t* shader, const char* name, bool value)
 
 void pgl_set_1i(pgl_shader_t* shader, const char* name, int32_t a)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2295,7 +2382,8 @@ void pgl_set_1i(pgl_shader_t* shader, const char* name, int32_t a)
 
 void pgl_set_2i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2309,7 +2397,8 @@ void pgl_set_2i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b)
 void pgl_set_3i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
                                                         int32_t c)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2323,7 +2412,8 @@ void pgl_set_3i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
 void pgl_set_4i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
                                                         int32_t c, int32_t d)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2336,26 +2426,33 @@ void pgl_set_4i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
 
 void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i_t vec)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+
     pgl_set_2i(shader, name, vec[0], vec[1]);
 }
 
 void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i_t vec)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+
     pgl_set_3i(shader, name, vec[0], vec[1], vec[2]);
 }
 
 
 void pgl_set_v4i(pgl_shader_t* shader, const char* name, const pgl_v4i_t vec)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+
     pgl_set_4i(shader, name, vec[0], vec[1], vec[2], vec[3]);
 }
 
 void pgl_set_1f(pgl_shader_t* shader, const char* name, float x)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2368,7 +2465,8 @@ void pgl_set_1f(pgl_shader_t* shader, const char* name, float x)
 
 void pgl_set_2f(pgl_shader_t* shader, const char* name, float x, float y)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2381,7 +2479,8 @@ void pgl_set_2f(pgl_shader_t* shader, const char* name, float x, float y)
 
 void pgl_set_3f(pgl_shader_t* shader, const char* name, float x, float y, float z)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2395,7 +2494,8 @@ void pgl_set_3f(pgl_shader_t* shader, const char* name, float x, float y, float 
 void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
                                                         float z, float w)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2408,19 +2508,28 @@ void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
 
 void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f_t vec)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(vec);
+
     pgl_set_2f(shader, name, vec[0], vec[1]);
 }
 
 void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f_t vec)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(vec);
+
     pgl_set_3f(shader, name, vec[0], vec[1], vec[2]);
 }
 
 void pgl_set_v4f(pgl_shader_t* shader, const char* name, const pgl_v4f_t vec)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(vec);
+
     pgl_set_4f(shader, name, vec[0], vec[1], vec[2], vec[3]);
 }
 
@@ -2429,7 +2538,9 @@ void pgl_set_a1f(pgl_shader_t* shader,
                 const float* values,
                 pgl_size_t count)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(values);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2445,7 +2556,9 @@ void pgl_set_a2f(pgl_shader_t* shader,
                 const pgl_v2f_t* vec,
                 pgl_size_t count)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(vec);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2472,7 +2585,9 @@ void pgl_set_a3f(pgl_shader_t* shader,
                 const pgl_v3f_t* vec,
                 pgl_size_t count)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(vec);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2499,7 +2614,9 @@ void pgl_set_a4f(pgl_shader_t* shader,
                 const pgl_v4f_t* vec,
                 pgl_size_t count)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(vec);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2524,7 +2641,9 @@ void pgl_set_a4f(pgl_shader_t* shader,
 
 void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2_t matrix)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(matrix);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2537,7 +2656,9 @@ void pgl_set_m2(pgl_shader_t* shader, const char* name, const pgl_m2_t matrix)
 
 void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3_t matrix)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(matrix);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2550,7 +2671,9 @@ void pgl_set_m3(pgl_shader_t* shader, const char* name, const pgl_m3_t matrix)
 
 void pgl_set_m4(pgl_shader_t* shader, const char* name, const pgl_m4_t matrix)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name);
+    PGL_ASSERT(matrix);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2564,6 +2687,7 @@ void pgl_set_m4(pgl_shader_t* shader, const char* name, const pgl_m4_t matrix)
 void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value)
 {
     PGL_ASSERT(shader);
+    PGL_ASSERT(name);
 
     pgl_bind_shader(shader->ctx, shader);
     const pgl_uniform_t* uniform = pgl_find_uniform(shader, name);
@@ -2580,6 +2704,7 @@ void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value)
 
 static void pgl_set_error(pgl_ctx_t* ctx, pgl_error_t code)
 {
+    PGL_ASSERT(ctx);
     ctx->error_code = code;
 }
 
@@ -2619,6 +2744,8 @@ static const char* pgl_get_default_frag_shader()
 
 static void pgl_reset_last_state(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_t* last = &ctx->last_state;
 
     memset(last, 0, sizeof(pgl_state_t));
@@ -2634,6 +2761,8 @@ static void pgl_reset_last_state(pgl_ctx_t* ctx)
 
 static pgl_state_stack_t* pgl_get_active_stack(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     pgl_state_stack_t* stack = &ctx->stack;
 
     if (ctx->target)
@@ -2644,12 +2773,15 @@ static pgl_state_stack_t* pgl_get_active_stack(pgl_ctx_t* ctx)
 
 static pgl_state_t* pgl_get_active_state(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     return &pgl_get_active_stack(ctx)->state;
 }
 
 static void pgl_apply_blend(pgl_ctx_t* ctx, const pgl_blend_mode_t* mode)
 {
-    PGL_ASSERT(NULL != ctx);
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(mode);
 
     if (pgl_mem_equal(mode, &ctx->last_state.blend_mode, sizeof(pgl_blend_mode_t)))
         return;
@@ -2665,7 +2797,8 @@ static void pgl_apply_blend(pgl_ctx_t* ctx, const pgl_blend_mode_t* mode)
 
 static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 {
-    PGL_ASSERT(NULL != ctx);
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(matrix);
 
     if (pgl_mem_equal(matrix, ctx->last_state.transform, sizeof(pgl_m4_t)))
         return;
@@ -2675,7 +2808,8 @@ static void pgl_apply_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 
 static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 {
-    PGL_ASSERT(NULL != ctx);
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(matrix);
 
     if (pgl_mem_equal(matrix, &ctx->last_state.projection, sizeof(pgl_m4_t)))
         return;
@@ -2685,7 +2819,8 @@ static void pgl_apply_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix)
 
 static void pgl_apply_viewport(pgl_ctx_t* ctx, const pgl_viewport_t* viewport)
 {
-    PGL_ASSERT(NULL != ctx);
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(viewport);
 
     if (viewport->w <= 0 && viewport->h <= 0)
         return;
@@ -2698,7 +2833,7 @@ static void pgl_apply_viewport(pgl_ctx_t* ctx, const pgl_viewport_t* viewport)
 
 static void pgl_apply_line_width(pgl_ctx_t* ctx, float line_width)
 {
-    PGL_ASSERT(NULL != ctx);
+    PGL_ASSERT(ctx);
 
     if (line_width == ctx->last_state.line_width)
         return;
@@ -2708,7 +2843,8 @@ static void pgl_apply_line_width(pgl_ctx_t* ctx, float line_width)
 
 static void pgl_before_draw(pgl_ctx_t* ctx, pgl_texture_t* texture, pgl_shader_t* shader)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(shader);
 
     pgl_bind_texture(ctx, texture);
     pgl_bind_shader(ctx, shader);
@@ -2736,12 +2872,14 @@ static void pgl_before_draw(pgl_ctx_t* ctx, pgl_texture_t* texture, pgl_shader_t
 
 static void pgl_after_draw(pgl_ctx_t* ctx)
 {
+    PGL_ASSERT(ctx);
+
     ctx->last_state = *pgl_get_active_state(ctx);
 }
 
 static int pgl_load_uniforms(pgl_shader_t* shader)
 {
-    PGL_ASSERT(NULL != shader);
+    PGL_ASSERT(shader);
 
     GLint uniform_count;
     glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &uniform_count);
@@ -2786,8 +2924,8 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
 
 static const pgl_uniform_t* pgl_find_uniform(const pgl_shader_t* shader, const char* name)
 {
-    PGL_ASSERT(NULL != shader);
-    PGL_ASSERT(NULL != name && strlen(name) > 0);
+    PGL_ASSERT(shader);
+    PGL_ASSERT(name && strlen(name) > 0);
 
 	pgl_size_t uniform_count = shader->uniform_count;
 	const pgl_uniform_t* uniforms = shader->uniforms;
@@ -2834,6 +2972,8 @@ static void pgl_bind_attributes()
 
 static void pgl_log(const char* fmt, ...)
 {
+    PGL_ASSERT(fmt);
+
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);
@@ -2844,6 +2984,8 @@ static void pgl_log(const char* fmt, ...)
 
 static void pgl_log_error(const char* file, unsigned line, const char* expr)
 {
+    PGL_ASSERT(file);
+
     pgl_error_t code = pgl_map_error(glGetError());
 
     if (PGL_NO_ERROR == code)
@@ -2881,6 +3023,8 @@ static bool pgl_mem_equal(const void* ptr1, const void* ptr2, size_t size)
 // FNV-1a
 static pgl_hash_t pgl_hash_str(const char* str)
 {
+    PGL_ASSERT(str);
+
     pgl_hash_t hash = PGL_OFFSET_BASIS;
 
     while ('\0' != str[0])
