@@ -273,7 +273,7 @@ typedef void* (*pgl_loader_fn)(const char* name);
  * This function must be called before any other PGL functions.
  *
  * @param load_proc Function loader (can be NULL except for GLES contexts)
- * @param gles Set to \em true if using OpenGL ES
+ * @param gles      Set to \em true if using OpenGL ES
  *
  * @returns -1 on failure and 0 otherwise
  */
@@ -312,10 +312,10 @@ const char* pgl_get_error_str(pgl_error_t code);
 /**
  * @brief Creates an instance of the renderer
  *
- * @param w The drawable width of the window in pixels
- * @param h The drawable height of the window in pixels
+ * @param w       The drawable width of the window in pixels
+ * @param h       The drawable height of the window in pixels
  * @param samples The number of MSAA (anti-alising) samples (disabled if 0)
- * @param srgb Enables support for the sRGB colorspace
+ * @param srgb    Enables support for the sRGB colorspace
  * @param mem_ctx User data provided to custom allocators
  *
  * @returns The context pointer or \em NULL on error
@@ -334,12 +334,12 @@ void pgl_destroy_context(pgl_ctx_t* ctx);
 /**
  * @brief Resizes the drawable dimensions
  *
- * @param ctx A pointer to the context
- * @param w The drawable width of the window in pixels
- * @param h The drawable height of the window in pixels
- * @pawram reset_vewport Resets the viewport if true
+ * @param ctx       A pointer to the context
+ * @param w         The drawable width of the window in pixels
+ * @param h         The drawable height of the window in pixels
+ * @pawram reset_vp Resets the viewport if true
  */
-void pgl_resize(pgl_ctx_t* ctx, uint32_t w, uint32_t h, bool reset_viewport);
+void pgl_resize(pgl_ctx_t* ctx, uint32_t w, uint32_t h, bool reset_vp);
 
 /**
  * @brief Creates a shader program
@@ -349,7 +349,7 @@ void pgl_resize(pgl_ctx_t* ctx, uint32_t w, uint32_t h, bool reset_viewport);
  * `frag_src` are `NULL`, then the shader is compiled from the (respective)
  * default vertex or fragment source, together with the non-`NULL` argument.
  *
- * @param ctx The relevant context
+ * @param ctx      The relevant context
  * @param vert_src Vertex shader source
  * @param frag_src Fragment shader source
 
@@ -371,7 +371,7 @@ void pgl_destroy_shader(pgl_shader_t* shader);
  * This function sets the context's currently active shader. If `shader` is
  * `NULL` the current shader is deactivated.
  *
- * @param ctx The relevant context
+ * @param ctx    The relevant context
  * @param shader The shader program to activate, or `NULL` to deactivate
  */
 void pgl_bind_shader(pgl_ctx_t* ctx, pgl_shader_t* shader);
@@ -388,11 +388,11 @@ uint64_t pgl_get_shader_id(const pgl_shader_t* shader);
 /**
  * @brief Creates an empty texture
  *
- * @param ctx The relevant context
+ * @param ctx    The relevant context
  * @param target If true, the texture can be used as a render target
- * @param w The texture's width
- * @param h The texture's height
- * @param srgb True if the internal format is sRGB
+ * @param w      The texture's width
+ * @param h      The texture's height
+ * @param srgb   True if the internal format is sRGB
  * @param smooth High (true) or low (false) quality filtering
  * @param repeat Repeats or clamps when uv coordinates exceed 1.0
  */
@@ -404,13 +404,13 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 /**
  * @brief Creates a texture from a bitmap
  *
- * @param ctx The relevant context
- * @param w The texture's width
- * @param h The texture's height
- * @param srgb True if the internal format is sRGB
+ * @param ctx    The relevant context
+ * @param w      The texture's width
+ * @param h      The texture's height
+ * @param srgb   True if the internal format is sRGB
  * @param smooth High (true) or low (false) quality filtering
  * @param repeat Repeats or clamps when uv coordinates exceed 1.0
- * @param bitmap Bitmap data corresponding to the specified format
+ * @param bitmap Pixel data in RGBA format
  */
 pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
                                        int32_t w, int32_t h,
@@ -420,11 +420,11 @@ pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
 /**
  * @brief Uploads data from a bitmap into a texture
  *
- * @param ctx The relevant context
+ * @param ctx     The relevant context
  * @param texture The target texture
- * @param w The texture's width
- * @param h The texture's height
- * @param bitmap The pixel data
+ * @param w       The texture's width
+ * @param h       The texture's height
+ * @param bitmap  The pixel data in RGBA
  */
 int pgl_upload_texture(pgl_ctx_t* ctx,
                        pgl_texture_t* texture,
@@ -434,13 +434,13 @@ int pgl_upload_texture(pgl_ctx_t* ctx,
 /**
  * @brief Updates a region of an existing texture
  *
- * @param ctx The relevant context
+ * @param ctx     The relevant context
  * @param texture The texture to update
- * @param x The x offset of the region
- * @param y The y offset of the region
- * @param w The width of the region
- * @param h The height of the region
- * @param bitmap The pixel data
+ * @param x       The x offset of the region
+ * @param y       The y offset of the region
+ * @param w       The width of the region
+ * @param h       The height of the region
+ * @param bitmap  The pixel data in RGBA
  */
 void pgl_update_texture(pgl_ctx_t* ctx,
                         pgl_texture_t* texture,
@@ -456,7 +456,7 @@ void pgl_update_texture(pgl_ctx_t* ctx,
  * of the texture.
  *
  * @param texture Pointer to the target texture
- * @param linear Determines the selection of the which mipmap to blend
+ * @param linear  Determines the selection of the which mipmap to blend
  *
  * @returns 0 on success and -1 on failure
  */
@@ -473,8 +473,8 @@ void pgl_destroy_texture(pgl_texture_t* texture);
  * @brief Gets texture size
  *
  * @param texture The texture
- * @param w Pointer to width (output)
- * @param h Pointer to height (output)
+ * @param w       Pointer to width (output)
+ * @param h       Pointer to height (output)
  */
 void pgl_get_texture_size(const pgl_texture_t* texture, int* w, int* h);
 
@@ -501,7 +501,7 @@ uint64_t pgl_get_texture_id(const pgl_texture_t* texture);
  * This function sets the context's currently texture. If `texture` is
  * `NULL` the current texture is deactivated.
  *
- * @param ctx The relevant context
+ * @param ctx     The relevant context
  * @param texture The texture to activate, or `NULL` to deactivate
  */
 void pgl_bind_texture(pgl_ctx_t* ctx, pgl_texture_t* texture);
@@ -512,7 +512,7 @@ void pgl_bind_texture(pgl_ctx_t* ctx, pgl_texture_t* texture);
  * The function set a texture to be the target for rendering until the texture
  * if replaced by another or set to `NULL`.
  *
- * @param ctx The relevant context
+ * @param ctx     The relevant context
  * @param texture The render target
  *
  * @returns 0 on success and -1 on failure
@@ -586,12 +586,12 @@ void pgl_destroy_buffer(pgl_buffer_t* buffer);
 /**
  * @brief Draw a previously created buffer
  *
- * @param ctx The relevant context
- * @param buffer The buffer to draw
- * @param start The base vertex index
- * @param count The number of vertices to draw from `start`
+ * @param ctx     The relevant context
+ * @param buffer  The buffer to draw
+ * @param start   The base vertex index
+ * @param count   The number of vertices to draw from `start`
  * @param texture The texture to draw from (can be `NULL`)
- * @param shader The shader used to draw the array (cannot be `NULL`)
+ * @param shader  The shader used to draw the array (cannot be `NULL`)
  */
 void pgl_draw_buffer(pgl_ctx_t* ctx,
                      const pgl_buffer_t* buffer,
@@ -607,7 +607,7 @@ void pgl_set_transpose(pgl_ctx_t* ctx, bool enabled);
 /**
  * @brief Set the blending mode
  *
- * @param ctx The relevant context
+ * @param ctx  The relevant context
  * @param mode The blending mode (@see pgl_blend_mode_t)
  */
 void pgl_set_blend_mode(pgl_ctx_t* ctx, pgl_blend_mode_t mode);
@@ -622,7 +622,7 @@ void pgl_reset_blend_mode(pgl_ctx_t* ctx);
 /**
  * @brief Sets the context's global tranformation matrix
  *
- * @param ctx The relevant context
+ * @param ctx    The relevant context
  * @param matrix The global transform matrix
  */
 void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix);
@@ -630,7 +630,7 @@ void pgl_set_transform(pgl_ctx_t* ctx, const pgl_m4_t matrix);
 /**
  * @brief 3D variant of `pgl_set_transform`
  *
- * @param ctx The relevant context
+ * @param ctx    The relevant context
  * @param matrix The 3D global transform matrix
  */
 void pgl_set_transform_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix);
@@ -645,7 +645,7 @@ void pgl_reset_transform(pgl_ctx_t* ctx);
 /**
  * @brief Sets a context's global projecton matrix
  *
- * @param ctx The relevant context
+ * @param ctx    The relevant context
  * @param matrix The global projection matrix
  */
 void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix);
@@ -653,7 +653,7 @@ void pgl_set_projection(pgl_ctx_t* ctx, const pgl_m4_t matrix);
 /**
  * @brief 3D variant of `pgl_set_projection`
  *
- * @param ctx The relevant context
+ * @param ctx    The relevant context
  * @param matrix The 3D global projection matrix
  */
 void pgl_set_projection_3d(pgl_ctx_t* ctx, const pgl_m3_t matrix);
@@ -669,10 +669,10 @@ void pgl_reset_projection(pgl_ctx_t* ctx);
  * @brief Sets the location and dimensions of the rendering viewport
  *
  * @param ctx The relevant context
- * @param x The left edge of the viewport
- * @param y The bottom edge of the viewport
- * @param w The width of the viewport
- * @param h The height of the viewort
+ * @param x   The left edge of the viewport
+ * @param y   The bottom edge of the viewport
+ * @param w   The width of the viewport
+ * @param h   The height of the viewort
  */
 void pgl_set_viewport(pgl_ctx_t* ctx, int32_t x, int32_t y,
                                       int32_t w, int32_t h);
@@ -729,8 +729,8 @@ void pgl_clear_stack(pgl_ctx_t* ctx);
  * @brief Sets a boolean uniform
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param value The boolean value
+ * @param name   The name of the uniform
+ * @param value  The boolean value
  */
 void pgl_set_bool(pgl_shader_t* shader, const char* name, bool value);
 
@@ -738,8 +738,8 @@ void pgl_set_bool(pgl_shader_t* shader, const char* name, bool value);
  * @brief Sets an integer uniform
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param a The integer value
+ * @param name   The name of the uniform
+ * @param value  The integer value
  */
 void pgl_set_1i(pgl_shader_t* shader, const char* name, int32_t a);
 
@@ -747,9 +747,9 @@ void pgl_set_1i(pgl_shader_t* shader, const char* name, int32_t a);
  * @brief Sets a 2D integer uniform
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param a The first value
- * @param b The second value
+ * @param name   The name of the uniform
+ * @param a      The first value
+ * @param b      The second value
  */
 void pgl_set_2i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b);
 
@@ -757,10 +757,10 @@ void pgl_set_2i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b);
  * @brief Sets a 3D integer uniform
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param a The first value
- * @param b The second value
- * @param c The third value
+ * @param name   The name of the uniform
+ * @param a      The first value
+ * @param b      The second value
+ * @param c      The third value
  */
 void pgl_set_3i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b, int32_t c);
 
@@ -768,11 +768,11 @@ void pgl_set_3i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b, in
  * @brief Sets a 4D integer uniform
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param a The first value
- * @param b The second value
- * @param c The third value
- * @param d The fourth value
+ * @param name   The name of the uniform
+ * @param a      The first value
+ * @param b      The second value
+ * @param c      The third value
+ * @param d      The fourth value
  */
 void pgl_set_4i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
                                                         int32_t c, int32_t d);
@@ -780,8 +780,8 @@ void pgl_set_4i(pgl_shader_t* shader, const char* name, int32_t a, int32_t b,
  * @brief Sets a 2D integer uniform by vector
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param vec The vector
+ * @param name   The name of the uniform
+ * @param vec    The vector
  */
 void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i_t vec);
 
@@ -789,8 +789,8 @@ void pgl_set_v2i(pgl_shader_t* shader, const char* name, const pgl_v2i_t vec);
  * @brief Sets a 3D integer uniform by vector
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param vec The vector
+ * @param name   The name of the uniform
+ * @param vec    The vector
  */
 void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i_t vec);
 
@@ -798,8 +798,8 @@ void pgl_set_v3i(pgl_shader_t* shader, const char* name, const pgl_v3i_t vec);
  * @brief Sets a 4D integer uniform by vector
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param vec The vector
+ * @param name   The name of the uniform
+ * @param vec    The vector
  */
 void pgl_set_v4i(pgl_shader_t* shader, const char* name, const pgl_v4i_t vec);
 
@@ -807,8 +807,8 @@ void pgl_set_v4i(pgl_shader_t* shader, const char* name, const pgl_v4i_t vec);
  * @brief Sets an floating point uniform
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param x The float value
+ * @param name   The name of the uniform
+ * @param x      The float value
  */
 void pgl_set_1f(pgl_shader_t* shader, const char* name, float x);
 
@@ -816,9 +816,9 @@ void pgl_set_1f(pgl_shader_t* shader, const char* name, float x);
  * @brief Sets a 2D floating point uniform
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param x The first value
- * @param y The second value
+ * @param name   The name of the uniform
+ * @param x      The first value
+ * @param y      The second value
  */
 void pgl_set_2f(pgl_shader_t* shader, const char* name, float x, float y);
 
@@ -826,10 +826,10 @@ void pgl_set_2f(pgl_shader_t* shader, const char* name, float x, float y);
  * @brief Sets a 3D floating point uniform
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param x The first value
- * @param y The second value
- * @param z The third value
+ * @param name   The name of the uniform
+ * @param x      The first value
+ * @param y      The second value
+ * @param z      The third value
  */
 void pgl_set_3f(pgl_shader_t* shader, const char* name, float x, float y, float z);
 
@@ -837,11 +837,11 @@ void pgl_set_3f(pgl_shader_t* shader, const char* name, float x, float y, float 
  * @brief Sets a 4D floating point uniform
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param x The first value
- * @param y The second value
- * @param w The third value
- * @param z The fourth value
+ * @param name   The name of the uniform
+ * @param x      The first value
+ * @param y      The second value
+ * @param w      The third value
+ * @param z      The fourth value
  */
 void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
                                                         float z, float w);
@@ -850,8 +850,8 @@ void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
  * @brief Sets a 2D floating point uniform by vector
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param vec The vector
+ * @param name   The name of the uniform
+ * @param vec    The vector
  */
 void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f_t vec);
 
@@ -859,8 +859,8 @@ void pgl_set_v2f(pgl_shader_t* shader, const char* name, const pgl_v2f_t vec);
  * @brief Sets a 3D floating point uniform by vector
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param vec The vector
+ * @param name   The name of the uniform
+ * @param vec    The vector
  */
 void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f_t vec);
 
@@ -868,8 +868,8 @@ void pgl_set_v3f(pgl_shader_t* shader, const char* name, const pgl_v3f_t vec);
  * @brief Sets a 4D floating point uniform by vector
  *
  * @param shader The uniform's shader program
- * @param name The name of the uniform
- * @param vec The vector
+ * @param name   The name of the uniform
+ * @param vec    The vector
  */
 void pgl_set_v4f(pgl_shader_t* shader, const char* name, const pgl_v4f_t vec);
 
@@ -1449,12 +1449,12 @@ void pgl_destroy_context(pgl_ctx_t* ctx)
     PGL_FREE(ctx, ctx->mem_ctx);
 }
 
-void pgl_resize(pgl_ctx_t* ctx, uint32_t w, uint32_t h, bool reset_viewport)
+void pgl_resize(pgl_ctx_t* ctx, uint32_t w, uint32_t h, bool reset_vp)
 {
     ctx->w = w;
     ctx->h = h;
 
-    if (reset_viewport)
+    if (reset_vp)
         pgl_reset_viewport(ctx);
 }
 
