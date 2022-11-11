@@ -2455,10 +2455,12 @@ void pgl_set_a2f(pgl_shader_t* shader,
 
     float values[2 * count];
 
-    for (pgl_size_t i = 0; i < count; i++)
+    pgl_size_t i, j;
+
+    for (i = 0, j = 0; j < count; i += 2, j++)
     {
-        values[i]     = vec[i][0];
-        values[i + 1] = vec[i][1];
+        values[i]     = vec[j][0];
+        values[i + 1] = vec[j][1];
     }
 
     PGL_CHECK(glUniform2fv(uniform->location, count, values));
@@ -2480,11 +2482,13 @@ void pgl_set_a3f(pgl_shader_t* shader,
 
     float values[3 * count];
 
-    for (pgl_size_t i = 0; i < count; i++)
+    pgl_size_t i, j;
+
+    for (i = 0, j = 0; j < count; i += 3, j++)
     {
-        values[i]     = vec[i][0];
-        values[i + 1] = vec[i][1];
-        values[i + 2] = vec[i][2];
+        values[i]     = vec[j][0];
+        values[i + 1] = vec[j][1];
+        values[i + 2] = vec[j][2];
     }
 
     PGL_CHECK(glUniform3fv(uniform->location, count, values));
@@ -2505,12 +2509,14 @@ void pgl_set_a4f(pgl_shader_t* shader,
 
     float values[4 * count];
 
-    for (pgl_size_t i = 0; i < count; i++)
+    pgl_size_t i, j;
+
+    for (i = 0, j = 0; j < count; i += 4, j++)
     {
-        values[i]     = vec[i][0];
-        values[i + 1] = vec[i][1];
-        values[i + 2] = vec[i][2];
-        values[i + 3] = vec[i][3];
+        values[i]     = vec[j][0];
+        values[i + 1] = vec[j][1];
+        values[i + 2] = vec[j][2];
+        values[i + 3] = vec[j][3];
     }
 
     PGL_CHECK(glUniform4fv(uniform->location, count, values));
