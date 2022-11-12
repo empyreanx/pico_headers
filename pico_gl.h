@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 11/11/2022 18:30:26.
+/// WARNING: This file was automatically generated on 12/11/2022 14:31:27.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -76,7 +76,7 @@
     - Better version handling
     - Shader examples
     - Scissor
-    - Indexed arrays/buffers
+    - Indexed buffers
     - Multiple texture units
 */
 #ifndef PICO_GL_H
@@ -277,17 +277,26 @@ typedef void* (*pgl_loader_fn)(const char* name);
  * IMPORTANT: A valid OpenGL context must exist for this function to succeed.
  * This function must be called before any other PGL functions.
  *
- * @param load_proc Function loader (can be NULL except for GLES contexts)
+ * @param loader_fp Function loader (can be NULL except for GLES contexts)
  * @param gles      Set to \em true if using OpenGL ES
  *
  * @returns -1 on failure and 0 otherwise
  */
-int pgl_global_init(pgl_loader_fn load_proc, bool gles);
+int pgl_global_init(pgl_loader_fn loader_fp, bool gles);
 
 /**
  * @brief Returns the current error code
  */
 pgl_error_t pgl_get_error(pgl_ctx_t* ctx);
+
+/**
+ * @brief Returns the string associated with the specified error code
+ *
+ * @param code The error code to query
+ *
+ * @returns The string representation of the error code
+ */
+const char* pgl_get_error_str(pgl_error_t code);
 
 /**
  * @brief Returns the current OpenGL version in use by the library.
@@ -306,19 +315,11 @@ pgl_version_t pgl_get_version();
 void pgl_print_info();
 
 /**
- * @brief Returns the string associated with the specified error code
- *
- * @param code The error code to query
- *
- * @returns The string representation of the error code
- */
-const char* pgl_get_error_str(pgl_error_t code);
-
-/**
  * @brief Creates an instance of the renderer
  *
  * @param w       The drawable width of the window in pixels
  * @param h       The drawable height of the window in pixels
+ * @param depth   Depth test is enabled if true
  * @param samples The number of MSAA (anti-alising) samples (disabled if 0)
  * @param srgb    Enables support for the sRGB colorspace
  * @param mem_ctx User data provided to custom allocators
@@ -330,7 +331,7 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
                               void* mem_ctx);
 
 /**
- * @brief Destroys a context, releasing it's resources
+ * @brief Destroys a renderer context, releasing it's resources
  *
  * @param ctx A pointer to the context
  */
@@ -532,7 +533,7 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* texture);
 void pgl_clear(float r, float g, float b, float a);
 
 /**
- * Draws primitives according to the vertex array
+ * Draws primitives according to a vertex array
  *
  * @param ctx       The relevant context
  * @param primitive The type of geometry to draw
@@ -549,11 +550,11 @@ void pgl_draw_array(pgl_ctx_t* ctx,
                     pgl_shader_t* shader);
 
 /**
- * Draws primvities according to the vertex and index arrays
+ * Draws primvities according to vertex and index arrays
  *
  * @param ctx          The relevant context
  * @param primitive    The type of geometry to draw
- * @param vertices     An array of vertex array
+ * @param vertices     An array of vertices
  * @param vertex_count The number of vertices
  * @param indices      An array of indices
  * @param index_ count The number of indicies
@@ -3915,6 +3916,16 @@ pgl_error_t pgl_get_error(pgl_ctx_t* ctx)
     return ctx->error_code;
 }
 
+const char* pgl_get_error_str(pgl_error_t code)
+{
+    PGL_ASSERT(code < PGL_ERROR_COUNT);
+
+    if (code < PGL_ERROR_COUNT)
+        return pgl_error_msg_map[(pgl_size_t)code];
+    else
+        return NULL;
+}
+
 pgl_version_t pgl_get_version()
 {
     if (!pgl_initialized)
@@ -3956,19 +3967,9 @@ void pgl_print_info()
     PGL_LOG("Max texture size: %ix%i", tex_w, tex_h);
 }
 
-const char* pgl_get_error_str(pgl_error_t code)
+int pgl_global_init(pgl_loader_fn loader_fp, bool gles)
 {
-    PGL_ASSERT(code < PGL_ERROR_COUNT);
-
-    if (code < PGL_ERROR_COUNT)
-        return pgl_error_msg_map[(pgl_size_t)code];
-    else
-        return NULL;
-}
-
-int pgl_global_init(pgl_loader_fn load_proc, bool gles)
-{
-    if (NULL == load_proc && gles)
+    if (NULL == loader_fp && gles)
     {
         PGL_LOG("Loader must be explicitly specified for an GLES context");
         return -1;
@@ -3976,7 +3977,7 @@ int pgl_global_init(pgl_loader_fn load_proc, bool gles)
 
     if (gles)
     {
-        if (!gladLoadGLES2Loader((GLADloadproc)load_proc))
+        if (!gladLoadGLES2Loader((GLADloadproc)loader_fp))
         {
             PGL_LOG("GLAD GLES2 loader failed");
             return -1;
@@ -3987,7 +3988,7 @@ int pgl_global_init(pgl_loader_fn load_proc, bool gles)
         return 0;
     }
 
-    if (NULL == load_proc)
+    if (NULL == loader_fp)
     {
         if (!gladLoadGL())
         {
@@ -3997,7 +3998,7 @@ int pgl_global_init(pgl_loader_fn load_proc, bool gles)
     }
     else
     {
-        if (!gladLoadGLLoader((GLADloadproc)load_proc))
+        if (!gladLoadGLLoader((GLADloadproc)loader_fp))
         {
             PGL_LOG("GLAD GL3 loader failed");
             return -1;
@@ -4034,6 +4035,7 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
     ctx->depth = depth;
     ctx->mem_ctx = mem_ctx;
 
+    // Create VBO/EBO
     PGL_CHECK(glGenVertexArrays(1, &ctx->vao));
     PGL_CHECK(glBindVertexArray(ctx->vao));
     PGL_CHECK(glGenBuffers(1, &ctx->vbo));
@@ -4044,8 +4046,6 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW));
     pgl_bind_attributes();
     PGL_CHECK(glBindVertexArray(0));
-
-    //PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
 
     if (samples > 0)
     {
@@ -4069,6 +4069,7 @@ void pgl_destroy_context(pgl_ctx_t* ctx)
     PGL_ASSERT(ctx);
 
     PGL_CHECK(glDeleteBuffers(1, &ctx->vbo));
+    PGL_CHECK(glDeleteBuffers(1, &ctx->ebo));
     PGL_CHECK(glDeleteVertexArrays(1, &ctx->vao));
     PGL_FREE(ctx, ctx->mem_ctx);
 }
@@ -4103,6 +4104,7 @@ pgl_shader_t* pgl_create_shader(pgl_ctx_t* ctx, const char* vert_src,
         frag_src = pgl_get_default_frag_shader();
     }
 
+    // Create shaders
     GLuint vs, fs, program;
 
     PGL_CHECK(vs = glCreateShader(GL_VERTEX_SHADER));
@@ -4280,6 +4282,8 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
     tex->w = w;
     tex->h = h;
     tex->srgb = srgb;
+    tex->target = target;
+    tex->smooth = smooth;
 
     if (-1 == pgl_upload_texture(ctx, tex, w, h, NULL))
     {
@@ -4425,10 +4429,6 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
         PGL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
         PGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
     }
-
-    tex->ctx    = ctx;
-    tex->target = target;
-    tex->smooth = smooth;
 
     return tex;
 }
@@ -4637,7 +4637,7 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
 void pgl_clear(float r, float g, float b, float a)
 {
     PGL_CHECK(glClearColor(r, g, b, a));
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    PGL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 }
 
 void pgl_draw_array(pgl_ctx_t* ctx,
@@ -4729,7 +4729,9 @@ void pgl_destroy_buffer(pgl_buffer_t* buffer)
 {
     PGL_ASSERT(buffer);
 
-    glDeleteBuffers(1, &buffer->vbo);
+    PGL_CHECK(glDeleteVertexArrays(1, &buffer->vao));
+    PGL_CHECK(glDeleteBuffers(1, &buffer->vbo));
+
     PGL_FREE(buffer, buffer->ctx->mem_ctx);
 }
 
@@ -4748,7 +4750,7 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
     pgl_before_draw(ctx, texture, shader);
 
     PGL_CHECK(glBindVertexArray(buffer->vao));
-    PGL_CHECK(glDrawArrays(GL_TRIANGLES, start, count));
+    PGL_CHECK(glDrawArrays(buffer->primitive, start, count));
     PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);
@@ -4946,6 +4948,8 @@ void pgl_reset_state(pgl_ctx_t* ctx)
 void pgl_push_state(pgl_ctx_t* ctx)
 {
     PGL_ASSERT(ctx);
+
+    // TODO: Make into growable array
 
     pgl_state_stack_t* stack = pgl_get_active_stack(ctx);
     PGL_ASSERT(stack->size < PGL_MAX_STATES);
@@ -5200,7 +5204,6 @@ void pgl_set_a2f(pgl_shader_t* shader,
 
     PGL_CHECK(glUniform2fv(uniform->location, count, values));
 }
-
 
 void pgl_set_a3f(pgl_shader_t* shader,
                 const char* name,
@@ -5503,10 +5506,12 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
 {
     PGL_ASSERT(shader);
 
+    // Get number of active uniforms
     GLint uniform_count;
     glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &uniform_count);
     shader->uniform_count = uniform_count;
 
+    // Validate number of uniforms
     PGL_ASSERT(uniform_count < PGL_MAX_UNIFORMS);
 
     if (uniform_count >= PGL_MAX_UNIFORMS)
@@ -5515,18 +5520,22 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
         return -1;
     }
 
+    // Loop through active uniforms and add them to the uniform array
     for (GLint i = 0; i < uniform_count; i++)
     {
         pgl_uniform_t uniform;
         GLsizei name_length;
 
+        // Uniform index
         GLint index = i;
 
+        // Get uniform information
         PGL_CHECK(glGetActiveUniform(shader->program, index,
-                                     PGL_UNIFORM_NAME_LENGTH, &name_length,
-                                     &uniform.size, &uniform.type,
+                                     PGL_UNIFORM_NAME_LENGTH, // Max name length
+                                     &name_length, &uniform.size, &uniform.type,
                                      uniform.name));
 
+        // Validate name length
         PGL_ASSERT(name_length <= PGL_UNIFORM_NAME_LENGTH);
 
         if (name_length > PGL_UNIFORM_NAME_LENGTH)
@@ -5535,9 +5544,13 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
             return -1;
         }
 
+        // Get uniform location
         uniform.location = glGetUniformLocation(shader->program, uniform.name);
+
+        // Hash name for fast lookups
         uniform.hash = pgl_hash_str(uniform.name);
 
+        // Store uniform in the array
         shader->uniforms[i] = uniform;
     }
 

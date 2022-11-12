@@ -2015,7 +2015,7 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* target)
 void pgl_clear(float r, float g, float b, float a)
 {
     PGL_CHECK(glClearColor(r, g, b, a));
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    PGL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 }
 
 void pgl_draw_array(pgl_ctx_t* ctx,
@@ -2583,7 +2583,6 @@ void pgl_set_a2f(pgl_shader_t* shader,
     PGL_CHECK(glUniform2fv(uniform->location, count, values));
 }
 
-
 void pgl_set_a3f(pgl_shader_t* shader,
                 const char* name,
                 const pgl_v3f_t* vec,
@@ -2885,10 +2884,12 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
 {
     PGL_ASSERT(shader);
 
+    // Get number of active uniforms
     GLint uniform_count;
     glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &uniform_count);
     shader->uniform_count = uniform_count;
 
+    // Validate number of uniforms
     PGL_ASSERT(uniform_count < PGL_MAX_UNIFORMS);
 
     if (uniform_count >= PGL_MAX_UNIFORMS)
@@ -2897,18 +2898,22 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
         return -1;
     }
 
+    // Loop through active uniforms and add them to the uniform array
     for (GLint i = 0; i < uniform_count; i++)
     {
         pgl_uniform_t uniform;
         GLsizei name_length;
 
+        // Uniform index
         GLint index = i;
 
+        // Get uniform information
         PGL_CHECK(glGetActiveUniform(shader->program, index,
-                                     PGL_UNIFORM_NAME_LENGTH, &name_length,
-                                     &uniform.size, &uniform.type,
+                                     PGL_UNIFORM_NAME_LENGTH, // Max name length
+                                     &name_length, &uniform.size, &uniform.type,
                                      uniform.name));
 
+        // Validate name length
         PGL_ASSERT(name_length <= PGL_UNIFORM_NAME_LENGTH);
 
         if (name_length > PGL_UNIFORM_NAME_LENGTH)
@@ -2917,9 +2922,13 @@ static int pgl_load_uniforms(pgl_shader_t* shader)
             return -1;
         }
 
+        // Get uniform location
         uniform.location = glGetUniformLocation(shader->program, uniform.name);
+
+        // Hash name for fast lookups
         uniform.hash = pgl_hash_str(uniform.name);
 
+        // Store uniform in the array
         shader->uniforms[i] = uniform;
     }
 
