@@ -170,7 +170,7 @@ bool sat_test_circle_circle(const sat_circle_t* circle_a,
                             sat_manifold_t* manifold);
 
 sat_poly_t sat_transform_poly(const pm_t2* transform, sat_poly_t* poly);
-sat_circle_t sat_transfom_circle(const pm_t2* transform, const sat_circle_t* circle);
+sat_circle_t sat_transform_circle(const pm_t2* transform, const sat_circle_t* circle);
 
 pm_b2 sat_poly_to_aabb(const sat_poly_t* poly);
 pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
@@ -541,7 +541,7 @@ sat_poly_t sat_transform_poly(const pm_t2* transform, sat_poly_t* poly)
     return sat_make_poly(vertices, poly->vertex_count);
 }
 
-sat_circle_t sat_transfom_circle(const pm_t2* transform,
+sat_circle_t sat_transform_circle(const pm_t2* transform,
                                  const sat_circle_t* circle)
 {
     return sat_make_circle(pm_t2_map(transform, circle->pos), circle->radius);

@@ -226,6 +226,21 @@ TEST_CASE(test_transform_poly)
     return true;
 }
 
+TEST_CASE(test_transform_circle)
+{
+    sat_circle_t c = sat_make_circle(pm_v2_make(1, 0), 1);
+
+    pm_t2 t = pm_t2_identity();
+    pm_t2_rotate(&t, PM_PI / 2.0f);
+    pm_t2_translate(&t, pm_v2_make(0, 1));
+
+    sat_circle_t res = sat_transform_circle(&t, &c);
+
+    REQUIRE(pm_v2_equal(res.pos, pm_v2_make(0, 2)));
+
+    return true;
+}
+
 static TEST_SUITE(suite_sat)
 {
     RUN_TEST_CASE(test_aabb_aabb_collide);
@@ -238,6 +253,7 @@ static TEST_SUITE(suite_sat)
     RUN_TEST_CASE(test_circle_to_aabb);
     RUN_TEST_CASE(test_poly_to_aabb);
     RUN_TEST_CASE(test_transform_poly);
+    RUN_TEST_CASE(test_transform_circle);
 }
 
 int main()
