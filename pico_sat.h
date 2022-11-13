@@ -175,7 +175,7 @@ bool sat_test_circle_circle(const sat_circle_t* circle_a,
  * @param poly      The polygon to transform
  * @returns A new polygon
  */
-sat_poly_t sat_transform_poly(const pm_t2* transform, sat_poly_t* poly);
+sat_poly_t sat_transform_poly(const pm_t2* transform, const sat_poly_t* poly);
 
 /**
  * @brief Transforms a circle using an affine transform
@@ -549,7 +549,7 @@ bool sat_test_circle_circle(const sat_circle_t* circle_a,
     return true;
 }
 
-sat_poly_t sat_transform_poly(const pm_t2* transform, sat_poly_t* poly)
+sat_poly_t sat_transform_poly(const pm_t2* transform, const sat_poly_t* poly)
 {
     pm_v2 vertices[poly->vertex_count];
 
