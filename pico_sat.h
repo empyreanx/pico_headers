@@ -169,10 +169,30 @@ bool sat_test_circle_circle(const sat_circle_t* circle_a,
                             const sat_circle_t* circle_b,
                             sat_manifold_t* manifold);
 
+/**
+ * @brief Transforms a polygon using an affine transform
+ * @param transform The transform
+ * @param poly      The polygon to transform
+ * @returns A new polygon
+ */
 sat_poly_t sat_transform_poly(const pm_t2* transform, sat_poly_t* poly);
+
+/**
+ * @brief Transforms a circle using an affine transform
+ * @param transform The transform
+ * @param poly      The circle to transform
+ * @returns A new circle
+ */
 sat_circle_t sat_transform_circle(const pm_t2* transform, const sat_circle_t* circle);
 
+/**
+ * @brief Returns the bounding box for the given polygon
+ */
 pm_b2 sat_poly_to_aabb(const sat_poly_t* poly);
+
+/**
+ * @brief Returns the bounding box for the given circle
+ */
 pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
 
 #ifdef __cplusplus
