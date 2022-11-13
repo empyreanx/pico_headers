@@ -54,18 +54,6 @@
     > #include "pico_math.h"
 
     to the same or other source file (once).
-
-    Todo:
-    -----
-    - pm_b2 sat_polygon_to_aabb(const sat_polygon_t* poly);
-    - pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
-    - void sat_transform_poly(const pm_t2* transform,
-                              const sat_poly_t* poly_in
-                              sat_poly_t* poly_out);
-
-    - void sat_transfom_circle(const pm_t2* transform,
-                               const sat_circle_t* circle_in,
-                               sat_circle* circle_out);
 */
 
 #ifndef PICO_SAT_H
@@ -180,6 +168,9 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
 bool sat_test_circle_circle(const sat_circle_t* circle1,
                             const sat_circle_t* circle2,
                             sat_manifold_t* manifold);
+
+sat_poly_t sat_transform_poly(const pm_t2* transform, sat_poly_t* poly);
+sat_circle_t sat_transfom_circle(const pm_t2* transform, const sat_circle_t* circle);
 
 pm_b2 sat_polygon_to_aabb(const sat_poly_t* poly);
 pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
@@ -536,6 +527,24 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
     }
 
     return true;
+}
+
+sat_poly_t sat_transform_poly(const pm_t2* transform, sat_poly_t* poly)
+{
+    pm_v2 vertices[poly->vertex_count];
+
+    for (int i = 0; i < poly->vertex_count; i++)
+    {
+        vertices[i] = pm_t2_map(transform, poly->vertices[i]);
+    }
+
+    return sat_make_poly(vertices, poly->vertex_count);
+}
+
+sat_circle_t sat_transfom_circle(const pm_t2* transform,
+                                 const sat_circle_t* circle)
+{
+    return sat_make_circle(pm_t2_map(transform, circle->pos), circle->radius);
 }
 
 pm_b2 sat_polygon_to_aabb(const sat_poly_t* poly)
