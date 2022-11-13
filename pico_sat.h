@@ -181,6 +181,9 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
                             const sat_circle_t* circle2,
                             sat_manifold_t* manifold);
 
+pm_b2 sat_polygon_to_aabb(const sat_poly_t* poly);
+pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
+
 #ifdef __cplusplus
 }
 #endif
@@ -533,6 +536,21 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
     }
 
     return true;
+}
+
+pm_b2 sat_polygon_to_aabb(const sat_poly_t* poly)
+{
+    return pm_b2_enclosing(poly->vertices, poly->vertex_count);
+}
+
+pm_b2 sat_circle_to_aabb(const sat_circle_t* circle)
+{
+    pm_v2 half_radius = pm_v2_make(circle->radius / 2.0f, circle->radius / 2.0f);
+
+    pm_v2 min = pm_v2_sub(circle->pos, half_radius);
+    pm_v2 max = pm_v2_add(circle->pos, half_radius);
+
+    return pm_b2_make_minmax(min, max);
 }
 
 /*=============================================================================
