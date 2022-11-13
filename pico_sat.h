@@ -127,13 +127,13 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb);
 
 /**
  * @brief Tests to see if one polygon overlaps with another
- * @param poly1    The colliding polygon
- * @param poly2    The target polygon
+ * @param poly_a    The colliding polygon
+ * @param poly_b    The target polygon
  * @param manifold The collision manifold to populate (or NULL)
  * @returns True if the polygons overlap and false otherwise
  */
-bool sat_test_poly_poly(const sat_poly_t* poly1,
-                        const sat_poly_t* poly2,
+bool sat_test_poly_poly(const sat_poly_t* poly_a,
+                        const sat_poly_t* poly_b,
                         sat_manifold_t* manifold);
 
 /**
@@ -160,13 +160,13 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
 
 /**
  * @brief Tests to see if two circles overlap
- * @param circle1  The colliding circle
- * @param circle2  The target circle
+ * @param circle_a  The colliding circle
+ * @param circle_b  The target circle
  * @param manifold The collision manifold to populate (or NULL)
  * @returns True if the circle and the other circle, and false otherwise
  */
-bool sat_test_circle_circle(const sat_circle_t* circle1,
-                            const sat_circle_t* circle2,
+bool sat_test_circle_circle(const sat_circle_t* circle_a,
+                            const sat_circle_t* circle_b,
                             sat_manifold_t* manifold);
 
 sat_poly_t sat_transform_poly(const pm_t2* transform, sat_poly_t* poly);
@@ -210,8 +210,8 @@ static void sat_update_manifold(sat_manifold_t* manifold,
 static void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[2]);
 
 // Determines the amount overlap of the polygons along the specified axis
-static pm_float sat_axis_overlap(const sat_poly_t* poly1,
-                                 const sat_poly_t* poly2,
+static pm_float sat_axis_overlap(const sat_poly_t* poly_a,
+                                 const sat_poly_t* poly_b,
                                  pm_v2 axis);
 
 // Line Voronoi regions
@@ -292,21 +292,21 @@ sat_poly_t sat_aabb_to_poly(const pm_b2* aabb)
     return sat_make_poly(vertices, 4);
 }
 
-bool sat_test_poly_poly(const sat_poly_t* poly1,
-                        const sat_poly_t* poly2,
+bool sat_test_poly_poly(const sat_poly_t* poly_a,
+                        const sat_poly_t* poly_b,
                         sat_manifold_t* manifold)
 {
-    SAT_ASSERT(poly1);
-    SAT_ASSERT(poly2);
+    SAT_ASSERT(poly_a);
+    SAT_ASSERT(poly_b);
 
     if (manifold)
         sat_init_manifold(manifold);
 
-    // Test axises on poly1
-    for (int i = 0; i < poly1->vertex_count; i++)
+    // Test axises on poly_a
+    for (int i = 0; i < poly_a->vertex_count; i++)
     {
-        // Get signed overlap of poly1 on poly2 along specified normal direction
-        pm_float overlap = sat_axis_overlap(poly1, poly2, poly1->normals[i]);
+        // Get signed overlap of poly_a on poly_b along specified normal direction
+        pm_float overlap = sat_axis_overlap(poly_a, poly_b, poly_a->normals[i]);
 
         // Axis is separating, polygons do not overlap
         if (overlap == 0.0f)
@@ -314,14 +314,14 @@ bool sat_test_poly_poly(const sat_poly_t* poly1,
 
         // Update manifold information with new overlap and normal
         if (manifold)
-            sat_update_manifold(manifold, poly2->normals[i], overlap);
+            sat_update_manifold(manifold, poly_b->normals[i], overlap);
     }
 
-    // Test axises on poly2
-    for (int i = 0; i < poly2->vertex_count; i++)
+    // Test axises on poly_b
+    for (int i = 0; i < poly_b->vertex_count; i++)
     {
-        // Get signed overlap of poly2 on poly1 along specified normal direction
-        pm_float overlap = sat_axis_overlap(poly2, poly1, poly2->normals[i]);
+        // Get signed overlap of poly_b on poly_a along specified normal direction
+        pm_float overlap = sat_axis_overlap(poly_b, poly_a, poly_b->normals[i]);
 
         // Axis is separating, polygons do not overlap
         if (overlap == 0.0f)
@@ -329,7 +329,7 @@ bool sat_test_poly_poly(const sat_poly_t* poly1,
 
         // Update manifold information with new overlap and normal
         if (manifold)
-            sat_update_manifold(manifold, poly2->normals[i], overlap);
+            sat_update_manifold(manifold, poly_b->normals[i], overlap);
     }
 
     return true;
@@ -484,24 +484,24 @@ bool sat_test_circle_poly(const sat_circle_t* circle,
     return collides;
 }
 
-bool sat_test_circle_circle(const sat_circle_t* circle1,
-                            const sat_circle_t* circle2,
+bool sat_test_circle_circle(const sat_circle_t* circle_a,
+                            const sat_circle_t* circle_b,
                             sat_manifold_t* manifold)
 {
-    SAT_ASSERT(circle1);
-    SAT_ASSERT(circle2);
+    SAT_ASSERT(circle_a);
+    SAT_ASSERT(circle_b);
 
     if (manifold)
         sat_init_manifold(manifold);
 
-    // Position of circle2 relative to circle1
-    pm_v2 diff = pm_v2_sub(circle2->pos, circle1->pos);
+    // Position of circle_b relative to circle_a
+    pm_v2 diff = pm_v2_sub(circle_b->pos, circle_a->pos);
 
     // Squared distance between circle centers
     pm_float dist2 = pm_v2_len2(diff);
 
     // Sum of radii
-    pm_float total_radius = circle1->radius + circle2->radius;
+    pm_float total_radius = circle_a->radius + circle_b->radius;
 
     // Square sum of radii for optimization (avoid calculating length until we
     // have to)
@@ -519,7 +519,7 @@ bool sat_test_circle_circle(const sat_circle_t* circle1,
         // Calculate overlap
         pm_float overlap = total_radius - dist;
 
-        // Normal direction is just circle2 relative to circle1
+        // Normal direction is just circle_b relative to circle_a
         pm_v2 normal = pm_v2_normalize(diff);
 
         // Update manifold
@@ -624,28 +624,28 @@ static void sat_axis_range(const sat_poly_t* poly, pm_v2 normal, pm_float range[
     range[1] = max;
 }
 
-static pm_float sat_axis_overlap(const sat_poly_t* poly1,
-                                 const sat_poly_t* poly2,
+static pm_float sat_axis_overlap(const sat_poly_t* poly_a,
+                                 const sat_poly_t* poly_b,
                                  pm_v2 axis)
 
 {
-    SAT_ASSERT(poly1);
-    SAT_ASSERT(poly2);
+    SAT_ASSERT(poly_a);
+    SAT_ASSERT(poly_b);
 
-    pm_float range1[2];
-    pm_float range2[2];
+    pm_float range_a[2];
+    pm_float range_b[2];
 
     // Get the ranges of polygons projected onto the axis vector
-    sat_axis_range(poly1, axis, range1);
-    sat_axis_range(poly2, axis, range2);
+    sat_axis_range(poly_a, axis, range_a);
+    sat_axis_range(poly_b, axis, range_b);
 
     // Ranges do not overlaps
-    if (range1[1] < range2[0] || range2[1] < range1[0])
+    if (range_a[1] < range_b[0] || range_b[1] < range_a[0])
         return 0.0f;
 
     // Calculate overlap candidates
-    pm_float overlap1 = range1[1] - range2[0];
-    pm_float overlap2 = range2[1] - range1[0];
+    pm_float overlap1 = range_a[1] - range_b[0];
+    pm_float overlap2 = range_b[1] - range_a[0];
 
     // Return the smaller overlap
     return (overlap2 > overlap1) ? overlap1 : -overlap2;
