@@ -116,7 +116,7 @@ sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius);
  * @param vertices     The vertices of the polygon (must use CCW winding)
  * @returns The polygon with the given vertices
  */
-sat_poly_t sat_make_poly(pm_v2 vertices[], int vertex_count);
+sat_poly_t sat_make_poly(const pm_v2 vertices[], int vertex_count);
 
 /**
  * @brief Converts and axis-aligned bounding box (AABB) to a polygon
@@ -172,7 +172,7 @@ bool sat_test_circle_circle(const sat_circle_t* circle_a,
 sat_poly_t sat_transform_poly(const pm_t2* transform, sat_poly_t* poly);
 sat_circle_t sat_transfom_circle(const pm_t2* transform, const sat_circle_t* circle);
 
-pm_b2 sat_polygon_to_aabb(const sat_poly_t* poly);
+pm_b2 sat_poly_to_aabb(const sat_poly_t* poly);
 pm_b2 sat_circle_to_aabb(const sat_circle_t* circle);
 
 #ifdef __cplusplus
@@ -242,7 +242,7 @@ sat_circle_t sat_make_circle(pm_v2 pos, pm_float radius)
     return circle;
 }
 
-sat_poly_t sat_make_poly(pm_v2 vertices[], int vertex_count)
+sat_poly_t sat_make_poly(const pm_v2 vertices[], int vertex_count)
 {
     SAT_ASSERT(vertex_count <= PICO_SAT_MAX_POLY_VERTS);
     SAT_ASSERT(vertices);
@@ -547,7 +547,7 @@ sat_circle_t sat_transfom_circle(const pm_t2* transform,
     return sat_make_circle(pm_t2_map(transform, circle->pos), circle->radius);
 }
 
-pm_b2 sat_polygon_to_aabb(const sat_poly_t* poly)
+pm_b2 sat_poly_to_aabb(const sat_poly_t* poly)
 {
     return pm_b2_enclosing(poly->vertices, poly->vertex_count);
 }

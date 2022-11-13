@@ -175,6 +175,37 @@ TEST_CASE(test_circle_cicle_not_collide)
     return true;
 }
 
+TEST_CASE(test_circle_to_aabb)
+{
+    sat_circle_t c = sat_make_circle(pm_v2_make(0, 0), 1);
+
+    pm_b2 exp = pm_b2_make(-0.5f, -0.5f, 1, 1);
+    pm_b2 res = sat_circle_to_aabb(&c);
+
+    REQUIRE(pm_b2_equal(&exp, &res));
+
+    return true;
+}
+
+TEST_CASE(test_poly_to_aabb)
+{
+    const pm_v2 vertices[] =
+    {
+        {  2, 5 },
+        { -4, 3 },
+        {  5, 1 }
+    };
+
+    sat_poly_t p = sat_make_poly(vertices, 3);
+
+    pm_b2 exp = pm_b2_make_minmax(pm_v2_make(-4, 1), pm_v2_make(5, 5));
+    pm_b2 res = sat_poly_to_aabb(&p);
+
+    REQUIRE(pm_b2_equal(&exp, &res));
+
+    return true;
+}
+
 static TEST_SUITE(suite_sat)
 {
     RUN_TEST_CASE(test_aabb_aabb_collide);
@@ -184,6 +215,8 @@ static TEST_SUITE(suite_sat)
     RUN_TEST_CASE(test_aabb_circle_not_collide);
     RUN_TEST_CASE(test_circle_cicle_collide);
     RUN_TEST_CASE(test_circle_cicle_not_collide);
+    RUN_TEST_CASE(test_circle_to_aabb);
+    RUN_TEST_CASE(test_poly_to_aabb);
 }
 
 int main()
