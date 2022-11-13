@@ -206,6 +206,26 @@ TEST_CASE(test_poly_to_aabb)
     return true;
 }
 
+TEST_CASE(test_transform_poly)
+{
+    pm_b2 b = pm_b2_make(-0.5f, -0.5f, 1, 1);
+    sat_poly_t p = sat_aabb_to_poly(&b);
+
+    pm_t2 t = pm_t2_identity();
+    pm_t2_rotate(&t, PM_PI / 4.0f);
+
+    sat_poly_t res = sat_transform_poly(&t, &p);
+
+    const pm_float half_diag = 0.5f * pm_sqrt(2.0f);
+
+    REQUIRE(pm_v2_equal(res.vertices[0], pm_v2_make(0.0f, -half_diag)));
+    REQUIRE(pm_v2_equal(res.vertices[1], pm_v2_make(-half_diag, 0.0f)));
+    REQUIRE(pm_v2_equal(res.vertices[2], pm_v2_make(0.0f, half_diag)));
+    REQUIRE(pm_v2_equal(res.vertices[3], pm_v2_make(half_diag, 0.0f)));
+
+    return true;
+}
+
 static TEST_SUITE(suite_sat)
 {
     RUN_TEST_CASE(test_aabb_aabb_collide);
@@ -217,6 +237,7 @@ static TEST_SUITE(suite_sat)
     RUN_TEST_CASE(test_circle_cicle_not_collide);
     RUN_TEST_CASE(test_circle_to_aabb);
     RUN_TEST_CASE(test_poly_to_aabb);
+    RUN_TEST_CASE(test_transform_poly);
 }
 
 int main()
