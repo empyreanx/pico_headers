@@ -90,6 +90,11 @@ typedef struct ecs_s ecs_t;
 typedef uint32_t ecs_id_t;
 
 /**
+ * @brief NULL/invalid/undefined value
+ */
+const ecs_id_t ECS_NULL = (ecs_id_t)-1;
+
+/**
  * @brief Return code for update callback and calling functions
  */
 typedef int8_t ecs_ret_t;
@@ -340,8 +345,6 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
 #include <stdint.h> // uint32_t
 #include <stdlib.h> // malloc, realloc, free
 #include <string.h> // memcpy, memset
-
-static const size_t ECS_NULL = (size_t)-1;
 
 #ifndef PICO_ECS_MAX_COMPONENTS
 #define PICO_ECS_MAX_COMPONENTS 32
