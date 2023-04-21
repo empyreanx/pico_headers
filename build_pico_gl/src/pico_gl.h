@@ -126,6 +126,19 @@ typedef enum
 } pgl_version_t;
 
 /**
+ * @brief Pixel formats
+ */
+typedef enum
+{
+    PGL_RED,         //!< (red, 0, 0, 1)
+    PGL_RGB,         //!< (red, green, blue, 1)
+    PGL_RGBA,        //!< (red, green, blue, alpha)
+    PGL_BGR,         //!< (blue, green, red, 1)
+    PGL_BGRA,        //!< (blue, green, red, alpha)
+    PGL_FORMAT_COUNT
+} pgl_format_t;
+
+/**
  * @brief Blend factors
  */
 typedef enum
@@ -399,8 +412,9 @@ uint64_t pgl_get_shader_id(const pgl_shader_t* shader);
  */
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                   bool target,
+                                  pgl_format_t fmt, bool srgb,
                                   int32_t w, int32_t h,
-                                  bool srgb, bool smooth, bool repeat);
+                                  bool smooth, bool repeat);
 
 /**
  * @brief Creates a texture from a bitmap
@@ -414,8 +428,9 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
  * @param bitmap Pixel data in RGBA format
  */
 pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
+                                       pgl_format_t fmt, bool srgb,
                                        int32_t w, int32_t h,
-                                       bool srgb, bool smooth, bool repeat,
+                                       bool smooth, bool repeat,
                                        const uint8_t* bitmap);
 
 /**
@@ -1052,6 +1067,15 @@ static const char* pgl_error_msg_map[] =
     0
 };
 
+static const GLenum pgl_format_map[] =
+{
+    GL_RED,
+    GL_RGB,
+    GL_RGBA,
+    GL_BGR,
+    GL_BGRA
+};
+
 static const GLenum pgl_blend_factor_map[] =
 {
     GL_ZERO,
@@ -1267,18 +1291,19 @@ struct pgl_shader_t
 
 struct pgl_texture_t
 {
-    GLuint     id;
-    pgl_ctx_t* ctx;
-    bool       target;
-    int32_t    w, h;
-    bool       srgb;
-    bool       smooth;
-    bool       mipmap;
-    GLuint     fbo;
-    GLuint     fbo_msaa;
-    GLuint     rbo_msaa;
-    GLuint     depth_id;
-    GLuint     depth_rbo_msaa;
+    GLuint       id;
+    pgl_ctx_t*   ctx;
+    bool         target;
+    int32_t      w, h;
+    pgl_format_t fmt;
+    bool         srgb;
+    bool         smooth;
+    bool         mipmap;
+    GLuint       fbo;
+    GLuint       fbo_msaa;
+    GLuint       rbo_msaa;
+    GLuint       depth_id;
+    GLuint       depth_rbo_msaa;
 };
 
 struct pgl_buffer_t
@@ -1622,8 +1647,9 @@ static void pgl_set_texture_params(GLuint tex_id, bool smooth, bool repeat)
 
 pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
                                   bool target,
+                                  pgl_format_t fmt, bool srgb,
                                   int32_t w, int32_t h,
-                                  bool srgb, bool smooth, bool repeat)
+                                  bool smooth, bool repeat)
 {
     PGL_ASSERT(ctx);
 
@@ -1659,6 +1685,7 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
     tex->ctx = ctx;
     tex->w = w;
     tex->h = h;
+    tex->fmt = fmt;
     tex->srgb = srgb;
     tex->target = target;
     tex->smooth = smooth;
@@ -1812,15 +1839,16 @@ pgl_texture_t* pgl_create_texture(pgl_ctx_t* ctx,
 }
 
 pgl_texture_t* pgl_texture_from_bitmap(pgl_ctx_t* ctx,
+                                       pgl_format_t fmt, bool srgb,
                                        int32_t w, int32_t h,
-                                       bool srgb, bool smooth, bool repeat,
+                                       bool smooth, bool repeat,
                                        const unsigned char* bitmap)
 
 {
     PGL_ASSERT(ctx);
     PGL_ASSERT(bitmap);
 
-    pgl_texture_t* tex = pgl_create_texture(ctx, false, w, h, srgb, smooth, repeat);
+    pgl_texture_t* tex = pgl_create_texture(ctx, false, fmt, srgb, w, h, smooth, repeat);
 
     if (!tex)
         return NULL;
@@ -1847,7 +1875,8 @@ int pgl_upload_texture(pgl_ctx_t* ctx,
 
     PGL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, texture->srgb ?
                                              GL_SRGB8_ALPHA8 : GL_RGBA,
-                                             w, h, 0, GL_RGBA,
+                                             w, h, 0,
+                                             pgl_format_map[texture->fmt],
                                              GL_UNSIGNED_BYTE, bitmap));
 
     return 0;
@@ -1865,7 +1894,9 @@ void pgl_update_texture(pgl_ctx_t* ctx,
 
     pgl_bind_texture(ctx, texture);
 
-    PGL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA,
+    GLenum fmt = pgl_format_map[texture->fmt];
+
+    PGL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, fmt,
                               GL_UNSIGNED_BYTE, bitmap));
 }
 
