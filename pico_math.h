@@ -267,7 +267,7 @@ PM_INLINE uint32_t pm_next_pow2(uint32_t c)
 /**
  * @brief Constructs a vector
  */
-#define pm_v2_make(x, y) ((pm_v2){ x, y })
+#define pm_v2_make(x, y) ((const pm_v2){ x, y })
 
 /**
  * @brief Returns true if the vectors are equal (within epsilon)
@@ -474,7 +474,7 @@ PM_INLINE pm_v2 pm_v2_ceil(pm_v2 v)
 /**
  * @brief Constructs a 2D transform
  */
-#define pm_t2_make(t00, t01, tx, t10, t11, ty) ((pm_t2){ t00, t10, t01, t11, tx, ty })
+#define pm_t2_make(t00, t01, tx, t10, t11, ty) ((const pm_t2){ t00, t10, t01, t11, tx, ty })
 
 /**
  * @brief Return the identity transform
@@ -643,12 +643,12 @@ PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
  * 2D Box (AABB)
  *============================================================================*/
 
-#define pm_b2_make_minmax(min, max) ((pm_b2){ min, max })
+#define pm_b2_make_minmax(min, max) ((const pm_b2){ min, max })
 
 /**
  * @brief Constructs a 2D box (rectangle)
  */
-#define pm_b2_make(x, y, w, h) ((pm_b2){ { x, y }, { x + w, y + h } })
+#define pm_b2_make(x, y, w, h) ((const pm_b2){ { x, y }, { x + w, y + h } })
 
 /**
  * @brief Returns an AABB that has zero size and coordinates
