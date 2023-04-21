@@ -267,13 +267,7 @@ PM_INLINE uint32_t pm_next_pow2(uint32_t c)
 /**
  * @brief Constructs a vector
  */
-PM_INLINE pm_v2 pm_v2_make(pm_float x, pm_float y)
-{
-    pm_v2 out;
-    out.x = x;
-    out.y = y;
-    return out;
-}
+#define pm_v2_make(x, y) ((pm_v2){ x, y })
 
 /**
  * @brief Returns true if the vectors are equal (within epsilon)
@@ -480,14 +474,7 @@ PM_INLINE pm_v2 pm_v2_ceil(pm_v2 v)
 /**
  * @brief Constructs a 2D transform
  */
-PM_INLINE pm_t2 pm_t2_make(pm_float t00, pm_float t01, pm_float tx,
-                           pm_float t10, pm_float t11, pm_float ty)
-{
-    pm_t2 out;
-    out.t00 = t00; out.t01 = t01; out.tx  = tx;
-    out.t10 = t10; out.t11 = t11; out.ty  = ty;
-    return out;
-}
+#define pm_t2_make(t00, t01, tx, t10, t11, ty) ((pm_t2){ t00, t10, t01, t11, tx, ty })
 
 /**
  * @brief Return the identity transform
@@ -656,23 +643,12 @@ PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
  * 2D Box (AABB)
  *============================================================================*/
 
-PM_INLINE pm_b2 pm_b2_make_minmax(pm_v2 min, pm_v2 max)
-{
-    pm_b2 out;
-    out.min = min;
-    out.max = max;
-    return out;
-}
+#define pm_b2_make_minmax(min, max) ((pm_b2){ min, max })
 
 /**
  * @brief Constructs a 2D box (rectangle)
  */
-PM_INLINE pm_b2 pm_b2_make(pm_float x, pm_float y, pm_float w, pm_float h)
-{
-    pm_v2 min = { x, y};
-    pm_v2 max = { x + w, y + h };
-    return pm_b2_make_minmax(min, max);
-}
+#define pm_b2_make(x, y, w, h) ((pm_b2){ { x, y }, { x + w, y + h } })
 
 /**
  * @brief Returns an AABB that has zero size and coordinates
