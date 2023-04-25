@@ -225,7 +225,6 @@ void qt_clean(qt_t* qt);
     #define PICO_QT_MEMCPY memcpy
 #endif
 
-
 #ifndef PICO_QT_MEMSET
     #include <string.h>
     #define PICO_QT_MEMSET memset
@@ -372,6 +371,11 @@ void qt_destroy(qt_t* qt)
     QT_ASSERT(qt);
 
     qt_node_destroy(qt, qt->root);
+    for (int i = 0; i < qt_array_size(qt->arena.blocks); ++i)
+    {
+        QT_FREE(qt->arena.blocks[i]);
+    }
+    qt_array_destroy(qt->arena.blocks);
     QT_FREE(qt);
 }
 
@@ -540,6 +544,7 @@ static qt_node_t* qt_node_create(qt_t* qt, qt_rect_t bounds, int depth, int max_
             node->next = qt->arena.free_list;
             qt->arena.free_list = node;
         }
+        qt_array_push(qt->arena.blocks, nodes);
     }
 
     // Pop a node off of the free list.
