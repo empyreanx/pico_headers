@@ -75,7 +75,7 @@ extern "C" {
  *
  * @param name The name of the test. Must be a valid C function name
  */
-#define TEST_CASE(name) static bool name()
+#define TEST_CASE(name) static bool name(void)
 
 /**
  * @brief Asserts that a condition is true
@@ -107,7 +107,7 @@ extern "C" {
  *
  * @param name The name of the test suite
  */
-#define TEST_SUITE(name) void name()
+#define TEST_SUITE(name) void name(void)
 
 /**
  * @brief Runs a series of unit tests. The test suite function has the signature,
