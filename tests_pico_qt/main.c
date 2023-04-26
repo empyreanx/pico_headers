@@ -35,6 +35,8 @@ TEST_CASE(test_insert_single)
 
         REQUIRE(size == 0);
         REQUIRE(values == NULL);
+
+        qt_free(values);
     }
 
     return true;
@@ -52,6 +54,8 @@ TEST_CASE(test_insert_single_contained)
 
         REQUIRE(size == 1);
         REQUIRE(values[0] == 0);
+
+        qt_free(values);
     }
 
     // Not found
@@ -60,6 +64,8 @@ TEST_CASE(test_insert_single_contained)
 
         REQUIRE(size == 0);
         REQUIRE(values == NULL);
+
+        qt_free(values);
     }
 
     return true;
@@ -83,6 +89,8 @@ TEST_CASE(test_insert_multiple)
     REQUIRE(values[0] == 0);
     REQUIRE(values[1] == 1);
     REQUIRE(values[2] == 2);
+
+    qt_free(values);
 
     return true;
 }
@@ -112,6 +120,8 @@ TEST_CASE(test_insert_multiple_random)
     {
         REQUIRE(values[i] == (qt_value_t)i);
     }
+
+    qt_free(values);
 
     return true;
 }
@@ -153,6 +163,8 @@ TEST_CASE(test_insert_multiple_random_contained)
 
         REQUIRE(size == 0);
         REQUIRE(values == NULL);
+
+        qt_free(values);
     }
 
     return true;
@@ -182,6 +194,8 @@ TEST_CASE(test_remove)
 
     REQUIRE(size == 0);
     REQUIRE(values == NULL);
+
+    qt_free(values);
 
     return true;
 }
@@ -214,6 +228,8 @@ TEST_CASE(test_reset)
     REQUIRE(size == 0);
     REQUIRE(values == NULL);
 
+    qt_free(values);
+
     return true;
 }
 
@@ -245,6 +261,8 @@ TEST_CASE(test_clear)
     REQUIRE(size == 0);
     REQUIRE(values == NULL);
 
+    qt_free(values);
+
     return true;
 }
 
@@ -275,6 +293,8 @@ TEST_CASE(test_clean)
 
     REQUIRE(size == 32);
 
+    qt_free(values);
+
     return true;
 }
 
@@ -291,16 +311,14 @@ static TEST_SUITE(suite_qt)
     RUN_TEST_CASE(test_clean);
 }
 
-void setup()
+void setup(void)
 {
     qt = qt_create(qt_make_rect(-10, -10, 20, 20), 6);
-    values = NULL;
 }
 
-void teardown()
+void teardown(void)
 {
     qt_destroy(qt);
-    qt_free(values);
     qt = NULL;
 }
 
@@ -315,7 +333,7 @@ int main()
 
 static int cmp_values(const void * a, const void * b)
 {
-   return ( *(qt_value_t*)a - *(qt_value_t*)b );
+   return (int)( *(qt_value_t*)a - *(qt_value_t*)b );
 }
 
 static void sort_values(qt_value_t* values, int size)
