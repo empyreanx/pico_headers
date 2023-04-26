@@ -307,15 +307,16 @@ struct qt_node_t
     qt_array qt_rect_t*  rects;
 };
 
-typedef struct qt_free_node_t
+typedef union qt_unode_t
 {
-    struct qt_free_node_t* next;
-} qt_free_node_t;
+    qt_node_t u;
+    union qt_unode_t* next;
+} qt_unode_t;
 
 typedef struct qt_node_allocator_t
 {
-    qt_free_node_t* free_list;
-    qt_array qt_node_t** blocks;
+    qt_unode_t* free_list;
+    qt_array qt_unode_t** blocks;
 } qt_node_allocator_t;
 
 struct qt_t
@@ -347,6 +348,8 @@ static qt_array qt_rect_t* qt_node_all_rects(const qt_node_t* node, qt_array qt_
 static qt_array qt_value_t* qt_node_all_values(const qt_node_t* node, qt_array qt_value_t* values);
 static qt_array qt_value_t* qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array qt_value_t* values);
 static void qt_node_clear(qt_node_t* node);
+static qt_node_t* qt_node_alloc(qt_node_allocator_t* arena);
+static void qt_node_free(qt_node_allocator_t* arena, qt_node_t* node);
 
 /*=============================================================================
  * Public API implementation
@@ -533,24 +536,7 @@ static bool qt_rect_overlaps(const qt_rect_t* r1, const qt_rect_t* r2)
 
 static qt_node_t* qt_node_create(qt_t* qt, qt_rect_t bounds, int depth, int max_depth)
 {
-    if (!qt->arena.free_list)
-    {
-        // Allocate space for more nodes and add them to the free list.
-        const int block_count = 128;
-        qt_node_t* nodes = (qt_node_t*)QT_MALLOC(sizeof(qt_node_t) * block_count);
-        for (int i = 0; i < block_count; ++i)
-        {
-            qt_free_node_t* node = (qt_free_node_t*)(nodes + i);
-            node->next = qt->arena.free_list;
-            qt->arena.free_list = node;
-        }
-        qt_array_push(qt->arena.blocks, nodes);
-    }
-
-    // Pop a node off of the free list.
-    qt_node_t* node = (qt_node_t*)qt->arena.free_list;
-    qt->arena.free_list = qt->arena.free_list->next;
-    QT_MEMSET(node, 0, sizeof(qt_node_t));
+    qt_node_t* node = qt_node_alloc(&qt->arena);
 
     node->depth = depth;
     node->max_depth = max_depth;
@@ -586,7 +572,7 @@ static qt_node_t* qt_node_create(qt_t* qt, qt_rect_t bounds, int depth, int max_
 static void qt_node_destroy(qt_t* qt, qt_node_t* node)
 {
     QT_ASSERT(node);
-    
+
     qt_array_destroy(node->values);
     qt_array_destroy(node->rects);
 
@@ -598,9 +584,7 @@ static void qt_node_destroy(qt_t* qt, qt_node_t* node)
     }
 
     // Free current node by pushing it onto the free list
-    qt_free_node_t* free_node = (qt_free_node_t*)node;
-    free_node->next = qt->arena.free_list;
-    qt->arena.free_list = free_node;
+    qt_node_free(&qt->arena, node);
 }
 
 static void qt_node_insert(qt_t* qt, qt_node_t* node, const qt_rect_t* rect, qt_value_t value)
@@ -767,6 +751,42 @@ static void qt_node_clear(qt_node_t* node)
         if (node->nodes[i])
             qt_node_clear(node->nodes[i]);
     }
+}
+
+static qt_node_t* qt_node_alloc(qt_node_allocator_t* arena)
+{
+    if (!arena->free_list)
+    {
+        // Allocate space for more nodes and add them to the free list.
+        const int block_count = 128;
+        qt_unode_t* nodes = (qt_unode_t*)QT_MALLOC(sizeof(qt_unode_t) * block_count);
+        for (int i = 0; i < block_count; ++i)
+        {
+            qt_unode_t* node = nodes + i;
+            node->next = arena->free_list;
+            arena->free_list = node;
+        }
+        qt_array_push(arena->blocks, nodes);
+    }
+
+    // Pop a node off of the free list.
+    qt_unode_t* node = arena->free_list;
+    arena->free_list = arena->free_list->next;
+    QT_MEMSET(node, 0, sizeof(qt_unode_t));
+
+    qt_node_t* result = &node->u;
+
+    return result;
+}
+
+static void qt_node_free(qt_node_allocator_t* allocator, qt_node_t* node)
+{
+    // Safe cast as `qt_unode_t` contains an entire `qt_node_t`.
+    qt_unode_t* unode = (qt_unode_t*)node;
+
+    // Push node back onto singly-linked free list.
+    unode->next = qt->arena.free_list;
+    qt->arena.free_list = unode;
 }
 
 #endif // PICO_QT_IMPLEMENTATION
