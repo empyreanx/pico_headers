@@ -39,7 +39,6 @@
 
     Usage:
     ------
-
     To use this library in your project, add the following
 
     > #define PICO_QT_IMPLEMENTATION
@@ -47,12 +46,21 @@
 
     to a source file (once), then simply include the header normally.
 
-    Constants:
-    --------
-    - PICO_QT_NODE_CAPACITY (default: 16)
-    - PICO_QT_QUERY_CAPACITY (default: 256)
-
     Must be defined before PICO_QT_IMPLEMENTATION
+
+    Customization:
+    --------------
+    A few macros can be overridden simply by defining them before including this
+    source file. Here is a list of them.
+
+    PICO_QT_USE_DOUBLE
+    PICO_QT_USE_UINTPTR
+    PICO_QT_ASSERT
+    PICO_QT_MALLOC
+    PICO_QT_REALLOC
+    PICO_QT_FREE
+    PICO_QT_MEMCPY
+    PICO_QT_MEMSET
 */
 
 #ifndef PICO_QT_H
