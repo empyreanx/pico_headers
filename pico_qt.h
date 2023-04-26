@@ -172,7 +172,25 @@ bool qt_remove(qt_t* qt, qt_value_t value);
 qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
 
 /**
- * @brief Function for deallocating the output of `qt_query`
+ * @brief Returns all bounds associated with the quadtree's recursive grid
+ * structure.
+ * 
+ * You must free this array with \ref qt_free when done. This function is useful
+ * for e.g. debug rendering the tree's grid-like structure.
+ *
+ * @param qt    The quadtree instance.
+ * @param size  The number of elements in the returned array.
+ *
+ * @returns For each node in the quadtree there are four bounds associated. All
+ * bounds are collated into a single dynamically allocated array.
+ */
+qt_rect_t* qt_get_grid_rects(qt_t* qt, int* size);
+
+/**
+ * @brief Function for deallocating arrays.
+ * 
+ * This function can deallocate arrays returned from \ref qt_query or from
+ * \ref qt_get_grid_rects.
  */
 void qt_free(qt_value_t* array);
 
@@ -352,6 +370,7 @@ static qt_node_t* qt_node_create(qt_t* qt, qt_rect_t bounds, int depth, int max_
 static void qt_node_destroy(qt_t* qt, qt_node_t* node);
 static void qt_node_insert(qt_t* qt, qt_node_t* node, const qt_rect_t* bounds, qt_value_t value);
 static bool qt_node_remove(qt_node_t* node, qt_value_t value);
+static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_array qt_rect_t* rects);
 static qt_array qt_rect_t* qt_node_all_rects(const qt_node_t* node, qt_array qt_rect_t* rects);
 static qt_array qt_value_t* qt_node_all_values(const qt_node_t* node, qt_array qt_value_t* values);
 static qt_array qt_value_t* qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array qt_value_t* values);
@@ -436,6 +455,30 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
     *size = qt_array_size(values);
 
     return values;
+}
+
+qt_rect_t* qt_get_grid_rects(qt_t* qt, int* size)
+{
+    QT_ASSERT(qt);
+    QT_ASSERT(size);
+
+    // Size must be valid
+    if (!size)
+        return NULL;
+
+    qt_array qt_rect_t* rects = qt_node_all_grid_rects(qt, NULL);
+
+    // If no results then return NULL
+    if (!rects)
+    {
+        *size = 0;
+        return NULL;
+    }
+
+    // Set size and return
+    *size = qt_array_size(rects);
+
+    return rects;
 }
 
 void qt_free(qt_value_t* array)
@@ -665,6 +708,27 @@ static bool qt_node_remove(qt_node_t* node, qt_value_t value)
 
     // Value wasn't found
     return false;
+}
+
+static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_array qt_rect_t* rects)
+{
+    QT_ASSERT(node);
+
+    // Add all grid bounds in this node into the array
+    for (int i = 0; i < 4; i++)
+    {
+        if (node->nodes[i])
+            qt_array_push(rects, node->bounds[i]);
+    }
+
+    // Recursively add all grid bounds found in the subtrees
+    for (int i = 0; i < 4; i++)
+    {
+        if (node->nodes[i])
+            rects = qt_node_all_grid_rects(node->nodes[i], rects);
+    }
+
+    return rects;
 }
 
 static qt_array qt_rect_t* qt_node_all_rects(const qt_node_t* node, qt_array qt_rect_t* rects)
