@@ -174,7 +174,7 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
 /**
  * @brief Returns all bounds associated with the quadtree's recursive grid
  * structure.
- * 
+ *
  * You must free this array with \ref qt_free when done. This function is useful
  * for e.g. debug rendering the tree's grid-like structure.
  *
@@ -184,11 +184,11 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
  * @returns For each node in the quadtree there are four bounds associated. All
  * bounds are collated into a single dynamically allocated array.
  */
-qt_rect_t* qt_get_grid_rects(qt_t* qt, int* size);
+qt_rect_t* qt_grid_rects(const qt_t* qt, int* size);
 
 /**
  * @brief Function for deallocating arrays.
- * 
+ *
  * This function can deallocate arrays returned from \ref qt_query or from
  * \ref qt_get_grid_rects.
  */
@@ -271,6 +271,10 @@ void qt_clean(qt_t* qt);
  * Internal data structures
  *============================================================================*/
 
+// An optional empty macro used to markup dynamic arrays. This is useful to help remind
+// us that a particular pointer is a dynamic array, and not merely a pointer.
+#define qt_array
+
 typedef struct qt_node_t qt_node_t;
 
 typedef struct qt_array_header_t
@@ -281,9 +285,45 @@ typedef struct qt_array_header_t
     uint32_t cookie;
 } qt_array_header_t;
 
-// An optional empty macro used to markup dynamic arrays. This is useful to help remind
-// us that a particular pointer is a dynamic array, and not merely a pointer.
-#define qt_array
+struct qt_node_t
+{
+    int        depth;
+    int        max_depth;
+    qt_rect_t  bounds[4];
+    qt_node_t* nodes[4];
+    qt_array qt_value_t* values;
+    qt_array qt_rect_t*  rects;
+};
+
+typedef union qt_unode_t
+{
+    qt_node_t u;
+    union qt_unode_t* next;
+} qt_unode_t;
+
+typedef struct qt_node_allocator_t
+{
+    qt_unode_t* free_list;
+    qt_array qt_unode_t** blocks;
+} qt_node_allocator_t;
+
+struct qt_t
+{
+    qt_rect_t  bounds;
+    qt_node_t* root;
+
+    // A custom allocator is used here to allocate individual nodes.
+    // This attempts to pack all the nodes together in memory to try and
+    // keep them in similar cache lines. This is slightly superior to calling
+    // `QT_MALLOC` once per node, where traversing the tree (if cold and not
+    // currently in the CPU cache) would incur a cache miss for every single
+    // node no matter what.
+    qt_node_allocator_t allocator;
+};
+
+/*=============================================================================
+ * Internal macros
+ *============================================================================*/
 
 // Fetches the header `qt_array_header_t` of a dynamic array.
 #define qt_hdr(a) ((qt_array_header_t*)a - 1)
@@ -323,60 +363,28 @@ typedef struct qt_array_header_t
 // doesn't matter in this case.
 #define qt_array_remove(a, i) (QT_ARRAY_CANARY(a), a[i] = a[--qt_array_len(a)])
 
-struct qt_node_t
-{
-    int        depth;
-    int        max_depth;
-    qt_rect_t  bounds[4];
-    qt_node_t* nodes[4];
-    qt_array qt_value_t* values;
-    qt_array qt_rect_t*  rects;
-};
-
-typedef union qt_unode_t
-{
-    qt_node_t u;
-    union qt_unode_t* next;
-} qt_unode_t;
-
-typedef struct qt_node_allocator_t
-{
-    qt_unode_t* free_list;
-    qt_array qt_unode_t** blocks;
-} qt_node_allocator_t;
-
-struct qt_t
-{
-    qt_rect_t  bounds;
-    qt_node_t* root;
-
-    // A custom allocator is used here to allocate individual nodes.
-    // This attempts to pack all the nodes together in memory to try and
-    // keep them in similar cache lines. This is slightly superior to calling
-    // `QT_MALLOC` once per node, where traversing the tree (if cold and not
-    // currently in the CPU cache) would incur a cache miss for every single
-    // node no matter what.
-    qt_node_allocator_t arena;
-};
-
 /*=============================================================================
  * Internal function declarations
  *============================================================================*/
 
-static void* qt_array_fit_impl(const void* array, int new_size, size_t element_size);
 static bool qt_rect_contains(const qt_rect_t* r1, const qt_rect_t* r2);
 static bool qt_rect_overlaps(const qt_rect_t* r1, const qt_rect_t* r2);
+
+static void* qt_array_fit_impl(const void* array, int new_size, size_t element_size);
+
+static qt_node_t* qt_node_alloc(qt_t* qt);
+static void qt_node_free(qt_t* qt, qt_node_t* node);
+
 static qt_node_t* qt_node_create(qt_t* qt, qt_rect_t bounds, int depth, int max_depth);
 static void qt_node_destroy(qt_t* qt, qt_node_t* node);
 static void qt_node_insert(qt_t* qt, qt_node_t* node, const qt_rect_t* bounds, qt_value_t value);
 static bool qt_node_remove(qt_node_t* node, qt_value_t value);
-static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_array qt_rect_t* rects);
-static qt_array qt_rect_t* qt_node_all_rects(const qt_node_t* node, qt_array qt_rect_t* rects);
-static qt_array qt_value_t* qt_node_all_values(const qt_node_t* node, qt_array qt_value_t* values);
 static qt_array qt_value_t* qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array qt_value_t* values);
 static void qt_node_clear(qt_node_t* node);
-static qt_node_t* qt_node_alloc(qt_node_allocator_t* arena);
-static void qt_node_free(qt_node_allocator_t* arena, qt_node_t* node);
+
+static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_array qt_rect_t* rects);
+static qt_array qt_rect_t* qt_node_all_rects(qt_node_t* node, qt_array qt_rect_t* rects);
+static qt_array qt_value_t* qt_node_all_values(qt_node_t* node, qt_array qt_value_t* values);
 
 /*=============================================================================
  * Public API implementation
@@ -401,11 +409,11 @@ void qt_destroy(qt_t* qt)
     QT_ASSERT(qt);
 
     qt_node_destroy(qt, qt->root);
-    for (int i = 0; i < qt_array_size(qt->arena.blocks); ++i)
+    for (int i = 0; i < qt_array_size(qt->allocator.blocks); ++i)
     {
-        QT_FREE(qt->arena.blocks[i]);
+        QT_FREE(qt->allocator.blocks[i]);
     }
-    qt_array_destroy(qt->arena.blocks);
+    qt_array_destroy(qt->allocator.blocks);
     QT_FREE(qt);
 }
 
@@ -457,7 +465,7 @@ qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
     return values;
 }
 
-qt_rect_t* qt_get_grid_rects(qt_t* qt, int* size)
+qt_rect_t* qt_grid_rects(const qt_t* qt, int* size)
 {
     QT_ASSERT(qt);
     QT_ASSERT(size);
@@ -466,7 +474,7 @@ qt_rect_t* qt_get_grid_rects(qt_t* qt, int* size)
     if (!size)
         return NULL;
 
-    qt_array qt_rect_t* rects = qt_node_all_grid_rects(qt, NULL);
+    qt_array qt_rect_t* rects = qt_node_all_grid_rects(qt->root, NULL);
 
     // If no results then return NULL
     if (!rects)
@@ -502,6 +510,7 @@ void qt_clean(qt_t* qt)
     qt_array qt_rect_t* rects = qt_node_all_rects(qt->root, NULL);
     qt_array qt_value_t* values = qt_node_all_values(qt->root, NULL);
     QT_ASSERT(qt_array_size(rects) == qt_array_size(values));
+
     qt_reset(qt);
 
     for (int i = 0; i < qt_array_size(rects); i++)
@@ -529,7 +538,7 @@ static void* qt_array_fit_impl(const void* array, int new_size, size_t element_s
 
     // Double the old capacity, or pick at least 16 for the starting size.
     // This helps unnecessarily numerous realloc's for low capacities when starting out.
-    int new_capacity = qt_max(2 * qt_array_capacity(array), qt_max(new_size, 16));
+    int new_capacity = qt_max(2 * qt_array_capacity(array), qt_max(new_size, 16)); //Define this
     QT_ASSERT(new_size <= new_capacity);
 
     // Total size of the header struct `qt_array_header_t` along with the size of all
@@ -587,7 +596,7 @@ static bool qt_rect_overlaps(const qt_rect_t* r1, const qt_rect_t* r2)
 
 static qt_node_t* qt_node_create(qt_t* qt, qt_rect_t bounds, int depth, int max_depth)
 {
-    qt_node_t* node = qt_node_alloc(&qt->arena);
+    qt_node_t* node = qt_node_alloc(qt);
 
     node->depth = depth;
     node->max_depth = max_depth;
@@ -635,7 +644,7 @@ static void qt_node_destroy(qt_t* qt, qt_node_t* node)
     }
 
     // Free current node by pushing it onto the free list
-    qt_node_free(&qt->arena, node);
+    qt_node_free(qt, node);
 }
 
 static void qt_node_insert(qt_t* qt, qt_node_t* node, const qt_rect_t* rect, qt_value_t value)
@@ -731,7 +740,7 @@ static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_arra
     return rects;
 }
 
-static qt_array qt_rect_t* qt_node_all_rects(const qt_node_t* node, qt_array qt_rect_t* rects)
+static qt_array qt_rect_t* qt_node_all_rects(qt_node_t* node, qt_array qt_rect_t* rects)
 {
     QT_ASSERT(node);
 
@@ -751,7 +760,7 @@ static qt_array qt_rect_t* qt_node_all_rects(const qt_node_t* node, qt_array qt_
     return rects;
 }
 
-static qt_array qt_value_t* qt_node_all_values(const qt_node_t* node, qt_array qt_value_t* values)
+static qt_array qt_value_t* qt_node_all_values(qt_node_t* node, qt_array qt_value_t* values)
 {
     QT_ASSERT(node);
 
@@ -825,25 +834,50 @@ static void qt_node_clear(qt_node_t* node)
     }
 }
 
-static qt_node_t* qt_node_alloc(qt_node_allocator_t* arena)
+static void qt_push_node_freelist(qt_t* qt, qt_unode_t *node)
 {
-    if (!arena->free_list)
+    qt_node_allocator_t* allocator = &qt->allocator;
+    node->next = allocator->free_list;
+    allocator->free_list = node;
+}
+
+static qt_unode_t* qt_pop_freelist(qt_t* qt)
+{
+    qt_node_allocator_t* allocator = &qt->allocator;
+    qt_unode_t* node = allocator->free_list;
+    allocator->free_list = allocator->free_list->next;
+    return node;
+}
+
+static void qt_block_alloc(qt_t* qt)
+{
+    // Allocate space for more nodes and add them to the free list.
+
+    qt_node_allocator_t* allocator = &qt->allocator;
+
+    const int block_count = 128; //TODO Define this
+
+    qt_unode_t* nodes = (qt_unode_t*)QT_MALLOC(sizeof(qt_unode_t) * block_count);
+
+    for (int i = 0; i < block_count; ++i)
     {
-        // Allocate space for more nodes and add them to the free list.
-        const int block_count = 128;
-        qt_unode_t* nodes = (qt_unode_t*)QT_MALLOC(sizeof(qt_unode_t) * block_count);
-        for (int i = 0; i < block_count; ++i)
-        {
-            qt_unode_t* node = nodes + i;
-            node->next = arena->free_list;
-            arena->free_list = node;
-        }
-        qt_array_push(arena->blocks, nodes);
+        qt_push_node_freelist(qt, &nodes[i]);
+    }
+
+    qt_array_push(allocator->blocks, nodes);
+}
+
+static qt_node_t* qt_node_alloc(qt_t* qt)
+{
+    qt_node_allocator_t* allocator = &qt->allocator;
+
+    if (!allocator->free_list)
+    {
+        qt_block_alloc(qt);
     }
 
     // Pop a node off of the free list.
-    qt_unode_t* node = arena->free_list;
-    arena->free_list = arena->free_list->next;
+    qt_unode_t* node = qt_pop_freelist(qt);
     QT_MEMSET(node, 0, sizeof(qt_unode_t));
 
     qt_node_t* result = &node->u;
@@ -851,14 +885,14 @@ static qt_node_t* qt_node_alloc(qt_node_allocator_t* arena)
     return result;
 }
 
-static void qt_node_free(qt_node_allocator_t* allocator, qt_node_t* node)
+static void qt_node_free(qt_t* qt, qt_node_t* node)
 {
     // Safe cast as `qt_unode_t` contains an entire `qt_node_t`.
     qt_unode_t* unode = (qt_unode_t*)node;
 
     // Push node back onto singly-linked free list.
-    unode->next = qt->arena.free_list;
-    qt->arena.free_list = unode;
+    unode->next = qt->allocator.free_list;
+    qt->allocator.free_list = unode;
 }
 
 #endif // PICO_QT_IMPLEMENTATION
