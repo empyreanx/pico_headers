@@ -55,6 +55,7 @@
 
     PICO_QT_USE_DOUBLE
     PICO_QT_USE_UINTPTR
+    PICO_QT_BLOCK_SIZE
     PICO_QT_ASSERT
     PICO_QT_MALLOC
     PICO_QT_REALLOC
@@ -240,10 +241,10 @@ void qt_clean(qt_t* qt);
 #endif
 
 #if !defined(PICO_QT_MALLOC) || !defined(PICO_QT_REALLOC) || !defined(PICO_QT_FREE)
-#include <stdlib.h>
-#define PICO_QT_MALLOC(size, ctx)       (malloc(size))
-#define PICO_QT_REALLOC(ptr, size, ctx) (realloc(ptr, size))
-#define PICO_QT_FREE(ptr, ctx)          (free(ptr))
+    #include <stdlib.h>
+    #define PICO_QT_MALLOC(size, ctx)       (malloc(size))
+    #define PICO_QT_REALLOC(ptr, size, ctx) (realloc(ptr, size))
+    #define PICO_QT_FREE(ptr, ctx)          (free(ptr))
 #endif
 
 #ifndef PICO_QT_MEMCPY
@@ -254,6 +255,10 @@ void qt_clean(qt_t* qt);
 #ifndef PICO_QT_MEMSET
     #include <string.h>
     #define PICO_QT_MEMSET memset
+#endif
+
+#ifndef PICO_QT_BLOCK_SIZE
+    #define PICO_QT_BLOCK_SIZE 128
 #endif
 
 /*=============================================================================
@@ -297,7 +302,7 @@ struct qt_node_t
 
 typedef union qt_unode_t
 {
-    qt_node_t u;
+    qt_node_t node;
     union qt_unode_t* next;
 } qt_unode_t;
 
@@ -544,7 +549,8 @@ static void* qt_array_fit_impl(qt_t* qt, const void* array, int new_size, size_t
 
     // Double the old capacity, or pick at least 16 for the starting size.
     // This helps unnecessarily numerous realloc's for low capacities when starting out.
-    int new_capacity = qt_max(2 * qt_array_capacity(array), qt_max(new_size, 16)); //Define this
+    int new_capacity = qt_max(2 * qt_array_capacity(array), qt_max(new_size, 16));
+
     QT_ASSERT(new_size <= new_capacity);
 
     // Total size of the header struct `qt_array_header_t` along with the size of all
@@ -862,7 +868,7 @@ static void qt_block_alloc(qt_t* qt)
 
     qt_node_allocator_t* allocator = &qt->allocator;
 
-    const int block_count = 128; //TODO Define this
+    const int block_count = PICO_QT_BLOCK_SIZE;
 
     qt_unode_t* nodes = (qt_unode_t*)QT_MALLOC(sizeof(qt_unode_t) * block_count, qt->mem_ctx);
 
@@ -884,10 +890,10 @@ static qt_node_t* qt_node_alloc(qt_t* qt)
     }
 
     // Pop a node off of the free list.
-    qt_unode_t* node = qt_pop_freelist(qt);
-    QT_MEMSET(node, 0, sizeof(qt_unode_t));
+    qt_unode_t* unode = qt_pop_freelist(qt);
+    QT_MEMSET(unode, 0, sizeof(qt_unode_t));
 
-    qt_node_t* result = &node->u;
+    qt_node_t* result = &unode->node;
 
     return result;
 }
