@@ -123,7 +123,7 @@ qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
  *
  * @returns A quadtree instance
  */
-qt_t* qt_create(qt_rect_t bounds, int max_depth);
+qt_t* qt_create(qt_rect_t bounds, int max_depth, void* mem_ctx);
 
 /**
  * @brief Destroys a quadtree
@@ -192,7 +192,7 @@ qt_rect_t* qt_grid_rects(const qt_t* qt, int* size);
  * This function can deallocate arrays returned from \ref qt_query or from
  * \ref qt_get_grid_rects.
  */
-void qt_free(qt_value_t* array);
+void qt_free(qt_t* qt, void* array);
 
 /**
  * @brief Removes all items in the tree
@@ -241,9 +241,9 @@ void qt_clean(qt_t* qt);
 
 #if !defined(PICO_QT_MALLOC) || !defined(PICO_QT_REALLOC) || !defined(PICO_QT_FREE)
 #include <stdlib.h>
-#define PICO_QT_MALLOC(size)       (malloc(size))
-#define PICO_QT_REALLOC(ptr, size) (realloc(ptr, size))
-#define PICO_QT_FREE(ptr)          (free(ptr))
+#define PICO_QT_MALLOC(size, ctx)       (malloc(size))
+#define PICO_QT_REALLOC(ptr, size, ctx) (realloc(ptr, size))
+#define PICO_QT_FREE(ptr, ctx)          (free(ptr))
 #endif
 
 #ifndef PICO_QT_MEMCPY
@@ -311,6 +311,7 @@ struct qt_t
 {
     qt_rect_t  bounds;
     qt_node_t* root;
+    void*      mem_ctx;
 
     // A custom allocator is used here to allocate individual nodes.
     // This attempts to pack all the nodes together in memory to try and
@@ -347,16 +348,16 @@ struct qt_t
 #define qt_array_capacity(a) (QT_ARRAY_CANARY(a), (a) ? qt_hdr(a)->capacity : 0)
 
 // Makes sure the capacity of the array can fit `n` elements.
-#define qt_array_fit(a, n) ((n) <= qt_array_capacity(a) ? 0 : (*(void**)&(a) = qt_array_fit_impl((a), (n), sizeof(*a))))
+#define qt_array_fit(qt, a, n) ((n) <= qt_array_capacity(a) ? 0 : (*(void**)&(a) = qt_array_fit_impl((qt), (a), (n), sizeof(*a))))
 
 // Pushes an element onto the array. Will resize itself as necessary.
-#define qt_array_push(a, ...) (QT_ARRAY_CANARY(a), qt_array_fit((a), 1 + ((a) ? qt_array_size(a) : 0)), (a)[qt_array_len(a)++] = (__VA_ARGS__))
+#define qt_array_push(qt, a, ...) (QT_ARRAY_CANARY(a), qt_array_fit((qt), (a), 1 + ((a) ? qt_array_size(a) : 0)), (a)[qt_array_len(a)++] = (__VA_ARGS__))
 
 // Clears the array.
 #define qt_array_clear(a) (QT_ARRAY_CANARY(a), a ? (void)(qt_array_len(a) = 0) : (void)0)
 
 // Free's up a dynamic array.
-#define qt_array_destroy(a) (QT_ARRAY_CANARY(a), a ? QT_FREE(qt_hdr(a)) : (void)0, a = NULL)
+#define qt_array_destroy(qt, a) (QT_ARRAY_CANARY(a), a ? QT_FREE(qt_hdr(a), qt->mem_ctx) : (void)0, a = NULL)
 
 // Overwrites the item at the index with the item at the end of the array.
 // This is fast, but it changes the order of the array Fortunately, order
@@ -370,7 +371,7 @@ struct qt_t
 static bool qt_rect_contains(const qt_rect_t* r1, const qt_rect_t* r2);
 static bool qt_rect_overlaps(const qt_rect_t* r1, const qt_rect_t* r2);
 
-static void* qt_array_fit_impl(const void* array, int new_size, size_t element_size);
+static void* qt_array_fit_impl(qt_t* qt, const void* array, int new_size, size_t element_size);
 
 static qt_node_t* qt_node_alloc(qt_t* qt);
 static void qt_node_free(qt_t* qt, qt_node_t* node);
@@ -390,9 +391,9 @@ static qt_array qt_value_t* qt_node_all_values(qt_node_t* node, qt_array qt_valu
  * Public API implementation
  *============================================================================*/
 
-qt_t* qt_create(qt_rect_t bounds, int max_depth)
+qt_t* qt_create(qt_rect_t bounds, int max_depth, void* mem_ctx)
 {
-    qt_t* qt = (qt_t*)QT_MALLOC(sizeof(qt_t));
+    qt_t* qt = (qt_t*)QT_MALLOC(sizeof(qt_t), mem_ctx);
     QT_MEMSET(qt, 0, sizeof(*qt));
 
     if (!qt)
@@ -400,6 +401,7 @@ qt_t* qt_create(qt_rect_t bounds, int max_depth)
 
     qt->bounds = bounds;
     qt->root = qt_node_create(qt, bounds, 0, max_depth);
+    qt->mem_ctx = mem_ctx;
 
     return qt;
 }
@@ -409,12 +411,14 @@ void qt_destroy(qt_t* qt)
     QT_ASSERT(qt);
 
     qt_node_destroy(qt, qt->root);
+
     for (int i = 0; i < qt_array_size(qt->allocator.blocks); ++i)
     {
-        QT_FREE(qt->allocator.blocks[i]);
+        QT_FREE(qt->allocator.blocks[i], qt->mem_ctx);
     }
-    qt_array_destroy(qt->allocator.blocks);
-    QT_FREE(qt);
+
+    qt_array_destroy(qt, qt->allocator.blocks);
+    QT_FREE(qt, qt->mem_ctx);
 }
 
 void qt_reset(qt_t* qt)
@@ -489,12 +493,12 @@ qt_rect_t* qt_grid_rects(const qt_t* qt, int* size)
     return rects;
 }
 
-void qt_free(qt_value_t* array)
+void qt_free(qt_t* qt, void* array)
 {
     if (!array)
         return;
 
-    qt_array_destroy(array);
+    qt_array_destroy(array, qt->mem_ctx);
 }
 
 void qt_clear(qt_t* qt)
@@ -518,8 +522,8 @@ void qt_clean(qt_t* qt)
         qt_insert(qt, rects[i], values[i]);
     }
 
-    qt_array_destroy(rects);
-    qt_array_destroy(values);
+    qt_array_destroy(qt, rects);
+    qt_array_destroy(qt, values);
 }
 
 /*=============================================================================
@@ -532,8 +536,10 @@ static int qt_max(int a, int b)
 }
 
 // Don't call this directly -- use `qt_array_fit` instead.
-static void* qt_array_fit_impl(const void* array, int new_size, size_t element_size)
+static void* qt_array_fit_impl(qt_t* qt, const void* array, int new_size, size_t element_size)
 {
+    (void)qt; // Suppress unused warning
+
     QT_ARRAY_CANARY(array);
 
     // Double the old capacity, or pick at least 16 for the starting size.
@@ -544,19 +550,20 @@ static void* qt_array_fit_impl(const void* array, int new_size, size_t element_s
     // Total size of the header struct `qt_array_header_t` along with the size of all
     // elements packed together in a single allocation.
     size_t total_size = sizeof(qt_array_header_t) + new_capacity * element_size;
+
     qt_array_header_t* hdr;
 
     if (array)
     {
         // Realloc of the header isn't new.
         // This expands the capacity.
-        hdr = (qt_array_header_t*)QT_REALLOC(qt_hdr(array), total_size);
+        hdr = (qt_array_header_t*)QT_REALLOC(qt_hdr(array), total_size, qt->mem_ctx);
     }
 
     else
     {
         // Create a new array if the pointer passed in was NULL, as NULL means an empty array.
-        hdr = (qt_array_header_t*)QT_MALLOC(total_size);
+        hdr = (qt_array_header_t*)QT_MALLOC(total_size, qt->mem_ctx);
         hdr->size = 0;
     }
 
@@ -633,8 +640,8 @@ static void qt_node_destroy(qt_t* qt, qt_node_t* node)
 {
     QT_ASSERT(node);
 
-    qt_array_destroy(node->values);
-    qt_array_destroy(node->rects);
+    qt_array_destroy(qt, node->values);
+    qt_array_destroy(qt, node->rects);
 
     // Recursively destroy nodes
     for (int i = 0; i < 4; i++)
@@ -684,8 +691,8 @@ static void qt_node_insert(qt_t* qt, qt_node_t* node, const qt_rect_t* rect, qt_
 
     // If none of the children fully contain the bounds, or the maximum depth
     // has been reached, then the item belongs to this node
-    qt_array_push(node->rects, *rect);
-    qt_array_push(node->values, value);
+    qt_array_push(qt, node->rects, *rect);
+    qt_array_push(qt, node->values, value);
 }
 
 static bool qt_node_remove(qt_node_t* node, qt_value_t value)
@@ -727,7 +734,7 @@ static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_arra
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
-            qt_array_push(rects, node->bounds[i]);
+            qt_array_push(qt, rects, node->bounds[i]);
     }
 
     // Recursively add all grid bounds found in the subtrees
@@ -747,7 +754,7 @@ static qt_array qt_rect_t* qt_node_all_rects(qt_node_t* node, qt_array qt_rect_t
     // Add all values in this node into the array
     for (int i = 0; i < qt_array_size(node->rects); ++i)
     {
-        qt_array_push(rects, node->rects[i]);
+        qt_array_push(qt, rects, node->rects[i]);
     }
 
     // Recursively add all values found in the subtrees
@@ -767,7 +774,7 @@ static qt_array qt_value_t* qt_node_all_values(qt_node_t* node, qt_array qt_valu
     // Add all values in this node into the array
     for (int i = 0; i < qt_array_size(node->values); ++i)
     {
-        qt_array_push(values, node->values[i]);
+        qt_array_push(qt, values, node->values[i]);
     }
 
     // Recursively add all values found in the subtrees
@@ -792,7 +799,7 @@ static qt_array qt_value_t* qt_node_query(const qt_node_t* node, const qt_rect_t
         const qt_rect_t* rect = &node->rects[i];
 
         if (qt_rect_overlaps(area, rect))
-            qt_array_push(values, node->values[i]);
+            qt_array_push(qt, values, node->values[i]);
     }
 
     // Loop over subtrees
@@ -857,14 +864,14 @@ static void qt_block_alloc(qt_t* qt)
 
     const int block_count = 128; //TODO Define this
 
-    qt_unode_t* nodes = (qt_unode_t*)QT_MALLOC(sizeof(qt_unode_t) * block_count);
+    qt_unode_t* nodes = (qt_unode_t*)QT_MALLOC(sizeof(qt_unode_t) * block_count, qt->mem_ctx);
 
     for (int i = 0; i < block_count; ++i)
     {
         qt_push_node_freelist(qt, &nodes[i]);
     }
 
-    qt_array_push(allocator->blocks, nodes);
+    qt_array_push(qt, allocator->blocks, nodes);
 }
 
 static qt_node_t* qt_node_alloc(qt_t* qt)
