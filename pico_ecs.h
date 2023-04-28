@@ -126,6 +126,25 @@ typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
                                    ecs_dt_t dt,
                                    void* udata);
 
+
+/**
+ * @brief Called when an entity is added to a system
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The enitty being added
+ * @param udata     The user data passed to the callback
+ */
+typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_id_t entity_id, void * udata);
+
+/**
+ * @brief Called when an entity is removed from a system
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The enitty being removed
+ * @param udata     The user data passed to the callback
+ */
+typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_id_t entity_id, void *udata);
+
 /**
  * @brief Creates an ECS instance.
  *
@@ -148,16 +167,6 @@ void ecs_free(ecs_t* ecs);
  */
 void ecs_reset(ecs_t* ecs);
 
-typedef void (*ecs_constructor_fn)(ecs_t* ecs,
-                                   ecs_id_t entity_id,
-                                   void* component,
-                                   void * udata);
-
-typedef void (*ecs_destructor_fn)(ecs_t* ecs,
-                                  ecs_id_t entity_id,
-                                  void* component,
-                                  void* udata);
-
 /**
  * @brief Registers a component
  *
@@ -168,28 +177,7 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
  * @param size  The number of bytes to allocate for each component instance
  * @returns     The component's ID
  */
-ecs_id_t ecs_register_component(ecs_t* ecs,
-                                size_t size,
-                                ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor);
-
-/**
- * @brief Called when an entity is added to a system
- *
- * @param ecs       The ECS instance
- * @param entity_id The enitty being added
- * @param udata     The user data passed to the callback
- */
-typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_id_t entity_id, void* udata);
-
-/**
- * @brief Called when an entity is removed from a system
- *
- * @param ecs       The ECS instance
- * @param entity_id The enitty being removed
- * @param udata     The user data passed to the callback
- */
-typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_id_t entity_id, void* udata);
+ecs_id_t ecs_register_component(ecs_t* ecs, size_t size);
 
 /**
  * @brief Registers a system
@@ -445,12 +433,6 @@ typedef struct
 
 typedef struct
 {
-    ecs_constructor_fn constructor;
-    ecs_destructor_fn  destructor;
-} ecs_comp_t;
-
-typedef struct
-{
     bool             active;
     ecs_sparse_set_t entity_ids;
     ecs_system_fn    system_cb;
@@ -467,8 +449,7 @@ struct ecs_s
     ecs_stack_t   remove_queue;
     ecs_entity_t* entities;
     size_t        entity_count;
-    ecs_comp_t    comps[ECS_MAX_COMPONENTS];
-    ecs_array_t   comp_arrays[ECS_MAX_COMPONENTS];
+    ecs_array_t   comps[ECS_MAX_COMPONENTS];
     size_t        comp_count;
     ecs_sys_t     systems[ECS_MAX_SYSTEMS];
     size_t        system_count;
@@ -587,8 +568,8 @@ void ecs_free(ecs_t* ecs)
 
     for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
     {
-        ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
-        ecs_array_free(ecs, comp_array);
+        ecs_array_t* comp = &ecs->comps[comp_id];
+        ecs_array_free(ecs, comp);
     }
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
@@ -622,10 +603,7 @@ void ecs_reset(ecs_t* ecs)
     }
 }
 
-ecs_id_t ecs_register_component(ecs_t* ecs,
-                                size_t size,
-                                ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor)
+ecs_id_t ecs_register_component(ecs_t* ecs, size_t size)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
@@ -633,11 +611,8 @@ ecs_id_t ecs_register_component(ecs_t* ecs,
 
     ecs_id_t comp_id = ecs->comp_count;
 
-    ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
-    ecs_array_init(ecs, comp_array, size, ecs->entity_count);
-
-    ecs->comps[comp_id].constructor = constructor;
-    ecs->comps[comp_id].destructor = destructor;
+    ecs_array_t* comp = &ecs->comps[comp_id];
+    ecs_array_init(ecs, comp, size, ecs->entity_count);
 
     ecs->comp_count++;
 
@@ -769,8 +744,6 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     ecs_stack_t* pool = &ecs->entity_pool;
     ecs_stack_push(ecs, pool, entity_id);
 
-    // TODO: Loop through components and call ecs_remove
-
     // Reset entity (sets bitset to 0 and ready to false)
     memset(entity, 0, sizeof(ecs_entity_t));
 }
@@ -796,10 +769,10 @@ void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
     // Return pointer to component
-    //  eid0,  eid1   eid2, ...
-    // [comp0, comp1, comp2, ...]
-    ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
-    return (char*)comp_array->data + (comp_array->size * entity_id);
+    ecs_array_t* comp = &ecs->comps[comp_id]; //  eid0,  eid1   eid2, ...
+                                              // [comp0, comp1, comp2, ...]
+
+    return (char*)comp->data + (comp->size * entity_id);
 }
 
 void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
@@ -813,7 +786,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
     // Load component
-    ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
+    ecs_array_t* comp = &ecs->comps[comp_id];
 
     // Set entity component bit that determines which systems this entity
     // belongs to
@@ -835,13 +808,13 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     }
 
     // Grow the component array
-    ecs_array_resize(ecs, comp_array, entity_id);
+    ecs_array_resize(ecs, comp, entity_id);
 
     // Get pointer to component
     void* ptr = ecs_get(ecs, entity_id, comp_id);
 
     // Reset component
-    memset(ptr, 0, comp_array->size);
+    memset(ptr, 0, comp->size);
 
     // Return component
     return ptr;
@@ -1393,3 +1366,4 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
 */
 
 // EoF
+
