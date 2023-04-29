@@ -265,12 +265,12 @@ void qt_clean(qt_t* qt);
  * Internal aliases
  *============================================================================*/
 
-#define QT_ASSERT         PICO_QT_ASSERT
-#define QT_MEMCPY         PICO_QT_MEMCPY
-#define QT_MEMSET         PICO_QT_MEMSET
-#define QT_MALLOC         PICO_QT_MALLOC
-#define QT_REALLOC        PICO_QT_REALLOC
-#define QT_FREE           PICO_QT_FREE
+#define QT_ASSERT   PICO_QT_ASSERT
+#define QT_MEMCPY   PICO_QT_MEMCPY
+#define QT_MEMSET   PICO_QT_MEMSET
+#define QT_MALLOC   PICO_QT_MALLOC
+#define QT_REALLOC  PICO_QT_REALLOC
+#define QT_FREE     PICO_QT_FREE
 
 /*=============================================================================
  * Internal data structures
@@ -389,8 +389,8 @@ static qt_array qt_value_t* qt_node_query(const qt_node_t* node, const qt_rect_t
 static void qt_node_clear(qt_node_t* node);
 
 static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_array qt_rect_t* rects);
-static qt_array qt_rect_t* qt_node_all_rects(qt_node_t* node, qt_array qt_rect_t* rects);
-static qt_array qt_value_t* qt_node_all_values(qt_node_t* node, qt_array qt_value_t* values);
+static qt_array qt_rect_t* qt_node_all_rects(const qt_node_t* node, qt_array qt_rect_t* rects);
+static qt_array qt_value_t* qt_node_all_values(const qt_node_t* node, qt_array qt_value_t* values);
 
 /*=============================================================================
  * Public API implementation
@@ -417,7 +417,7 @@ void qt_destroy(qt_t* qt)
 
     qt_node_destroy(qt, qt->root);
 
-    for (int i = 0; i < qt_array_size(qt->allocator.blocks); ++i)
+    for (int i = 0; i < qt_array_size(qt->allocator.blocks); i++)
     {
         QT_FREE(qt->allocator.blocks[i], qt->mem_ctx);
     }
@@ -755,12 +755,12 @@ static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_arra
     return rects;
 }
 
-static qt_array qt_rect_t* qt_node_all_rects(qt_node_t* node, qt_array qt_rect_t* rects)
+static qt_array qt_rect_t* qt_node_all_rects(const qt_node_t* node, qt_array qt_rect_t* rects)
 {
     QT_ASSERT(node);
 
     // Add all values in this node into the array
-    for (int i = 0; i < qt_array_size(node->rects); ++i)
+    for (int i = 0; i < qt_array_size(node->rects); i++)
     {
         qt_array_push(qt, rects, node->rects[i]);
     }
@@ -775,12 +775,12 @@ static qt_array qt_rect_t* qt_node_all_rects(qt_node_t* node, qt_array qt_rect_t
     return rects;
 }
 
-static qt_array qt_value_t* qt_node_all_values(qt_node_t* node, qt_array qt_value_t* values)
+static qt_array qt_value_t* qt_node_all_values(const qt_node_t* node, qt_array qt_value_t* values)
 {
     QT_ASSERT(node);
 
     // Add all values in this node into the array
-    for (int i = 0; i < qt_array_size(node->values); ++i)
+    for (int i = 0; i < qt_array_size(node->values); i++)
     {
         qt_array_push(qt, values, node->values[i]);
     }
@@ -849,19 +849,19 @@ static void qt_node_clear(qt_node_t* node)
     }
 }
 
-static void qt_push_node_freelist(qt_t* qt, qt_unode_t *node)
+static void qt_push_node_freelist(qt_t* qt, qt_unode_t *unode)
 {
     qt_node_allocator_t* allocator = &qt->allocator;
-    node->next = allocator->free_list;
-    allocator->free_list = node;
+    unode->next = allocator->free_list;
+    allocator->free_list = unode;
 }
 
 static qt_unode_t* qt_pop_freelist(qt_t* qt)
 {
     qt_node_allocator_t* allocator = &qt->allocator;
-    qt_unode_t* node = allocator->free_list;
+    qt_unode_t* unode = allocator->free_list;
     allocator->free_list = allocator->free_list->next;
-    return node;
+    return unode;
 }
 
 static void qt_block_alloc(qt_t* qt)
@@ -874,7 +874,7 @@ static void qt_block_alloc(qt_t* qt)
 
     qt_unode_t* nodes = (qt_unode_t*)QT_MALLOC(sizeof(qt_unode_t) * block_count, qt->mem_ctx);
 
-    for (int i = 0; i < block_count; ++i)
+    for (int i = 0; i < block_count; i++)
     {
         qt_push_node_freelist(qt, &nodes[i]);
     }
@@ -902,12 +902,7 @@ static qt_node_t* qt_node_alloc(qt_t* qt)
 
 static void qt_node_free(qt_t* qt, qt_node_t* node)
 {
-    // Safe cast as `qt_unode_t` contains an entire `qt_node_t`.
-    qt_unode_t* unode = (qt_unode_t*)node;
-
-    // Push node back onto singly-linked free list.
-    unode->next = qt->allocator.free_list;
-    qt->allocator.free_list = unode;
+    qt_push_node_freelist(qt, (qt_unode_t*)node);
 }
 
 #endif // PICO_QT_IMPLEMENTATION
