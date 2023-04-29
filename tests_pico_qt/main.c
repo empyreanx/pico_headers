@@ -4,6 +4,7 @@
 #include "../pico_unit.h"
 
 #include <stdlib.h>
+#include <math.h>
 
 // Helper functions
 static int cmp_values(const void * a, const void * b);
@@ -26,7 +27,7 @@ TEST_CASE(test_insert_single)
         REQUIRE(size == 1);
         REQUIRE(values[0] == 0);
 
-        qt_free(values);
+        qt_free(qt, values);
     }
 
     // Not found
@@ -36,7 +37,7 @@ TEST_CASE(test_insert_single)
         REQUIRE(size == 0);
         REQUIRE(values == NULL);
 
-        qt_free(values);
+        qt_free(qt, values);
     }
 
     return true;
@@ -55,7 +56,7 @@ TEST_CASE(test_insert_single_contained)
         REQUIRE(size == 1);
         REQUIRE(values[0] == 0);
 
-        qt_free(values);
+        qt_free(qt, values);
     }
 
     // Not found
@@ -65,7 +66,7 @@ TEST_CASE(test_insert_single_contained)
         REQUIRE(size == 0);
         REQUIRE(values == NULL);
 
-        qt_free(values);
+        qt_free(qt, values);
     }
 
     return true;
@@ -90,7 +91,7 @@ TEST_CASE(test_insert_multiple)
     REQUIRE(values[1] == 1);
     REQUIRE(values[2] == 2);
 
-    qt_free(values);
+    qt_free(qt, values);
 
     return true;
 }
@@ -121,7 +122,7 @@ TEST_CASE(test_insert_multiple_random)
         REQUIRE(values[i] == (qt_value_t)i);
     }
 
-    qt_free(values);
+    qt_free(qt, values);
 
     return true;
 }
@@ -154,7 +155,7 @@ TEST_CASE(test_insert_multiple_random_contained)
             REQUIRE(values[i] == (qt_value_t)i);
         }
 
-        qt_free(values);
+        qt_free(qt, values);
     }
 
     // Not found
@@ -164,7 +165,7 @@ TEST_CASE(test_insert_multiple_random_contained)
         REQUIRE(size == 0);
         REQUIRE(values == NULL);
 
-        qt_free(values);
+        qt_free(qt, values);
     }
 
     return true;
@@ -183,7 +184,7 @@ TEST_CASE(test_remove)
     int size;
 
     values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
-    qt_free(values);
+    qt_free(qt, values);
 
     REQUIRE(size == 2);
 
@@ -195,7 +196,7 @@ TEST_CASE(test_remove)
     REQUIRE(size == 0);
     REQUIRE(values == NULL);
 
-    qt_free(values);
+    qt_free(qt, values);
 
     return true;
 }
@@ -219,7 +220,7 @@ TEST_CASE(test_reset)
 
     REQUIRE(size == 32);
 
-    qt_free(values);
+    qt_free(qt, values);
 
     qt_reset(qt);
 
@@ -228,7 +229,7 @@ TEST_CASE(test_reset)
     REQUIRE(size == 0);
     REQUIRE(values == NULL);
 
-    qt_free(values);
+    qt_free(qt, values);
 
     return true;
 }
@@ -252,7 +253,7 @@ TEST_CASE(test_clear)
 
     REQUIRE(size == 32);
 
-    qt_free(values);
+    qt_free(qt, values);
 
     qt_clear(qt);
 
@@ -261,7 +262,7 @@ TEST_CASE(test_clear)
     REQUIRE(size == 0);
     REQUIRE(values == NULL);
 
-    qt_free(values);
+    qt_free(qt, values);
 
     return true;
 }
@@ -285,7 +286,7 @@ TEST_CASE(test_clean)
 
     REQUIRE(size == 32);
 
-    qt_free(values);
+    qt_free(qt, values);
 
     qt_clean(qt);
 
@@ -293,7 +294,55 @@ TEST_CASE(test_clean)
 
     REQUIRE(size == 32);
 
-    qt_free(values);
+    qt_free(qt, values);
+
+    return true;
+}
+
+static bool rect_in_array(qt_rect_t* rects, int size, qt_rect_t rect)
+{
+    static const float EPSILON = 1e-5f;
+
+    for (int i = 0; i < size; i++)
+    {
+        if (fabsf(rects[i].x - rect.x) < EPSILON &&
+            fabsf(rects[i].y - rect.y) < EPSILON &&
+            fabsf(rects[i].w - rect.w) < EPSILON &&
+            fabsf(rects[i].h - rect.h) < EPSILON)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+TEST_CASE(test_grid_rects)
+{
+    qt_insert(qt, qt_make_rect(-5, -5, 3, 3), 0);
+    qt_insert(qt, qt_make_rect(5, 5, 3, 3), 1);
+
+    qt_insert(qt, qt_make_rect(0, -5, 5, 5), 2);
+    qt_insert(qt, qt_make_rect(0, -5, 2.5f, 2.5f), 3);
+
+    qt_insert(qt, qt_make_rect(-3, 3, 4, 4), 4);
+    qt_insert(qt, qt_make_rect(-5, -5, 10, 10), 5);
+
+    int size;
+    qt_rect_t* rects = qt_grid_rects(qt, &size);
+
+    REQUIRE(size == 7);
+
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(-10, -10, 10, 10)));
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(-5, -5, 5, 5)));
+
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(0, 0, 10, 10)));
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(5, 5, 5, 5)));
+
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(0, -10, 10, 10)));
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(0, -5, 5, 5)));
+
+    qt_free(qt, rects);
 
     return true;
 }
@@ -309,11 +358,12 @@ static TEST_SUITE(suite_qt)
     RUN_TEST_CASE(test_reset);
     RUN_TEST_CASE(test_clear);
     RUN_TEST_CASE(test_clean);
+    RUN_TEST_CASE(test_grid_rects);
 }
 
 void setup(void)
 {
-    qt = qt_create(qt_make_rect(-10, -10, 20, 20), 6);
+    qt = qt_create(qt_make_rect(-10, -10, 20, 20), 6, NULL);
 }
 
 void teardown(void)
