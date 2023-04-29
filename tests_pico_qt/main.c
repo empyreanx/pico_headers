@@ -4,6 +4,7 @@
 #include "../pico_unit.h"
 
 #include <stdlib.h>
+#include <math.h>
 
 // Helper functions
 static int cmp_values(const void * a, const void * b);
@@ -298,6 +299,54 @@ TEST_CASE(test_clean)
     return true;
 }
 
+static bool rect_in_array(qt_rect_t* rects, int size, qt_rect_t rect)
+{
+    static const float EPSILON = 1e-5f;
+
+    for (int i = 0; i < size; i++)
+    {
+        if (fabsf(rects[i].x - rect.x) < EPSILON &&
+            fabsf(rects[i].y - rect.y) < EPSILON &&
+            fabsf(rects[i].w - rect.w) < EPSILON &&
+            fabsf(rects[i].h - rect.h) < EPSILON)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+TEST_CASE(test_grid_rects)
+{
+    qt_insert(qt, qt_make_rect(-5, -5, 3, 3), 0);
+    qt_insert(qt, qt_make_rect(5, 5, 3, 3), 1);
+
+    qt_insert(qt, qt_make_rect(0, -5, 5, 5), 2);
+    qt_insert(qt, qt_make_rect(0, -5, 2.5f, 2.5f), 3);
+
+    qt_insert(qt, qt_make_rect(-3, 3, 4, 4), 4);
+    qt_insert(qt, qt_make_rect(-5, -5, 10, 10), 5);
+
+    int size;
+    qt_rect_t* rects = qt_grid_rects(qt, &size);
+
+    REQUIRE(size == 7);
+
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(-10, -10, 10, 10)));
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(-5, -5, 5, 5)));
+
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(0, 0, 10, 10)));
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(5, 5, 5, 5)));
+
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(0, -10, 10, 10)));
+    REQUIRE(rect_in_array(rects, size, qt_make_rect(0, -5, 5, 5)));
+
+    qt_free(qt, rects);
+
+    return true;
+}
+
 static TEST_SUITE(suite_qt)
 {
     RUN_TEST_CASE(test_insert_single);
@@ -309,6 +358,7 @@ static TEST_SUITE(suite_qt)
     RUN_TEST_CASE(test_reset);
     RUN_TEST_CASE(test_clear);
     RUN_TEST_CASE(test_clean);
+    RUN_TEST_CASE(test_grid_rects);
 }
 
 void setup(void)
