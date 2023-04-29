@@ -500,10 +500,12 @@ qt_rect_t* qt_grid_rects(const qt_t* qt, int* size)
 
 void qt_free(qt_t* qt, void* array)
 {
+    (void)qt;
+
     if (!array)
         return;
 
-    qt_array_destroy(array, qt->mem_ctx);
+    qt_array_destroy(qt, array);
 }
 
 void qt_clear(qt_t* qt)
@@ -543,7 +545,7 @@ static int qt_max(int a, int b)
 // Don't call this directly -- use `qt_array_fit` instead.
 static void* qt_array_fit_impl(qt_t* qt, const void* array, int new_size, size_t element_size)
 {
-    (void)qt; // Suppress unused warning
+    (void)qt;
 
     QT_ARRAY_CANARY(array);
 
