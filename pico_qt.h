@@ -850,14 +850,14 @@ static void qt_node_clear(qt_node_t* node)
     }
 }
 
-static void qt_push_node_freelist(qt_t* qt, qt_unode_t *unode)
+static void qt_freelist_push(qt_t* qt, qt_unode_t *unode)
 {
     qt_node_allocator_t* allocator = &qt->allocator;
     unode->next = allocator->free_list;
     allocator->free_list = unode;
 }
 
-static qt_unode_t* qt_pop_freelist(qt_t* qt)
+static qt_unode_t* qt_freelist_pop(qt_t* qt)
 {
     qt_node_allocator_t* allocator = &qt->allocator;
     qt_unode_t* unode = allocator->free_list;
@@ -877,7 +877,7 @@ static void qt_block_alloc(qt_t* qt)
 
     for (int i = 0; i < block_count; i++)
     {
-        qt_push_node_freelist(qt, &nodes[i]);
+        qt_freelist_push(qt, &nodes[i]);
     }
 
     qt_array_push(qt, allocator->blocks, nodes);
@@ -893,7 +893,7 @@ static qt_node_t* qt_node_alloc(qt_t* qt)
     }
 
     // Pop a node off of the free list.
-    qt_unode_t* unode = qt_pop_freelist(qt);
+    qt_unode_t* unode = qt_freelist_pop(qt);
     QT_MEMSET(unode, 0, sizeof(qt_unode_t));
 
     qt_node_t* result = &unode->node;
@@ -903,7 +903,7 @@ static qt_node_t* qt_node_alloc(qt_t* qt)
 
 static void qt_node_free(qt_t* qt, qt_node_t* node)
 {
-    qt_push_node_freelist(qt, (qt_unode_t*)node);
+    qt_freelist_push(qt, (qt_unode_t*)node);
 }
 
 #endif // PICO_QT_IMPLEMENTATION
