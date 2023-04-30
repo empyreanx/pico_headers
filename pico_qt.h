@@ -170,7 +170,7 @@ bool qt_remove(qt_t* qt, qt_value_t value);
  * @returns The values of items contained within the search area. This array is
  * dynamically allocated and should be deallocated by using `qt_free` after use
  */
-qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size);
+qt_value_t* qt_query(const qt_t* qt, qt_rect_t area, int* size);
 
 /**
  * @brief Returns all bounds associated with the quadtree's recursive grid
@@ -457,7 +457,7 @@ bool qt_remove(qt_t* qt, qt_value_t value)
     return qt_node_remove(qt->root, value);
 }
 
-qt_value_t* qt_query(qt_t* qt, qt_rect_t area, int* size)
+qt_value_t* qt_query(const qt_t* qt, qt_rect_t area, int* size)
 {
     QT_ASSERT(qt);
     QT_ASSERT(size);
