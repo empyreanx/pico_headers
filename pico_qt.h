@@ -191,7 +191,7 @@ qt_rect_t* qt_grid_rects(const qt_t* qt, int* size);
  * @brief Function for deallocating arrays.
  *
  * This function can deallocate arrays returned from \ref qt_query or from
- * \ref qt_get_grid_rects.
+ * \ref qt_grid_rects.
  */
 void qt_free(qt_t* qt, void* array);
 
