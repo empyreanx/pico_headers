@@ -515,11 +515,16 @@ PM_INLINE void pm_t2_set_pos(pm_t2* t, pm_v2 pos)
  */
 PM_INLINE pm_float pm_t2_get_angle(const pm_t2* t)
 {
-    return pm_normalize_angle(pm_atan2(t->t01, t->t00));
+    return pm_normalize_angle(pm_atan2(t->t10, t->t00));
 }
 
 /**
  * @brief Sets the scale of the transform
+ *
+ * Scalings are now assumed to be pre-multiplied. This change was made because
+ * the common case is usually a tranlation to the origin, followed by scaling,
+ * then a rotation and finally, another translation.
+ *
  * @param t The transform
  * @param scale The vector containing scale factors in the x/y directions
  */
@@ -527,6 +532,11 @@ void pm_t2_set_scale(pm_t2* t, pm_v2 scale);
 
 /**
  * @brief Gets the scale of the transform
+ *
+ * Scalings are now assumed to be pre-multiplied. This change was made because
+ * the common case is usually a tranlation to the origin, followed by scaling,
+ * then a rotation and finally, another translation.
+ *
  * @param t The transform
  */
 pm_v2 pm_t2_get_scale(const pm_t2* t);
