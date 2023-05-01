@@ -515,7 +515,7 @@ PM_INLINE void pm_t2_set_pos(pm_t2* t, pm_v2 pos)
  */
 PM_INLINE pm_float pm_t2_get_angle(const pm_t2* t)
 {
-    return pm_normalize_angle(pm_atan2(t->t10, t->t11));
+    return pm_normalize_angle(pm_atan2(t->t01, t->t00));
 }
 
 /**
@@ -841,8 +841,8 @@ void pm_t2_set_scale(pm_t2* t, pm_v2 scale)
     pm_float sx = scale.x;
     pm_float sy = scale.y;
 
-    t->t00 = sx * c; t->t01 = sx * -s;
-    t->t10 = sy * s; t->t11 = sy *  c;
+    t->t00 = sx * c; t->t01 = sy * -s;
+    t->t10 = sx * s; t->t11 = sy *  c;
 }
 
 pm_v2 pm_t2_get_scale(const pm_t2* t)
@@ -854,8 +854,8 @@ pm_v2 pm_t2_get_scale(const pm_t2* t)
 
     if (0.0f == cos_sign) //TODO: pm_equal?
     {
-        out.x = -t->t01;
-        out.y =  t->t10;
+        out.x = t->t00;
+        out.y = t->t11;
         return out;
     }
 
@@ -878,8 +878,8 @@ void pm_t2_set_angle(pm_t2* t, pm_float angle)
     pm_float sx = scale.x;
     pm_float sy = scale.y;
 
-    t->t00 = sx * c; t->t01 = sx * -s;
-    t->t10 = sy * s; t->t11 = sy *  c;
+    t->t00 = sx * c; t->t01 = sy * -s;
+    t->t10 = sx * s; t->t11 = sy *  c;
 }
 
 pm_t2 pm_t2_inv(const pm_t2* t)
@@ -946,8 +946,8 @@ pm_t2 pm_t2_lerp(const pm_t2* t1, const pm_t2* t2, pm_float alpha)
 
     pm_t2 out;
 
-    out.t00 = sx * c; out.t01 = sx * -s; out.tx = tx;
-    out.t10 = sy * s; out.t11 = sy *  c; out.ty = ty;
+    out.t00 = sx * c; out.t01 = sy * -s; out.tx = tx;
+    out.t10 = sx * s; out.t11 = sy *  c; out.ty = ty;
 
     return out;
 }

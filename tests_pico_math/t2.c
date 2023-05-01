@@ -69,10 +69,18 @@ TEST_CASE(test_t2_get_angle)
 
 TEST_CASE(test_t2_get_scale)
 {
+    { // Identity
+        pm_t2 t1 = pm_t2_scaling(pm_v2_make(2, 3));
+        pm_v2 res = pm_t2_get_scale(&t1);
+        pm_v2 exp = pm_v2_make(2, 3);
+        REQUIRE(pm_v2_equal(res, exp));
+    }
+
     { // Acute angle
-        pm_t2 t1 = pm_t2_rotation(PM_PI / 4.0f);
-        pm_t2 t2 = pm_t2_scaling(pm_v2_make(2, 3));
-        pm_t2 t3 = pm_t2_mult(&t2, &t1);
+        pm_t2 t1 = pm_t2_scaling(pm_v2_make(2, 3));
+        pm_t2 t2 = pm_t2_rotation(PM_PI / 4.0f);
+
+        pm_t2 t3 = pm_t2_mult(&t1, &t2);
         pm_v2 exp = pm_v2_make(2, 3);
         pm_v2 res = pm_t2_get_scale(&t3);
         REQUIRE(pm_v2_equal(res, exp));
@@ -101,9 +109,9 @@ TEST_CASE(test_t2_get_scale)
 
 TEST_CASE(test_t2_set_angle)
 {
-    pm_t2 t1 = pm_t2_rotation(PM_PI / 2.0f);
-    pm_t2 t2 = pm_t2_scaling(pm_v2_make(2, 3));
-    pm_t2 t3 = pm_t2_mult(&t2, &t1);
+    pm_t2 t1 = pm_t2_scaling(pm_v2_make(2, 3));
+    pm_t2 t2 = pm_t2_rotation(PM_PI / 2.0f);
+    pm_t2 t3 = pm_t2_mult(&t1, &t2);
 
     { // Case 0
         pm_t2_set_angle(&t3, PM_PI / 8.0f);
