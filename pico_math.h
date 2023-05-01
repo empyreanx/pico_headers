@@ -858,22 +858,22 @@ void pm_t2_set_scale(pm_t2* t, pm_v2 scale)
 pm_v2 pm_t2_get_scale(const pm_t2* t)
 {
     pm_float angle = pm_t2_get_angle(t);
-    pm_float cos_sign = pm_sign(pm_cos(angle));
+    pm_float sin_sign = pm_sign(pm_sin(angle));
 
     pm_v2 out;
 
-    if (0.0f == cos_sign) //TODO: pm_equal?
+    if (0.0f == sin_sign) //TODO: pm_equal?
     {
         out.x = t->t00;
         out.y = t->t11;
         return out;
     }
 
-    pm_v2 v1 = pm_v2_make(t->t00, t->t01);
-    pm_v2 v2 = pm_v2_make(t->t10, t->t11);
+    pm_v2 v1 = pm_v2_make(t->t00, t->t10);
+    pm_v2 v2 = pm_v2_make(t->t01, t->t11);
 
-    out.x = pm_sign(t->t00) * cos_sign * pm_v2_len(v1);
-    out.y = pm_sign(t->t11) * cos_sign * pm_v2_len(v2);
+    out.x =  pm_sign(t->t10) * sin_sign * pm_v2_len(v1);
+    out.y = -pm_sign(t->t01) * sin_sign * pm_v2_len(v2);
 
     return out;
 }
