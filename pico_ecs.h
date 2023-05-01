@@ -447,6 +447,7 @@ typedef struct
 {
     ecs_constructor_fn constructor;
     ecs_destructor_fn  destructor;
+    void*              udata;
 } ecs_comp_t;
 
 typedef struct
@@ -769,7 +770,18 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     ecs_stack_t* pool = &ecs->entity_pool;
     ecs_stack_push(ecs, pool, entity_id);
 
-    // TODO: Loop through components and call ecs_remove
+    // Loop through components and call the destructors
+    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
+    {
+        if (ecs_bitset_test(&entity->comp_bits, comp_id))
+        {
+            if (ecs->comps[comp_id].destructor)
+            {
+                void* comp = ecs_get(ecs, entity_id, comp_id);
+                ecs->comps[comp_id].destructor(ecs, entity_id, comp, ecs->comps[comp_id].udata);
+            }
+        }
+    }
 
     // Reset entity (sets bitset to 0 and ready to false)
     memset(entity, 0, sizeof(ecs_entity_t));
