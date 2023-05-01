@@ -515,7 +515,7 @@ PM_INLINE void pm_t2_set_pos(pm_t2* t, pm_v2 pos)
  */
 PM_INLINE pm_float pm_t2_get_angle(const pm_t2* t)
 {
-    return pm_normalize_angle(pm_atan2(t->t10, t->t11));
+    return pm_normalize_angle(pm_atan2(t->t10, t->t00));
 }
 
 /**
