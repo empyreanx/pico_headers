@@ -878,8 +878,8 @@ void pm_t2_set_angle(pm_t2* t, pm_float angle)
     pm_float sx = scale.x;
     pm_float sy = scale.y;
 
-    t->t00 = sx * c; t->t01 = sx * -s;
-    t->t10 = sy * s; t->t11 = sy *  c;
+    t->t00 = sx * c; t->t01 = sy * -s;
+    t->t10 = sx * s; t->t11 = sy *  c;
 }
 
 pm_t2 pm_t2_inv(const pm_t2* t)
