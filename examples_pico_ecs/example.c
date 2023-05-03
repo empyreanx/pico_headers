@@ -24,6 +24,8 @@
  * For more information, please refer to <http://unlicense.org/>
  *============================================================================*/
 
+// Pull in the ECS implementation
+#define PICO_ECS_IMPLEMENTATION
 #include "../pico_ecs.h"
 
 #include <stdio.h>
@@ -172,6 +174,3 @@ int main()
     return 0;
 }
 
-// Pull in the ECS implementation
-#define PICO_ECS_IMPLEMENTATION
-#include "../pico_ecs.h"
