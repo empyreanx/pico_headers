@@ -1,6 +1,8 @@
 #define PICO_QT_USE_UINTPTR
-
+#define PICO_QT_IMPLEMENTATION
 #include "../pico_qt.h"
+
+#define PICO_UNIT_IMPLEMENTATION
 #include "../pico_unit.h"
 
 #include <stdlib.h>
@@ -396,8 +398,3 @@ static int random_int(int min, int max)
     return rand() % (max + 1 - min) + min;
 }
 
-#define PICO_QT_IMPLEMENTATION
-#include "../pico_qt.h"
-
-#define PICO_UNIT_IMPLEMENTATION
-#include "../pico_unit.h"

@@ -381,7 +381,7 @@ struct qt_t
 static bool qt_rect_contains(const qt_rect_t* r1, const qt_rect_t* r2);
 static bool qt_rect_overlaps(const qt_rect_t* r1, const qt_rect_t* r2);
 
-static void* qt_array_fit_impl(qt_t* qt, const void* array, int new_size, size_t element_size);
+static void* qt_array_fit_impl(const qt_t* qt, const void* array, int new_size, size_t element_size);
 
 static qt_node_t* qt_node_alloc(qt_t* qt);
 static void qt_node_free(qt_t* qt, qt_node_t* node);
@@ -391,12 +391,12 @@ static void qt_node_destroy(qt_t* qt, qt_node_t* node);
 static void qt_node_insert(qt_t* qt, qt_node_t* node, const qt_rect_t* bounds, qt_value_t value);
 static bool qt_node_remove(qt_node_t* node, qt_value_t value);
 
-static qt_array qt_value_t* qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array qt_value_t* values);
+static qt_array qt_value_t* qt_node_query(const qt_t* qt, const qt_node_t* node, const qt_rect_t* area, qt_array qt_value_t* values);
 static void qt_node_clear(qt_node_t* node);
 
-static qt_array qt_item_t* qt_node_all_items(const qt_node_t* node, qt_array qt_item_t* items);
-static qt_array qt_value_t* qt_node_all_values(const qt_node_t* node, qt_array qt_value_t* values);
-static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_array qt_rect_t* rects);
+static qt_array qt_item_t* qt_node_all_items(const qt_t* qt, const qt_node_t* node, qt_array qt_item_t* items);
+static qt_array qt_value_t* qt_node_all_values(const qt_t* qt, const qt_node_t* node, qt_array qt_value_t* values);
+static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_t* qt, const qt_node_t* node, qt_array qt_rect_t* rects);
 
 /*=============================================================================
  * Public API implementation
@@ -467,7 +467,7 @@ qt_value_t* qt_query(const qt_t* qt, qt_rect_t area, int* size)
         return NULL;
 
     // Start query the root node
-    qt_array qt_value_t* values = qt_node_query(qt->root, &area, NULL);
+    qt_array qt_value_t* values = qt_node_query(qt, qt->root, &area, NULL);
 
     // If no results then return NULL
     if (!values)
@@ -491,7 +491,7 @@ qt_rect_t* qt_grid_rects(const qt_t* qt, int* size)
     if (!size)
         return NULL;
 
-    qt_array qt_rect_t* rects = qt_node_all_grid_rects(qt->root, NULL);
+    qt_array qt_rect_t* rects = qt_node_all_grid_rects(qt, qt->root, NULL);
 
     // If no results then return NULL
     if (!rects)
@@ -526,7 +526,7 @@ void qt_clean(qt_t* qt)
 {
     QT_ASSERT(qt);
 
-    qt_array qt_item_t* items = qt_node_all_items(qt->root, NULL);
+    qt_array qt_item_t* items = qt_node_all_items(qt, qt->root, NULL);
 
     qt_reset(qt);
 
@@ -548,7 +548,7 @@ static int qt_max(int a, int b)
 }
 
 // Don't call this directly -- use `qt_array_fit` instead.
-static void* qt_array_fit_impl(qt_t* qt, const void* array, int new_size, size_t element_size)
+static void* qt_array_fit_impl(const qt_t* qt, const void* array, int new_size, size_t element_size)
 {
     (void)qt;
 
@@ -736,7 +736,7 @@ static bool qt_node_remove(qt_node_t* node, qt_value_t value)
     return false;
 }
 
-static qt_array qt_item_t* qt_node_all_items(const qt_node_t* node, qt_array qt_item_t* items)
+static qt_array qt_item_t* qt_node_all_items(const qt_t* qt, const qt_node_t* node, qt_array qt_item_t* items)
 {
     QT_ASSERT(node);
 
@@ -750,13 +750,13 @@ static qt_array qt_item_t* qt_node_all_items(const qt_node_t* node, qt_array qt_
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
-            items = qt_node_all_items(node->nodes[i], items);
+            items = qt_node_all_items(qt, node->nodes[i], items);
     }
 
     return items;
 }
 
-static qt_array qt_value_t* qt_node_all_values(const qt_node_t* node, qt_array qt_value_t* values)
+static qt_array qt_value_t* qt_node_all_values(const qt_t* qt, const qt_node_t* node, qt_array qt_value_t* values)
 {
     QT_ASSERT(node);
 
@@ -770,13 +770,13 @@ static qt_array qt_value_t* qt_node_all_values(const qt_node_t* node, qt_array q
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
-            values = qt_node_all_values(node->nodes[i], values);
+            values = qt_node_all_values(qt, node->nodes[i], values);
     }
 
     return values;
 }
 
-static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_array qt_rect_t* rects)
+static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_t* qt, const qt_node_t* node, qt_array qt_rect_t* rects)
 {
     QT_ASSERT(node);
 
@@ -791,13 +791,13 @@ static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_node_t* node, qt_arra
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
-            rects = qt_node_all_grid_rects(node->nodes[i], rects);
+            rects = qt_node_all_grid_rects(qt, node->nodes[i], rects);
     }
 
     return rects;
 }
 
-static qt_array qt_value_t* qt_node_query(const qt_node_t* node, const qt_rect_t* area, qt_array qt_value_t* values)
+static qt_array qt_value_t* qt_node_query(const qt_t* qt, const qt_node_t* node, const qt_rect_t* area, qt_array qt_value_t* values)
 {
     QT_ASSERT(node);
     QT_ASSERT(area);
@@ -821,7 +821,7 @@ static qt_array qt_value_t* qt_node_query(const qt_node_t* node, const qt_rect_t
             // subtree match and are recursively added to the array
             if (qt_rect_contains(area, &node->bounds[i]))
             {
-                values = qt_node_all_values(node->nodes[i], values);
+                values = qt_node_all_values(qt, node->nodes[i], values);
             }
             else
             {
@@ -830,7 +830,7 @@ static qt_array qt_value_t* qt_node_query(const qt_node_t* node, const qt_rect_t
                 // or contained within the area
                 if (qt_rect_overlaps(area, &node->bounds[i]))
                 {
-                    values = qt_node_query(node->nodes[i], area, values);
+                    values = qt_node_query(qt, node->nodes[i], area, values);
                 }
             }
         }
