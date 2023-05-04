@@ -878,8 +878,8 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
         {
             if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
             {
-                if (sys->add_cb)
-                    sys->add_cb(ecs, entity_id, sys->udata);
+                if (sys->remove_cb)
+                    sys->remove_cb(ecs, entity_id, sys->udata);
             }
         }
     }
