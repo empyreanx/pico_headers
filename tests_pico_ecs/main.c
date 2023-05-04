@@ -36,6 +36,21 @@ void teardown()
     ecs = NULL;
 }
 
+TEST_CASE(test_reset)
+{
+    for (int i = 0; i < MAX_ENTITIES; i++)
+    {
+        ecs_id_t id = ecs_create(ecs);
+        ecs_add(ecs, id, comp1_id);
+        ecs_add(ecs, id, comp2_id);
+        REQUIRE(ecs_is_ready(ecs, id));
+    }
+
+    ecs_reset(ecs);
+
+    return true;
+}
+
 TEST_CASE(test_create_destroy)
 {
     // Create an entity
@@ -531,6 +546,7 @@ TEST_CASE(test_add_remove_callbacks)
 
 static TEST_SUITE(suite_ecs)
 {
+    RUN_TEST_CASE(test_reset);
     RUN_TEST_CASE(test_create_destroy);
     RUN_TEST_CASE(test_add_remove);
     RUN_TEST_CASE(test_add_systems);

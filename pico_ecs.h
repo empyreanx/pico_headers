@@ -582,6 +582,12 @@ void ecs_free(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
+    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
+    {
+        if (ecs->entities[entity_id].ready)
+            ecs_destroy(ecs, entity_id);
+    }
+
     ecs_stack_free(ecs, &ecs->entity_pool);
     ecs_stack_free(ecs, &ecs->destroy_queue);
     ecs_stack_free(ecs, &ecs->remove_queue);
@@ -605,6 +611,12 @@ void ecs_free(ecs_t* ecs)
 void ecs_reset(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
+
+    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
+    {
+        if (ecs->entities[entity_id].ready)
+            ecs_destroy(ecs, entity_id);
+    }
 
     ecs->entity_pool.size   = 0;
     ecs->destroy_queue.size = 0;
