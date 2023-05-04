@@ -515,11 +515,16 @@ PM_INLINE void pm_t2_set_pos(pm_t2* t, pm_v2 pos)
  */
 PM_INLINE pm_float pm_t2_get_angle(const pm_t2* t)
 {
-    return pm_normalize_angle(pm_atan2(t->t10, t->t11));
+    return pm_normalize_angle(pm_atan2(t->t10, t->t00));
 }
 
 /**
  * @brief Sets the scale of the transform
+ *
+ * Scalings are now assumed to be pre-multiplied. This change was made because
+ * the common case is usually a tranlation to the origin, followed by scaling,
+ * then a rotation and finally, another translation.
+ *
  * @param t The transform
  * @param scale The vector containing scale factors in the x/y directions
  */
@@ -527,6 +532,11 @@ void pm_t2_set_scale(pm_t2* t, pm_v2 scale);
 
 /**
  * @brief Gets the scale of the transform
+ *
+ * Scalings are now assumed to be pre-multiplied. This change was made because
+ * the common case is usually a tranlation to the origin, followed by scaling,
+ * then a rotation and finally, another translation.
+ *
  * @param t The transform
  */
 pm_v2 pm_t2_get_scale(const pm_t2* t);
@@ -841,8 +851,8 @@ void pm_t2_set_scale(pm_t2* t, pm_v2 scale)
     pm_float sx = scale.x;
     pm_float sy = scale.y;
 
-    t->t00 = sx * c; t->t01 = sx * -s;
-    t->t10 = sy * s; t->t11 = sy *  c;
+    t->t00 = sx * c; t->t01 = sy * -s;
+    t->t10 = sx * s; t->t11 = sy *  c;
 }
 
 pm_v2 pm_t2_get_scale(const pm_t2* t)
@@ -854,13 +864,13 @@ pm_v2 pm_t2_get_scale(const pm_t2* t)
 
     if (0.0f == cos_sign) //TODO: pm_equal?
     {
-        out.x = -t->t01;
-        out.y =  t->t10;
+        out.x =  t->t10;
+        out.y = -t->t01;
         return out;
     }
 
-    pm_v2 v1 = pm_v2_make(t->t00, t->t01);
-    pm_v2 v2 = pm_v2_make(t->t10, t->t11);
+    pm_v2 v1 = pm_v2_make(t->t00, t->t10);
+    pm_v2 v2 = pm_v2_make(t->t01, t->t11);
 
     out.x = pm_sign(t->t00) * cos_sign * pm_v2_len(v1);
     out.y = pm_sign(t->t11) * cos_sign * pm_v2_len(v2);
@@ -878,8 +888,8 @@ void pm_t2_set_angle(pm_t2* t, pm_float angle)
     pm_float sx = scale.x;
     pm_float sy = scale.y;
 
-    t->t00 = sx * c; t->t01 = sx * -s;
-    t->t10 = sy * s; t->t11 = sy *  c;
+    t->t00 = sx * c; t->t01 = sy * -s;
+    t->t10 = sx * s; t->t11 = sy *  c;
 }
 
 pm_t2 pm_t2_inv(const pm_t2* t)
@@ -946,8 +956,8 @@ pm_t2 pm_t2_lerp(const pm_t2* t1, const pm_t2* t2, pm_float alpha)
 
     pm_t2 out;
 
-    out.t00 = sx * c; out.t01 = sx * -s; out.tx = tx;
-    out.t10 = sy * s; out.t11 = sy *  c; out.ty = ty;
+    out.t00 = sx * c; out.t01 = sy * -s; out.tx = tx;
+    out.t10 = sx * s; out.t11 = sy *  c; out.ty = ty;
 
     return out;
 }

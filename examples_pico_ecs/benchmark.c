@@ -24,6 +24,10 @@
  * For more information, please refer to <http://unlicense.org/>
  *============================================================================*/
 
+//#define ECS_DEBUG
+#define PICO_ECS_MAX_SYSTEMS 16
+#define PICO_ECS_MAX_COMPONENTS 64
+#define PICO_ECS_IMPLEMENTATION
 #include "../pico_ecs.h"
 
 #include <stdio.h>
@@ -429,10 +433,4 @@ int main()
 
     return 0;
 }
-
-//#define ECS_DEBUG
-#define PICO_ECS_MAX_SYSTEMS 16
-#define PICO_ECS_MAX_COMPONENTS 64
-#define PICO_ECS_IMPLEMENTATION
-#include "../pico_ecs.h"
 
