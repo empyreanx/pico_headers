@@ -787,10 +787,12 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     {
         if (ecs_bitset_test(&entity->comp_bits, comp_id))
         {
-            if (ecs->comps[comp_id].destructor)
+            ecs_comp_t* comp = &ecs->comps[comp_id];
+
+            if (comp->destructor)
             {
-                void* comp = ecs_get(ecs, entity_id, comp_id);
-                ecs->comps[comp_id].destructor(ecs, entity_id, comp, ecs->comps[comp_id].udata);
+                void* ptr = ecs_get(ecs, entity_id, comp_id);
+                comp->destructor(ecs, entity_id, ptr, comp->udata);
             }
         }
     }
@@ -864,8 +866,12 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     // Get pointer to component
     void* ptr = ecs_get(ecs, entity_id, comp_id);
 
-    // Reset component
-    memset(ptr, 0, comp_array->size);
+    ecs_comp_t* comp = &ecs->comps[comp_id];
+
+    if (comp->constructor)
+        comp->constructor(ecs, entity_id, ptr, comp->udata);
+    else
+        memset(ptr, 0, comp_array->size);
 
     // Return component
     return ptr;
@@ -894,6 +900,14 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
                     sys->remove_cb(ecs, entity_id, sys->udata);
             }
         }
+    }
+
+    ecs_comp_t* comp = &ecs->comps[comp_id];
+
+    if (comp->destructor)
+    {
+        void* ptr = ecs_get(ecs, entity_id, comp_id);
+        comp->destructor(ecs, entity_id, ptr, comp->udata);
     }
 
     // Reset the relevant component mask bit
