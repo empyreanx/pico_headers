@@ -132,8 +132,8 @@ static void setup()
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
     // Register two new components
-    PosComponent  = ecs_register_component(ecs, sizeof(v2d_t));
-    RectComponent = ecs_register_component(ecs, sizeof(rect_t));
+    PosComponent  = ecs_register_component(ecs, sizeof(v2d_t),  NULL, NULL, NULL);
+    RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL, NULL);
 }
 
 static void setup_destroy_with_two_components()
@@ -141,8 +141,8 @@ static void setup_destroy_with_two_components()
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    PosComponent  = ecs_register_component(ecs, sizeof(v2d_t));
-    RectComponent = ecs_register_component(ecs, sizeof(rect_t));
+    PosComponent  = ecs_register_component(ecs, sizeof(v2d_t),  NULL, NULL, NULL);
+    RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL, NULL);
 
     for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {
@@ -156,10 +156,10 @@ static void setup_three_systems()
 {
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    PosComponent = ecs_register_component(ecs, sizeof(v2d_t));
-    DirComponent = ecs_register_component(ecs, sizeof(v2d_t));
-    ComflabComponent = ecs_register_component(ecs, sizeof(comflab_t));
-    RectComponent = ecs_register_component(ecs, sizeof(rect_t));
+    PosComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL, NULL);
+    DirComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL, NULL);
+    ComflabComponent = ecs_register_component(ecs, sizeof(comflab_t), NULL, NULL, NULL);
+    RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL, NULL);
 
     MovementSystem = ecs_register_system(ecs, movement_system, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
@@ -184,7 +184,7 @@ static void setup_get()
 {
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
-    PosComponent = ecs_register_component(ecs, sizeof(v2d_t));
+    PosComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL, NULL);
 
     for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
     {

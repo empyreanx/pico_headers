@@ -69,9 +69,9 @@ ecs_id_t System3;
 // Register components
 void register_components(ecs_t* ecs)
 {
-    PosComp  = ecs_register_component(ecs, sizeof(pos_t));
-    VelComp  = ecs_register_component(ecs, sizeof(vel_t));
-    RectComp = ecs_register_component(ecs, sizeof(rect_t));
+    PosComp  = ecs_register_component(ecs, sizeof(pos_t),  NULL, NULL, NULL);
+    VelComp  = ecs_register_component(ecs, sizeof(vel_t),  NULL, NULL, NULL);
+    RectComp = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL, NULL);
 }
 
 // System that prints the entity IDs of entities associated with this system

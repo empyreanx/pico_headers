@@ -171,7 +171,8 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
 ecs_id_t ecs_register_component(ecs_t* ecs,
                                 size_t size,
                                 ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor);
+                                ecs_destructor_fn destructor,
+                                void* udata);
 
 /**
  * @brief Called when an entity is added to a system
@@ -638,7 +639,8 @@ void ecs_reset(ecs_t* ecs)
 ecs_id_t ecs_register_component(ecs_t* ecs,
                                 size_t size,
                                 ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor)
+                                ecs_destructor_fn destructor,
+                                void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
@@ -651,6 +653,7 @@ ecs_id_t ecs_register_component(ecs_t* ecs,
 
     ecs->comps[comp_id].constructor = constructor;
     ecs->comps[comp_id].destructor = destructor;
+    ecs->comps[comp_id].udata = udata;
 
     ecs->comp_count++;
 
