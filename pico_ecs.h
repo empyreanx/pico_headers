@@ -109,24 +109,6 @@ typedef int8_t ecs_ret_t;
 #endif
 
 /**
- * @brief System update callback
- *
- * Systems implement the core logic of an ECS by manipulating entities
- * and components.
- *
- * @param ecs          The ECS instance
- * @param entities     An array of entity IDs managed by the system
- * @param entity_count The number of entities in the array
- * @param dt           The time delta
- * @param udata        The user data associated with the system
- */
-typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
-                                   ecs_id_t* entities,
-                                   int entity_count,
-                                   ecs_dt_t dt,
-                                   void* udata);
-
-/**
  * @brief Creates an ECS instance.
  *
  * @param entity_count The inital number of pooled entities
@@ -148,14 +130,30 @@ void ecs_free(ecs_t* ecs);
  */
 void ecs_reset(ecs_t* ecs);
 
+/**
+ * @brief Called when a component is created (via ecs_add)
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The entity being constructed
+ * @param ptr       The pointer to the component
+ * @param udata     The user data passed to the callback
+ */
 typedef void (*ecs_constructor_fn)(ecs_t* ecs,
                                    ecs_id_t entity_id,
-                                   void* component,
-                                   void * udata);
+                                   void* ptr,
+                                   void* udata);
 
+/**
+ * @brief Called when a component is destroyed (via ecs_remove or ecs_destroy)
+ *
+ * @param ecs       The ECS instance
+ * @param entity_id The entity being destoryed
+ * @param ptr       The pointer to the component
+ * @param udata     The user data passed to the callback
+ */
 typedef void (*ecs_destructor_fn)(ecs_t* ecs,
                                   ecs_id_t entity_id,
-                                  void* component,
+                                  void* ptr,
                                   void* udata);
 
 /**
@@ -164,15 +162,36 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
  * Registers a component with the specfied size in bytes. Components define the
  * game state (usually contained within structs) and are manipulated by systems.
  *
- * @param ecs   The ECS instance
- * @param size  The number of bytes to allocate for each component instance
- * @returns     The component's ID
+ * @param ecs         The ECS instance
+ * @param size        The number of bytes to allocate for each component instance
+ * @param constructor Called when a component is created (disabled if NULL)
+ * @param destructor  Called when a component is destroyed (disabled if NULL)
+ * @param udata       Data passed to callbacks (can be NULL)
+ * @returns           The component's ID
  */
 ecs_id_t ecs_register_component(ecs_t* ecs,
                                 size_t size,
                                 ecs_constructor_fn constructor,
                                 ecs_destructor_fn destructor,
                                 void* udata);
+
+/**
+ * @brief System update callback
+ *
+ * Systems implement the core logic of an ECS by manipulating entities
+ * and components.
+ *
+ * @param ecs          The ECS instance
+ * @param entities     An array of entity IDs managed by the system
+ * @param entity_count The number of entities in the array
+ * @param dt           The time delta
+ * @param udata        The user data associated with the system
+ */
+typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
+                                   ecs_id_t* entities,
+                                   int entity_count,
+                                   ecs_dt_t dt,
+                                   void* udata);
 
 /**
  * @brief Called when an entity is added to a system
