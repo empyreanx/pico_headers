@@ -36,6 +36,67 @@ void teardown()
     ecs = NULL;
 }
 
+void constructor(ecs_t* ecs, ecs_id_t entity_id, void* ptr, void* udata)
+{
+    (void)ecs;
+    (void)entity_id;
+    (void)udata;
+
+    comp_t* comp = ptr;
+    comp->used = true;
+}
+
+TEST_CASE(test_constructor)
+{
+    ecs_id_t comp_id = ecs_register_component(ecs, sizeof(comp_t), constructor, NULL, NULL);
+
+    ecs_id_t entity_id = ecs_create(ecs);
+    comp_t* comp = ecs_add(ecs, entity_id, comp_id);
+
+    REQUIRE(comp->used);
+
+    return true;
+}
+
+void destructor(ecs_t* ecs, ecs_id_t entity_id, void* ptr, void* udata)
+{
+    (void)ecs;
+    (void)entity_id;
+    (void)udata;
+
+    comp_t* comp = ptr;
+    comp->used = false;
+}
+
+TEST_CASE(test_destructor_remove)
+{
+    ecs_id_t comp_id = ecs_register_component(ecs, sizeof(comp_t), constructor, destructor, NULL);
+
+    ecs_id_t entity_id = ecs_create(ecs);
+    comp_t* comp = ecs_add(ecs, entity_id, comp_id);
+    ecs_remove(ecs, entity_id, comp_id);
+
+    REQUIRE(!comp->used);
+
+    return true;
+}
+
+TEST_CASE(test_destructor_destroy)
+{
+    ecs_id_t comp_id = ecs_register_component(ecs, sizeof(comp_t), constructor, destructor, NULL);
+
+    ecs_id_t entity_id = ecs_create(ecs);
+    comp_t* comp = ecs_add(ecs, entity_id, comp_id);
+    ecs_destroy(ecs, entity_id);
+
+    REQUIRE(!ecs_is_ready(ecs, entity_id));
+
+    //WARNING: We assume memory has no been reclaimed
+    REQUIRE(!comp->used);
+
+    return true;
+}
+
 TEST_CASE(test_reset)
 {
     for (int i = 0; i < MAX_ENTITIES; i++)
@@ -547,6 +608,9 @@ TEST_CASE(test_add_remove_callbacks)
 static TEST_SUITE(suite_ecs)
 {
     RUN_TEST_CASE(test_reset);
+    RUN_TEST_CASE(test_constructor);
+    RUN_TEST_CASE(test_destructor_remove);
+    RUN_TEST_CASE(test_destructor_destroy);
     RUN_TEST_CASE(test_create_destroy);
     RUN_TEST_CASE(test_add_remove);
     RUN_TEST_CASE(test_add_systems);
