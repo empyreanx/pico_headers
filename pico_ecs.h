@@ -40,7 +40,12 @@
     tree at all.
 
     An ECS solves these problems while also granting more flexibility in
-    general.
+    general. In an ECS there is a clear separation between data (components) and
+    logic (systems), which makes it possible to build complex simulations with
+    fewer assumptions about how that data will be used. In an ECS it effortless
+    to change functionality, by either adding or removing components from
+    entities, and/or by changing system requirements. Adding new logic is also
+    simple as well, just register a new system!
 
     Please see the examples and unit tests for more details.
 
