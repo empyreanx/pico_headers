@@ -17,6 +17,8 @@ Library | Docs | Description | Version
 
 These libraries are as-is, however, suggestions for improvements or bug fixes are appreciated. Please raise an issue before submitting a PR with new features. Bug fixes are always welcome!
 
+The API of libraries with versions less than 1.0 are subject to changes without warning. These changes might crash your code or cause other problems. Libraries with versions equal to or greater than 1.0 are more stable and will generally only be changed when adding features or making bug fixes. Changes may still break the API, but will be limited in scope and should not introduce unpredictable behavior at runtime.
+
 The examples and tests compile and run on Linux (GCC), Windows (MSYS2/MinGW64), and MacOS (Clang). The only exception is the Rogue demo, which only compiles/runs on Linux and MacOS.
 
 Most libraries are licensed under your choice of zlib or the public domain. The remaining libraries are licensed under the MIT license.
