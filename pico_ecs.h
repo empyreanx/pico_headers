@@ -518,13 +518,14 @@ static void ecs_flush_removed(ecs_t* ecs);
 /*=============================================================================
  * Internal bit set functions
  *============================================================================*/
-static inline void  ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on);
-static inline bool  ecs_bitset_test(ecs_bitset_t* set, int bit);
+static inline void ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on);
+static inline bool ecs_bitset_is_zero(ecs_bitset_t* set);
+static inline bool ecs_bitset_test(ecs_bitset_t* set, int bit);
 static inline ecs_bitset_t ecs_bitset_and(ecs_bitset_t* set1, ecs_bitset_t* set2);
 static inline ecs_bitset_t ecs_bitset_or(ecs_bitset_t* set1, ecs_bitset_t* set2);
 static inline ecs_bitset_t ecs_bitset_not(ecs_bitset_t* set);
-static inline bool  ecs_bitset_equal(ecs_bitset_t* set1, ecs_bitset_t* set2);
-static inline bool  ecs_bitset_true(ecs_bitset_t* set);
+static inline bool ecs_bitset_equal(ecs_bitset_t* set1, ecs_bitset_t* set2);
+static inline bool ecs_bitset_true(ecs_bitset_t* set);
 
 /*=============================================================================
  * Internal sparse set functions
@@ -1080,6 +1081,11 @@ static void ecs_flush_removed(ecs_t* ecs)
 
 #if ECS_MAX_COMPONENTS <= 64
 
+static inline bool ecs_bitset_is_zero(ecs_bitset_t* set)
+{
+    return *set == 0;
+}
+
 static inline void ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on)
 {
     if (on)
@@ -1119,6 +1125,17 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set)
 }
 
 #else // ECS_MAX_COMPONENTS
+
+static inline bool ecs_bitset_is_zero(ecs_bitset_t* set)
+{
+    for (int i = 0; i < ECS_BITSET_SIZE; i++)
+    {
+        if (set->array[i] != 0)
+            return false;
+    }
+
+    return true;
+}
 
 static inline void ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on)
 {
@@ -1315,13 +1332,21 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
                                           ecs_bitset_t* exclude_bits,
                                           ecs_bitset_t* entity_bits)
 {
-    ecs_bitset_t mask = ecs_bitset_not(exclude_bits);
-    ecs_bitset_t entity_and_mask = ecs_bitset_and(entity_bits, &mask);
+    if (!ecs_bitset_is_zero(exclude_bits))
+    {
+        ecs_bitset_t mask = ecs_bitset_not(exclude_bits);
+        ecs_bitset_t entity_and_mask = ecs_bitset_and(entity_bits, &mask);
 
-    ecs_bitset_t require_or_exclude = ecs_bitset_or(require_bits, exclude_bits);
-    ecs_bitset_t bits = ecs_bitset_and(&entity_and_mask, &require_or_exclude);
+        ecs_bitset_t require_or_exclude = ecs_bitset_or(require_bits, exclude_bits);
+        ecs_bitset_t bits = ecs_bitset_and(&entity_and_mask, &require_or_exclude);
 
-    return ecs_bitset_equal(&require_or_exclude, &bits);
+        return ecs_bitset_equal(&require_or_exclude, &bits);
+    }
+    else
+    {
+        ecs_bitset_t entity_and_require = ecs_bitset_and(entity_bits, require_bits);
+        return ecs_bitset_equal(&entity_and_require, require_bits);
+    }
 }
 
 /*=============================================================================
