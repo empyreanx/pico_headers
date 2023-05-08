@@ -1338,9 +1338,9 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
         ecs_bitset_t entity_and_mask = ecs_bitset_and(entity_bits, &mask);
 
         ecs_bitset_t require_or_exclude = ecs_bitset_or(require_bits, exclude_bits);
-        ecs_bitset_t bits = ecs_bitset_and(&entity_and_mask, &require_or_exclude);
+        ecs_bitset_t combined = ecs_bitset_and(&entity_and_mask, &require_or_exclude);
 
-        return ecs_bitset_equal(&require_or_exclude, &bits);
+        return ecs_bitset_equal(&require_or_exclude, &combined);
     }
     else
     {
