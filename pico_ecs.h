@@ -521,9 +521,9 @@ static void ecs_flush_removed(ecs_t* ecs);
 static inline void  ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on);
 static inline bool  ecs_bitset_test(ecs_bitset_t* set, int bit);
 static inline ecs_bitset_t ecs_bitset_and(ecs_bitset_t* set1, ecs_bitset_t* set2);
+static inline ecs_bitset_t ecs_bitset_or(ecs_bitset_t* set1, ecs_bitset_t* set2);
 static inline ecs_bitset_t ecs_bitset_not(ecs_bitset_t* set);
 static inline bool  ecs_bitset_equal(ecs_bitset_t* set1, ecs_bitset_t* set2);
-
 static inline bool  ecs_bitset_true(ecs_bitset_t* set);
 
 /*=============================================================================
@@ -1098,6 +1098,11 @@ static inline ecs_bitset_t ecs_bitset_and(ecs_bitset_t* set1, ecs_bitset_t* set2
     return *set1 & *set2;
 }
 
+static inline ecs_bitset_t ecs_bitset_or(ecs_bitset_t* set1, ecs_bitset_t* set2)
+{
+    return *set1 | *set2;
+}
+
 static inline ecs_bitset_t ecs_bitset_not(ecs_bitset_t* set)
 {
     return ~(*set);
@@ -1143,6 +1148,20 @@ static inline ecs_bitset_t ecs_bitset_and(ecs_bitset_t* set1,
 
     return set;
 }
+
+static inline ecs_bitset_t ecs_bitset_or(ecs_bitset_t* set1,
+                                         ecs_bitset_t* set2)
+{
+    ecs_bitset_t set;
+
+    for (int i = 0; i < ECS_BITSET_SIZE; i++)
+    {
+        set.array[i] = set1->array[i] | set2->array[i];
+    }
+
+    return set;
+}
+
 
 static inline ecs_bitset_t ecs_bitset_not(ecs_bitset_t* set)
 {
@@ -1296,11 +1315,13 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
                                           ecs_bitset_t* exclude_bits,
                                           ecs_bitset_t* entity_bits)
 {
-    ecs_bitset_t bits = ecs_bitset_not(exclude_bits);
-    bits = ecs_bitset_and(&bits, require_bits);
+    ecs_bitset_t mask = ecs_bitset_not(exclude_bits);
+    ecs_bitset_t entity_and_mask = ecs_bitset_and(entity_bits, &mask);
 
-    ecs_bitset_t tmp = ecs_bitset_and(&bits, entity_bits);
-    return ecs_bitset_equal(&bits, &tmp);
+    ecs_bitset_t require_or_exclude = ecs_bitset_or(require_bits, exclude_bits);
+    ecs_bitset_t bits = ecs_bitset_and(&entity_and_mask, &require_or_exclude);
+
+    return ecs_bitset_equal(&require_or_exclude, &bits);
 }
 
 /*=============================================================================
