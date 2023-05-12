@@ -1334,7 +1334,9 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
 {
     if (!ecs_bitset_is_zero(exclude_bits))
     {
-        if (ecs_bitset_and(entity_bits, exclude_bits))
+        ecs_bitset_t overlap = ecs_bitset_and(entity_bits, exclude_bits);
+
+        if (ecs_bitset_true(&overlap))
         {
             return false;
         }
