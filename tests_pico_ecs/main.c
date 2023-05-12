@@ -97,6 +97,48 @@ TEST_CASE(test_destructor_destroy)
     return true;
 }
 
+static ecs_ret_t exclude_system(ecs_t* ecs,
+                                ecs_id_t* entities,
+                                int entity_count,
+                                ecs_dt_t dt,
+                                void* udata)
+{
+    (void)ecs;
+    (void)entity_count;
+    (void)dt;
+    (void)udata;
+
+    printf("TEST\n");
+
+    for (int i = 0; i < entity_count; i++)
+    {
+        printf("id: %u\n", entities[i]);
+    }
+
+    return 0;
+}
+
+TEST_CASE(test_exclude)
+{
+    ecs_id_t system_id = ecs_register_system(ecs, exclude_system, NULL, NULL, NULL);
+
+    ecs_require_component(ecs, system_id, comp2_id);
+    ecs_exclude_component(ecs, system_id, comp1_id);
+
+    ecs_id_t eid1 = ecs_create(ecs);
+    ecs_add(ecs, eid1, comp1_id);
+    ecs_add(ecs, eid1, comp2_id);
+
+    ecs_id_t eid2 = ecs_create(ecs);
+    ecs_add(ecs, eid2, comp2_id);
+
+    ecs_update_system(ecs, system_id, 0.0);
+
+//    REQUIRE(ret == (ecs_ret_t)eid1);
+
+    return true;
+}
+
 TEST_CASE(test_reset)
 {
     for (int i = 0; i < MAX_ENTITIES; i++)
@@ -607,6 +649,7 @@ TEST_CASE(test_add_remove_callbacks)
 
 static TEST_SUITE(suite_ecs)
 {
+    RUN_TEST_CASE(test_exclude);
     RUN_TEST_CASE(test_reset);
     RUN_TEST_CASE(test_constructor);
     RUN_TEST_CASE(test_destructor_remove);
