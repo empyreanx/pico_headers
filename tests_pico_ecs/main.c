@@ -97,6 +97,13 @@ TEST_CASE(test_destructor_destroy)
     return true;
 }
 
+
+static struct
+{
+    ecs_id_t eid;
+    size_t count;
+} exclude_sys_state;
+
 static ecs_ret_t exclude_system(ecs_t* ecs,
                                 ecs_id_t* entities,
                                 int entity_count,
@@ -108,11 +115,11 @@ static ecs_ret_t exclude_system(ecs_t* ecs,
     (void)dt;
     (void)udata;
 
-    printf("TEST\n");
+    exclude_sys_state.count = entity_count;
 
-    for (int i = 0; i < entity_count; i++)
+    if (entity_count > 0)
     {
-        printf("id: %u\n", entities[i]);
+        exclude_sys_state.eid = entities[0];
     }
 
     return 0;
@@ -134,7 +141,8 @@ TEST_CASE(test_exclude)
 
     ecs_update_system(ecs, system_id, 0.0);
 
-//    REQUIRE(ret == (ecs_ret_t)eid1);
+    REQUIRE(exclude_sys_state.count == 1);
+    REQUIRE(exclude_sys_state.eid == eid2);
 
     return true;
 }
