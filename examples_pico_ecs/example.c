@@ -69,9 +69,9 @@ ecs_id_t System3;
 // Register components
 void register_components(ecs_t* ecs)
 {
-    PosComp  = ecs_register_component(ecs, sizeof(pos_t),  NULL, NULL, NULL);
-    VelComp  = ecs_register_component(ecs, sizeof(vel_t),  NULL, NULL, NULL);
-    RectComp = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL, NULL);
+    PosComp  = ecs_register_component(ecs, sizeof(pos_t),  NULL, NULL);
+    VelComp  = ecs_register_component(ecs, sizeof(vel_t),  NULL, NULL);
+    RectComp = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
 }
 
 // System that prints the entity IDs of entities associated with this system
@@ -137,23 +137,23 @@ int main()
     printf("---------------------------------------------------------------\n");
 
     printf("PosComp added to: %u\n", e1);
-    ecs_add(ecs, e1, PosComp);
+    ecs_add(ecs, e1, PosComp, NULL);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %u\n", e2);
     printf("VeloComp added to: %u\n", e2);
 
-    ecs_add(ecs, e2, PosComp);
-    ecs_add(ecs, e2, VelComp);
+    ecs_add(ecs, e2, PosComp, NULL);
+    ecs_add(ecs, e2, VelComp, NULL);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %u\n", e3);
     printf("VeloComp added to: %u\n", e3);
     printf("RectComp added to: %u\n", e3);
 
-    ecs_add(ecs, e3, PosComp);
-    ecs_add(ecs, e3, VelComp);
-    ecs_add(ecs, e3, RectComp);
+    ecs_add(ecs, e3, PosComp, NULL);
+    ecs_add(ecs, e3, VelComp, NULL);
+    ecs_add(ecs, e3, RectComp, NULL);
 
     printf("---------------------------------------------------------------\n");
 

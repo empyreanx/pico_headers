@@ -146,7 +146,7 @@ void ecs_reset(ecs_t* ecs);
 typedef void (*ecs_constructor_fn)(ecs_t* ecs,
                                    ecs_id_t entity_id,
                                    void* ptr,
-                                   void* udata);
+                                   void* args);
 
 /**
  * @brief Called when a component is destroyed (via ecs_remove or ecs_destroy)
@@ -158,8 +158,7 @@ typedef void (*ecs_constructor_fn)(ecs_t* ecs,
  */
 typedef void (*ecs_destructor_fn)(ecs_t* ecs,
                                   ecs_id_t entity_id,
-                                  void* ptr,
-                                  void* udata);
+                                  void* ptr);
 
 /**
  * @brief Registers a component
@@ -177,8 +176,7 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
 ecs_id_t ecs_register_component(ecs_t* ecs,
                                 size_t size,
                                 ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor,
-                                void* udata);
+                                ecs_destructor_fn destructor);
 
 /**
  * @brief System update callback
@@ -243,6 +241,14 @@ ecs_id_t ecs_register_system(ecs_t* ecs,
  */
 void ecs_require_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id);
 
+/**
+ * @brief Excludes entities having the specified component from being added to
+ * the target system.
+ *
+ * @param ecs     The ECS instance
+ * @param sys_id  The target system ID
+ * @param comp_id The component ID tp exclude
+ */
 void ecs_exclude_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id);
 
 /**
@@ -308,7 +314,7 @@ bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
  *
  * @returns The component instance
  */
-void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
+void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args);
 
 /**
  * @brief Gets a component instance associated with an entity
@@ -474,7 +480,6 @@ typedef struct
 {
     ecs_constructor_fn constructor;
     ecs_destructor_fn  destructor;
-    void*              udata;
 } ecs_comp_t;
 
 typedef struct
@@ -670,8 +675,7 @@ void ecs_reset(ecs_t* ecs)
 ecs_id_t ecs_register_component(ecs_t* ecs,
                                 size_t size,
                                 ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor,
-                                void* udata)
+                                ecs_destructor_fn destructor)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
@@ -684,7 +688,6 @@ ecs_id_t ecs_register_component(ecs_t* ecs,
 
     ecs->comps[comp_id].constructor = constructor;
     ecs->comps[comp_id].destructor = destructor;
-    ecs->comps[comp_id].udata = udata;
 
     ecs->comp_count++;
 
@@ -839,7 +842,7 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
             if (comp->destructor)
             {
                 void* ptr = ecs_get(ecs, entity_id, comp_id);
-                comp->destructor(ecs, entity_id, ptr, comp->udata);
+                comp->destructor(ecs, entity_id, ptr);
             }
         }
     }
@@ -875,7 +878,7 @@ void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     return (char*)comp_array->data + (comp_array->size * entity_id);
 }
 
-void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
+void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
@@ -916,7 +919,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     ecs_comp_t* comp = &ecs->comps[comp_id];
 
     if (comp->constructor)
-        comp->constructor(ecs, entity_id, ptr, comp->udata);
+        comp->constructor(ecs, entity_id, ptr, args);
     else
         memset(ptr, 0, comp_array->size);
 
@@ -954,7 +957,7 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     if (comp->destructor)
     {
         void* ptr = ecs_get(ecs, entity_id, comp_id);
-        comp->destructor(ecs, entity_id, ptr, comp->udata);
+        comp->destructor(ecs, entity_id, ptr);
     }
 
     // Reset the relevant component mask bit
