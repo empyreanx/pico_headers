@@ -146,7 +146,7 @@ void ecs_reset(ecs_t* ecs);
 typedef void (*ecs_constructor_fn)(ecs_t* ecs,
                                    ecs_id_t entity_id,
                                    void* ptr,
-                                   void* args);
+                                   const void* args);
 
 /**
  * @brief Called when a component is destroyed (via ecs_remove or ecs_destroy)
@@ -314,7 +314,7 @@ bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
  *
  * @returns The component instance
  */
-void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args);
+void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, const void* args);
 
 /**
  * @brief Gets a component instance associated with an entity
@@ -878,7 +878,7 @@ void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     return (char*)comp_array->data + (comp_array->size * entity_id);
 }
 
-void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args)
+void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, const void* args)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_component_id(comp_id));
