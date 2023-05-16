@@ -105,13 +105,13 @@ typedef struct
     bool used;
 } test_args_t;
 
-void constructor(ecs_t* ecs, ecs_id_t entity_id, void* ptr, const void* args)
+void constructor(ecs_t* ecs, ecs_id_t entity_id, void* ptr, void* args)
 {
     (void)ecs;
     (void)entity_id;
     (void)args;
 
-    const test_args_t* test_args = args;
+    test_args_t* test_args = args;
 
     comp_t* comp = ptr;
     comp->used = test_args->used;
