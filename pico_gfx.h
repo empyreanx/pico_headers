@@ -8,6 +8,7 @@
 
 #include "sokol_gfx.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 
 /**
@@ -119,14 +120,14 @@ typedef struct pg_vbuffer_t pg_vbuffer_t;
  *
  * NOTE: This function calls `sg_setup`.
  */
-void pg_init_graphics();
+void pg_init();
 
 /**
  *  @brief Tears down pico_gfx and sokol_gfx
  *
  * NOTE: This function calls `sg_shutdown`
  */
-void pg_shutdown_graphics();
+void pg_shutdown();
 
 /**
  * @brief Creates an instance of the renderer
@@ -153,7 +154,7 @@ void pg_end_pass();
  *
  * Must be called at the end of a frame (after `pg_end_pass`).
 */
-void pg_flush_graphics();
+void pg_flush();
 
 /**
  * @brief Pushes the active state onto the stack.
@@ -272,6 +273,7 @@ void pg_destroy_vbuffer(pg_vbuffer_t* buffer);
 /**
  * @brief Draws a vertex buffer
  */
+// TODO: Accept start/count values
 void pg_draw_vbuffer(pg_ctx_t* ctx, pg_vbuffer_t* buffer, pg_texture_t* texture);
 
 /**
@@ -280,6 +282,11 @@ void pg_draw_vbuffer(pg_ctx_t* ctx, pg_vbuffer_t* buffer, pg_texture_t* texture)
 void pg_draw_array(pg_ctx_t* ctx,
                    const pg_vertex_t* vertices, size_t count,
                    pg_texture_t* texture);
+
+void pg_draw_indexed_array(pg_ctx_t* ctx,
+                           const pg_vertex_t* vertices, size_t vertex_count,
+                           const uint32_t* indices, size_t index_count,
+                           pg_texture_t* texture);
 
 /*=============================================================================
  * Internals
@@ -321,14 +328,13 @@ PICO_GFX_ALIGN(16) typedef struct pg_vs_t {
  * Constants
  *============================================================================*/
 
-#ifndef PICO_GFX_STACK_MAX_SIZEz
+#ifndef PICO_GFX_STACK_MAX_SIZE
 #define PICO_GFX_STACK_MAX_SIZE 16
 #endif
 
 #ifndef PICO_GFX_BUFFER_SIZE
 #define PICO_GFX_BUFFER_SIZE 1024
 #endif
-
 
 /*=============================================================================
  * Macros
@@ -515,7 +521,7 @@ struct pg_vbuffer_t
     size_t count;
 };
 
-void pg_init_graphics()
+void pg_init()
 {
     sg_setup(&(sg_desc)
     {
@@ -529,7 +535,7 @@ void pg_init_graphics()
     });
 }
 
-void pg_shutdown_graphics()
+void pg_shutdown()
 {
     sg_shutdown();
 }
@@ -622,7 +628,7 @@ void pg_end_pass()
     sg_end_pass();
 }
 
-void pg_flush_graphics()
+void pg_flush()
 {
     sg_commit();
 }
@@ -639,7 +645,7 @@ void pg_pop_state(pg_ctx_t* ctx)
     ctx->stack_size--;
 }
 
-void pg_reset_state(pg_ctx_t* ctx)
+void pg_reset_state(pg_ctx_t* ctx) //FIXME: pass in shader?
 {
     memset(&ctx->state, 0, sizeof(pg_state_t));
 
@@ -722,7 +728,7 @@ pg_shader_t* pg_create_shader_internal(pg_shader_internal_t internal)
                                                  shader->desc->attrs[2].name);
 
     shader->handle = sg_make_shader(shader->desc);
-    shader->uniform_blocks = pg_hashtable_new(16, 32, sizeof(pg_uniform_block_t));
+    shader->uniform_blocks = pg_hashtable_new(16, 32, sizeof(pg_uniform_block_t)); // TODO: constants
 
     shader->arena = pg_arena_new(1024);
 
@@ -828,7 +834,8 @@ pg_texture_t* pg_create_render_texture(int width, int height,
     return texture;
 }
 
-/*void pg_update_texture(pg_texture_t* texture, uint8_t* data, size_t size)
+/*TODO:
+void pg_update_texture(pg_texture_t* texture, uint8_t* data, size_t size)
 {
 
 }*/
