@@ -120,7 +120,6 @@ int main(int argc, char *argv[])
         { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
     };
 
-
     bool done = false;
 
     while (!done)
