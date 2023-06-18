@@ -80,22 +80,19 @@ int main(int argc, char *argv[])
 
     pg_register_uniform_block(default_shader, "pg_vs", PG_VS_STAGE, sizeof(pg_vs_t));
 
-    int w = pixel_w;
-    int h = pixel_h;
-
     pg_vs_t pg_vs = (pg_vs_t)
     {
-        .u_proj = { 2.0f / w, 0.0f,     0.0f, 0.0f,
-                    0.0f,     2.0f / h, 0.0f, 0.0f,
-                    0.0f,     0.0f,     0.0f, 0.0f,
-                   -1.0f,    -1.0f,     0.0f, 1.0f },
+        .u_proj = { 1.0f,  0.0f, 0.0f, 0.0f,
+                    0.0f,  1.0f, 0.0f, 0.0f,
+                    0.0f,  0.0f, 0.0f, 0.0f,
+                    0.0f,  0.0f, 0.0f, 1.0f },
     };
 
     pg_set_uniform_block(default_shader, "pg_vs", &pg_vs);
 
     // Load image
 
-    int c;
+    int w, h, c;
     unsigned char* bitmap = stbi_load("./boomer.png", &w, &h, &c, 0);
 
     assert(bitmap);
@@ -105,7 +102,7 @@ int main(int argc, char *argv[])
     size_t size = w * h * c;
     pg_texture_t* tex = pg_create_texture(w, h, bitmap, size, 0, false, false);
 
-    assert(tex);
+    assert(tex && c == 4);
 
     // Specify vertices
 
