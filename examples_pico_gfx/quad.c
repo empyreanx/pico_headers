@@ -62,15 +62,101 @@ int main(int argc, char *argv[])
                                           1024, 768,
                                           SDL_WINDOW_OPENGL);
 
-    int screen_w, screen_h;
-    SDL_GL_GetDrawableSize(window, &screen_w, &screen_h);
+    int pixel_w, pixel_h;
+    SDL_GL_GetDrawableSize(window, &pixel_w, &pixel_h);
 
     SDL_GL_SetSwapInterval(1);
     SDL_GLContext context = SDL_GL_CreateContext(window);
 
     pg_init();
 
-    SDL_GL_SwapWindow(window);
+
+    // Initialize context
+    pg_ctx_t* ctx = pg_create_context(pixel_w, pixel_h);
+
+    // Register/set uniform
+
+    pg_shader_t* default_shader = pg_get_default_shader(ctx);
+
+    pg_register_uniform_block(default_shader, "pg_vs", PG_VS_STAGE, sizeof(pg_vs_t));
+
+    int w = pixel_w;
+    int h = pixel_h;
+
+    pg_vs_t pg_vs = (pg_vs_t)
+    {
+        .u_proj = { 2.0f / w, 0.0f,     0.0f, 0.0f,
+                    0.0f,     2.0f / h, 0.0f, 0.0f,
+                    0.0f,     0.0f,     0.0f, 0.0f,
+                   -1.0f,    -1.0f,     0.0f, 1.0f },
+    };
+
+    pg_set_uniform_block(default_shader, "pg_vs", &pg_vs);
+
+    // Load image
+
+    int c;
+    unsigned char* bitmap = stbi_load("./boomer.png", &w, &h, &c, 0);
+
+    assert(bitmap);
+
+    // Load texture
+
+    size_t size = w * h * c;
+    pg_texture_t* tex = pg_create_texture(w, h, bitmap, size, 0, false, false);
+
+    assert(tex);
+
+    // Specify vertices
+
+    pg_vertex_t vertices[6] =
+    {
+        { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
+        { {-1.0f, -1.0f }, { 1, 1, 1, 1 }, { 0, 0} },
+        { { 1.0f, -1.0f }, { 1, 1, 1, 1 }, { 1, 0} },
+
+        { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
+        { { 1.0f, -1.0f }, { 1, 1, 1, 1 }, { 1, 0} },
+        { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
+    };
+
+
+    bool done = false;
+
+    while (!done)
+    {
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+                case SDL_QUIT:
+                    done = true;
+                    break;
+
+                case SDL_KEYDOWN:
+                    switch (event.key.keysym.sym)
+                    {
+                        case SDLK_ESCAPE:
+                            done = true;
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        pg_begin_pass(ctx, NULL, true);
+
+        pg_draw_array(ctx, vertices, 6, tex);
+
+        pg_end_pass();
+
+        pg_flush();
+
+        SDL_GL_SwapWindow(window);
+    }
+
+    pg_shutdown();
 
     SDL_GL_DeleteContext(context);
     SDL_DestroyWindow(window);

@@ -274,7 +274,10 @@ void pg_destroy_vbuffer(pg_vbuffer_t* buffer);
  * @brief Draws a vertex buffer
  */
 // TODO: Accept start/count values
-void pg_draw_vbuffer(pg_ctx_t* ctx, pg_vbuffer_t* buffer, pg_texture_t* texture);
+void pg_draw_vbuffer(pg_ctx_t* ctx,
+                     pg_vbuffer_t* buffer,
+                     size_t start, size_t count,
+                     pg_texture_t* texture);
 
 /**
  * @brief Draws an array of vertices
@@ -903,7 +906,10 @@ void pg_destroy_vbuffer(pg_vbuffer_t* buffer)
     PICO_GFX_FREE(buffer);
 }
 
-void pg_draw_vbuffer(pg_ctx_t* ctx, pg_vbuffer_t* buffer, pg_texture_t* texture)
+void pg_draw_vbuffer(pg_ctx_t* ctx,
+                     pg_vbuffer_t* buffer,
+                     size_t start, size_t count,
+                     pg_texture_t* texture)
 {
     sg_bindings bindings;
 
@@ -918,7 +924,9 @@ void pg_draw_vbuffer(pg_ctx_t* ctx, pg_vbuffer_t* buffer, pg_texture_t* texture)
     sg_apply_bindings(&bindings);
     pg_apply_uniforms(ctx->state.shader);
 
-    sg_draw(0, buffer->count, 1);
+    PICO_GFX_ASSERT(start + count <= buffer->count);
+
+    sg_draw(start, count, 1);
 }
 
 void pg_draw_array(pg_ctx_t* ctx,
