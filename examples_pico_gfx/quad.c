@@ -151,11 +151,12 @@ int main(int argc, char *argv[])
 
         pg_begin_pass(ctx, NULL, true);
 
+        pg_push_state(ctx);
         pg_set_pipeline(ctx, true, PG_TRIANGLES, NULL, default_shader);
-
         pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6, tex);
+        pg_pop_state(ctx);
 
-        //pg_draw_array(ctx, vertices, 6, tex);
+        pg_draw_array(ctx, vertices, 6, tex);
 
         pg_end_pass();
 

@@ -656,6 +656,12 @@ void pg_push_state(pg_ctx_t* ctx)
 
 void pg_pop_state(pg_ctx_t* ctx)
 {
+    if (ctx->state.pipeline.id != 0 &&
+        sg_query_pipeline_state(ctx->state.pipeline) != SG_RESOURCESTATE_INVALID)
+    {
+        sg_destroy_pipeline(ctx->state.pipeline);
+    }
+
     ctx->state = ctx->state_stack[ctx->stack_size - 1];
     ctx->stack_size--;
 }
@@ -676,9 +682,6 @@ void pg_set_pipeline(pg_ctx_t* ctx, bool indexed,
                                     pg_shader_t* shader)
 {
     PICO_GFX_ASSERT(shader);
-
-    if (ctx->state.pipeline.id != 0)
-        sg_destroy_pipeline(ctx->state.pipeline);
 
     sg_pipeline_desc desc;
 
@@ -948,7 +951,7 @@ void pg_draw_array(pg_ctx_t* ctx,
                    const pg_vertex_t* vertices, size_t count,
                    pg_texture_t* texture)
 {
-    PICO_GFX_ASSERT(!ctx->indexed);
+    //PICO_GFX_ASSERT(!ctx->indexed);
 
     int offset = sg_append_buffer(ctx->buffer, &(sg_range) { .ptr = vertices, .size = count * sizeof(pg_vertex_t)});
 
