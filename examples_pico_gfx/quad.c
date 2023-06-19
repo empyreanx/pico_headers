@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
         pg_begin_pass(ctx, NULL, true);
 
         pg_push_state(ctx);
-        pg_set_pipeline(ctx, true, PG_TRIANGLES, NULL, default_shader);
+        pg_set_pipeline(ctx, default_shader, true, PG_TRIANGLES, NULL);
         pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6, tex);
         pg_pop_state(ctx);
 

@@ -176,10 +176,10 @@ void pg_reset_state(pg_ctx_t* ctx);
 /**
  * @brief Sets the pipeline state
  */
-void pg_set_pipeline(pg_ctx_t* ctx, bool indexed,
+void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
+                                    bool indexed,
                                     pg_primitive_t primitive,
-                                    const pg_blend_mode_t* mode,
-                                    pg_shader_t* shader);
+                                    const pg_blend_mode_t* mode);
 
 /**
  * @brief Sets the clear color state
@@ -671,15 +671,15 @@ void pg_reset_state(pg_ctx_t* ctx) //FIXME: pass in shader?
     memset(&ctx->state, 0, sizeof(pg_state_t));
 
     pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 1.f);
-    pg_set_pipeline(ctx, false, PG_TRIANGLES, NULL, ctx->default_shader);
+    pg_set_pipeline(ctx, ctx->default_shader, false, PG_TRIANGLES, NULL);
     pg_set_scissor(ctx, 0, 0, ctx->window_width, ctx->window_height); //FIXME: this should be target dimensions
     pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
 }
 
-void pg_set_pipeline(pg_ctx_t* ctx, bool indexed,
+void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
+                                    bool indexed,
                                     pg_primitive_t primitive,
-                                    const pg_blend_mode_t* blend_mode,
-                                    pg_shader_t* shader)
+                                    const pg_blend_mode_t* blend_mode)
 {
     PICO_GFX_ASSERT(shader);
 
