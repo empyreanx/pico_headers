@@ -70,22 +70,20 @@ int main(int argc, char *argv[])
 
     pg_init();
 
-
     // Initialize context
     pg_ctx_t* ctx = pg_create_context(pixel_w, pixel_h);
 
     // Register/set uniform
-
     pg_shader_t* default_shader = pg_get_default_shader(ctx);
 
     pg_register_uniform_block(default_shader, "pg_vs", PG_VS_STAGE, sizeof(pg_vs_t));
 
     pg_vs_t pg_vs = (pg_vs_t)
     {
-        .u_proj = { 1.0f,  0.0f, 0.0f, 0.0f,
-                    0.0f,  1.0f, 0.0f, 0.0f,
-                    0.0f,  0.0f, 0.0f, 0.0f,
-                    0.0f,  0.0f, 0.0f, 1.0f },
+        { 1.0f,  0.0f, 0.0f, 0.0f,
+          0.0f,  1.0f, 0.0f, 0.0f,
+          0.0f,  0.0f, 0.0f, 0.0f,
+          0.0f,  0.0f, 0.0f, 1.0f }
     };
 
     pg_set_uniform_block(default_shader, "pg_vs", &pg_vs);
@@ -117,6 +115,16 @@ int main(int argc, char *argv[])
         { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
     };
 
+    pg_vertex_t indexed_vertices[4] =
+    {
+        { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
+        { {-1.0f, -1.0f }, { 1, 1, 1, 1 }, { 0, 0} },
+        { { 1.0f, -1.0f }, { 1, 1, 1, 1 }, { 1, 0} },
+        { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
+    };
+
+    uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
+
     bool done = false;
 
     while (!done)
@@ -143,7 +151,11 @@ int main(int argc, char *argv[])
 
         pg_begin_pass(ctx, NULL, true);
 
-        pg_draw_array(ctx, vertices, 6, tex);
+        pg_set_pipeline(ctx, true, PG_TRIANGLES, NULL, default_shader);
+
+        pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6, tex);
+
+        //pg_draw_array(ctx, vertices, 6, tex);
 
         pg_end_pass();
 

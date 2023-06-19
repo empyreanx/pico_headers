@@ -176,7 +176,8 @@ void pg_reset_state(pg_ctx_t* ctx);
 /**
  * @brief Sets the pipeline state
  */
-void pg_set_pipeline(pg_ctx_t* ctx, pg_primitive_t primitive,
+void pg_set_pipeline(pg_ctx_t* ctx, bool indexed,
+                                    pg_primitive_t primitive,
                                     const pg_blend_mode_t* mode,
                                     pg_shader_t* shader);
 
@@ -482,6 +483,7 @@ struct pg_ctx_t
     int window_height;
     bool indexed;
     sg_buffer buffer;
+    sg_buffer index_buffer;
     pg_shader_t* default_shader;
     pg_state_t state;
     pg_state_t state_stack[PICO_GFX_STACK_MAX_SIZE];
@@ -624,6 +626,16 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
         .size  = PICO_GFX_BUFFER_SIZE * sizeof(pg_vertex_t),
         .usage = SG_USAGE_STREAM
     });
+
+    if (ctx->index_buffer.id != 0)
+        sg_destroy_buffer(ctx->index_buffer);
+
+    ctx->index_buffer = sg_make_buffer(&(sg_buffer_desc)
+    {
+        .type  = SG_BUFFERTYPE_INDEXBUFFER,
+        .size  = PICO_GFX_BUFFER_SIZE * sizeof(uint32_t),
+        .usage = SG_USAGE_STREAM
+    });
 }
 
 void pg_end_pass()
@@ -653,12 +665,13 @@ void pg_reset_state(pg_ctx_t* ctx) //FIXME: pass in shader?
     memset(&ctx->state, 0, sizeof(pg_state_t));
 
     pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 1.f);
-    pg_set_pipeline(ctx, PG_TRIANGLES, NULL, ctx->default_shader);
+    pg_set_pipeline(ctx, false, PG_TRIANGLES, NULL, ctx->default_shader);
     pg_set_scissor(ctx, 0, 0, ctx->window_width, ctx->window_height); //FIXME: this should be target dimensions
     pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
 }
 
-void pg_set_pipeline(pg_ctx_t* ctx, pg_primitive_t primitive,
+void pg_set_pipeline(pg_ctx_t* ctx, bool indexed,
+                                    pg_primitive_t primitive,
                                     const pg_blend_mode_t* blend_mode,
                                     pg_shader_t* shader)
 {
@@ -688,10 +701,12 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_primitive_t primitive,
         desc.colors[0].blend.op_alpha = pg_map_blend_eq(blend_mode->alpha_eq);
     }
 
-    if (ctx->indexed)
+    if (indexed)
         desc.index_type = SG_INDEXTYPE_UINT32;
     else
         desc.index_type = SG_INDEXTYPE_NONE;
+
+    ctx->indexed = indexed;
 
     desc.shader = shader->handle;
 
@@ -933,6 +948,8 @@ void pg_draw_array(pg_ctx_t* ctx,
                    const pg_vertex_t* vertices, size_t count,
                    pg_texture_t* texture)
 {
+    PICO_GFX_ASSERT(!ctx->indexed);
+
     int offset = sg_append_buffer(ctx->buffer, &(sg_range) { .ptr = vertices, .size = count * sizeof(pg_vertex_t)});
 
     sg_bindings bindings;
@@ -950,6 +967,42 @@ void pg_draw_array(pg_ctx_t* ctx,
     pg_apply_uniforms(ctx->state.shader);
 
     sg_draw(0, count, 1);
+}
+
+void pg_draw_indexed_array(pg_ctx_t* ctx,
+                           const pg_vertex_t* vertices, size_t vertex_count,
+                           const uint32_t* indices, size_t index_count,
+                           pg_texture_t* texture)
+{
+    PICO_GFX_ASSERT(ctx->indexed);
+
+    int vertex_offset = sg_append_buffer(ctx->buffer, &(sg_range)
+    {
+        .ptr = vertices, .size = vertex_count * sizeof(pg_vertex_t)
+    });
+
+    int index_offset = sg_append_buffer(ctx->index_buffer, &(sg_range)
+    {
+        .ptr = indices, .size = index_count * sizeof(uint32_t)
+    });
+
+    sg_bindings bindings;
+
+    memset(&bindings, 0, sizeof(sg_bindings));
+
+    if (texture)
+        bindings.fs_images[0] = texture->handle;
+
+    bindings.vertex_buffer_offsets[0] = vertex_offset;
+    bindings.index_buffer_offset = index_offset;
+    bindings.vertex_buffers[0] = ctx->buffer;
+    bindings.index_buffer = ctx->index_buffer;
+
+    sg_apply_pipeline(ctx->state.pipeline);
+    sg_apply_bindings(&bindings);
+    pg_apply_uniforms(ctx->state.shader);
+
+    sg_draw(0, index_count, 1);
 }
 
 /*==============================================================================

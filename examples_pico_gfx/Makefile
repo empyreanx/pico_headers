@@ -16,7 +16,7 @@ else
     endif
 endif
 
-DEPS   = ../pico_gl.h
+DEPS   = ../pico_gfx.h
 
 #all: quad sg
 
@@ -34,4 +34,4 @@ quad: quad.o $(DEPS)
 .PHONY: clean
 
 clean:
-	rm -f quad sg *.o*
+	rm -f quad sg *.o
