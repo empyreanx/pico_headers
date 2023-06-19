@@ -560,14 +560,29 @@ pg_ctx_t* pg_create_context(int window_width, int window_height)
     return ctx;
 }
 
+static void pg_destroy_pipelines(pg_ctx_t* ctx)
+{
+    if (sg_query_pipeline_state(ctx->state.pipeline) != SG_RESOURCESTATE_INVALID)
+        sg_destroy_pipeline(ctx->state.pipeline);
+
+    for (int i = 0; i < ctx->stack_size; i++)
+    {
+        sg_pipeline pipeline = ctx->state_stack[i].pipeline;
+
+        if (sg_query_pipeline_state(pipeline) != SG_RESOURCESTATE_INVALID)
+            sg_destroy_pipeline(pipeline);
+    }
+}
+
 void pg_destroy_context(pg_ctx_t* ctx)
 {
-    //FIXME: loop through state, query state
-    if (ctx->state.pipeline.id != 0)
-        sg_destroy_pipeline(ctx->state.pipeline);
+    pg_destroy_pipelines(ctx);
 
     if (ctx->buffer.id != 0)
         sg_destroy_buffer(ctx->buffer);
+
+    if (ctx->index_buffer.id != 0)
+        sg_destroy_buffer(ctx->index_buffer);
 
     pg_destroy_shader(ctx->default_shader);
 
@@ -654,7 +669,7 @@ void pg_push_state(pg_ctx_t* ctx)
     ctx->stack_size++;
 }
 
-bool pg_stack_has_pipeline(pg_ctx_t* ctx, int id)
+static bool pg_stack_has_pipeline(pg_ctx_t* ctx, int id)
 {
     for (int i = 0; i < ctx->stack_size; i++)
     {
@@ -668,7 +683,7 @@ bool pg_stack_has_pipeline(pg_ctx_t* ctx, int id)
 void pg_pop_state(pg_ctx_t* ctx)
 {
     if (!pg_stack_has_pipeline(ctx, ctx->state.pipeline.id))
-        sg_destroy_pipeline(ctx->state.pipeline);
+         sg_destroy_pipeline(ctx->state.pipeline);
 
     ctx->state = ctx->state_stack[ctx->stack_size - 1];
     ctx->stack_size--;
