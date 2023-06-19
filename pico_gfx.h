@@ -654,13 +654,21 @@ void pg_push_state(pg_ctx_t* ctx)
     ctx->stack_size++;
 }
 
+bool pg_stack_has_pipeline(pg_ctx_t* ctx, int id)
+{
+    for (int i = 0; i < ctx->stack_size; i++)
+    {
+        if (ctx->state_stack[i].pipeline.id == id)
+            return true;
+    }
+
+    return false;
+}
+
 void pg_pop_state(pg_ctx_t* ctx)
 {
-    if (ctx->state.pipeline.id != 0 &&
-        sg_query_pipeline_state(ctx->state.pipeline) != SG_RESOURCESTATE_INVALID)
-    {
+    if (!pg_stack_has_pipeline(ctx, ctx->state.pipeline.id))
         sg_destroy_pipeline(ctx->state.pipeline);
-    }
 
     ctx->state = ctx->state_stack[ctx->stack_size - 1];
     ctx->stack_size--;
