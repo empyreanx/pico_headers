@@ -518,6 +518,7 @@ struct pg_texture_t
     int width, height;
     bool target;
     sg_image handle;
+    sg_image depth_handle;
 };
 
 struct pg_vbuffer_t
@@ -611,7 +612,8 @@ pg_pass_t* pg_create_pass(pg_texture_t* texture)
 
     pass->handle = sg_make_pass(&(sg_pass_desc)
     {
-        .color_attachments[0].image = texture->handle
+        .color_attachments[0].image = texture->handle,
+        .depth_stencil_attachment.image = texture->depth_handle
     });
 
     return pass;
@@ -644,9 +646,6 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
         sg_begin_pass(pass->handle, &pass_action);
     else
         sg_begin_default_pass(&pass_action, ctx->window_width, ctx->window_height);
-
-    // TODO: Use draw queue and sg_update_buffer
-
 }
 
 void pg_end_pass()
@@ -654,6 +653,8 @@ void pg_end_pass()
     sg_end_pass();
 }
 
+// TODO: Eventually use a draw list to prevent the overhead of buffer
+// destruction/creation
 void pg_flush(pg_ctx_t* ctx)
 {
     sg_commit();
@@ -748,6 +749,10 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
 
     ctx->indexed = indexed;
 
+    desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH,
+    desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL,
+    desc.depth.write_enabled = true,
+    desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8,
     desc.shader = shader->handle;
 
     ctx->state.pipeline = sg_make_pipeline(&desc);
@@ -874,6 +879,7 @@ pg_texture_t* pg_create_render_texture(int width, int height,
     memset(&desc, 0, sizeof(sg_image_desc));
 
     desc.render_target = true;
+    desc.pixel_format = SG_PIXELFORMAT_RGBA8;
 
     desc.width  = texture->width  = width;
     desc.height = texture->height = height;
@@ -888,6 +894,9 @@ pg_texture_t* pg_create_render_texture(int width, int height,
 
     texture->handle = sg_make_image(&desc);
     texture->target = true;
+
+    desc.pixel_format = SG_PIXELFORMAT_DEPTH;
+    texture->depth_handle = sg_make_image(&desc);
 
     return texture;
 }
