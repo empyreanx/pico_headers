@@ -178,6 +178,7 @@ void pg_reset_state(pg_ctx_t* ctx);
  */
 void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
                                     bool indexed,
+                                    bool target,
                                     pg_primitive_t primitive,
                                     const pg_blend_mode_t* mode);
 
@@ -709,13 +710,14 @@ void pg_reset_state(pg_ctx_t* ctx) //FIXME: pass in shader?
     memset(&ctx->state, 0, sizeof(pg_state_t));
 
     pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 1.f);
-    pg_set_pipeline(ctx, ctx->default_shader, false, PG_TRIANGLES, NULL);
+    pg_set_pipeline(ctx, ctx->default_shader, false, false, PG_TRIANGLES, NULL);
     pg_set_scissor(ctx, 0, 0, ctx->window_width, ctx->window_height); //FIXME: this should be target dimensions
     pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
 }
 
 void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
                                     bool indexed,
+                                    bool target,
                                     pg_primitive_t primitive,
                                     const pg_blend_mode_t* blend_mode)
 {
@@ -742,6 +744,8 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
         desc.colors[0].blend.op_alpha = pg_map_blend_eq(blend_mode->alpha_eq);
     }
 
+    desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+
     if (indexed)
         desc.index_type = SG_INDEXTYPE_UINT32;
     else
@@ -749,10 +753,12 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
 
     ctx->indexed = indexed;
 
-    desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH,
-    desc.depth.compare = SG_COMPAREFUNC_LESS_EQUAL,
-    desc.depth.write_enabled = true,
-    desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8,
+    if (target)
+    {
+        desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH;
+        desc.depth.write_enabled = true;
+    }
+
     desc.shader = shader->handle;
 
     ctx->state.pipeline = sg_make_pipeline(&desc);

@@ -153,18 +153,18 @@ int main(int argc, char *argv[])
         }
 
         //pg_begin_pass(ctx, NULL, true);
-        pg_begin_pass(ctx, pass, true);
         pg_push_state(ctx);
 
-        pg_set_pipeline(ctx, default_shader, true, PG_TRIANGLES, NULL);
+        pg_begin_pass(ctx, pass, true);
+        pg_set_pipeline(ctx, default_shader, true, true, PG_TRIANGLES, NULL);
         pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6, tex);
-        pg_pop_state(ctx);
         pg_end_pass();
 
+        pg_pop_state(ctx);
 
-        /*pg_begin_pass(ctx, NULL, true);
+        pg_begin_pass(ctx, NULL, true);
         pg_draw_array(ctx, vertices, 6, target);
-        pg_end_pass();*/
+        pg_end_pass();
 
         pg_flush(ctx);
 
