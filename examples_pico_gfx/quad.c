@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 
         pg_end_pass();
 
-        pg_flush();
+        pg_flush(ctx);
 
         SDL_GL_SwapWindow(window);
     }

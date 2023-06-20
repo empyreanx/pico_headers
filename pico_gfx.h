@@ -154,7 +154,7 @@ void pg_end_pass();
  *
  * Must be called at the end of a frame (after `pg_end_pass`).
 */
-void pg_flush();
+void pg_flush(pg_ctx_t* ctx);
 
 /**
  * @brief Pushes the active state onto the stack.
@@ -557,6 +557,20 @@ pg_ctx_t* pg_create_context(int window_width, int window_height)
 
     pg_reset_state(ctx);
 
+    ctx->buffer = sg_make_buffer(&(sg_buffer_desc)
+    {
+        .type  = SG_BUFFERTYPE_VERTEXBUFFER,
+        .size  = PICO_GFX_BUFFER_SIZE * sizeof(pg_vertex_t),
+        .usage = SG_USAGE_STREAM
+    });
+
+    ctx->index_buffer = sg_make_buffer(&(sg_buffer_desc)
+    {
+        .type  = SG_BUFFERTYPE_INDEXBUFFER,
+        .size  = PICO_GFX_BUFFER_SIZE * sizeof(uint32_t),
+        .usage = SG_USAGE_STREAM
+    });
+
     return ctx;
 }
 
@@ -632,8 +646,19 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
         sg_begin_default_pass(&pass_action, ctx->window_width, ctx->window_height);
 
     // TODO: Use draw queue and sg_update_buffer
-    if (ctx->buffer.id != 0)
-        sg_destroy_buffer(ctx->buffer);
+
+}
+
+void pg_end_pass()
+{
+    sg_end_pass();
+}
+
+void pg_flush(pg_ctx_t* ctx)
+{
+    sg_commit();
+
+    sg_destroy_buffer(ctx->buffer);
 
     ctx->buffer = sg_make_buffer(&(sg_buffer_desc)
     {
@@ -642,8 +667,7 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
         .usage = SG_USAGE_STREAM
     });
 
-    if (ctx->index_buffer.id != 0)
-        sg_destroy_buffer(ctx->index_buffer);
+    sg_destroy_buffer(ctx->index_buffer);
 
     ctx->index_buffer = sg_make_buffer(&(sg_buffer_desc)
     {
@@ -651,16 +675,6 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
         .size  = PICO_GFX_BUFFER_SIZE * sizeof(uint32_t),
         .usage = SG_USAGE_STREAM
     });
-}
-
-void pg_end_pass()
-{
-    sg_end_pass();
-}
-
-void pg_flush()
-{
-    sg_commit();
 }
 
 void pg_push_state(pg_ctx_t* ctx)
