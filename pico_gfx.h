@@ -598,6 +598,8 @@ pg_ctx_t* pg_create_context(int window_width, int window_height)
 
 void pg_destroy_context(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
+
     if (ctx->buffer.id != 0)
         sg_destroy_buffer(ctx->buffer);
 
@@ -611,6 +613,7 @@ void pg_destroy_context(pg_ctx_t* ctx)
 
 pg_pass_t* pg_create_pass(pg_texture_t* texture)
 {
+    PICO_GFX_ASSERT(texture);
     PICO_GFX_ASSERT(texture->target);
 
     pg_pass_t* pass = (pg_pass_t*)PICO_GFX_MALLOC(sizeof(pg_pass_t));
@@ -628,12 +631,15 @@ pg_pass_t* pg_create_pass(pg_texture_t* texture)
 
 void pg_destroy_pass(pg_pass_t* pass)
 {
+    PICO_GFX_ASSERT(pass);
     sg_destroy_pass(pass->handle);
     PICO_GFX_FREE(pass);
 }
 
 void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
 {
+    PICO_GFX_ASSERT(ctx);
+
     sg_pass_action pass_action;
 
     memset(&pass_action, 0, sizeof(sg_pass_action));
@@ -668,6 +674,8 @@ void pg_end_pass()
 
 void pg_flush(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
+
     sg_commit();
 
     sg_destroy_buffer(ctx->buffer);
@@ -691,18 +699,26 @@ void pg_flush(pg_ctx_t* ctx)
 
 void pg_push_state(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(ctx->stack_size < PICO_GFX_STACK_MAX_SIZE);
+
     ctx->state_stack[ctx->stack_size] = ctx->state;
     ctx->stack_size++;
 }
 
 void pg_pop_state(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(ctx->stack_size > 0);
+
     ctx->state = ctx->state_stack[ctx->stack_size - 1];
     ctx->stack_size--;
 }
 
 void pg_reset_state(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
+
     memset(&ctx->state, 0, sizeof(pg_state_t));
 
     pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 1.f);
@@ -723,6 +739,8 @@ void pg_reset_state(pg_ctx_t* ctx)
 
 void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
 {
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(pipeline);
     ctx->state.pipeline = pipeline;
 }
 
@@ -820,6 +838,7 @@ pg_shader_t* pg_create_shader_internal(pg_shader_internal_t internal)
 
 void pg_destroy_shader(pg_shader_t* shader)
 {
+    PICO_GFX_ASSERT(shader);
     sg_destroy_shader(shader->handle);
     pg_hashtable_free(shader->uniform_blocks);
     pg_arena_free(shader->arena);
@@ -827,21 +846,28 @@ void pg_destroy_shader(pg_shader_t* shader)
 
 pg_shader_t* pg_get_default_shader(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
     return ctx->default_shader;
 }
 
 pg_pipeline_t* pg_get_default_pipeline(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
     return ctx->default_pipeline;
 }
 
 uint32_t pg_get_shader_id(pg_shader_t* shader)
 {
+    PICO_GFX_ASSERT(shader);
     return shader->handle.id;
 }
 
 void pg_register_uniform_block(pg_shader_t* shader, char* name, pg_stage_t stage, size_t size)
 {
+    PICO_GFX_ASSERT(shader);
+    PICO_GFX_ASSERT(name);
+    PICO_GFX_ASSERT(size > 0);
+
     pg_uniform_block_t block =
     {
         .stage = stage,
@@ -857,6 +883,10 @@ void pg_register_uniform_block(pg_shader_t* shader, char* name, pg_stage_t stage
 
 void pg_set_uniform_block(pg_shader_t* shader, char* name, void* data)
 {
+    PICO_GFX_ASSERT(shader);
+    PICO_GFX_ASSERT(name);
+    PICO_GFX_ASSERT(data);
+
     pg_uniform_block_t* block = pg_hashtable_get(shader->uniform_blocks, name);
 
     PICO_GFX_ASSERT(block);
@@ -869,6 +899,12 @@ pg_texture_t* pg_create_texture(int width, int height,
                                 uint8_t* data, size_t size,
                                 int mipmaps, bool smooth, bool repeat)
 {
+    PICO_GFX_ASSERT(width > 0);
+    PICO_GFX_ASSERT(height > 0);
+    PICO_GFX_ASSERT(data);
+    PICO_GFX_ASSERT(size > 0);
+    PICO_GFX_ASSERT(mipmaps >= 0);
+
     pg_texture_t* texture = (pg_texture_t*)PICO_GFX_MALLOC(sizeof(pg_texture_t));
 
     sg_image_desc desc;
@@ -897,6 +933,10 @@ pg_texture_t* pg_create_texture(int width, int height,
 pg_texture_t* pg_create_render_texture(int width, int height,
                                        int mipmaps, bool smooth, bool repeat)
 {
+    PICO_GFX_ASSERT(width > 0);
+    PICO_GFX_ASSERT(height > 0);
+    PICO_GFX_ASSERT(mipmaps >= 0);
+
     pg_texture_t* texture = (pg_texture_t*)PICO_GFX_MALLOC(sizeof(pg_texture_t));
 
     sg_image_desc desc;
@@ -934,11 +974,14 @@ void pg_update_texture(pg_texture_t* texture, uint8_t* data, size_t size)
 
 uint32_t pg_get_texture_id(pg_texture_t* texture)
 {
+    PICO_GFX_ASSERT(texture);
     return texture->handle.id;
 }
 
 void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height)
 {
+    PICO_GFX_ASSERT(texture);
+
     if (width)
         *width = texture->width;
 
@@ -948,6 +991,8 @@ void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height)
 
 static void pg_apply_uniforms(pg_shader_t* shader)
 {
+    PICO_GFX_ASSERT(shader);
+
     pg_hashtable_iterator_t iterator;
     pg_hashtable_init_iterator(shader->uniform_blocks, &iterator);
 
@@ -975,6 +1020,9 @@ static void pg_apply_uniforms(pg_shader_t* shader)
 
 pg_vbuffer_t* pg_create_vbuffer(const pg_vertex_t* vertices, size_t count)
 {
+    PICO_GFX_ASSERT(vertices);
+    PICO_GFX_ASSERT(count > 0);
+
     pg_vbuffer_t* buffer = (pg_vbuffer_t*)PICO_GFX_MALLOC(sizeof(pg_vbuffer_t));
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
@@ -991,6 +1039,7 @@ pg_vbuffer_t* pg_create_vbuffer(const pg_vertex_t* vertices, size_t count)
 
 void pg_destroy_vbuffer(pg_vbuffer_t* buffer)
 {
+    PICO_GFX_ASSERT(buffer);
     sg_destroy_buffer(buffer->handle);
     PICO_GFX_FREE(buffer);
 }
@@ -1009,6 +1058,10 @@ void pg_draw_vbuffer(pg_ctx_t* ctx,
                      size_t start, size_t count,
                      pg_texture_t* texture)
 {
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(buffer);
+    PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
+
     sg_bindings bindings;
 
     memset(&bindings, 0, sizeof(sg_bindings));
@@ -1035,7 +1088,10 @@ void pg_draw_array(pg_ctx_t* ctx,
                    const pg_vertex_t* vertices, size_t count,
                    pg_texture_t* texture)
 {
-    //PICO_GFX_ASSERT(!ctx->indexed);
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(vertices);
+    PICO_GFX_ASSERT(count > 0);
+    PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
 
     int offset = sg_append_buffer(ctx->buffer, &(sg_range) { .ptr = vertices, .size = count * sizeof(pg_vertex_t)});
 
@@ -1065,7 +1121,12 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
                            const uint32_t* indices, size_t index_count,
                            pg_texture_t* texture)
 {
-    //PICO_GFX_ASSERT(ctx->indexed);
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(vertices);
+    PICO_GFX_ASSERT(vertex_count > 0);
+    PICO_GFX_ASSERT(indices);
+    PICO_GFX_ASSERT(index_count > 0);
+    PICO_GFX_ASSERT(ctx->state.pipeline->indexed);
 
     int vertex_offset = sg_append_buffer(ctx->buffer, &(sg_range)
     {
