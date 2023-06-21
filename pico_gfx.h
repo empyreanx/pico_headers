@@ -181,12 +181,6 @@ void pg_reset_state(pg_ctx_t* ctx);
 /**
  * @brief Sets the pipeline state
  */
-/*void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
-                                    bool indexed,
-                                    bool target,
-                                    pg_primitive_t primitive,
-                                    const pg_blend_mode_t* mode);*/
-
 void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 
 /**
@@ -246,6 +240,8 @@ pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
                                   bool indexed,
                                   pg_shader_t* shader,
                                   const pg_blend_mode_t* blend_mode);
+
+void pg_destroy_pipeline(pg_pipeline_t* pipeline);
 
 /**
  * @brief Creates a texture from a bitmap
@@ -981,6 +977,15 @@ void pg_destroy_vbuffer(pg_vbuffer_t* buffer)
     PICO_GFX_FREE(buffer);
 }
 
+static void pg_apply_view_state(pg_ctx_t* ctx)
+{
+    pg_rect_t* rect = &ctx->state.viewport;
+    sg_apply_viewport(rect->x, rect->y, rect->width, rect->height, true);
+
+    rect = &ctx->state.scissor;
+    sg_apply_scissor_rect(rect->x, rect->y, rect->width, rect->height, true);
+}
+
 void pg_draw_vbuffer(pg_ctx_t* ctx,
                      pg_vbuffer_t* buffer,
                      size_t start, size_t count,
@@ -994,6 +999,8 @@ void pg_draw_vbuffer(pg_ctx_t* ctx,
         bindings.fs_images[0] = texture->handle;
 
     bindings.vertex_buffers[0] = buffer->handle;
+
+    pg_apply_view_state(ctx);
 
     pg_pipeline_t* pipeline = ctx->state.pipeline;
 
@@ -1023,6 +1030,8 @@ void pg_draw_array(pg_ctx_t* ctx,
 
     bindings.vertex_buffer_offsets[0] = offset;
     bindings.vertex_buffers[0] = ctx->buffer;
+
+    pg_apply_view_state(ctx);
 
     pg_pipeline_t* pipeline = ctx->state.pipeline;
 
@@ -1061,6 +1070,8 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
     bindings.index_buffer_offset = index_offset;
     bindings.vertex_buffers[0] = ctx->buffer;
     bindings.index_buffer = ctx->index_buffer;
+
+    pg_apply_view_state(ctx);
 
     pg_pipeline_t* pipeline = ctx->state.pipeline;
 
