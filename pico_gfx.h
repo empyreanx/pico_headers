@@ -494,6 +494,7 @@ struct pg_ctx_t
     bool indexed;
     sg_buffer buffer;
     sg_buffer index_buffer;
+    pg_pass_t* pass;
     pg_shader_t* default_shader;
     pg_pipeline_t* default_pipeline;
     pg_state_t state;
@@ -504,6 +505,7 @@ struct pg_ctx_t
 struct pg_pass_t
 {
     sg_pass handle;
+    pg_texture_t* texture;
 };
 
 struct pg_pipeline_t
@@ -619,6 +621,8 @@ pg_pass_t* pg_create_pass(pg_texture_t* texture)
         .depth_stencil_attachment.image = texture->depth_handle
     });
 
+    pass->texture = texture;
+
     return pass;
 }
 
@@ -646,9 +650,15 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
     }
 
     if (pass)
+    {
         sg_begin_pass(pass->handle, &pass_action);
+        ctx->pass = pass;
+    }
     else
+    {
         sg_begin_default_pass(&pass_action, ctx->window_width, ctx->window_height);
+        ctx->pass = NULL;
+    }
 }
 
 void pg_end_pass()
@@ -656,8 +666,6 @@ void pg_end_pass()
     sg_end_pass();
 }
 
-// TODO: Eventually use a draw list to prevent the overhead of buffer
-// destruction/creation
 void pg_flush(pg_ctx_t* ctx)
 {
     sg_commit();
@@ -693,14 +701,24 @@ void pg_pop_state(pg_ctx_t* ctx)
     ctx->stack_size--;
 }
 
-void pg_reset_state(pg_ctx_t* ctx) //FIXME: pass in shader?
+void pg_reset_state(pg_ctx_t* ctx)
 {
     memset(&ctx->state, 0, sizeof(pg_state_t));
 
     pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 1.f);
     pg_set_pipeline(ctx, ctx->default_pipeline);
-    pg_set_scissor(ctx, 0, 0, ctx->window_width, ctx->window_height); //FIXME: this should be target dimensions
-    pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
+
+    if (ctx->pass)
+    {
+        pg_texture_t* texture = ctx->pass->texture;
+        pg_set_scissor(ctx, 0, 0, texture->width, texture->height);
+        pg_set_viewport(ctx, 0, 0, texture->width, texture->height);
+    }
+    else
+    {
+        pg_set_scissor(ctx, 0, 0, ctx->window_width, ctx->window_height);
+        pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
+    }
 }
 
 void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
