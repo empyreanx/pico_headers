@@ -128,6 +128,8 @@ int main(int argc, char *argv[])
     pg_texture_t* target = pg_create_render_texture(pixel_w, pixel_h, 0, false, false);
     pg_pass_t* pass = pg_create_pass(target);
 
+    pg_pipeline_t* pip = pg_create_pipeline(PG_TRIANGLES, true, true, default_shader, NULL);
+
     bool done = false;
 
     while (!done)
@@ -152,11 +154,10 @@ int main(int argc, char *argv[])
             }
         }
 
-        //pg_begin_pass(ctx, NULL, true);
         pg_push_state(ctx);
 
         pg_begin_pass(ctx, pass, true);
-        pg_set_pipeline(ctx, default_shader, true, true, PG_TRIANGLES, NULL);
+        pg_set_pipeline(ctx, pip);
         pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6, tex);
         pg_end_pass();
 

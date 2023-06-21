@@ -98,6 +98,11 @@ typedef struct pg_ctx_t pg_ctx_t;
 typedef struct pg_pass_t pg_pass_t;
 
 /**
+ * @brief Contains render pass data/state
+ */
+typedef struct pg_pipeline_t pg_pipeline_t;
+
+/**
  * @brief Contains shader data/state
  */
 typedef struct pg_shader_t pg_shader_t;
@@ -176,11 +181,13 @@ void pg_reset_state(pg_ctx_t* ctx);
 /**
  * @brief Sets the pipeline state
  */
-void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
+/*void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
                                     bool indexed,
                                     bool target,
                                     pg_primitive_t primitive,
-                                    const pg_blend_mode_t* mode);
+                                    const pg_blend_mode_t* mode);*/
+
+void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 
 /**
  * @brief Sets the clear color state
@@ -233,6 +240,12 @@ void pg_register_uniform_block(pg_shader_t* shader, char* name, pg_stage_t stage
  * @brief Sets a uniform block
  */
 void pg_set_uniform_block(pg_shader_t* shader, char* name, void* data);
+
+pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
+                                  bool target,
+                                  bool indexed,
+                                  pg_shader_t* shader,
+                                  const pg_blend_mode_t* blend_mode);
 
 /**
  * @brief Creates a texture from a bitmap
@@ -471,11 +484,11 @@ typedef struct pg_rect_t
 
 typedef struct pg_state_t
 {
-    sg_color     clear_color;
-    sg_pipeline  pipeline;
-    pg_rect_t    viewport;
-    pg_rect_t    scissor;
-    pg_shader_t* shader;
+    sg_color       clear_color;
+    pg_pipeline_t* pipeline;
+    pg_rect_t      viewport;
+    pg_rect_t      scissor;
+    pg_shader_t*   shader;
 } pg_state_t;
 
 struct pg_ctx_t
@@ -486,6 +499,7 @@ struct pg_ctx_t
     sg_buffer buffer;
     sg_buffer index_buffer;
     pg_shader_t* default_shader;
+    pg_pipeline_t* default_pipeline;
     pg_state_t state;
     pg_state_t state_stack[PICO_GFX_STACK_MAX_SIZE];
     int stack_size;
@@ -494,6 +508,13 @@ struct pg_ctx_t
 struct pg_pass_t
 {
     sg_pass handle;
+};
+
+struct pg_pipeline_t
+{
+    sg_pipeline handle;
+    bool indexed;
+    pg_shader_t* shader;
 };
 
 struct pg_shader_t
@@ -556,6 +577,7 @@ pg_ctx_t* pg_create_context(int window_width, int window_height)
     ctx->window_width  = window_width;
     ctx->window_height = window_height;
     ctx->default_shader = pg_create_shader(pg_default);
+    ctx->default_pipeline = pg_create_pipeline(PG_TRIANGLES, false, false, ctx->default_shader, NULL);
 
     pg_reset_state(ctx);
 
@@ -576,24 +598,8 @@ pg_ctx_t* pg_create_context(int window_width, int window_height)
     return ctx;
 }
 
-static void pg_destroy_pipelines(pg_ctx_t* ctx)
-{
-    if (sg_query_pipeline_state(ctx->state.pipeline) != SG_RESOURCESTATE_INVALID)
-        sg_destroy_pipeline(ctx->state.pipeline);
-
-    for (int i = 0; i < ctx->stack_size; i++)
-    {
-        sg_pipeline pipeline = ctx->state_stack[i].pipeline;
-
-        if (sg_query_pipeline_state(pipeline) != SG_RESOURCESTATE_INVALID)
-            sg_destroy_pipeline(pipeline);
-    }
-}
-
 void pg_destroy_context(pg_ctx_t* ctx)
 {
-    pg_destroy_pipelines(ctx);
-
     if (ctx->buffer.id != 0)
         sg_destroy_buffer(ctx->buffer);
 
@@ -685,22 +691,8 @@ void pg_push_state(pg_ctx_t* ctx)
     ctx->stack_size++;
 }
 
-static bool pg_stack_has_pipeline(pg_ctx_t* ctx, int id)
-{
-    for (int i = 0; i < ctx->stack_size; i++)
-    {
-        if (ctx->state_stack[i].pipeline.id == id)
-            return true;
-    }
-
-    return false;
-}
-
 void pg_pop_state(pg_ctx_t* ctx)
 {
-    if (!pg_stack_has_pipeline(ctx, ctx->state.pipeline.id))
-         sg_destroy_pipeline(ctx->state.pipeline);
-
     ctx->state = ctx->state_stack[ctx->stack_size - 1];
     ctx->stack_size--;
 }
@@ -710,16 +702,21 @@ void pg_reset_state(pg_ctx_t* ctx) //FIXME: pass in shader?
     memset(&ctx->state, 0, sizeof(pg_state_t));
 
     pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 1.f);
-    pg_set_pipeline(ctx, ctx->default_shader, false, false, PG_TRIANGLES, NULL);
+    pg_set_pipeline(ctx, ctx->default_pipeline);
     pg_set_scissor(ctx, 0, 0, ctx->window_width, ctx->window_height); //FIXME: this should be target dimensions
     pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
 }
 
-void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
-                                    bool indexed,
-                                    bool target,
-                                    pg_primitive_t primitive,
-                                    const pg_blend_mode_t* blend_mode)
+void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
+{
+    ctx->state.pipeline = pipeline;
+}
+
+pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
+                                  bool target,
+                                  bool indexed,
+                                  pg_shader_t* shader,
+                                  const pg_blend_mode_t* blend_mode)
 {
     PICO_GFX_ASSERT(shader);
 
@@ -751,8 +748,6 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
     else
         desc.index_type = SG_INDEXTYPE_NONE;
 
-    ctx->indexed = indexed;
-
     if (target)
     {
         desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH;
@@ -761,8 +756,13 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_shader_t* shader,
 
     desc.shader = shader->handle;
 
-    ctx->state.pipeline = sg_make_pipeline(&desc);
-    ctx->state.shader = shader;
+    pg_pipeline_t* pipeline = (pg_pipeline_t*)PICO_GFX_MALLOC(sizeof(pg_pipeline_t));
+
+    pipeline->handle = sg_make_pipeline(&desc);
+    pipeline->indexed = indexed;
+    pipeline->shader = shader;
+
+    return pipeline;
 }
 
 void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a)
@@ -814,6 +814,11 @@ void pg_destroy_shader(pg_shader_t* shader)
 pg_shader_t* pg_get_default_shader(pg_ctx_t* ctx)
 {
     return ctx->default_shader;
+}
+
+pg_pipeline_t* pg_get_default_pipeline(pg_ctx_t* ctx)
+{
+    return ctx->default_pipeline;
 }
 
 uint32_t pg_get_shader_id(pg_shader_t* shader)
@@ -990,9 +995,11 @@ void pg_draw_vbuffer(pg_ctx_t* ctx,
 
     bindings.vertex_buffers[0] = buffer->handle;
 
-    sg_apply_pipeline(ctx->state.pipeline);
+    pg_pipeline_t* pipeline = ctx->state.pipeline;
+
+    sg_apply_pipeline(pipeline->handle);
     sg_apply_bindings(&bindings);
-    pg_apply_uniforms(ctx->state.shader);
+    pg_apply_uniforms(pipeline->shader);
 
     PICO_GFX_ASSERT(start + count <= buffer->count);
 
@@ -1017,9 +1024,11 @@ void pg_draw_array(pg_ctx_t* ctx,
     bindings.vertex_buffer_offsets[0] = offset;
     bindings.vertex_buffers[0] = ctx->buffer;
 
-    sg_apply_pipeline(ctx->state.pipeline);
+    pg_pipeline_t* pipeline = ctx->state.pipeline;
+
+    sg_apply_pipeline(pipeline->handle);
     sg_apply_bindings(&bindings);
-    pg_apply_uniforms(ctx->state.shader);
+    pg_apply_uniforms(pipeline->shader);
 
     sg_draw(0, count, 1);
 }
@@ -1029,7 +1038,7 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
                            const uint32_t* indices, size_t index_count,
                            pg_texture_t* texture)
 {
-    PICO_GFX_ASSERT(ctx->indexed);
+    //PICO_GFX_ASSERT(ctx->indexed);
 
     int vertex_offset = sg_append_buffer(ctx->buffer, &(sg_range)
     {
@@ -1053,9 +1062,11 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
     bindings.vertex_buffers[0] = ctx->buffer;
     bindings.index_buffer = ctx->index_buffer;
 
-    sg_apply_pipeline(ctx->state.pipeline);
+    pg_pipeline_t* pipeline = ctx->state.pipeline;
+
+    sg_apply_pipeline(pipeline->handle);
     sg_apply_bindings(&bindings);
-    pg_apply_uniforms(ctx->state.shader);
+    pg_apply_uniforms(pipeline->shader);
 
     sg_draw(0, index_count, 1);
 }
