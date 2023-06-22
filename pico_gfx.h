@@ -414,6 +414,11 @@ static size_t pg_str_copy(char* dst, const char* src, size_t n)
     return snprintf(dst, n, "%s", src);
 }
 
+static bool pg_str_equal(const char* s1, const char* s2)
+{
+    return strcmp(s1, s2) == 0;
+}
+
 /*=============================================================================
  * Hashtable
  *============================================================================*/
@@ -836,15 +841,12 @@ pg_shader_t* pg_create_shader_internal(pg_shader_internal_t internal)
 
     shader->internal = internal;
 
-    PICO_GFX_LOG("Graphics backend: %d", sg_query_backend());
-
     shader->desc = internal.get_shader_desc(sg_query_backend());
 
     PICO_GFX_ASSERT(shader->desc);
-
-    PICO_GFX_LOG("Shader attributes %s, %s, %s", shader->desc->attrs[0].name,
-                                                 shader->desc->attrs[1].name,
-                                                 shader->desc->attrs[2].name);
+    PICO_GFX_ASSERT(pg_str_equal(shader->desc->attrs[0].name, "a_pos"));
+    PICO_GFX_ASSERT(pg_str_equal(shader->desc->attrs[1].name, "a_color"));
+    PICO_GFX_ASSERT(pg_str_equal(shader->desc->attrs[2].name, "a_uv"));
 
     shader->handle = sg_make_shader(shader->desc);
     shader->uniform_blocks = pg_hashtable_new(16, 32, sizeof(pg_uniform_block_t)); // TODO: constants
