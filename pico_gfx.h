@@ -164,7 +164,7 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear);
 /**
  * @brief Ends a render pass (mandatory)
  */
-void pg_end_pass();
+void pg_end_pass(pg_ctx_t* ctx);
 
 /**
  * @brief Flush commands
@@ -505,6 +505,7 @@ struct pg_ctx_t
     bool indexed;
     sg_buffer buffer;
     sg_buffer index_buffer;
+    bool pass_active;
     pg_pass_t* pass;
     pg_shader_t* default_shader;
     pg_pipeline_t* default_pipeline;
@@ -651,6 +652,7 @@ void pg_destroy_pass(pg_pass_t* pass)
 void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
 {
     PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(!ctx->pass_active);
 
     sg_pass_action pass_action;
 
@@ -675,13 +677,17 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
     else
     {
         sg_begin_default_pass(&pass_action, ctx->window_width, ctx->window_height);
-        ctx->pass = NULL;
+        //ctx->pass = NULL;
     }
+
+    ctx->pass_active = true;
 }
 
-void pg_end_pass()
+void pg_end_pass(pg_ctx_t* ctx)
 {
     sg_end_pass();
+    ctx->pass = NULL;
+    ctx->pass_active = false;
 }
 
 void pg_flush(pg_ctx_t* ctx)
@@ -1074,6 +1080,7 @@ void pg_draw_vbuffer(pg_ctx_t* ctx,
 {
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(buffer);
+    PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
 
     sg_bindings bindings;
@@ -1105,6 +1112,7 @@ void pg_draw_array(pg_ctx_t* ctx,
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(vertices);
     PICO_GFX_ASSERT(count > 0);
+    PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
 
     int offset = sg_append_buffer(ctx->buffer, &(sg_range) { .ptr = vertices, .size = count * sizeof(pg_vertex_t)});
@@ -1140,6 +1148,7 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
     PICO_GFX_ASSERT(vertex_count > 0);
     PICO_GFX_ASSERT(indices);
     PICO_GFX_ASSERT(index_count > 0);
+    PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(ctx->state.pipeline->indexed);
 
     int vertex_offset = sg_append_buffer(ctx->buffer, &(sg_range)
