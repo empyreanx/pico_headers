@@ -24,12 +24,24 @@ typedef enum
 } pg_primitive_t;
 
 /**
+ * @brief
+ */
+typedef enum
+{
+    PG_R,
+    PG_RG,
+    //PG_RGB,
+    PG_RGBA,
+    PG_BGRA
+} pg_format_t;
+
+/**
  * @brief Blend factors
  */
 typedef enum
 {
     PG_ONE,                 //!< (1, 1, 1, 1) (default)
-    PG_ZERO,                //!< (0, 0, 0, 0)
+    PG_ZERO,                //!< (0, 0, 0,  0)
     PG_SRC_COLOR,           //!< (src.r, src.g, src.b, src.a)
     PG_ONE_MINUS_SRC_COLOR, //!< (1, 1, 1, 1) - (src.r, src.g, src.b, src.a)
     PG_DST_COLOR,           //!< (dst.r, dst.g, dst.b, dst.a)
@@ -284,7 +296,6 @@ void pg_destroy_vbuffer(pg_vbuffer_t* buffer);
 /**
  * @brief Draws a vertex buffer
  */
-// TODO: Accept start/count values
 void pg_draw_vbuffer(pg_ctx_t* ctx,
                      pg_vbuffer_t* buffer,
                      size_t start, size_t count,
@@ -315,11 +326,11 @@ typedef struct
 pg_shader_t* pg_create_shader_internal(pg_shader_internal_t internal);
 
 #if !defined(PICO_GFX_ALIGN)
-  #if defined(_MSC_VER)
-    #define PICO_GFX_ALIGN(a) __declspec(align(a))
-  #else
-    #define PICO_GFX_ALIGN(a) __attribute__((aligned(a)))
-  #endif
+    #if defined(_MSC_VER)
+        #define PICO_GFX_ALIGN(a) __declspec(align(a))
+    #else
+        #define PICO_GFX_ALIGN(a) __attribute__((aligned(a)))
+    #endif
 #endif
 
 #pragma pack(push,1)
@@ -557,7 +568,8 @@ void pg_init()
             .alloc = pg_malloc,
             .free = pg_free,
             .user_data = NULL,
-        }
+        },
+        .context.color_format = SG_PIXELFORMAT_RGBA8,
     });
 }
 
@@ -1174,6 +1186,19 @@ static sg_primitive_type pg_map_primitive(pg_primitive_t primitive)
         case PG_LINE_STRIP:     return SG_PRIMITIVETYPE_LINE_STRIP;
         case PG_TRIANGLES:      return SG_PRIMITIVETYPE_TRIANGLES;
         case PG_TRIANGLE_STRIP: return SG_PRIMITIVETYPE_TRIANGLE_STRIP;
+        default: PICO_GFX_ASSERT(false);
+    }
+}
+
+static sg_pixel_format pg_map_format(pg_format_t format)
+{
+    switch (format)
+    {
+        case PG_R: return SG_PIXELFORMAT_R8;
+        case PG_RG: return SG_PIXELFORMAT_RG8;
+        //case PG_RGB: return SG_PIXELFORMAT_RGB8;
+        case PG_RGBA: return SG_PIXELFORMAT_RGBA8;
+        case PG_BGRA: return SG_PIXELFORMAT_BGRA8;
         default: PICO_GFX_ASSERT(false);
     }
 }
