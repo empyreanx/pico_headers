@@ -26,14 +26,14 @@ typedef enum
 /**
  * @brief
  */
-typedef enum
+/*typedef enum
 {
     PG_R,
     PG_RG,
     //PG_RGB,
     PG_RGBA,
     PG_BGRA
-} pg_format_t;
+} pg_format_t;*/
 
 /**
  * @brief Blend factors
@@ -923,6 +923,8 @@ pg_texture_t* pg_create_texture(int width, int height,
 
     memset(&desc, 0, sizeof(sg_image_desc));
 
+    desc.pixel_format = SG_PIXELFORMAT_RGBA8;
+
     desc.width  = texture->width  = width;
     desc.height = texture->height = height;
 
@@ -1190,7 +1192,7 @@ static sg_primitive_type pg_map_primitive(pg_primitive_t primitive)
     }
 }
 
-static sg_pixel_format pg_map_format(pg_format_t format)
+/*static sg_pixel_format pg_map_format(pg_format_t format)
 {
     switch (format)
     {
@@ -1201,7 +1203,7 @@ static sg_pixel_format pg_map_format(pg_format_t format)
         case PG_BGRA: return SG_PIXELFORMAT_BGRA8;
         default: PICO_GFX_ASSERT(false);
     }
-}
+}*/
 
 static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor)
 {
