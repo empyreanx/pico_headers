@@ -604,12 +604,16 @@ pg_ctx_t* pg_create_context(int window_width, int window_height)
         .usage = SG_USAGE_STREAM
     });
 
+    PICO_GFX_ASSERT(sg_query_buffer_state(ctx->buffer) == SG_RESOURCESTATE_VALID);
+
     ctx->index_buffer = sg_make_buffer(&(sg_buffer_desc)
     {
         .type  = SG_BUFFERTYPE_INDEXBUFFER,
         .size  = PICO_GFX_BUFFER_SIZE * sizeof(uint32_t),
         .usage = SG_USAGE_STREAM
     });
+
+    PICO_GFX_ASSERT(sg_query_buffer_state(ctx->index_buffer) == SG_RESOURCESTATE_VALID);
 
     return ctx;
 }
@@ -710,6 +714,8 @@ void pg_flush(pg_ctx_t* ctx)
         .usage = SG_USAGE_STREAM
     });
 
+    PICO_GFX_ASSERT(sg_query_buffer_state(ctx->buffer) == SG_RESOURCESTATE_VALID);
+
     sg_destroy_buffer(ctx->index_buffer);
 
     ctx->index_buffer = sg_make_buffer(&(sg_buffer_desc)
@@ -718,6 +724,8 @@ void pg_flush(pg_ctx_t* ctx)
         .size  = PICO_GFX_BUFFER_SIZE * sizeof(uint32_t),
         .usage = SG_USAGE_STREAM
     });
+
+    PICO_GFX_ASSERT(sg_query_buffer_state(ctx->index_buffer) == SG_RESOURCESTATE_VALID);
 }
 
 void pg_push_state(pg_ctx_t* ctx)
@@ -814,6 +822,9 @@ pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
     pg_pipeline_t* pipeline = (pg_pipeline_t*)PICO_GFX_MALLOC(sizeof(pg_pipeline_t));
 
     pipeline->handle = sg_make_pipeline(&desc);
+
+    PICO_GFX_ASSERT(sg_query_pipeline_state(pipeline->handle) == SG_RESOURCESTATE_VALID);
+
     pipeline->indexed = indexed;
     pipeline->shader = shader;
 
@@ -946,8 +957,10 @@ pg_texture_t* pg_create_texture(int width, int height,
 
     desc.data.subimage[0][0] = (sg_range){ .ptr = data, .size = size };
 
-    texture->handle = sg_make_image(&desc);
     texture->target = false;
+    texture->handle = sg_make_image(&desc);
+
+    PICO_GFX_ASSERT(sg_query_image_state(texture->handle) == SG_RESOURCESTATE_VALID);
 
     return texture;
 }
@@ -982,8 +995,12 @@ pg_texture_t* pg_create_render_texture(int width, int height,
     texture->handle = sg_make_image(&desc);
     texture->target = true;
 
+    PICO_GFX_ASSERT(sg_query_image_state(texture->handle) == SG_RESOURCESTATE_VALID);
+
     desc.pixel_format = SG_PIXELFORMAT_DEPTH;
     texture->depth_handle = sg_make_image(&desc);
+
+    PICO_GFX_ASSERT(sg_query_image_state(texture->depth_handle) == SG_RESOURCESTATE_VALID);
 
     return texture;
 }
@@ -1053,6 +1070,8 @@ pg_vbuffer_t* pg_create_vbuffer(const pg_vertex_t* vertices, size_t count)
         .usage = SG_USAGE_IMMUTABLE,
         .data  = { .ptr = vertices, .size = count * sizeof(pg_vertex_t) }
     });
+
+    PICO_GFX_ASSERT(sg_query_buffer_state(buffer->handle) == SG_RESOURCESTATE_VALID);
 
     buffer->count = count;
 
