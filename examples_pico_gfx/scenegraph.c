@@ -24,7 +24,15 @@
 #define FIXED_STEP (1.0 / 50.0)
 
 pg_ctx_t* ctx = NULL;
-pg_vs_t pg_vs;
+
+static struct
+{
+    SDL_Window* window;
+    SDL_GLContext context;
+    int screen_w;
+    int screen_h;
+    pg_vs_t vs_block
+} app;
 
 typedef struct
 {
@@ -135,6 +143,71 @@ void node_update_last(node_t* node)
     }
 }
 
+void node_render(node_t* node, double alpha)
+{
+    // Render sprite if there is one
+    if (node->sprite)
+    {
+        sprite_t* sprite = node->sprite;
+
+        // Get transforms
+        pm_t2 last = node->last;
+        pm_t2 world = node_get_world(node);
+
+        // Linearly interpolate between the last and current world transforms
+        // by the amount alpha in [0,1]
+        pm_t2 render = pm_t2_lerp(&last, &world, alpha);
+
+        // Update model-view
+
+        // The following transforms are equivalent
+
+        /*pgl_set_transform(ctx, (pgl_m4_t)
+        {
+            render.t00, render.t01, 0.0f, render.tx,
+            render.t10, render.t11, 0.0f, render.ty,
+            0.0f,       0.0f,       1.0f, 0.0f,
+            0.0f,       0.0f,       0.0f, 1.0f
+        });*/
+
+        /*pgl_set_transform_3d(ctx, (pgl_m3_t)
+        {
+            render.t00, render.t01, render.tx,
+            render.t10, render.t11, render.ty,
+            0.0f,       0.0f,       1.0f
+        });*/
+
+        /*app.vs_block.u_mv = (pg_mat4_t)
+        {
+            render.t00, render.t10, 0.0f, 0.0f,
+            render.t01, render.t11, 0.0f, 0.0f,
+            0.0f,       0.0f,       0.0f, 0.0f,
+            render.tx,  render.ty,  0.0f, 1.0f,
+        };*/
+
+        pg_mat4_t u_mv =
+        {
+            render.t00, render.t10, 0.0f, 0.0f,
+            render.t01, render.t11, 0.0f, 0.0f,
+            0.0f,       0.0f,       0.0f, 0.0f,
+            render.tx,  render.ty,  0.0f, 1.0f,
+        };
+
+        memcpy(app.vs_block.u_mv, u_mv, sizeof(pg_mat4_t));
+
+        pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs", &app.vs_block);
+
+        // Draw vertices
+        pg_draw_vbuffer(ctx, sprite->buf, 0, 6, sprite->tex);
+    }
+
+    // Render children
+    for (int i = 0; i < node->child_count; i++)
+    {
+        node_render(node->children[i], alpha);
+    }
+}
+
 pg_texture_t* load_texture(const char* file, int* w, int* h)
 {
 
@@ -151,14 +224,6 @@ pg_texture_t* load_texture(const char* file, int* w, int* h)
 
     return tex;
 }
-
-static struct
-{
-    SDL_Window* window;
-    SDL_GLContext context;
-    int screen_w;
-    int screen_h;
-} app;
 
 void app_startup()
 {
@@ -307,23 +372,121 @@ void sg_free(scenegraph_t* sg)
     free(sg);
 }
 
-// Hires time
-double time_now()
-{
-    return (double)SDL_GetPerformanceCounter() /
-           (double)SDL_GetPerformanceFrequency();
-}
-
 int main(int argc, char* argv[])
 {
+    (void)argc;
+    (void)argv;
 
+    app_startup();
 
-    pg_vs = (pg_vs_t)
+    pg_init();
+
+    int w = app.screen_w;
+    int h = app.screen_h;
+
+    ctx = pg_create_context(w, h);
+    pg_shader_t* default_shader = pg_get_default_shader(ctx);
+
+    pg_register_uniform_block(default_shader, "pg_vs", PG_VS_STAGE, sizeof(pg_vs_t));
+
+    app.vs_block = (pg_vs_t)
     {
-        0
+        { 2.0f / w, 0.0f,   0.0f, -1.0,
+          0.0f,     2.0/ h, 0.0f, -1.0,
+          0.0f,     0.0f,   0.0f,  0.0f,
+          0.0f,     0.0f,   0.0f,  1.0f
+        },
+
+        { 1.0f, 0.0f, 0.0f, 0.0f,
+          0.0f, 1.0f, 0.0f, 0.0f,
+          0.0f, 0.0f, 1.0f, 0.0f,
+          0.0f, 0.0f, 0.0f, 1.0f
+        }
     };
 
-    //pg_register_uniform_block()
+    pg_set_uniform_block(default_shader, "pg_vs", &app.vs_block);
+
+    // Build scene graph
+    scenegraph_t* sg = sg_build(app.screen_w, app.screen_h);
+
+    double delta, accumulator = 0.0;
+    ptime_t now, last = pt_now();
+
+    // Main Loop
+    bool done = false;
+
+    while (!done)
+    {
+        // Calculate delta
+        now = pt_now();
+        delta = pt_to_sec(now - last);
+        last = now;
+
+        // Update last world transforms for interpolation
+        node_update_last(sg->root_node);
+
+        // Fixed timestep.
+        // The purpose of a fixed timestep is to ensure that some code runs
+        // at a fixed (average) rate. This important for things like animation
+        // which need to be updated at a consistent rate in order to appear
+        // smooth. In the code below, the pivot node gets updated
+        // approximately 1.0 / FIXED_STEP times per second.
+        accumulator += delta;
+
+        while (accumulator >= FIXED_STEP)
+        {
+            accumulator -= FIXED_STEP;
+
+            // Update last world transforms for interpolation
+            node_update_last(sg->root_node);
+
+            // Rotate the pivot
+            pm_v2 scene_center = pm_v2_make(sg->w / 2, sg->h / 2);
+
+            pm_t2_translate(&sg->pivot_node->local, pm_v2_scale(scene_center, -1.0f));
+            pm_t2_rotate(&sg->pivot_node->local, -(PM_PI / 8.0f) * FIXED_STEP);
+            pm_t2_translate(&sg->pivot_node->local, scene_center);
+        }
+
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+                case SDL_QUIT:
+                    done = true;
+                    break;
+
+                case SDL_KEYDOWN:
+                    switch (event.key.keysym.sym)
+                    {
+                        case SDLK_ESCAPE:
+                            done = true;
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        //pgl_clear(0, 0, 0, 1);
+
+        // Render the scene. Pass in amount left over in the accumulator scaled
+        // into [0, 1]
+        pg_begin_pass(ctx, NULL, true);
+        node_render(sg->root_node, accumulator / FIXED_STEP);
+        pg_end_pass(ctx);
+        pg_flush(ctx);
+
+        SDL_GL_SwapWindow(app.window);
+    }
+
+    sg_free(sg);
+
+    pg_destroy_context(ctx);
+
+    pg_shutdown();
+
+    app_shutdown();
 
     return 0;
 }
