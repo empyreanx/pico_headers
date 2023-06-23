@@ -215,7 +215,7 @@ pg_texture_t* load_texture(const char* file, int* w, int* h)
     unsigned char* bitmap = stbi_load(file, w, h, &c, 0);
     size_t size = (*w) * (*h) * c;
 
-    assert(bitmap);
+    assert(bitmap && c == 4);
 
     pg_texture_t* tex = pg_create_texture(*w, *h, bitmap, size, 0, false, false);
 
@@ -405,6 +405,14 @@ int main(int argc, char* argv[])
     };
 
     pg_set_uniform_block(default_shader, "pg_vs", &app.vs_block);
+
+    pg_pipeline_t* pip = pg_create_pipeline(PG_TRIANGLES, false, false, default_shader, &(pg_blend_mode_t)
+    {
+        .color_src = PG_SRC_ALPHA,
+        .color_dst = PG_ONE_MINUS_SRC_ALPHA
+    });
+
+    pg_set_pipeline(ctx, pip);
 
     // Build scene graph
     scenegraph_t* sg = sg_build(app.screen_w, app.screen_h);
