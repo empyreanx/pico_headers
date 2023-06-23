@@ -185,7 +185,7 @@ void node_render(node_t* node, double alpha)
             render.tx,  render.ty,  0.0f, 1.0f,
         };*/
 
-        /*pg_mat4_t u_mv =
+        pg_mat4_t u_mv =
         {
             render.t00, render.t10, 0.0f, 0.0f,
             render.t01, render.t11, 0.0f, 0.0f,
@@ -195,7 +195,7 @@ void node_render(node_t* node, double alpha)
 
         memcpy(app.vs_block.u_mv, u_mv, sizeof(pg_mat4_t));
 
-        pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs", &app.vs_block);*/
+        pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs", &app.vs_block);
 
         // Draw vertices
         pg_draw_vbuffer(ctx, sprite->buf, 0, 6, sprite->tex);
