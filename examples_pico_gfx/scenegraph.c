@@ -212,12 +212,12 @@ typedef struct
     sprite_t* star_sprite;
     sprite_t* ship_sprite;
     sprite_t* jet_sprite;
-} sg_t;
+} scenegraph_t;
 
 // Build the scene graph
-sg_t* sg_build(int scene_w, int scene_h)
+scenegraph_t* sg_build(int scene_w, int scene_h)
 {
-    sg_t* sg = malloc(sizeof(sg_t));
+    scenegraph_t* sg = malloc(sizeof(scenegraph_t));
     sg->w = scene_w;
     sg->h = scene_h;
 
@@ -297,7 +297,7 @@ sg_t* sg_build(int scene_w, int scene_h)
     return sg;
 }
 
-void sg_free(sg_t* sg)
+void sg_free(scenegraph_t* sg)
 {
     sprite_free(sg->bg_sprite);
     sprite_free(sg->star_sprite);
