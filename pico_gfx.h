@@ -314,16 +314,10 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
                            pg_texture_t* texture);
 
 /*=============================================================================
- * Internals
+ * Types
  *============================================================================*/
 
-typedef struct
-{
-	const sg_shader_desc* (*get_shader_desc)(sg_backend backend);
-	int (*get_uniformblock_slot)(sg_shader_stage stage, const char* ub_name);
-} pg_shader_internal_t;
-
-pg_shader_t* pg_create_shader_internal(pg_shader_internal_t internal);
+typedef float pg_mat4_t[16];
 
 #if !defined(PICO_GFX_ALIGN)
     #if defined(_MSC_VER)
@@ -335,12 +329,24 @@ pg_shader_t* pg_create_shader_internal(pg_shader_internal_t internal);
 
 #pragma pack(push,1)
 PICO_GFX_ALIGN(16) typedef struct pg_vs_t {
-    float u_projection[16];
-    float u_transform[16];
+    pg_mat4_t u_projection;
+    pg_mat4_t u_transform;
 } pg_vs_t;
 #pragma pack(pop)
 
 #endif // PICO_GFX_H
+
+/*=============================================================================
+ * Internals
+ *============================================================================*/
+
+typedef struct
+{
+	const sg_shader_desc* (*get_shader_desc)(sg_backend backend);
+	int (*get_uniformblock_slot)(sg_shader_stage stage, const char* ub_name);
+} pg_shader_internal_t;
+
+pg_shader_t* pg_create_shader_internal(pg_shader_internal_t internal);
 
 /*=============================================================================
  * Implementation
