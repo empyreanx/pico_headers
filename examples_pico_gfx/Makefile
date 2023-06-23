@@ -18,7 +18,7 @@ endif
 
 DEPS   = ../pico_gfx.h
 
-all: quad sg
+all: quad scenegraph
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -26,10 +26,10 @@ all: quad sg
 quad: quad.o $(DEPS)
 	$(CC) -o quad quad.o $(CLIBS)
 
-sg: sg.o $(DEPS)
-	$(CC) -o sg sg.o $(CLIBS)
+scenegraph: scenegraph.o $(DEPS)
+	$(CC) -o scenegraph scenegraph.o $(CLIBS)
 
 .PHONY: clean
 
 clean:
-	rm -f quad sg *.o
+	rm -f quad scenegraph *.o

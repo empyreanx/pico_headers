@@ -1,5 +1,5 @@
 quad
-sg
+scenegraph
 *.o
 *.trace
 gmon.out
