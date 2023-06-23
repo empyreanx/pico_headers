@@ -1,7 +1,7 @@
 ifeq ($(OS),Windows_NT)
     CC     = gcc
     CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I .
-    CLIBS  = -lmingw32 -lwinmm -lSDL2main -lSDL2 -lm
+    CLIBS  = -lmingw32 -lwinmm -lSDL2main -lSDL2 -lGL -lm
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
@@ -18,9 +18,7 @@ endif
 
 DEPS   = ../pico_gfx.h
 
-#all: quad sg
-
-all: quad
+all: quad sg
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -28,8 +26,8 @@ all: quad
 quad: quad.o $(DEPS)
 	$(CC) -o quad quad.o $(CLIBS)
 
-#sg: sg.o $(DEPS)
-#	$(CC) -o sg sg.o $(CLIBS)
+sg: sg.o $(DEPS)
+	$(CC) -o sg sg.o $(CLIBS)
 
 .PHONY: clean
 
