@@ -23,8 +23,8 @@
 #define MAX_CHILDREN 5
 #define FIXED_STEP (1.0 / 50.0)
 
-pg_shader_t* shader = NULL;
 pg_ctx_t* ctx = NULL;
+pg_vs_t pg_vs;
 
 typedef struct
 {
@@ -119,7 +119,6 @@ void node_update_transform(node_t* node)
     }
 }
 
-
 pm_t2 node_get_world(node_t* node)
 {
     node_update_transform(node);
@@ -136,11 +135,195 @@ void node_update_last(node_t* node)
     }
 }
 
+pg_texture_t* load_texture(const char* file, int* w, int* h)
+{
 
+    int c;
+    unsigned char* bitmap = stbi_load(file, w, h, &c, 0);
+    size_t size = (*w) * (*h) * c;
+
+    assert(bitmap);
+
+    pg_texture_t* tex = pg_create_texture(*w, *h, bitmap, size, 0, false, false);
+
+    assert(tex);
+    free(bitmap);
+
+    return tex;
+}
+
+static struct
+{
+    SDL_Window* window;
+    SDL_GLContext context;
+    int screen_w;
+    int screen_h;
+} app;
+
+void app_startup()
+{
+    printf("Scene graph rendering demo\n");
+
+    SDL_Init(SDL_INIT_VIDEO);
+
+    SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 0);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE,     8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,   8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,    8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,   8);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
+
+    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+    SDL_GL_CONTEXT_PROFILE_CORE);
+
+    app.window = SDL_CreateWindow("Scene Graph Example",
+                                  SDL_WINDOWPOS_CENTERED,
+                                  SDL_WINDOWPOS_CENTERED,
+                                  1024, 768,
+                                  SDL_WINDOW_OPENGL);
+
+    SDL_GL_GetDrawableSize(app.window, &app.screen_w, &app.screen_h);
+
+    SDL_GL_SetSwapInterval(1);
+    app.context = SDL_GL_CreateContext(app.window);
+
+    stbi_set_flip_vertically_on_load(true);
+}
+
+void app_shutdown()
+{
+    SDL_GL_DeleteContext(app.context);
+    SDL_DestroyWindow(app.window);
+
+    SDL_Quit();
+}
+
+typedef struct
+{
+    int w;
+    int h;
+    node_t* root_node;
+    node_t* pivot_node;
+    sprite_t* bg_sprite;
+    sprite_t* star_sprite;
+    sprite_t* ship_sprite;
+    sprite_t* jet_sprite;
+} sg_t;
+
+// Build the scene graph
+sg_t* sg_build(int scene_w, int scene_h)
+{
+    sg_t* sg = malloc(sizeof(sg_t));
+    sg->w = scene_w;
+    sg->h = scene_h;
+
+    int w, h;
+
+    //////////// Root Node ////////////
+
+    // Does not have a sprite or a parent
+    sg->root_node = node_new(NULL);
+
+    //////////// BG Node ////////////
+
+    // Load texture
+    pg_texture_t* bg_tex = load_texture("./space.png", &w, &h);
+
+    // New sprite
+    sg->bg_sprite = sprite_new(scene_w, scene_h, 10.0f, bg_tex);
+
+    // Create a new node that uses this sprite. In theory more than one node
+    // could have the same sprite.
+    node_t* bg_node = node_new(sg->bg_sprite);
+
+    // And the node as a child of the root node
+    node_add_child(sg->root_node, bg_node);
+
+    // The rest of the nodes are similar
+
+    //////////// Star Node ////////////
+
+    pg_texture_t* star_tex = load_texture("./star.png", &w, &h);
+
+    sg->star_sprite = sprite_new(w / 3, h / 3, 0.0f, star_tex);
+    node_t* star_node = node_new(sg->star_sprite);
+
+    pm_v2 screen_center = pm_v2_make(scene_w / 2, scene_h / 2);
+
+    pm_v2 star_center = pm_v2_make(w / 6, h / 6);
+    pm_t2_translate(&star_node->local, pm_v2_scale(star_center, -1.0f));
+    pm_t2_translate(&star_node->local, screen_center);
+
+    node_add_child(sg->root_node, star_node);
+
+    //////////// Pivot Node ////////////
+
+    node_t* pivot_node = node_new(NULL);
+    sg->pivot_node = pivot_node;
+
+    pm_t2_translate(&pivot_node->local, screen_center);
+    node_add_child(sg->root_node, pivot_node);
+
+    //////////// Ship Node ////////////
+
+    pg_texture_t* ship_tex = load_texture("./ship.png", &w, &h);
+
+    int ship_w = w;
+
+    sg->ship_sprite = sprite_new(w, h, 5.0f, ship_tex);
+    node_t* ship_node = node_new(sg->ship_sprite);
+
+    pm_t2_translate(&ship_node->local, pm_v2_make(-w / 2, -h / 2));
+    pm_t2_translate(&ship_node->local, pm_v2_make(200, 0));
+
+    node_add_child(pivot_node, ship_node);
+
+    //////////// Jet Node ////////////
+
+    pg_texture_t* jet_tex = load_texture("./jet.png", &w, &h);
+
+    sg->jet_sprite = sprite_new(w, h, 0.0f, jet_tex);
+    node_t* jet_node = node_new(sg->jet_sprite);
+
+    pm_t2_translate(&jet_node->local, pm_v2_make(0, 32));
+    pm_t2_translate(&jet_node->local, pm_v2_make(ship_w / 2 - w / 2, 0));
+
+    node_add_child(ship_node, jet_node);
+
+    return sg;
+}
+
+void sg_free(sg_t* sg)
+{
+    sprite_free(sg->bg_sprite);
+    sprite_free(sg->star_sprite);
+    sprite_free(sg->ship_sprite);
+    sprite_free(sg->jet_sprite);
+    node_free(sg->root_node);
+    free(sg);
+}
+
+// Hires time
+double time_now()
+{
+    return (double)SDL_GetPerformanceCounter() /
+           (double)SDL_GetPerformanceFrequency();
+}
 
 int main(int argc, char* argv[])
 {
 
+
+    pg_vs = (pg_vs_t)
+    {
+        0
+    };
+
+    //pg_register_uniform_block()
 
     return 0;
 }
