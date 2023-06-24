@@ -183,19 +183,16 @@ void node_render(node_t* node, double alpha)
     }
 }
 
-pg_texture_t* load_texture(const char* file, int* w, int* h)
+pg_texture_t* load_texture(const char* file)
 {
-
-    int c;
-    unsigned char* bitmap = stbi_load(file, w, h, &c, 0);
-    size_t size = (*w) * (*h) * c;
+    //TODO: clean this up
+    int w, h, c;
+    unsigned char* bitmap = stbi_load(file, &w, &h, &c, 0);
 
     assert(bitmap && c == 4);
 
-    pg_texture_t* tex = pg_create_texture(*w, *h, bitmap, size, 0, false, false);
-
-    assert(tex);
-    free(bitmap);
+    size_t size = w * h * c;
+    pg_texture_t* tex = pg_create_texture(w, h, bitmap, size, 0, false, false);
 
     return tex;
 }
@@ -271,7 +268,8 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
     //////////// BG Node ////////////
 
     // Load texture
-    pg_texture_t* bg_tex = load_texture("./space.png", &w, &h);
+    pg_texture_t* bg_tex = load_texture("./space.png");
+    pg_get_texture_size(bg_tex, &w, &h);
 
     // New sprite
     sg->bg_sprite = sprite_new(scene_w, scene_h, 10.0f, bg_tex);
@@ -287,7 +285,8 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
 
     //////////// Star Node ////////////
 
-    pg_texture_t* star_tex = load_texture("./star.png", &w, &h);
+    pg_texture_t* star_tex = load_texture("./star.png");
+    pg_get_texture_size(star_tex, &w, &h);
 
     sg->star_sprite = sprite_new(w / 3, h / 3, 0.0f, star_tex);
     node_t* star_node = node_new(sg->star_sprite);
@@ -310,7 +309,8 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
 
     //////////// Ship Node ////////////
 
-    pg_texture_t* ship_tex = load_texture("./ship.png", &w, &h);
+    pg_texture_t* ship_tex = load_texture("./ship.png");
+    pg_get_texture_size(ship_tex, &w, &h);
 
     int ship_w = w;
 
@@ -324,7 +324,8 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
 
     //////////// Jet Node ////////////
 
-    pg_texture_t* jet_tex = load_texture("./jet.png", &w, &h);
+    pg_texture_t* jet_tex = load_texture("./jet.png");
+    pg_get_texture_size(jet_tex, &w, &h);
 
     sg->jet_sprite = sprite_new(w, h, 0.0f, jet_tex);
     node_t* jet_node = node_new(sg->jet_sprite);
