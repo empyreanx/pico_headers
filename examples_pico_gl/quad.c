@@ -193,6 +193,8 @@ int main(int argc, char *argv[])
     }
 
     pgl_destroy_shader(shader);
+    pgl_destroy_buffer(buffer);
+    pgl_destroy_texture(target_tex);
     pgl_destroy_texture(tex);
     pgl_destroy_context(ctx);
 

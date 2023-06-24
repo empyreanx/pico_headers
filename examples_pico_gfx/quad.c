@@ -107,6 +107,8 @@ int main(int argc, char *argv[])
 
     assert(tex && c == 4);
 
+    free(bitmap);
+
     // Specify vertices
 
     pg_vertex_t vertices[6] =
@@ -176,6 +178,13 @@ int main(int argc, char *argv[])
 
         SDL_GL_SwapWindow(window);
     }
+
+    pg_destroy_texture(target);
+    pg_destroy_texture(tex);
+
+    pg_destroy_pipeline(pip);
+    pg_destroy_pass(pass);
+    pg_destroy_context(ctx);
 
     pg_shutdown();
 
