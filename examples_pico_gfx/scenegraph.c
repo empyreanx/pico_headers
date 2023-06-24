@@ -160,31 +160,6 @@ void node_render(node_t* node, double alpha)
 
         // Update model-view
 
-        // The following transforms are equivalent
-
-        /*pgl_set_transform(ctx, (pgl_m4_t)
-        {
-            render.t00, render.t01, 0.0f, render.tx,
-            render.t10, render.t11, 0.0f, render.ty,
-            0.0f,       0.0f,       1.0f, 0.0f,
-            0.0f,       0.0f,       0.0f, 1.0f
-        });*/
-
-        /*pgl_set_transform_3d(ctx, (pgl_m3_t)
-        {
-            render.t00, render.t01, render.tx,
-            render.t10, render.t11, render.ty,
-            0.0f,       0.0f,       1.0f
-        });*/
-
-        /*app.vs_block.u_mv = (pg_mat4_t)
-        {
-            render.t00, render.t10, 0.0f, 0.0f,
-            render.t01, render.t11, 0.0f, 0.0f,
-            0.0f,       0.0f,       0.0f, 0.0f,
-            render.tx,  render.ty,  0.0f, 1.0f,
-        };*/
-
         pg_mat4_t u_mv =
         {
             render.t00, render.t10, 0.0f, 0.0f,
