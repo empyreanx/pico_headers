@@ -158,6 +158,8 @@ void pg_destroy_context(pg_ctx_t* ctx);
 
 pg_pass_t* pg_create_pass(const pg_texture_t* texture);
 
+void pg_destroy_pass(pg_pass_t* pass);
+
 /**
  * @brief Starts a render pass (mandatory)
  */
@@ -341,8 +343,6 @@ PICO_GFX_ALIGN(16) typedef struct pg_vs_t {
 } pg_vs_t;
 #pragma pack(pop)
 
-#endif // PICO_GFX_H
-
 /*=============================================================================
  * Internals
  *============================================================================*/
@@ -354,6 +354,8 @@ typedef struct
 } pg_shader_internal_t;
 
 pg_shader_t* pg_create_shader_internal(pg_shader_internal_t internal);
+
+#endif // PICO_GFX_H
 
 /*=============================================================================
  * Implementation
