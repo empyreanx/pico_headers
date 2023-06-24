@@ -465,6 +465,8 @@ int main(int argc, char* argv[])
 
     sg_free(sg);
 
+    pg_destroy_pipeline(pip);
+
     pg_destroy_context(ctx);
 
     pg_shutdown();

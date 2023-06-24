@@ -893,6 +893,7 @@ void pg_destroy_shader(pg_shader_t* shader)
     sg_destroy_shader(shader->handle);
     pg_hashtable_free(shader->uniform_blocks);
     pg_arena_free(shader->arena);
+    PICO_GFX_FREE(shader);
 }
 
 pg_shader_t* pg_get_default_shader(const pg_ctx_t* ctx)
