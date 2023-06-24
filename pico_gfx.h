@@ -1015,10 +1015,6 @@ pg_texture_t* pg_create_render_texture(int width, int height,
 void pg_destroy_texture(pg_texture_t* texture)
 {
     sg_destroy_image(texture->handle);
-
-    if (texture->depth_handle.id != 0)
-         sg_destroy_image(texture->depth_handle);
-
     PICO_GFX_FREE(texture);
 }
 
