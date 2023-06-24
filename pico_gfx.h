@@ -156,6 +156,8 @@ pg_ctx_t* pg_create_context(int window_width, int window_height);
  */
 void pg_destroy_context(pg_ctx_t* ctx);
 
+pg_pass_t* pg_create_pass(const pg_texture_t* texture);
+
 /**
  * @brief Starts a render pass (mandatory)
  */
@@ -230,27 +232,32 @@ void pg_destroy_shader(pg_shader_t* shader);
 /**
  * @brief Returns the default shader
  */
-pg_shader_t* pg_get_default_shader(pg_ctx_t* ctx);
+pg_shader_t* pg_get_default_shader(const pg_ctx_t* ctx);
+
+/**
+ * @brief Returns the default pipeline
+ */
+pg_pipeline_t* pg_get_default_pipeline(const pg_ctx_t* ctx);
 
 /**
  * @brief Returns a shader ID
  */
-uint32_t pg_get_shader_id(pg_shader_t* shader);
+uint32_t pg_get_shader_id(const pg_shader_t* shader);
 
 /**
  * @brief Registers a uniform block
  */
-void pg_register_uniform_block(pg_shader_t* shader, char* name, pg_stage_t stage, size_t size);
+void pg_register_uniform_block(pg_shader_t* shader, const char* name, pg_stage_t stage, size_t size);
 
 /**
  * @brief Sets a uniform block
  */
-void pg_set_uniform_block(pg_shader_t* shader, char* name, void* data);
+void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
 
 pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
                                   bool target,
                                   bool indexed,
-                                  pg_shader_t* shader,
+                                  const pg_shader_t* shader,
                                   const pg_blend_mode_t* blend_mode);
 
 void pg_destroy_pipeline(pg_pipeline_t* pipeline);
@@ -259,7 +266,7 @@ void pg_destroy_pipeline(pg_pipeline_t* pipeline);
  * @brief Creates a texture from a bitmap
  */
 pg_texture_t* pg_create_texture(int width, int height,
-                                uint8_t* data, size_t size,
+                                const uint8_t* data, size_t size,
                                 int mipmaps, bool smooth, bool repeat);
 
 /**
@@ -276,7 +283,7 @@ void pg_destroy_texture(pg_texture_t* texture);
 /**
  * @brief Returns a texture ID
  */
-uint32_t pg_get_texture_id(pg_texture_t* texture);
+uint32_t pg_get_texture_id(const pg_texture_t* texture);
 
 /**
  * @brief Gets a texture's dimensions
@@ -296,8 +303,8 @@ void pg_destroy_vbuffer(pg_vbuffer_t* buffer);
 /**
  * @brief Draws a vertex buffer
  */
-void pg_draw_vbuffer(pg_ctx_t* ctx,
-                     pg_vbuffer_t* buffer,
+void pg_draw_vbuffer(const pg_ctx_t* ctx,
+                     const pg_vbuffer_t* buffer,
                      size_t start, size_t count,
                      pg_texture_t* texture);
 
@@ -638,7 +645,7 @@ void pg_destroy_context(pg_ctx_t* ctx)
     PICO_GFX_FREE(ctx);
 }
 
-pg_pass_t* pg_create_pass(pg_texture_t* texture)
+pg_pass_t* pg_create_pass(const pg_texture_t* texture)
 {
     PICO_GFX_ASSERT(texture);
     PICO_GFX_ASSERT(texture->target);
@@ -783,7 +790,7 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
 pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
                                   bool target,
                                   bool indexed,
-                                  pg_shader_t* shader,
+                                  const pg_shader_t* shader,
                                   const pg_blend_mode_t* blend_mode)
 {
     PICO_GFX_ASSERT(shader);
@@ -886,25 +893,25 @@ void pg_destroy_shader(pg_shader_t* shader)
     pg_arena_free(shader->arena);
 }
 
-pg_shader_t* pg_get_default_shader(pg_ctx_t* ctx)
+pg_shader_t* pg_get_default_shader(const pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
     return ctx->default_shader;
 }
 
-pg_pipeline_t* pg_get_default_pipeline(pg_ctx_t* ctx)
+pg_pipeline_t* pg_get_default_pipeline(const pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
     return ctx->default_pipeline;
 }
 
-uint32_t pg_get_shader_id(pg_shader_t* shader)
+uint32_t pg_get_shader_id(const pg_shader_t* shader)
 {
     PICO_GFX_ASSERT(shader);
     return shader->handle.id;
 }
 
-void pg_register_uniform_block(pg_shader_t* shader, char* name, pg_stage_t stage, size_t size)
+void pg_register_uniform_block(pg_shader_t* shader, const char* name, pg_stage_t stage, size_t size)
 {
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
@@ -923,7 +930,7 @@ void pg_register_uniform_block(pg_shader_t* shader, char* name, pg_stage_t stage
     pg_hashtable_put(shader->uniform_blocks, name, &block);
 }
 
-void pg_set_uniform_block(pg_shader_t* shader, char* name, void* data)
+void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data)
 {
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
@@ -938,7 +945,7 @@ void pg_set_uniform_block(pg_shader_t* shader, char* name, void* data)
 }
 
 pg_texture_t* pg_create_texture(int width, int height,
-                                uint8_t* data, size_t size,
+                                const uint8_t* data, size_t size,
                                 int mipmaps, bool smooth, bool repeat)
 {
     PICO_GFX_ASSERT(width > 0);
@@ -1028,7 +1035,7 @@ void pg_update_texture(pg_texture_t* texture, uint8_t* data, size_t size)
 
 }*/
 
-uint32_t pg_get_texture_id(pg_texture_t* texture)
+uint32_t pg_get_texture_id(const pg_texture_t* texture)
 {
     PICO_GFX_ASSERT(texture);
     return texture->handle.id;
@@ -1102,7 +1109,7 @@ void pg_destroy_vbuffer(pg_vbuffer_t* buffer)
     PICO_GFX_FREE(buffer);
 }
 
-static void pg_apply_view_state(pg_ctx_t* ctx)
+static void pg_apply_view_state(const pg_ctx_t* ctx)
 {
     pg_rect_t* rect = &ctx->state.viewport;
     sg_apply_viewport(rect->x, rect->y, rect->width, rect->height, true);
@@ -1111,8 +1118,8 @@ static void pg_apply_view_state(pg_ctx_t* ctx)
     sg_apply_scissor_rect(rect->x, rect->y, rect->width, rect->height, true);
 }
 
-void pg_draw_vbuffer(pg_ctx_t* ctx,
-                     pg_vbuffer_t* buffer,
+void pg_draw_vbuffer(const pg_ctx_t* ctx,
+                     const pg_vbuffer_t* buffer,
                      size_t start, size_t count,
                      pg_texture_t* texture)
 {

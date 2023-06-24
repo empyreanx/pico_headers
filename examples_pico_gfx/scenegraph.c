@@ -31,7 +31,7 @@ static struct
     SDL_GLContext context;
     int screen_w;
     int screen_h;
-    pg_vs_t vs_block
+    pg_vs_t vs_block;
 } app;
 
 typedef struct
@@ -366,9 +366,9 @@ int main(int argc, char* argv[])
 
     app.vs_block = (pg_vs_t)
     {
-        { 2.0f / w, 0.0f,   0.0f, 0.0,
-          0.0f,     2.0/ h, 0.0f, 0.0,
-          0.0f,     0.0f,   0.0f, 0.0f,
+        {  2.0f / w, 0.0f,   0.0f, 0.0,
+           0.0f,     2.0/ h, 0.0f, 0.0,
+           0.0f,     0.0f,   0.0f, 0.0f,
           -1.0f,    -1.0f,   0.0f, 1.0f
         },
 
