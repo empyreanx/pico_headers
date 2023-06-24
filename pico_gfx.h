@@ -629,12 +629,10 @@ void pg_destroy_context(pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
 
-    if (ctx->buffer.id != 0)
-        sg_destroy_buffer(ctx->buffer);
+    sg_destroy_buffer(ctx->buffer);
+    sg_destroy_buffer(ctx->index_buffer);
 
-    if (ctx->index_buffer.id != 0)
-        sg_destroy_buffer(ctx->index_buffer);
-
+    pg_destroy_pipeline(ctx->default_pipeline);
     pg_destroy_shader(ctx->default_shader);
 
     PICO_GFX_FREE(ctx);
@@ -836,6 +834,12 @@ pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
     pipeline->shader = shader;
 
     return pipeline;
+}
+
+void pg_destroy_pipeline(pg_pipeline_t* pipeline)
+{
+    sg_destroy_pipeline(pipeline->handle);
+    PICO_GFX_FREE(pipeline);
 }
 
 void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a)
