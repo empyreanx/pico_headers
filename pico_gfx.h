@@ -5,6 +5,50 @@
     ----------------------------------------------------------------------------
     Licensing information at end of header
     ----------------------------------------------------------------------------
+
+    Features:
+    ---------
+    - Written in C99
+    - Single header library for easy build system integration
+    - Easy to use Low-level constructs (render passes and pipelines)
+    - Simple texture and shader creation
+    - Default shader and uniform block
+    - Render to texture
+    - Rendering of dynamic vertex arrays, indexed arrays
+    - Rendering of static vertex buffers
+    - Simple API for managing uniform blocks
+    - Straight foward state management (state stack)
+    - Simple and concise API
+    - Permissive license (zlib or public domain)
+
+    Summary:
+    --------
+    PicoGFX is a wrapper for the sokol_gfx, a low-level wrapper for OpenGL, Metal,
+    and D3D. PicoGFX is designed to make the common case intuitive and convenient
+    for 2D applications. It provides access to low-level primititives, such as
+    render passes and pipelines, in a way that is easy to use and understand.
+
+    PicoGFX includes a default shader (and pipeline), but can be extended using
+    the sokol shader compiler that allows for shader to be written in a single
+    language (GLSL) which is then transformed into shader sources for all
+    suppported backends.
+
+    One thing PicoGFX does not support (and neither does sokol_gfx) is window or
+    graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
+    for some examples. It is worth mentioning that [SDL2](https://www.libsdl.org) can
+    supply both a window and OpenGL context out of the box.
+
+    State management is accomplished using a state stack. To save a state it can be
+    pushed onto the stack and restored by popping off the active state.
+
+    Please see the examples for more details.
+
+    To use this library in your project, add
+
+    > #define PICO_GFX_IMPLEMENTATION
+    > #include "pico_gfx.h"
+
+    to a source file.
 */
 
 #ifndef PICO_GFX_H
@@ -44,7 +88,6 @@ typedef enum
     PG_ONE_MINUS_SRC_ALPHA, //!< (1, 1, 1, 1) - (src.a, src.a, src.a, src.a)
     PG_DST_ALPHA,           //!< (dst.a, dst.a, dst.a, dst.a)
     PG_ONE_MINUS_DST_ALPHA, //!< (1, 1, 1, 1) - (dst.a, dst.a, dst.a, dst.a)
-    PG_FACTOR_COUNT
 } pg_blend_factor_t;
 
 /**
@@ -53,10 +96,9 @@ typedef enum
 typedef enum
 {
     PG_DEFAULT_BLEND_EQ,
-    PG_FUNC_ADD,              //!< result = src * src_factor + dst * dst_factor (default)
-    PG_FUNC_SUBTRACT,         //!< result = src * src_factor - dst * dst_factor
-    PG_FUNC_REVERSE_SUBTRACT, //!< result = dst * dst_factor - src * src_factor
-    PG_EQ_COUNT
+    PG_ADD,              //!< result = src * src_factor + dst * dst_factor (default)
+    PG_SUBTRACT,         //!< result = src * src_factor - dst * dst_factor
+    PG_REVERSE_SUBTRACT, //!< result = dst * dst_factor - src * src_factor
 } pg_blend_eq_t;
 
 /**
@@ -287,13 +329,24 @@ void pg_destroy_pipeline(pg_pipeline_t* pipeline);
 
 /**
  * @brief Creates a texture from a bitmap
+ * @param width Bitmap width
+ * @param height Bitmap height
+ * @param data Bitmap data (format must be RGBA8)
+ * @param mipmaps Mipmap level
+ * @param smooth Linear filtering (vs nearest)
+ * @param repeat Repeat (vs clamp-to-edge)
  */
 pg_texture_t* pg_create_texture(int width, int height,
                                 const uint8_t* data, size_t size,
                                 int mipmaps, bool smooth, bool repeat);
 
 /**
- * @brief Creates a render target
+ * @brief Creates a render target (RT)
+ * @param width RT width
+ * @param height RT height
+ * @param mipmaps Mipmap level
+ * @param smooth Linear filtering (vs nearest)
+ * @param repeat Repeat (vs clamp-to-edge)
  */
 pg_texture_t* pg_create_render_texture(int width, int height,
                                        int mipmaps, bool smooth, bool repeat);
@@ -1306,13 +1359,13 @@ static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor)
 static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq)
 {
     if (eq == PG_DEFAULT_BLEND_EQ)
-        eq = PG_FUNC_ADD;
+        eq = PG_ADD;
 
     switch (eq)
     {
-        case PG_FUNC_ADD:              return SG_BLENDOP_ADD;
-        case PG_FUNC_SUBTRACT:         return SG_BLENDOP_SUBTRACT;
-        case PG_FUNC_REVERSE_SUBTRACT: return SG_BLENDOP_REVERSE_SUBTRACT;
+        case PG_ADD:              return SG_BLENDOP_ADD;
+        case PG_SUBTRACT:         return SG_BLENDOP_SUBTRACT;
+        case PG_REVERSE_SUBTRACT: return SG_BLENDOP_REVERSE_SUBTRACT;
         default: PICO_GFX_ASSERT(false);
     }
 }
