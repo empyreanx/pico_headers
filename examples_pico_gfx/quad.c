@@ -25,7 +25,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#define SOKOL_GLCORE33
+#define PICO_GFX_GL
 #include "../pico_gfx.h"
 
 int main(int argc, char *argv[])
@@ -193,9 +193,6 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
-#define SOKOL_GFX_IMPL
-#include "sokol_gfx.h"
 
 #define PICO_GFX_IMPLEMENTATION
 #include "../pico_gfx.h"

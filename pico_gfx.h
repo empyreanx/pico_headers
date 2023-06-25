@@ -51,29 +51,37 @@
 
     to a source file.
 
-    NOTE: sokol_gfx.h MUST be in the include path
-
     You must also define one of
 
-    #define SOKOL_GLCORE33
-    #define SOKOL_GLES3
-    #define SOKOL_D3D11
-    #define SOKOL_METAL
-    #define SOKOL_WGPU
+    #define PICO_GFX_GL
+    #define PICO_GFX_GLES
+    #define PICO_GFX_D3D
+    #define PICO_GFX_METAL
+    #define PICO_GFX_WEBGPU
 
-    before pico_gfx.h and sokol_gfx.h
+    before pico_gfx.h
 
-    You must also
-
-     #define SOKOL_GFX_IMPL
-
-    before pico_gfx.h or sokol_gfx.h (but not both!)
+    IMPORTANT: sokol_gfx.h MUST be in the include path
 
     See the examples for more details!
 */
 
 #ifndef PICO_GFX_H
 #define PICO_GFX_H
+
+#if defined (PICO_GFX_GL)
+    #define SOKOL_GLCORE33
+#elif defined (PICO_GFX_GLES)
+    #define SOKOL_GLES3
+#elif defined (PICO_GFX_D3D)
+    #define SOKOL_D3D11
+#elif defined (PICO_GFX_METAL)
+    #define SOKOL_METAL
+#elif defined (PICO_GFX_WEBGPU)
+    #define SOKOL_WGPU
+#else
+    #error "GFX backend must be specified"
+#endif
 
 #include "sokol_gfx.h"
 
@@ -2805,6 +2813,9 @@ static int pg_default_uniformblock_slot(sg_shader_stage stage, const char* ub_na
   }
   return -1;
 }
+
+#define SOKOL_GFX_IMPL
+#include "sokol_gfx.h"
 
 #endif //PICO_GFX_IMPLEMENTATION
 

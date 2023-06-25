@@ -8,8 +8,7 @@
 #define PICO_MATH_IMPLEMENTATION
 #include "../pico_math.h"
 
-#define SOKOL_GLCORE33
-#define SOKOL_GFX_IMPL
+#define PICO_GFX_GL
 #define PICO_GFX_IMPLEMENTATION
 #include "../pico_gfx.h"
 
