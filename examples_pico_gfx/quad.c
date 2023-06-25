@@ -74,9 +74,9 @@ int main(int argc, char *argv[])
     // Register/set uniform
     pg_shader_t* default_shader = pg_get_default_shader(ctx);
 
-    pg_register_uniform_block(default_shader, "pg_vs", PG_VS_STAGE, sizeof(pg_vs_t));
+    pg_register_uniform_block(default_shader, "pg_vs_block", PG_VS_STAGE, sizeof(pg_vs_block_t));
 
-    pg_vs_t pg_vs = (pg_vs_t)
+    pg_vs_block_t pg_vs_block = (pg_vs_block_t)
     {
         { 1.0f,  0.0f, 0.0f, 0.0f,
           0.0f,  1.0f, 0.0f, 0.0f,
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
           0.0f,  0.0f, 0.0f, 1.0f }
     };
 
-    pg_set_uniform_block(default_shader, "pg_vs", &pg_vs);
+    pg_set_uniform_block(default_shader, "pg_vs_block", &pg_vs_block);
 
     // Load image
 

@@ -353,7 +353,7 @@ typedef float pg_mat4_t[16];
 PICO_GFX_ALIGN(16) typedef struct pg_vs_block_t {
     pg_mat4_t u_proj;
     pg_mat4_t u_mv;
-} pg_vs_t;
+} pg_vs_block_t;
 #pragma pack(pop)
 
 /*=============================================================================

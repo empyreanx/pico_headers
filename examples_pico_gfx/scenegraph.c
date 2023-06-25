@@ -31,7 +31,7 @@ static struct
     SDL_GLContext context;
     int screen_w;
     int screen_h;
-    pg_vs_t vs_block;
+    pg_vs_block_t vs_block;
 } app;
 
 typedef struct
@@ -170,7 +170,7 @@ void node_render(node_t* node, double alpha)
 
         memcpy(app.vs_block.u_mv, u_mv, sizeof(pg_mat4_t));
 
-        pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs", &app.vs_block);
+        pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &app.vs_block);
 
         // Draw vertices
         pg_draw_vbuffer(ctx, sprite->buf, 0, 6, sprite->tex);
@@ -363,9 +363,9 @@ int main(int argc, char* argv[])
     ctx = pg_create_context(w, h);
     pg_shader_t* default_shader = pg_get_default_shader(ctx);
 
-    pg_register_uniform_block(default_shader, "pg_vs", PG_VS_STAGE, sizeof(pg_vs_t));
+    pg_register_uniform_block(default_shader, "pg_vs_block", PG_VS_STAGE, sizeof(pg_vs_block_t));
 
-    app.vs_block = (pg_vs_t)
+    app.vs_block = (pg_vs_block_t)
     {
         {  2.0f / w,  0.0f,   0.0f, 0.0,
            0.0f,     -2.0/ h, 0.0f, 0.0,
@@ -380,7 +380,7 @@ int main(int argc, char* argv[])
         }
     };
 
-    pg_set_uniform_block(default_shader, "pg_vs", &app.vs_block);
+    pg_set_uniform_block(default_shader, "pg_vs_block", &app.vs_block);
 
     pg_pipeline_t* pip = pg_create_pipeline(PG_TRIANGLES, false, false, default_shader, &(pg_blend_mode_t)
     {
