@@ -50,6 +50,26 @@
     > #include "pico_gfx.h"
 
     to a source file.
+
+    NOTE: sokol_gfx.h MUST be in the include path
+
+    You must also define one of
+
+    #define SOKOL_GLCORE33
+    #define SOKOL_GLES3
+    #define SOKOL_D3D11
+    #define SOKOL_METAL
+    #define SOKOL_WGPU
+
+    before pico_gfx.h and sokol_gfx.h
+
+    You must also
+
+     #define SOKOL_GFX_IMPL
+
+    before pico_gfx.h or sokol_gfx.h (but not both!)
+
+    See the examples for more details!
 */
 
 #ifndef PICO_GFX_H
