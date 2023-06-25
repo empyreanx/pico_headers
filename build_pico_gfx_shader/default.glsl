@@ -5,7 +5,7 @@ layout(location = 0) in vec3 a_pos;
 layout(location = 1) in vec4 a_color;
 layout(location = 2) in vec2 a_uv;
 
-layout(binding = 0) uniform pg_vs {
+layout(binding = 0) uniform pg_vs_block {
     mat4 u_proj;
     mat4 u_mv;
 };

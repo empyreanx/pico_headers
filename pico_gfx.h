@@ -24,18 +24,6 @@ typedef enum
 } pg_primitive_t;
 
 /**
- * @brief
- */
-/*typedef enum
-{
-    PG_R,
-    PG_RG,
-    //PG_RGB,
-    PG_RGBA,
-    PG_BGRA
-} pg_format_t;*/
-
-/**
  * @brief Blend factors
  */
 typedef enum
@@ -148,6 +136,8 @@ void pg_shutdown();
 
 /**
  * @brief Creates an instance of the renderer
+ * @param window_width The window width
+ * @param window_height The window height
  */
 pg_ctx_t* pg_create_context(int window_width, int window_height);
 
@@ -156,12 +146,22 @@ pg_ctx_t* pg_create_context(int window_width, int window_height);
  */
 void pg_destroy_context(pg_ctx_t* ctx);
 
+/**
+ * @brief Creates a render pass
+ * @param texture The render target
+ */
 pg_pass_t* pg_create_pass(const pg_texture_t* texture);
 
+/**
+ * @brief Destroys a render pass
+*/
 void pg_destroy_pass(pg_pass_t* pass);
 
 /**
  * @brief Starts a render pass (mandatory)
+ * @param ctx The graphics context
+ * @param pass The render pass (NULL for the default pass)
+ * @param clear Clears the render target or window
  */
 void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear);
 
@@ -196,26 +196,28 @@ void pg_reset_state(pg_ctx_t* ctx);
 
 /**
  * @brief Sets the pipeline state
+ * @param ctx The graphics context
+ * @param pipeline The pipeline to put on the top of the state stack
  */
 void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 
 /**
- * @brief Sets the clear color state
+ * @brief Sets the clear color state at the top of the state stack
  */
 void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a);
 
 /**
- * @brief Sets the viewport state
+ * @brief Sets the viewport state at the top of the state stack
  */
 void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h);
 
 /**
- * @brief Sets the scissor state
+ * @brief Sets the scissor state at the top of the state stack
  */
 void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h);
 
 /**
- * @brief Instantiates the shader with the give prefix
+ * @brief Creates the shader with the give prefix
  */
 #define pg_create_shader(prefix)        \
     pg_create_shader_internal(          \
@@ -256,12 +258,23 @@ void pg_register_uniform_block(pg_shader_t* shader, const char* name, pg_stage_t
  */
 void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
 
+/**
+ * @brief Creates a rendering pipeline
+ * @param primitive The rendering primitive (points, triangles etc...)
+ * @param target True if the current pass is rendering to a texture, false otherwise
+ * @param indexed True if the pipeline is using indexed rendering, false otherwise
+ * @param shader The shader used by this pipeline
+ * @param blend_mode The blending mode used by this pipeline
+ */
 pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
                                   bool target,
                                   bool indexed,
                                   const pg_shader_t* shader,
                                   const pg_blend_mode_t* blend_mode);
 
+/**
+ * @brief Destroys a render pipeline
+*/
 void pg_destroy_pipeline(pg_pipeline_t* pipeline);
 
 /**
@@ -451,14 +464,11 @@ typedef void (*pg_hashtable_iterator_fn)(pg_hashtable_iterator_t* iterator, char
 
 static pg_hashtable_t* pg_hashtable_new(size_t capacity, size_t key_size, size_t value_size);
 static void pg_hashtable_free(pg_hashtable_t* ht);
-static size_t pg_hashtable_capacity(const pg_hashtable_t* ht);
 static size_t pg_hashtable_size(const pg_hashtable_t* ht);
 static void pg_hashtable_init_iterator(pg_hashtable_t* ht, pg_hashtable_iterator_t* iterator);
 static bool pg_hashtable_iterator_next(pg_hashtable_iterator_t* iterator, char** key, void** value);
 static void pg_hashtable_put(pg_hashtable_t* ht, const char* key, const void* value);
 static void* pg_hashtable_get(pg_hashtable_t* ht, const char* key); // const
-static bool pg_hashtable_exists(pg_hashtable_t* ht, const char* key);
-static void pg_hashtable_remove(pg_hashtable_t* ht, const char* key);
 
 struct pg_hashtable_iterator_t
 {
@@ -1249,19 +1259,6 @@ static sg_primitive_type pg_map_primitive(pg_primitive_t primitive)
     }
 }
 
-/*static sg_pixel_format pg_map_format(pg_format_t format)
-{
-    switch (format)
-    {
-        case PG_R: return SG_PIXELFORMAT_R8;
-        case PG_RG: return SG_PIXELFORMAT_RG8;
-        //case PG_RGB: return SG_PIXELFORMAT_RGB8;
-        case PG_RGBA: return SG_PIXELFORMAT_RGBA8;
-        case PG_BGRA: return SG_PIXELFORMAT_BGRA8;
-        default: PICO_GFX_ASSERT(false);
-    }
-}*/
-
 static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor)
 {
     switch (factor)
@@ -1477,22 +1474,10 @@ static void pg_hashtable_free(pg_hashtable_t* ht)
     PICO_GFX_FREE(ht);
 }
 
-static size_t pg_hashtable_capacity(const pg_hashtable_t* ht)
-{
-    PICO_GFX_ASSERT(NULL != ht);
-    return ht->capacity;
-}
-
 static size_t pg_hashtable_size(const pg_hashtable_t* ht)
 {
     PICO_GFX_ASSERT(NULL != ht);
     return ht->size;
-}
-
-static bool pg_hashtable_is_empty(const pg_hashtable_t* ht)
-{
-    PICO_GFX_ASSERT(NULL != ht);
-    return 0 == pg_hashtable_size(ht);
 }
 
 static void pg_hashtable_init_iterator(pg_hashtable_t* ht, pg_hashtable_iterator_t* iterator)
@@ -1621,36 +1606,6 @@ static void* pg_hashtable_get(pg_hashtable_t* ht, const char* key)
     } while (index != start_index);
 
     return NULL;
-}
-
-static bool pg_hashtable_exists(pg_hashtable_t* ht, const char* key)
-{
-    PICO_GFX_ASSERT(NULL != ht);
-    return NULL != pg_hashtable_get(ht, key);
-}
-
-static void pg_hashtable_remove(pg_hashtable_t* ht, const char* key)
-{
-    PICO_GFX_ASSERT(NULL != ht);
-
-    pg_hash_t hash = pg_hashtable_compute_hash(ht, key);
-    size_t start_index = hash % ht->capacity;
-    size_t index = start_index;
-
-    do
-    {
-        pg_hashtable_entry_t* entry = &ht->entries[index];
-
-        if (entry->in_use && entry->hash == hash && pg_hashtable_key_equal(ht, key, entry->key))
-        {
-            ht->size--;
-            entry->in_use = false;
-            return;
-        }
-
-        index = (index + 1) % ht->capacity;
-
-    } while (index != start_index);
 }
 
 /*==============================================================================
