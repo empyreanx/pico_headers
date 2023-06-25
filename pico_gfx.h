@@ -23,10 +23,11 @@
 
     Summary:
     --------
-    PicoGFX is a wrapper for the sokol_gfx, a low-level wrapper for OpenGL, Metal,
-    and D3D. PicoGFX is designed to make the common case intuitive and convenient
-    for 2D applications. It provides access to low-level primititives, such as
-    render passes and pipelines, in a way that is easy to use and understand.
+    PicoGFX is a wrapper for the sokol_gfx, a low-level wrapper for OpenGL,
+    Metal, and D3D. PicoGFX is designed to make the common case intuitive and
+    convenient for 2D applications. It provides access to low-level p
+    rimititives, such as render passes and pipelines, in a way that is easy to
+    use and understand.
 
     PicoGFX includes a default shader (and pipeline), but can be extended using
     the sokol shader compiler that allows for shader to be written in a single
@@ -35,11 +36,11 @@
 
     One thing PicoGFX does not support (and neither does sokol_gfx) is window or
     graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
-    for some examples. It is worth mentioning that [SDL2](https://www.libsdl.org) can
-    supply both a window and OpenGL context out of the box.
+    for some examples. It is worth mentioning that [SDL2](https://www.libsdl.org)
+    can supply both a window and OpenGL context out of the box.
 
-    State management is accomplished using a state stack. To save a state it can be
-    pushed onto the stack and restored by popping off the active state.
+    State management is accomplished using a state stack. To save a state it can
+    be pushed onto the stack and restored by popping off the active state.
 
     Please see the examples for more details.
 
@@ -79,7 +80,7 @@ typedef enum
 {
     PG_DEFAULT_BLEND_FACTOR,
     PG_ZERO,                //!< (0, 0, 0,  0)
-    PG_ONE,                 //!< (1, 1, 1, 1) (default)
+    PG_ONE,                 //!< (1, 1, 1, 1)
     PG_SRC_COLOR,           //!< (src.r, src.g, src.b, src.a)
     PG_ONE_MINUS_SRC_COLOR, //!< (1, 1, 1, 1) - (src.r, src.g, src.b, src.a)
     PG_DST_COLOR,           //!< (dst.r, dst.g, dst.b, dst.a)
@@ -96,7 +97,7 @@ typedef enum
 typedef enum
 {
     PG_DEFAULT_BLEND_EQ,
-    PG_ADD,              //!< result = src * src_factor + dst * dst_factor (default)
+    PG_ADD,              //!< result = src * src_factor + dst * dst_factor
     PG_SUBTRACT,         //!< result = src * src_factor - dst * dst_factor
     PG_REVERSE_SUBTRACT, //!< result = dst * dst_factor - src * src_factor
 } pg_blend_eq_t;
@@ -299,14 +300,26 @@ pg_pipeline_t* pg_get_default_pipeline(const pg_ctx_t* ctx);
 uint32_t pg_get_shader_id(const pg_shader_t* shader);
 
 /**
- * @brief Registers a uniform block
+ * @brief Registers a uniform block (UB)
+ * @param shader The shader owning the UB
+ * @param name The string name of the UB
+ * @param stage The stage (VS or FS) associated with the UB
+ * @param size  The size of the UB struct
  */
-void pg_register_uniform_block(pg_shader_t* shader, const char* name, pg_stage_t stage, size_t size);
+void pg_register_uniform_block(pg_shader_t* shader,
+                               const char* name,
+                               pg_stage_t stage,
+                               size_t size);
 
 /**
- * @brief Sets a uniform block
+ * @brief Sets a uniform block (UB)
+ * @param shader The shader owning the UB
+ * @param name The string name of the UB
+ * @param data The data to set (must be the whole UB)
  */
-void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
+void pg_set_uniform_block(pg_shader_t* shader,
+                          const char* name,
+                          const void* data);
 
 /**
  * @brief Creates a rendering pipeline (encapsulates render state)
@@ -349,7 +362,8 @@ pg_texture_t* pg_create_texture(int width, int height,
  * @param repeat Repeat (vs clamp-to-edge)
  */
 pg_texture_t* pg_create_render_texture(int width, int height,
-                                       int mipmaps, bool smooth, bool repeat);
+                                       int mipmaps,
+                                       bool smooth, bool repeat);
 
 /**
  * @brief Destroys a texture
@@ -503,12 +517,12 @@ static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor);
 static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq);
 static sg_shader_stage pg_map_stage(pg_stage_t stage);
 
-static void pg_log_sg(const char* tag,                // e.g. 'sg'
-                      uint32_t log_level,             // 0=panic, 1=error, 2=warn, 3=info
-                      uint32_t log_item_id,           // SG_LOGITEM_*
-                      const char* message_or_null,    // a message string, may be nullptr in release mode
-                      uint32_t line_nr,               // line number in sokol_gfx.h
-                      const char* filename_or_null,   // source filename, may be nullptr in release mode
+static void pg_log_sg(const char* tag,              // e.g. 'sg'
+                      uint32_t log_level,           // 0=panic, 1=error, 2=warn, 3=info
+                      uint32_t log_item_id,         // SG_LOGITEM_*
+                      const char* message_or_null,  // a message string, may be nullptr in release mode
+                      uint32_t line_nr,             // line number in sokol_gfx.h
+                      const char* filename_or_null, // source filename, may be nullptr in release mode
                       void* user_data);
 
 static void pg_log(const char* fmt, ...);
@@ -543,14 +557,14 @@ typedef void (*pg_hashtable_iterator_fn)(pg_hashtable_iterator_t* iterator, char
 
 static pg_hashtable_t* pg_hashtable_new(size_t capacity, size_t key_size, size_t value_size);
 static void pg_hashtable_free(pg_hashtable_t* ht);
-static void pg_hashtable_init_iterator(pg_hashtable_t* ht, pg_hashtable_iterator_t* iterator);
+static void pg_hashtable_init_iterator(const pg_hashtable_t* ht, pg_hashtable_iterator_t* iterator);
 static bool pg_hashtable_iterator_next(pg_hashtable_iterator_t* iterator, char** key, void** value);
 static void pg_hashtable_put(pg_hashtable_t* ht, const char* key, const void* value);
-static void* pg_hashtable_get(pg_hashtable_t* ht, const char* key); // const
+static void* pg_hashtable_get(const pg_hashtable_t* ht, const char* key);
 
 struct pg_hashtable_iterator_t
 {
-    pg_hashtable_t* ht;
+    const pg_hashtable_t* ht;
     size_t index;
     size_t count;
 };
@@ -1459,9 +1473,17 @@ struct pg_hashtable_t
  * Hashtable Internal Declarations
  *============================================================================*/
 
-static size_t pg_hashtable_compute_hash(const pg_hashtable_t* ht, const char* key);
-static bool pg_hashtable_key_equal(pg_hashtable_t* ht, const char* key1, const char* key2);
-static void pg_hashtable_copy_value(pg_hashtable_t* ht, pg_hashtable_entry_t* entry, const void* value);
+static size_t pg_hashtable_compute_hash(const pg_hashtable_t* ht,
+                                        const char* key);
+
+static bool pg_hashtable_key_equal(const pg_hashtable_t* ht,
+                                   const char* key1,
+                                   const char* key2);
+
+static void pg_hashtable_copy_value(pg_hashtable_t* ht,
+                                    pg_hashtable_entry_t* entry,
+                                    const void* value);
+
 static void pg_hashtable_swap_size(size_t* a, size_t* b);
 static void pg_hashtable_swap_ptr(void** a, void** b);
 static void pg_hashtable_swap(pg_hashtable_t* ht1, pg_hashtable_t* ht2);
@@ -1471,7 +1493,9 @@ static void pg_hashtable_rehash(pg_hashtable_t* ht);
  * Hashtable Public Implementation
  *============================================================================*/
 
-static pg_hashtable_t* pg_hashtable_new(size_t capacity, size_t key_size, size_t value_size)
+static pg_hashtable_t* pg_hashtable_new(size_t capacity,
+                                        size_t key_size,
+                                        size_t value_size)
 {
     bool power_of_two = (0 == (capacity & (capacity - 1)));
 
@@ -1559,7 +1583,8 @@ static void pg_hashtable_free(pg_hashtable_t* ht)
     PICO_GFX_FREE(ht);
 }
 
-static void pg_hashtable_init_iterator(pg_hashtable_t* ht, pg_hashtable_iterator_t* iterator)
+static void pg_hashtable_init_iterator(const pg_hashtable_t* ht,
+                                       pg_hashtable_iterator_t* iterator)
 {
     PICO_GFX_ASSERT(NULL != ht);
     iterator->ht = ht;
@@ -1567,11 +1592,12 @@ static void pg_hashtable_init_iterator(pg_hashtable_t* ht, pg_hashtable_iterator
     iterator->count = 0;
 }
 
-static bool pg_hashtable_iterator_next(pg_hashtable_iterator_t* iterator, char** key, void** value)
+static bool pg_hashtable_iterator_next(pg_hashtable_iterator_t* iterator,
+                                       char** key, void** value)
 {
     PICO_GFX_ASSERT(NULL != iterator);
 
-    pg_hashtable_t* ht = iterator->ht;
+    const pg_hashtable_t* ht = iterator->ht;
 
     if (iterator->count >= ht->capacity)
         return false;
@@ -1600,7 +1626,9 @@ static bool pg_hashtable_iterator_next(pg_hashtable_iterator_t* iterator, char**
     return false;
 }
 
-static void pg_hashtable_put(pg_hashtable_t* ht, const char* key, const void* value)
+static void pg_hashtable_put(pg_hashtable_t* ht,
+                             const char* key,
+                             const void* value)
 {
     PICO_GFX_ASSERT(NULL != ht);
 
@@ -1661,7 +1689,7 @@ static void pg_hashtable_put(pg_hashtable_t* ht, const char* key, const void* va
     }
 }
 
-static void* pg_hashtable_get(pg_hashtable_t* ht, const char* key)
+static void* pg_hashtable_get(const pg_hashtable_t* ht, const char* key)
 {
     PICO_GFX_ASSERT(NULL != ht);
 
@@ -1691,7 +1719,7 @@ static void* pg_hashtable_get(pg_hashtable_t* ht, const char* key)
  * Hashtable Internal API
  *============================================================================*/
 
-static bool pg_hashtable_key_equal(pg_hashtable_t* ht, const char* key1, const char* key2)
+static bool pg_hashtable_key_equal(const pg_hashtable_t* ht, const char* key1, const char* key2)
 {
     return 0 == strncmp(key1, key2, ht->key_size);
 }
