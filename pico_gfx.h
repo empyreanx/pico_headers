@@ -20,6 +20,7 @@
  */
 typedef enum
 {
+    PG_DEFAULT_PRIMITIVE,
     PG_POINTS,         //!< Array of points
     PG_LINES,          //!< Each adjacent pair of points forms a line
     PG_LINE_STRIP,     //!< Array of points where every pair forms a lines
@@ -32,8 +33,9 @@ typedef enum
  */
 typedef enum
 {
-    PG_ONE,                 //!< (1, 1, 1, 1) (default)
+    PG_DEFAULT_BLEND_FACTOR,
     PG_ZERO,                //!< (0, 0, 0,  0)
+    PG_ONE,                 //!< (1, 1, 1, 1) (default)
     PG_SRC_COLOR,           //!< (src.r, src.g, src.b, src.a)
     PG_ONE_MINUS_SRC_COLOR, //!< (1, 1, 1, 1) - (src.r, src.g, src.b, src.a)
     PG_DST_COLOR,           //!< (dst.r, dst.g, dst.b, dst.a)
@@ -50,6 +52,7 @@ typedef enum
  */
 typedef enum
 {
+    PG_DEFAULT_BLEND_EQ,
     PG_FUNC_ADD,              //!< result = src * src_factor + dst * dst_factor (default)
     PG_FUNC_SUBTRACT,         //!< result = src * src_factor - dst * dst_factor
     PG_FUNC_REVERSE_SUBTRACT, //!< result = dst * dst_factor - src * src_factor
@@ -1265,6 +1268,9 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
 
 static sg_primitive_type pg_map_primitive(pg_primitive_t primitive)
 {
+    if (primitive == PG_DEFAULT_PRIMITIVE)
+        primitive = PG_TRIANGLES;
+
     switch (primitive)
     {
         case PG_POINTS:         return SG_PRIMITIVETYPE_POINTS;
@@ -1278,6 +1284,9 @@ static sg_primitive_type pg_map_primitive(pg_primitive_t primitive)
 
 static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor)
 {
+    if (factor == PG_DEFAULT_BLEND_FACTOR)
+        factor = PG_ONE;
+
     switch (factor)
     {
         case PG_ZERO:                return SG_BLENDFACTOR_ZERO;
@@ -1296,6 +1305,9 @@ static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor)
 
 static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq)
 {
+    if (eq == PG_DEFAULT_BLEND_EQ)
+        eq = PG_FUNC_ADD;
+
     switch (eq)
     {
         case PG_FUNC_ADD:              return SG_BLENDOP_ADD;
