@@ -59,16 +59,17 @@
     #define PICO_GFX_METAL
     #define PICO_GFX_WEBGPU
 
-    before pico_gfx.h
+    whenever including pico_gfx.h
 
-    IMPORTANT: sokol_gfx.h MUST be in the include path
+    IMPORTANT: sokol_gfx.h MUST be in the include path!
 
-    See the examples for more details!
+    See the examples for build details.
 */
 
 #ifndef PICO_GFX_H
 #define PICO_GFX_H
 
+// Backend conversion macros
 #if defined (PICO_GFX_GL)
     #define SOKOL_GLCORE33
 #elif defined (PICO_GFX_GLES)
@@ -275,28 +276,29 @@ void pg_reset_state(pg_ctx_t* ctx);
 /**
  * @brief Sets the pipeline state
  * @param ctx The graphics context
- * @param pipeline The pipeline to put on the top of the state stack
+ * @param pipeline The pipeline to be placed on the top of the state stack
  */
 void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 
 /**
- * @brief Sets the clear color state at the top of the state stack
+ * @brief Sets the clear color state to be placed at the top of the state stack
  */
 void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a);
 
 /**
- * @brief Sets the viewport state at the top of the state stack
+ * @brief Sets the viewport state to be placed at the top of the state stack
  */
 void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h);
 
 /**
- * @brief Sets the scissor state at the top of the state stack
+ * @brief Sets the scissor state to be placed at the top of the state stack
  */
 void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h);
 
 /**
  * @brief Creates the shader with the given prefix
- * The prefix should refer to a shader compiled by `sokol-shdc`
+ * The prefix should refer to the shader program name in a shader compiled by
+ * `sokol-shdc`
  */
 #define pg_create_shader(prefix)        \
     pg_create_shader_internal(          \
