@@ -1,6 +1,10 @@
 /**
     @file pico_gl.h
     @brief A powerful graphics library based on Sokol GFX, written in C99.
+
+    ----------------------------------------------------------------------------
+    Licensing information at end of header
+    ----------------------------------------------------------------------------
 */
 
 #ifndef PICO_GFX_H
@@ -88,32 +92,32 @@ typedef enum
 } pg_stage_t;
 
 /**
- * @brief Contains core data/state for an instance of the renderer
+ * @brief Contains core data/state for an instance of the graphics library
  */
 typedef struct pg_ctx_t pg_ctx_t;
 
 /**
- * @brief Contains render pass data/state
+ * @brief Render pass. Writes draw calls to a render target or the window
  */
 typedef struct pg_pass_t pg_pass_t;
 
 /**
- * @brief Contains render pass data/state
+ * @brief Render state information
  */
 typedef struct pg_pipeline_t pg_pipeline_t;
 
 /**
- * @brief Contains shader data/state
+ * @brief Vertex/fragment shader program
  */
 typedef struct pg_shader_t pg_shader_t;
 
 /**
- * @brief Contains texture data/state
+ * @brief Represents an image or render target in VRAM
  */
 typedef struct pg_texture_t pg_texture_t;
 
 /**
- * @brief Contains vertex buffer data/state
+ * @brief A vertex array
  */
 typedef struct pg_vbuffer_t pg_vbuffer_t;
 
@@ -217,7 +221,8 @@ void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h);
 void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h);
 
 /**
- * @brief Creates the shader with the give prefix
+ * @brief Creates the shader with the given prefix
+ * The prefix should refer to a shader compiled by `sokol-shdc`
  */
 #define pg_create_shader(prefix)        \
     pg_create_shader_internal(          \
@@ -259,7 +264,7 @@ void pg_register_uniform_block(pg_shader_t* shader, const char* name, pg_stage_t
 void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
 
 /**
- * @brief Creates a rendering pipeline
+ * @brief Creates a rendering pipeline (encapsulates render state)
  * @param primitive The rendering primitive (points, triangles etc...)
  * @param target True if the current pass is rendering to a texture, false otherwise
  * @param indexed True if the pipeline is using indexed rendering, false otherwise
@@ -317,6 +322,11 @@ void pg_destroy_vbuffer(pg_vbuffer_t* buffer);
 
 /**
  * @brief Draws a vertex buffer
+ * @param ctx The graphics context
+ * @param buffer An array of vertices
+ * @param start The first vertex to draw
+ * @param count The number of vertices to draw
+ * @param texture The texture to draw from
  */
 void pg_draw_vbuffer(const pg_ctx_t* ctx,
                      const pg_vbuffer_t* buffer,
@@ -325,11 +335,24 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
 
 /**
  * @brief Draws an array of vertices
+ * @param ctx The graphics context
+ * @param vertices An array of vertices (position, color, uv)
+ * @param count The number of vertices
+ * @param texture The texture to draw from
  */
 void pg_draw_array(pg_ctx_t* ctx,
                    const pg_vertex_t* vertices, size_t count,
                    pg_texture_t* texture);
 
+/**
+ * @brief Draws an indexed array of vertices
+ * @param ctx The graphics context
+ * @param vertices An array of vertices (position, color, uv)
+ * @param vertex_count The number of vertices
+ * @param indices An array that indexes into the vertex array
+ * @param index_count The number of indices
+ * @param texture The texture to draw from
+ */
 void pg_draw_indexed_array(pg_ctx_t* ctx,
                            const pg_vertex_t* vertices, size_t vertex_count,
                            const uint32_t* indices, size_t index_count,
@@ -2665,3 +2688,58 @@ static int pg_default_uniformblock_slot(sg_shader_stage stage, const char* ub_na
 }
 
 #endif //PICO_GFX_IMPLEMENTATION
+
+/*
+    ----------------------------------------------------------------------------
+    This software is available under two licenses (A) or (B). You may choose
+    either one as you wish:
+    ----------------------------------------------------------------------------
+
+    (A) The zlib License
+
+    Copyright (c) 2023 James McLean
+
+    This software is provided 'as-is', without any express or implied warranty.
+    In no event will the authors be held liable for any damages arising from the
+    use of this software.
+
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+
+    1. The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software in a
+    product, an acknowledgment in the product documentation would be appreciated
+    but is not required.
+
+    2. Altered source versions must be plainly marked as such, and must not be
+    misrepresented as being the original software.
+
+    3. This notice may not be removed or altered from any source distribution.
+
+    ----------------------------------------------------------------------------
+
+    (B) Public Domain (www.unlicense.org)
+
+    This is free and unencumbered software released into the public domain.
+
+    Anyone is free to copy, modify, publish, use, compile, sell, or distribute
+    this software, either in source code form or as a compiled binary, for any
+    purpose, commercial or non-commercial, and by any means.
+
+    In jurisdictions that recognize copyright laws, the author or authors of
+    this software dedicate any and all copyright interest in the software to the
+    public domain. We make this dedication for the benefit of the public at
+    large and to the detriment of our heirs and successors. We intend this
+    dedication to be an overt act of relinquishment in perpetuity of all present
+    and future rights to this software under copyright law.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+    ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+// EoF
