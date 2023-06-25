@@ -1719,12 +1719,16 @@ static void* pg_hashtable_get(const pg_hashtable_t* ht, const char* key)
  * Hashtable Internal API
  *============================================================================*/
 
-static bool pg_hashtable_key_equal(const pg_hashtable_t* ht, const char* key1, const char* key2)
+static bool pg_hashtable_key_equal(const pg_hashtable_t* ht,
+                                   const char* key1,
+                                   const char* key2)
 {
     return 0 == strncmp(key1, key2, ht->key_size);
 }
 
-static void pg_hashtable_copy_value(pg_hashtable_t* ht, pg_hashtable_entry_t* entry, const void* value)
+static void pg_hashtable_copy_value(pg_hashtable_t* ht,
+                                    pg_hashtable_entry_t* entry,
+                                    const void* value)
 {
     memcpy(entry->value, value, ht->value_size);
 }
@@ -1759,7 +1763,9 @@ static void pg_hashtable_swap(pg_hashtable_t* ht1, pg_hashtable_t* ht2)
 
 static void pg_hashtable_rehash(pg_hashtable_t* ht)
 {
-    pg_hashtable_t* new_ht = pg_hashtable_new(ht->capacity * 2, ht->key_size, ht->size);
+    pg_hashtable_t* new_ht = pg_hashtable_new(ht->capacity * 2,
+                                              ht->key_size,
+                                              ht->size);
 
     pg_hashtable_iterator_t iterator;
     pg_hashtable_init_iterator(ht, &iterator);
