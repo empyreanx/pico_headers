@@ -1,3 +1,25 @@
+/*
+    Scene Graph Example
+
+    A scene graph is a directed tree where each node in the tree is associated
+    with an affine tranformation (translation/rotation/scaling). These
+    transforms are concatentated from the root to descendent nodes allowing
+    the graphs to represent highly articulated models or complex world geometry.
+    Every sub-tree of a scene graph is also a scene graph. This means that
+    complex scene graphs can be built incrementally from simpler ones.
+
+    The scene graph implemented in this example is basic, however it should be
+    enough to impart the fundamental concepts. The pico_ml library is also
+    used thoughout and thus should also provide an introduction to it as well.
+
+    This example demonstrates a number of concepts
+     * How to draw 2D sprites using pico_gfx
+     * How to implement a basic scene graph
+     * Creating and drawing from buffers
+     * Using a fixed timestep for animation
+     * Using interpolated rendering
+*/
+
 #define _POSIX_C_SOURCE 199309L
 
 #include <SDL2/SDL.h>

@@ -5,16 +5,11 @@
 
     Demonstrates:
      * Setting up and SDL window and GL context
-     * Initializing pico_gl
+     * Initializing pico_gfx
      * Loading an image
      * Creating a texture from the image
      * Defining vertices
      * Drawing the vertices
-
-    Todo:
-     * Toggle MSAA in command line arguments
-     * Toggle GLES in command line arguments
-     * Froper error handling
 */
 
 #include <SDL2/SDL.h>
@@ -73,23 +68,6 @@ int main(int argc, char *argv[])
 
     // Register/set uniform
     pg_shader_t* default_shader = pg_get_default_shader(ctx);
-
-    /*pg_register_uniform_block(default_shader, PG_VS_STAGE, "pg_vs_block", sizeof(pg_vs_block_t));
-
-    pg_vs_block_t vs_block = (pg_vs_block_t)
-    {
-        { 1.0f,  0.0f, 0.0f, 0.0f,
-          0.0f,  1.0f, 0.0f, 0.0f,
-          0.0f,  0.0f, 0.0f, 0.0f,
-          0.0f,  0.0f, 0.0f, 1.0f },
-
-        { 1.0f,  0.0f, 0.0f, 0.0f,
-          0.0f,  1.0f, 0.0f, 0.0f,
-          0.0f,  0.0f, 0.0f, 0.0f,
-          0.0f,  0.0f, 0.0f, 1.0f }
-    };
-
-    pg_set_uniform_block(default_shader, "pg_vs_block", &vs_block);*/
 
     // Load image
 
@@ -163,19 +141,24 @@ int main(int argc, char *argv[])
             }
         }
 
+        // Save current state
         pg_push_state(ctx);
 
+        // First pass: draws to render target
         pg_begin_pass(ctx, pass, true);
         pg_set_pipeline(ctx, pip);
         pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6, tex);
         pg_end_pass(ctx);
 
+        // Restore previous state
         pg_pop_state(ctx);
 
+        // Second pass: draws render target to the screen
         pg_begin_pass(ctx, NULL, true);
         pg_draw_array(ctx, vertices, 6, target);
         pg_end_pass(ctx);
 
+        // Flush draw commands
         pg_flush(ctx);
 
         SDL_GL_SwapWindow(window);
