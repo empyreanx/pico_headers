@@ -25,22 +25,32 @@
     --------
     PicoGFX is a wrapper for the sokol_gfx, a low-level wrapper for OpenGL,
     Metal, and D3D. PicoGFX is designed to make the common case intuitive and
-    convenient for 2D applications. It provides access to low-level p
-    rimititives, such as render passes and pipelines, in a way that is easy to
+    convenient for 2D applications. It provides access to low-level
+    primititives, such as render passes and pipelines, in a way that is easy to
     use and understand.
 
     PicoGFX includes a default shader (and pipeline), but can be extended using
-    the sokol shader compiler that allows for shader to be written in a single
-    language (GLSL) which is then transformed into shader sources for all
-    suppported backends.
+    the sokol shader compiler (`sokol-shdc`) that allows for a shader to be
+    written in a single language (GLSL) which is then transformed into shader
+    sources for all suppported backends.
 
     One thing PicoGFX does not support (and neither does sokol_gfx) is window or
     graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
     for some examples. It is worth mentioning that [SDL2](https://www.libsdl.org)
-    can supply both a window and OpenGL context out of the box.
+    can supply both a window and OpenGL context out of the box. SDL2 is used
+    in the demos.
 
-    State management is accomplished using a state stack. To save a state it can
-    be pushed onto the stack and restored by popping off the active state.
+    State (pipeline/shader, the viewport, scissor, and clear color) can be
+    managed via the state stack. The stack enables changes to be isolated.
+    Simply push the current state to the top of the stack, make some local
+    changes, and then pop the stack to restore the original state.
+
+    Shaders expose uniforms in blocks. These blocks must be registered with the
+    shader by calling `pg_register_uniform_block`. They may then be set at will
+    by calling `pg_set_uniform_block`. These functions typically operate on
+    structs supplied by a custom shader,
+
+    The default shader and pipeline provides a
 
     Please see the examples for more details.
 
@@ -59,11 +69,19 @@
     #define PICO_GFX_METAL
     #define PICO_GFX_WEBGPU
 
-    whenever including pico_gfx.h
+    bofore including pico_gfx.h
 
-    IMPORTANT: sokol_gfx.h MUST be in the include path!
+    IMPORTANT: sokol_gfx.h must be in the include path!
 
     See the examples for build details.
+
+    Constants:
+    --------
+
+    - PICO_GFX_STACK_MAX_SIZE (default: 16)
+    - PICO_GFX_BUFFER_SIZE (default: 1024)
+
+    Must be defined before PICO_GFX_IMPLEMENTATION
 */
 
 #ifndef PICO_GFX_H
@@ -88,6 +106,10 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief Drawing primitives
@@ -214,14 +236,14 @@ void pg_init();
 void pg_shutdown();
 
 /**
- * @brief Creates an instance of the renderer
+ * @brief Creates a graphics context
  * @param window_width The window width
  * @param window_height The window height
  */
 pg_ctx_t* pg_create_context(int window_width, int window_height);
 
 /**
- * @brief Destroys an instance of the renderer
+ * @brief Destroys a graphics context
  */
 void pg_destroy_context(pg_ctx_t* ctx);
 
@@ -490,6 +512,10 @@ typedef struct
 } pg_shader_internal_t;
 
 pg_shader_t* pg_create_shader_internal(pg_shader_internal_t internal);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // PICO_GFX_H
 
