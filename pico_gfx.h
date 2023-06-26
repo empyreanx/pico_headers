@@ -414,6 +414,13 @@ pg_pipeline_t* pg_create_pipeline(pg_shader_t* shader, const pg_pipeline_opts_t*
 */
 void pg_destroy_pipeline(pg_pipeline_t* pipeline);
 
+typedef struct pg_texture_opts_t
+{
+    int mipmaps;
+    bool smooth;
+    bool repeat;
+} pg_texture_opts_t;
+
 /**
  * @brief Creates a texture from a bitmap
  * @param width Bitmap width
@@ -425,7 +432,7 @@ void pg_destroy_pipeline(pg_pipeline_t* pipeline);
  */
 pg_texture_t* pg_create_texture(int width, int height,
                                 const uint8_t* data, size_t size,
-                                int mipmaps, bool smooth, bool repeat);
+                                const pg_texture_opts_t* opts);
 
 /**
  * @brief Creates a render target (RT)
@@ -436,8 +443,7 @@ pg_texture_t* pg_create_texture(int width, int height,
  * @param repeat Repeat (vs clamp-to-edge)
  */
 pg_texture_t* pg_create_render_texture(int width, int height,
-                                       int mipmaps,
-                                       bool smooth, bool repeat);
+                                       const pg_texture_opts_t* opts);
 
 /**
  * @brief Destroys a texture
@@ -1159,13 +1165,13 @@ void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* dat
 
 pg_texture_t* pg_create_texture(int width, int height,
                                 const uint8_t* data, size_t size,
-                                int mipmaps, bool smooth, bool repeat)
+                                const pg_texture_opts_t* opts)
 {
     PICO_GFX_ASSERT(width > 0);
     PICO_GFX_ASSERT(height > 0);
     PICO_GFX_ASSERT(data);
     PICO_GFX_ASSERT(size > 0);
-    PICO_GFX_ASSERT(mipmaps >= 0);
+    PICO_GFX_ASSERT(opts->mipmaps >= 0);
 
     pg_texture_t* texture = (pg_texture_t*)PICO_GFX_MALLOC(sizeof(pg_texture_t));
 
@@ -1178,13 +1184,13 @@ pg_texture_t* pg_create_texture(int width, int height,
     desc.width  = texture->width  = width;
     desc.height = texture->height = height;
 
-    desc.num_mipmaps = mipmaps;
+    desc.num_mipmaps = opts->mipmaps;
 
-    desc.min_filter = (smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
-    desc.mag_filter = (smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
+    desc.min_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
+    desc.mag_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
 
-    desc.wrap_u = (repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
-    desc.wrap_v = (repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
+    desc.wrap_u = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
+    desc.wrap_v = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
 
     desc.data.subimage[0][0] = (sg_range){ .ptr = data, .size = size };
 
@@ -1197,11 +1203,11 @@ pg_texture_t* pg_create_texture(int width, int height,
 }
 
 pg_texture_t* pg_create_render_texture(int width, int height,
-                                       int mipmaps, bool smooth, bool repeat)
+                                       const pg_texture_opts_t* opts)
 {
     PICO_GFX_ASSERT(width > 0);
     PICO_GFX_ASSERT(height > 0);
-    PICO_GFX_ASSERT(mipmaps >= 0);
+    PICO_GFX_ASSERT(opts->mipmaps >= 0);
 
     pg_texture_t* texture = (pg_texture_t*)PICO_GFX_MALLOC(sizeof(pg_texture_t));
 
@@ -1215,13 +1221,13 @@ pg_texture_t* pg_create_render_texture(int width, int height,
     desc.width  = texture->width  = width;
     desc.height = texture->height = height;
 
-    desc.num_mipmaps = mipmaps;
+    desc.num_mipmaps = opts->mipmaps;
 
-    desc.min_filter = (smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
-    desc.mag_filter = (smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
+    desc.min_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
+    desc.mag_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
 
-    desc.wrap_u = (repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
-    desc.wrap_v = (repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
+    desc.wrap_u = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
+    desc.wrap_v = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
 
     texture->handle = sg_make_image(&desc);
     texture->target = true;
@@ -1277,7 +1283,7 @@ static void pg_apply_uniforms(pg_shader_t* shader)
 
     while (pg_hashtable_iterator_next(&iterator, &key, &value))
     {
-        pg_uniform_block_t* block = value;
+        pg_uniform_block_t* block = (pg_uniform_block_t*)value;
 
         //if (block->dirty)
         //{

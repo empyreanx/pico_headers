@@ -187,7 +187,7 @@ pg_texture_t* load_texture(const char* file)
     assert(bitmap && c == 4);
 
     size_t size = w * h * c;
-    pg_texture_t* tex = pg_create_texture(w, h, bitmap, size, 0, false, false);
+    pg_texture_t* tex = pg_create_texture(w, h, bitmap, size, &(pg_texture_opts_t){0});
 
     return tex;
 }
