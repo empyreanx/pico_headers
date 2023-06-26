@@ -15,7 +15,7 @@
     - Simple texture and shader creation
     - Default shader and uniform block
     - Render to texture
-    - Rendering of dynamic vertex arrays, indexed arrays
+    - Rendering of dynamic vertex arrays, indexed vertex arrays
     - Rendering of static vertex buffers
     - Simple API for managing uniform blocks
     - Straight foward state management (state stack)
@@ -32,9 +32,9 @@
     is easy to use and understand.
 
     Pico GFX includes a default shader (and pipeline), but can be extended using
-    the sokol shader compiler (`sokol-shdc`) that allows for a shader to be
-    written in a single language (GLSL) which is then transformed into shader
-    sources for all suppported backends.
+    the sokol shader compiler (`sokol-shdc`) which allows for a shader to be
+    written in a single language (e.g. GLSL) which is then transformed into
+    shader sources for all suppported backends.
 
     One thing Pico GFX does not support (and neither does sokol_gfx) is window
     and graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
@@ -42,10 +42,11 @@
     can supply both a window and OpenGL context out of the box. SDL2 is used
     in the demos.
 
-    State (pipeline/shader, the viewport, scissor, and clear color) can be
-    managed via the state stack. The stack enables changes to be isolated.
-    Simply push the current state to the top of the stack, make some local
-    changes, and then pop the stack to restore the original state.
+    State (pipeline/shader, the default uniform block, the viewport, scissor,
+    and clear color) can be managed via the state stack. The stack enables
+    changes to be isolated. Simply push the current state to the top of the
+    stack, make some local changes, and then pop the stack to restore the
+    original state.
 
     Shaders expose uniforms in blocks. These blocks must be registered with the
     shader by calling `pg_register_uniform_block`. They may then be set at will
@@ -53,7 +54,7 @@
     structs supplied by a custom shader,
 
     The default shader provides a uniform block containing projection and
-    model-view transforms. These can set using the `pg_set_projection` and
+    model-view transforms. These can be set using the `pg_set_projection` and
     `pg_set_modelview` functions, and reset to the identity using
     `pg_set_identity`.
 
@@ -77,7 +78,7 @@
     #define PICO_GFX_METAL
     #define PICO_GFX_WEBGPU
 
-    bofore including pico_gfx.h
+    before including pico_gfx.h
 
     IMPORTANT: sokol_gfx.h must be in the include path!
 
@@ -196,6 +197,9 @@ typedef enum
     PG_FS_STAGE  //!< Fragment shader stage
 } pg_stage_t;
 
+/**
+ * @brief A 4x4 matrix
+ */
 typedef float pg_mat4_t[16];
 
 /**
@@ -224,15 +228,16 @@ typedef struct pg_shader_t pg_shader_t;
 typedef struct pg_texture_t pg_texture_t;
 
 /**
- * @brief A vertex array
+ * @brief A vertex array buffer
  */
 typedef struct pg_vbuffer_t pg_vbuffer_t;
 
 /**
  * @brief Loads pico_gfx and sokol_gfx
  *
- * IMPORTANT: A valid graphics context must exist for this function to succeed.
- * This function must be called before any other pico_gfx functions.
+ * IMPORTANT: A valid graphics API context (OpenGL, Metal, D3D) must exist for
+ * this function to succeed. This function must be called before any other
+ * pico_gfx functions.
  *
  * NOTE: This function calls `sg_setup`.
  */
@@ -270,6 +275,9 @@ void pg_destroy_pass(pg_pass_t* pass);
 
 /**
  * @brief Starts a render pass (mandatory)
+ *
+ * NOTE: The default pass should be the last pass of a frame.
+ *
  * @param ctx The graphics context
  * @param pass The render pass (NULL for the default pass)
  * @param clear Clears the render target or window
@@ -379,8 +387,8 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader);
 /**
  * @brief Registers a uniform block (UB)
  * @param shader The shader owning the UB
- * @param name The string name of the UB
  * @param stage The stage (VS or FS) associated with the UB
+ * @param name The string name of the UB
  * @param size  The size of the UB struct
  */
 void pg_register_uniform_block(pg_shader_t* shader,
@@ -414,7 +422,7 @@ typedef struct pg_pipeline_opts_t
  * @brief Creates a rendering pipeline (encapsulates render state)
  * @param shader The shader used by this pipeline
  * @param opts Pipeline creation options
- * @returns A render pipeline objectt
+ * @returns A render pipeline object
  */
 pg_pipeline_t* pg_create_pipeline(pg_shader_t* shader, const pg_pipeline_opts_t* opts);
 
@@ -473,6 +481,8 @@ void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height);
 
 /**
  * @brief Creates a vertex buffer
+ * @param vertices An array of vertices (position, color, uv)
+ * @param count The number of vertices
  */
 pg_vbuffer_t* pg_create_vbuffer(const pg_vertex_t* vertices, size_t count);
 
