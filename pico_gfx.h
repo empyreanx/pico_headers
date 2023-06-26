@@ -1268,12 +1268,6 @@ void pg_destroy_texture(pg_texture_t* texture)
     PICO_GFX_FREE(texture);
 }
 
-/*TODO:
-void pg_update_texture(pg_texture_t* texture, uint8_t* data, size_t size)
-{
-
-}*/
-
 uint32_t pg_get_texture_id(const pg_texture_t* texture)
 {
     PICO_GFX_ASSERT(texture);
@@ -1588,7 +1582,6 @@ static void pg_log_sg(const char* tag,                // e.g. 'sg'
 
 typedef struct
 {
-    bool in_use;
     pg_hash_t hash;
     char* key;
     void* value;
@@ -1676,34 +1669,22 @@ static pg_hashtable_t* pg_hashtable_new(size_t capacity,
         return NULL;
     }
 
-    if (value_size > 0)
-    {
-        ht->values = PICO_GFX_MALLOC(capacity * value_size);
+    ht->values = PICO_GFX_MALLOC(capacity * value_size);
 
-        if (!ht->values)
-        {
-            PICO_GFX_FREE(ht->entries);
-            PICO_GFX_FREE(ht->keys);
-            PICO_GFX_FREE(ht);
-            return NULL;
-        }
-    }
-    else
+    if (!ht->values)
     {
-        ht->values = NULL;
+        PICO_GFX_FREE(ht->entries);
+        PICO_GFX_FREE(ht->keys);
+        PICO_GFX_FREE(ht);
+        return NULL;
     }
 
     for (size_t i = 0; i < capacity; i++)
     {
         pg_hashtable_entry_t* entry = &ht->entries[i];
-        entry->in_use = false;
         entry->hash = 0;
         entry->key = (char*)ht->keys + i * key_size;
-
-        if (value_size > 0)
-            entry->value = (char*)ht->values + i * value_size;
-        else
-            entry->value = NULL;
+        entry->value = (char*)ht->values + i * value_size;
     }
 
     return ht;
@@ -1715,10 +1696,7 @@ static void pg_hashtable_free(pg_hashtable_t* ht)
 
     PICO_GFX_FREE(ht->entries);
     PICO_GFX_FREE(ht->keys);
-
-    if (ht->value_size > 0)
-        PICO_GFX_FREE(ht->values);
-
+    PICO_GFX_FREE(ht->values);
     PICO_GFX_FREE(ht);
 }
 
@@ -1745,7 +1723,7 @@ static bool pg_hashtable_iterator_next(pg_hashtable_iterator_t* iterator,
     {
         pg_hashtable_entry_t* entry = &ht->entries[iterator->index];
 
-        if (entry->in_use)
+        if (entry->hash != 0)
         {
             if (key)
                 *key = entry->key;
@@ -1785,15 +1763,14 @@ static void pg_hashtable_put(pg_hashtable_t* ht,
     {
         pg_hashtable_entry_t* entry = &ht->entries[index];
 
-        if (entry->in_use && entry->hash == hash && pg_hashtable_key_equal(ht, key, entry->key))
+        if (entry->hash == hash && pg_hashtable_key_equal(ht, key, entry->key))
         {
             pg_hashtable_copy_value(ht, entry, value);
             break;
         }
 
-        if (!entry->in_use)
+        if (entry->hash == 0)
         {
-            entry->in_use = true;
             entry->hash = hash;
 
             memcpy(entry->key, key, ht->key_size);
@@ -1815,11 +1792,9 @@ static void pg_hashtable_put(pg_hashtable_t* ht,
     {
         pg_hashtable_entry_t* entry = &ht->entries[index];
 
-        if (entry->in_use &&
-            entry->hash == hash &&
-            pg_hashtable_key_equal(ht, key, entry->key))
+        if (entry->hash == hash && pg_hashtable_key_equal(ht, key, entry->key))
         {
-            entry->in_use = false;
+            entry->hash = 0;
             ht->size--;
             return;
         }
@@ -1840,9 +1815,7 @@ static void* pg_hashtable_get(const pg_hashtable_t* ht, const char* key)
     {
         pg_hashtable_entry_t* entry = &ht->entries[index];
 
-        if (entry->in_use &&
-            entry->hash == hash &&
-            pg_hashtable_key_equal(ht, key, entry->key))
+        if (entry->hash == hash && pg_hashtable_key_equal(ht, key, entry->key))
         {
             return entry->value;
         }
