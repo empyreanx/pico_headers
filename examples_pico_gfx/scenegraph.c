@@ -159,17 +159,13 @@ void node_render(node_t* node, double alpha)
 
         // Update model-view
 
-        pg_mat4_t u_mv =
+        pg_set_modelview(ctx, (pg_mat4_t)
         {
             render.t00, render.t10, 0.0f, 0.0f,
             render.t01, render.t11, 0.0f, 0.0f,
             0.0f,       0.0f,       0.0f, 0.0f,
             render.tx,  render.ty,  0.0f, 1.0f,
-        };
-
-        memcpy(app.vs_block.u_mv, u_mv, sizeof(pg_mat4_t));
-
-        pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &app.vs_block);
+        });
 
         // Draw vertices
         pg_draw_vbuffer(ctx, sprite->buf, 0, 6, sprite->tex);
@@ -362,24 +358,13 @@ int main(int argc, char* argv[])
     ctx = pg_create_context(w, h);
     pg_shader_t* default_shader = pg_get_default_shader(ctx);
 
-    pg_register_uniform_block(default_shader, "pg_vs_block", PG_VS_STAGE, sizeof(pg_vs_block_t));
-
-    app.vs_block = (pg_vs_block_t)
+    pg_set_projection(ctx, (pg_mat4_t)
     {
-        {  2.0f / w,  0.0f,   0.0f, 0.0,
-           0.0f,     -2.0/ h, 0.0f, 0.0,
-           0.0f,      0.0f,   0.0f, 0.0f,
-          -1.0f,      1.0f,   0.0f, 1.0f
-        },
-
-        { 1.0f, 0.0f, 0.0f, 0.0f,
-          0.0f, 1.0f, 0.0f, 0.0f,
-          0.0f, 0.0f, 1.0f, 0.0f,
-          0.0f, 0.0f, 0.0f, 1.0f
-        }
-    };
-
-    pg_set_uniform_block(default_shader, "pg_vs_block", &app.vs_block);
+        2.0f / w,  0.0f,   0.0f, 0.0,
+        0.0f,      2.0/ h, 0.0f, 0.0,
+        0.0f,      0.0f,   0.0f, 0.0f,
+       -1.0f,     -1.0f,   0.0f, 1.0f
+    });
 
     pg_pipeline_t* pip = pg_create_pipeline(PG_TRIANGLES, false, false, default_shader, &(pg_blend_mode_t)
     {

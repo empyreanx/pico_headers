@@ -188,6 +188,8 @@ typedef enum
     PG_FS_STAGE  //!< Fragment shader stage
 } pg_stage_t;
 
+typedef float pg_mat4_t[16];
+
 /**
  * @brief Contains core data/state for an instance of the graphics library
  */
@@ -359,8 +361,8 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader);
  * @param size  The size of the UB struct
  */
 void pg_register_uniform_block(pg_shader_t* shader,
-                               const char* name,
                                pg_stage_t stage,
+                               const char* name,
                                size_t size);
 
 /**
@@ -480,11 +482,14 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
                            const uint32_t* indices, size_t index_count,
                            pg_texture_t* texture);
 
+
+void pg_set_identity(pg_ctx_t* ctx);
+void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix);
+void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix);
+
 /*=============================================================================
  * Types
  *============================================================================*/
-
-typedef float pg_mat4_t[16];
 
 #if !defined(PICO_GFX_ALIGN)
     #if defined(_MSC_VER)
@@ -670,6 +675,7 @@ typedef struct pg_state_t
     pg_rect_t      viewport;
     pg_rect_t      scissor;
     pg_shader_t*   shader;
+    pg_vs_block_t  vs_block;
 } pg_state_t;
 
 struct pg_ctx_t
@@ -753,6 +759,39 @@ void pg_shutdown()
     sg_shutdown();
 }
 
+
+void pg_set_identity(pg_ctx_t* ctx)
+{
+    ctx->state.vs_block = (pg_vs_block_t)
+    {
+        { 1.0f, 0.0f, 0.0f, 0.0f,
+          0.0f, 1.0f, 0.0f, 0.0f,
+          0.0f, 0.0f, 1.0f, 0.0f,
+          0.0f, 0.0f, 0.0f, 1.0f
+        },
+
+        { 1.0f, 0.0f, 0.0f, 0.0f,
+          0.0f, 1.0f, 0.0f, 0.0f,
+          0.0f, 0.0f, 1.0f, 0.0f,
+          0.0f, 0.0f, 0.0f, 1.0f
+        }
+    };
+
+    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
+}
+
+void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix)
+{
+    memcpy(ctx->state.vs_block.u_proj, matrix, sizeof(pg_mat4_t));
+    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
+}
+
+void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix)
+{
+    memcpy(ctx->state.vs_block.u_mv, matrix, sizeof(pg_mat4_t));
+    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
+}
+
 pg_ctx_t* pg_create_context(int window_width, int window_height)
 {
     pg_ctx_t* ctx = (pg_ctx_t*)PICO_GFX_MALLOC(sizeof(pg_ctx_t));
@@ -763,6 +802,8 @@ pg_ctx_t* pg_create_context(int window_width, int window_height)
     ctx->window_height = window_height;
     ctx->default_shader = pg_create_shader(pg_default);
     ctx->default_pipeline = pg_create_pipeline(PG_TRIANGLES, false, false, ctx->default_shader, NULL);
+
+    pg_register_uniform_block(ctx->default_shader, PG_VS_STAGE, "pg_vs_block", sizeof(pg_vs_block_t));
 
     pg_reset_state(ctx);
 
@@ -911,6 +952,8 @@ void pg_pop_state(pg_ctx_t* ctx)
 
     ctx->state = ctx->state_stack[ctx->stack_size - 1];
     ctx->stack_size--;
+
+    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
 }
 
 void pg_reset_state(pg_ctx_t* ctx)
@@ -933,6 +976,8 @@ void pg_reset_state(pg_ctx_t* ctx)
         pg_set_scissor(ctx, 0, 0, ctx->window_width, ctx->window_height);
         pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
     }
+
+    pg_set_identity(ctx);
 }
 
 void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
@@ -1067,7 +1112,7 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader)
     return shader->handle.id;
 }
 
-void pg_register_uniform_block(pg_shader_t* shader, const char* name, pg_stage_t stage, size_t size)
+void pg_register_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* name, size_t size)
 {
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
