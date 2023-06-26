@@ -366,7 +366,7 @@ int main(int argc, char* argv[])
        -1.0f,     -1.0f,   0.0f, 1.0f
     });
 
-    pg_pipeline_t* pip = pg_create_pipeline(default_shader, &(pg_pipeline_desc_t)
+    pg_pipeline_t* pip = pg_create_pipeline(default_shader, &(pg_pipeline_opts_t)
     {
         .blend_enabled = true,
         .blend =

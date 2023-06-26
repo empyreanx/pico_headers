@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
     pg_texture_t* target = pg_create_render_texture(pixel_w, pixel_h, 0, false, false);
     pg_pass_t* pass = pg_create_pass(target);
 
-    pg_pipeline_t* pip = pg_create_pipeline(default_shader, &(pg_pipeline_desc_t)
+    pg_pipeline_t* pip = pg_create_pipeline(default_shader, &(pg_pipeline_opts_t)
     {
         .indexed = true,
         .target = true
