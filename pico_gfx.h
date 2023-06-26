@@ -281,6 +281,21 @@ void pg_end_pass(pg_ctx_t* ctx);
 void pg_flush(pg_ctx_t* ctx);
 
 /**
+ * @brief Set both the projection and model-view matrices to the identity matrix
+ */
+void pg_set_identity(pg_ctx_t* ctx);
+
+/**
+ * @brief Sets the projection transform to the specified matrix
+ */
+void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix);
+
+/**
+ * @brief Sets the model-view transform to the specified matrix
+ */
+void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix);
+
+/**
  * @brief Pushes the active state onto the stack.
  *
  * State consists of the pipeline, draw color, scissor, and viewport.
@@ -375,6 +390,15 @@ void pg_set_uniform_block(pg_shader_t* shader,
                           const char* name,
                           const void* data);
 
+typedef struct pg_pipeline_desc_t
+{
+    pg_primitive_t primitive;
+    bool target;
+    bool indexed;
+    bool blend_enabled;
+    pg_blend_mode_t blend;
+} pg_pipeline_desc_t;
+
 /**
  * @brief Creates a rendering pipeline (encapsulates render state)
  * @param primitive The rendering primitive (points, triangles etc...)
@@ -383,11 +407,7 @@ void pg_set_uniform_block(pg_shader_t* shader,
  * @param shader The shader used by this pipeline
  * @param blend_mode The blending mode used by this pipeline
  */
-pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
-                                  bool target,
-                                  bool indexed,
-                                  pg_shader_t* shader,
-                                  const pg_blend_mode_t* blend_mode);
+pg_pipeline_t* pg_create_pipeline(pg_shader_t* shader, const pg_pipeline_desc_t* desc);
 
 /**
  * @brief Destroys a render pipeline
@@ -481,11 +501,6 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
                            const pg_vertex_t* vertices, size_t vertex_count,
                            const uint32_t* indices, size_t index_count,
                            pg_texture_t* texture);
-
-
-void pg_set_identity(pg_ctx_t* ctx);
-void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix);
-void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix);
 
 /*=============================================================================
  * Types
@@ -759,39 +774,6 @@ void pg_shutdown()
     sg_shutdown();
 }
 
-
-void pg_set_identity(pg_ctx_t* ctx)
-{
-    ctx->state.vs_block = (pg_vs_block_t)
-    {
-        { 1.0f, 0.0f, 0.0f, 0.0f,
-          0.0f, 1.0f, 0.0f, 0.0f,
-          0.0f, 0.0f, 1.0f, 0.0f,
-          0.0f, 0.0f, 0.0f, 1.0f
-        },
-
-        { 1.0f, 0.0f, 0.0f, 0.0f,
-          0.0f, 1.0f, 0.0f, 0.0f,
-          0.0f, 0.0f, 1.0f, 0.0f,
-          0.0f, 0.0f, 0.0f, 1.0f
-        }
-    };
-
-    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
-}
-
-void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix)
-{
-    memcpy(ctx->state.vs_block.u_proj, matrix, sizeof(pg_mat4_t));
-    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
-}
-
-void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix)
-{
-    memcpy(ctx->state.vs_block.u_mv, matrix, sizeof(pg_mat4_t));
-    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
-}
-
 pg_ctx_t* pg_create_context(int window_width, int window_height)
 {
     pg_ctx_t* ctx = (pg_ctx_t*)PICO_GFX_MALLOC(sizeof(pg_ctx_t));
@@ -801,7 +783,7 @@ pg_ctx_t* pg_create_context(int window_width, int window_height)
     ctx->window_width  = window_width;
     ctx->window_height = window_height;
     ctx->default_shader = pg_create_shader(pg_default);
-    ctx->default_pipeline = pg_create_pipeline(PG_TRIANGLES, false, false, ctx->default_shader, NULL);
+    ctx->default_pipeline = pg_create_pipeline(ctx->default_shader, &(pg_pipeline_desc_t){ 0 });
 
     pg_register_uniform_block(ctx->default_shader, PG_VS_STAGE, "pg_vs_block", sizeof(pg_vs_block_t));
 
@@ -936,6 +918,38 @@ void pg_flush(pg_ctx_t* ctx)
     PICO_GFX_ASSERT(sg_query_buffer_state(ctx->index_buffer) == SG_RESOURCESTATE_VALID);
 }
 
+void pg_set_identity(pg_ctx_t* ctx)
+{
+    ctx->state.vs_block = (pg_vs_block_t)
+    {
+        { 1.0f, 0.0f, 0.0f, 0.0f,
+          0.0f, 1.0f, 0.0f, 0.0f,
+          0.0f, 0.0f, 1.0f, 0.0f,
+          0.0f, 0.0f, 0.0f, 1.0f
+        },
+
+        { 1.0f, 0.0f, 0.0f, 0.0f,
+          0.0f, 1.0f, 0.0f, 0.0f,
+          0.0f, 0.0f, 1.0f, 0.0f,
+          0.0f, 0.0f, 0.0f, 1.0f
+        }
+    };
+
+    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
+}
+
+void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix)
+{
+    memcpy(ctx->state.vs_block.u_proj, matrix, sizeof(pg_mat4_t));
+    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
+}
+
+void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix)
+{
+    memcpy(ctx->state.vs_block.u_mv, matrix, sizeof(pg_mat4_t));
+    pg_set_uniform_block(pg_get_default_shader(ctx), "pg_vs_block", &ctx->state.vs_block);
+}
+
 void pg_push_state(pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
@@ -987,57 +1001,57 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
     ctx->state.pipeline = pipeline;
 }
 
-pg_pipeline_t* pg_create_pipeline(pg_primitive_t primitive,
-                                  bool target,
-                                  bool indexed,
-                                  pg_shader_t* shader,
-                                  const pg_blend_mode_t* blend_mode)
+pg_pipeline_t* pg_create_pipeline(pg_shader_t* shader, const pg_pipeline_desc_t* desc)
 {
     PICO_GFX_ASSERT(shader);
+    PICO_GFX_ASSERT(desc);
 
-    sg_pipeline_desc desc;
+    const pg_pipeline_desc_t* pg_desc = desc;
 
-    memset(&desc, 0, sizeof(sg_pipeline_desc));
+    sg_pipeline_desc sg_desc;
 
-    desc.layout.attrs[0] = (sg_vertex_attr_desc){ .format = SG_VERTEXFORMAT_FLOAT3, .offset = offsetof(pg_vertex_t, pos) },
-    desc.layout.attrs[1] = (sg_vertex_attr_desc){ .format = SG_VERTEXFORMAT_FLOAT4, .offset = offsetof(pg_vertex_t, color) },
-    desc.layout.attrs[2] = (sg_vertex_attr_desc){ .format = SG_VERTEXFORMAT_FLOAT2, .offset = offsetof(pg_vertex_t, uv) },
+    memset(&sg_desc, 0, sizeof(sg_pipeline_desc));
 
-    desc.primitive_type = pg_map_primitive(primitive);
+    sg_desc.layout.attrs[0] = (sg_vertex_attr_desc){ .format = SG_VERTEXFORMAT_FLOAT3, .offset = offsetof(pg_vertex_t, pos) },
+    sg_desc.layout.attrs[1] = (sg_vertex_attr_desc){ .format = SG_VERTEXFORMAT_FLOAT4, .offset = offsetof(pg_vertex_t, color) },
+    sg_desc.layout.attrs[2] = (sg_vertex_attr_desc){ .format = SG_VERTEXFORMAT_FLOAT2, .offset = offsetof(pg_vertex_t, uv) },
 
-    if (blend_mode)
+    sg_desc.primitive_type = pg_map_primitive(pg_desc->primitive);
+
+    if (pg_desc->blend_enabled)
     {
-        desc.colors[0].blend.enabled = true;
-        desc.colors[0].blend.src_factor_rgb = pg_map_blend_factor(blend_mode->color_src);
-        desc.colors[0].blend.dst_factor_rgb = pg_map_blend_factor(blend_mode->color_dst);
-        desc.colors[0].blend.src_factor_alpha = pg_map_blend_factor(blend_mode->alpha_src);
-        desc.colors[0].blend.dst_factor_alpha = pg_map_blend_factor(blend_mode->alpha_dst);
-        desc.colors[0].blend.op_rgb = pg_map_blend_eq(blend_mode->color_eq);
-        desc.colors[0].blend.op_alpha = pg_map_blend_eq(blend_mode->alpha_eq);
+        const pg_blend_mode_t* blend_mode = &pg_desc->blend;
+        sg_desc.colors[0].blend.enabled = true;
+        sg_desc.colors[0].blend.src_factor_rgb = pg_map_blend_factor(blend_mode->color_src);
+        sg_desc.colors[0].blend.dst_factor_rgb = pg_map_blend_factor(blend_mode->color_dst);
+        sg_desc.colors[0].blend.src_factor_alpha = pg_map_blend_factor(blend_mode->alpha_src);
+        sg_desc.colors[0].blend.dst_factor_alpha = pg_map_blend_factor(blend_mode->alpha_dst);
+        sg_desc.colors[0].blend.op_rgb = pg_map_blend_eq(blend_mode->color_eq);
+        sg_desc.colors[0].blend.op_alpha = pg_map_blend_eq(blend_mode->alpha_eq);
     }
 
-    desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+    sg_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
 
-    if (indexed)
-        desc.index_type = SG_INDEXTYPE_UINT32;
+    if (pg_desc->indexed)
+        sg_desc.index_type = SG_INDEXTYPE_UINT32;
     else
-        desc.index_type = SG_INDEXTYPE_NONE;
+        sg_desc.index_type = SG_INDEXTYPE_NONE;
 
-    if (target)
+    if (pg_desc->target)
     {
-        desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH;
-        desc.depth.write_enabled = true;
+        sg_desc.depth.pixel_format = SG_PIXELFORMAT_DEPTH;
+        sg_desc.depth.write_enabled = true;
     }
 
-    desc.shader = shader->handle;
+    sg_desc.shader = shader->handle;
 
     pg_pipeline_t* pipeline = (pg_pipeline_t*)PICO_GFX_MALLOC(sizeof(pg_pipeline_t));
 
-    pipeline->handle = sg_make_pipeline(&desc);
+    pipeline->handle = sg_make_pipeline(&sg_desc);
 
     PICO_GFX_ASSERT(sg_query_pipeline_state(pipeline->handle) == SG_RESOURCESTATE_VALID);
 
-    pipeline->indexed = indexed;
+    pipeline->indexed = pg_desc->indexed;
     pipeline->shader = shader;
 
     return pipeline;

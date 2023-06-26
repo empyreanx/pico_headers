@@ -366,10 +366,14 @@ int main(int argc, char* argv[])
        -1.0f,     -1.0f,   0.0f, 1.0f
     });
 
-    pg_pipeline_t* pip = pg_create_pipeline(PG_TRIANGLES, false, false, default_shader, &(pg_blend_mode_t)
+    pg_pipeline_t* pip = pg_create_pipeline(default_shader, &(pg_pipeline_desc_t)
     {
-        .color_src = PG_SRC_ALPHA,
-        .color_dst = PG_ONE_MINUS_SRC_ALPHA
+        .blend_enabled = true,
+        .blend =
+        {
+            .color_src = PG_SRC_ALPHA,
+            .color_dst = PG_ONE_MINUS_SRC_ALPHA
+        }
     });
 
     pg_set_pipeline(ctx, pip);
