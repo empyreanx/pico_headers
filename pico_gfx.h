@@ -455,9 +455,9 @@ pg_texture_t* pg_create_texture(int width, int height,
                                 const pg_texture_opts_t* opts);
 
 /**
- * @brief Creates a render target (RT)
- * @param width RT width
- * @param height RT height
+ * @brief Creates a render target
+ * @param width Render target width
+ * @param height Render target height
  * @param opts Texture creation options (must not be NULL)
  * @returns A render texture
  */
@@ -645,7 +645,7 @@ static bool pg_str_equal(const char* s1, const char* s2)
 }
 
 /*=============================================================================
- * Hashtable
+ * Hashtable Declarations
  *============================================================================*/
 
 #ifdef PICO_GFX_32BIT
@@ -673,7 +673,7 @@ struct pg_hashtable_iterator_t
 };
 
 /*=============================================================================
- * Arena allocator
+ * Arena Allocator Declarations
  *============================================================================*/
 
 typedef struct pg_arena_t pg_arena_t;
@@ -683,14 +683,14 @@ static void* pg_arena_alloc(pg_arena_t* arena, size_t size);
 static void pg_arena_free(pg_arena_t* arena);
 
 /*=============================================================================
- * Default Shader
+ * Default Shader Reflection Function Declarations
  *============================================================================*/
 
 static const sg_shader_desc* pg_default_shader_desc(sg_backend backend);
 static int pg_default_uniformblock_slot(sg_shader_stage stage, const char* ub_name);
 
 /*=============================================================================
- * GFX Public API implementation
+ * GFX Public API Implementation
  *============================================================================*/
 
 static void* pg_malloc(size_t size, void* ctx)
@@ -903,7 +903,6 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
     else
     {
         sg_begin_default_pass(&pass_action, ctx->window_width, ctx->window_height);
-        //ctx->pass = NULL;
     }
 
     ctx->pass_active = true;
@@ -1470,7 +1469,7 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
 }
 
 /*==============================================================================
- * GFX Static Functions
+ * GFX static functions
  *============================================================================*/
 
 static sg_primitive_type pg_map_primitive(pg_primitive_t primitive)
@@ -1584,7 +1583,7 @@ static void pg_log_sg(const char* tag,                // e.g. 'sg'
 }
 
 /*==============================================================================
- * Hashtable Data structures
+ * Hashtable Data Structures
  *============================================================================*/
 
 typedef struct
@@ -1951,7 +1950,7 @@ static size_t pg_hashtable_compute_hash(const pg_hashtable_t* ht, const char* ke
 }
 
 /*==============================================================================
- * Arena allocator
+ * Arena Allocator
  *============================================================================*/
 
 struct pg_arena_t
