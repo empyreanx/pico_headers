@@ -1,5 +1,5 @@
 /**
-    @file pico_gl.h
+    @file pico_gfx.h
     @brief A powerful graphics library based on Sokol GFX, written in C99.
 
     ----------------------------------------------------------------------------
@@ -8,6 +8,7 @@
 
     Features:
     ---------
+
     - Written in C99
     - Single header library for easy build system integration
     - Easy to use Low-level constructs (render passes and pipelines)
@@ -23,19 +24,20 @@
 
     Summary:
     --------
-    PicoGFX is a wrapper for the sokol_gfx, a low-level wrapper for OpenGL,
-    Metal, and D3D. PicoGFX is designed to make the common case intuitive and
-    convenient for 2D applications. It provides access to low-level
-    primititives, such as render passes and pipelines, in a way that is easy to
-    use and understand.
 
-    PicoGFX includes a default shader (and pipeline), but can be extended using
+    Pico GFX is a high-level wrapper for the sokol_gfx, a low-level wrapper for
+    OpenGL, Metal, and D3D. Pico GFX is designed to make the common case
+    intuitive and convenient for 2D applications. It provides access to
+    low-level primititives, such as render passes and pipelines, in a way that
+    is easy to use and understand.
+
+    Pico GFX includes a default shader (and pipeline), but can be extended using
     the sokol shader compiler (`sokol-shdc`) that allows for a shader to be
     written in a single language (GLSL) which is then transformed into shader
     sources for all suppported backends.
 
-    One thing PicoGFX does not support (and neither does sokol_gfx) is window or
-    graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
+    One thing Pico GFX does not support (and neither does sokol_gfx) is window
+    and graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
     for some examples. It is worth mentioning that [SDL2](https://www.libsdl.org)
     can supply both a window and OpenGL context out of the box. SDL2 is used
     in the demos.
@@ -50,9 +52,15 @@
     by calling `pg_set_uniform_block`. These functions typically operate on
     structs supplied by a custom shader,
 
-    The default shader and pipeline provides a
+    The default shader provides a uniform block containing projection and
+    model-view transforms. These can set using the `pg_set_projection` and
+    `pg_set_modelview` functions, and reset to the identity using
+    `pg_set_identity`.
 
     Please see the examples for more details.
+
+    Build:
+    --------
 
     To use this library in your project, add
 
@@ -390,35 +398,39 @@ void pg_set_uniform_block(pg_shader_t* shader,
                           const char* name,
                           const void* data);
 
+/**
+ * @brief Pipeline creation options
+ */
 typedef struct pg_pipeline_opts_t
 {
-    pg_primitive_t primitive;
-    bool target;
-    bool indexed;
-    bool blend_enabled;
-    pg_blend_mode_t blend;
+    pg_primitive_t primitive; //!< Rendering primitive
+    bool target;              //!< Drawing to render target
+    bool indexed;             //!< Indexed drawing
+    bool blend_enabled;       //!< Enables blending
+    pg_blend_mode_t blend;    //!< Blend mode
 } pg_pipeline_opts_t;
 
 /**
  * @brief Creates a rendering pipeline (encapsulates render state)
- * @param primitive The rendering primitive (points, triangles etc...)
- * @param target True if the current pass is rendering to a texture, false otherwise
- * @param indexed True if the pipeline is using indexed rendering, false otherwise
  * @param shader The shader used by this pipeline
- * @param blend_mode The blending mode used by this pipeline
+ * @param opts Pipeline creation options
+ * @returns A render pipeline objectt
  */
-pg_pipeline_t* pg_create_pipeline(pg_shader_t* shader, const pg_pipeline_opts_t* desc);
+pg_pipeline_t* pg_create_pipeline(pg_shader_t* shader, const pg_pipeline_opts_t* opts);
 
 /**
  * @brief Destroys a render pipeline
 */
 void pg_destroy_pipeline(pg_pipeline_t* pipeline);
 
+/**
+ * @brief Texture creation options
+ */
 typedef struct pg_texture_opts_t
 {
-    int mipmaps;
-    bool smooth;
-    bool repeat;
+    int mipmaps; //!< Mipmap level
+    bool smooth; //!< Linear filtering if true, nearest otherwise
+    bool repeat; //!< Repeat if true, clamp-to-edge otherwise
 } pg_texture_opts_t;
 
 /**
@@ -426,9 +438,9 @@ typedef struct pg_texture_opts_t
  * @param width Bitmap width
  * @param height Bitmap height
  * @param data Bitmap data (format must be RGBA8)
- * @param mipmaps Mipmap level
- * @param smooth Linear filtering (vs nearest)
- * @param repeat Repeat (vs clamp-to-edge)
+ * @param size Size of the data in bytes
+ * @param opts Texture creation options (must not be NULL)
+ * @returns A texture created from a bitmap
  */
 pg_texture_t* pg_create_texture(int width, int height,
                                 const uint8_t* data, size_t size,
@@ -438,9 +450,8 @@ pg_texture_t* pg_create_texture(int width, int height,
  * @brief Creates a render target (RT)
  * @param width RT width
  * @param height RT height
- * @param mipmaps Mipmap level
- * @param smooth Linear filtering (vs nearest)
- * @param repeat Repeat (vs clamp-to-edge)
+ * @param opts Texture creation options (must not be NULL)
+ * @returns A render texture
  */
 pg_texture_t* pg_create_render_texture(int width, int height,
                                        const pg_texture_opts_t* opts);

@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
         // Save current state
         pg_push_state(ctx);
 
-        // First pass: draws to render target
+        // First pass: draw to render target
         pg_begin_pass(ctx, pass, true);
         pg_set_pipeline(ctx, pip);
         pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6, tex);
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
         // Restore previous state
         pg_pop_state(ctx);
 
-        // Second pass: draws render target to the screen
+        // Second pass: draw render target to the screen
         pg_begin_pass(ctx, NULL, true);
         pg_draw_array(ctx, vertices, 6, target);
         pg_end_pass(ctx);
