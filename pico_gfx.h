@@ -279,12 +279,12 @@ void pg_destroy_context(pg_ctx_t* ctx);
  * @brief Creates a render pass
  * @param texture The render target
  */
-pg_pass_t* pg_create_pass(pg_ctx_t* ctx, pg_texture_t* texture);
+pg_pass_t* pg_create_pass(const pg_ctx_t* ctx, pg_texture_t* texture);
 
 /**
  * @brief Destroys a render pass
 */
-void pg_destroy_pass(pg_ctx_t* ctx, pg_pass_t* pass);
+void pg_destroy_pass(const pg_ctx_t* ctx, pg_pass_t* pass);
 
 /**
  * @brief Starts a render pass (mandatory)
@@ -381,7 +381,7 @@ void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h);
 /**
  * @brief Destroys a shader
  */
-void pg_destroy_shader(pg_ctx_t* ctx, pg_shader_t* shader);
+void pg_destroy_shader(const pg_ctx_t* ctx, pg_shader_t* shader);
 
 /**
  * @brief Returns the default shader
@@ -434,14 +434,14 @@ typedef struct pg_pipeline_opts_t
  * @param opts Pipeline creation options
  * @returns A render pipeline object
  */
-pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
+pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
                                   pg_shader_t* shader,
                                   const pg_pipeline_opts_t* opts);
 
 /**
  * @brief Destroys a render pipeline
 */
-void pg_destroy_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
+void pg_destroy_pipeline(const pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 
 /**
  * @brief Texture creation options
@@ -462,7 +462,7 @@ typedef struct pg_texture_opts_t
  * @param opts Texture creation options (must not be NULL)
  * @returns A texture created from a bitmap
  */
-pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
+pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
                                 int width, int height,
                                 const uint8_t* data, size_t size,
                                 const pg_texture_opts_t* opts);
@@ -474,14 +474,14 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
  * @param opts Texture creation options (must not be NULL)
  * @returns A render texture
  */
-pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
+pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
                                        int width, int height,
                                        const pg_texture_opts_t* opts);
 
 /**
  * @brief Destroys a texture
  */
-void pg_destroy_texture(pg_ctx_t* ctx, pg_texture_t* texture);
+void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture);
 
 /**
  * @brief Returns a texture ID
@@ -498,14 +498,14 @@ void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height);
  * @param vertices An array of vertices (position, color, uv)
  * @param count The number of vertices
  */
-pg_vbuffer_t* pg_create_vbuffer(pg_ctx_t* ctx,
+pg_vbuffer_t* pg_create_vbuffer(const pg_ctx_t* ctx,
                                 const pg_vertex_t* vertices,
                                 size_t count);
 
 /**
  * @brief Destroys a vertex buffer
  */
-void pg_destroy_vbuffer(pg_ctx_t* ctx, pg_vbuffer_t* buffer);
+void pg_destroy_vbuffer(const pg_ctx_t* ctx, pg_vbuffer_t* buffer);
 
 /**
  * @brief Draws a vertex buffer
@@ -574,7 +574,7 @@ typedef struct
 	int (*get_uniformblock_slot)(sg_shader_stage stage, const char* ub_name);
 } pg_shader_internal_t;
 
-pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal);
+pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx, pg_shader_internal_t internal);
 
 void pg_register_uniform_block_internal(pg_shader_t* shader,
                                         pg_stage_t stage,
@@ -889,7 +889,7 @@ void pg_destroy_context(pg_ctx_t* ctx)
     PICO_GFX_FREE(ctx, ctx->mem_ctx);
 }
 
-pg_pass_t* pg_create_pass(pg_ctx_t* ctx, pg_texture_t* texture)
+pg_pass_t* pg_create_pass(const pg_ctx_t* ctx, pg_texture_t* texture)
 {
     (void)ctx;
 
@@ -909,7 +909,7 @@ pg_pass_t* pg_create_pass(pg_ctx_t* ctx, pg_texture_t* texture)
     return pass;
 }
 
-void pg_destroy_pass(pg_ctx_t* ctx, pg_pass_t* pass)
+void pg_destroy_pass(const pg_ctx_t* ctx, pg_pass_t* pass)
 {
     (void)ctx;
 
@@ -1070,7 +1070,7 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
     ctx->state.pipeline = pipeline;
 }
 
-pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx, pg_shader_t* shader, const pg_pipeline_opts_t* opts)
+pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx, pg_shader_t* shader, const pg_pipeline_opts_t* opts)
 {
     (void)ctx;
 
@@ -1126,7 +1126,7 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx, pg_shader_t* shader, const pg_p
     return pipeline;
 }
 
-void pg_destroy_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
+void pg_destroy_pipeline(const pg_ctx_t* ctx, pg_pipeline_t* pipeline)
 {
     (void)ctx;
 
@@ -1149,7 +1149,7 @@ void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h)
     ctx->state.scissor = (pg_rect_t){ x, y, w, h};
 }
 
-pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal)
+pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx, pg_shader_internal_t internal)
 {
     (void)ctx;
 
@@ -1176,7 +1176,7 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
     return shader;
 }
 
-void pg_destroy_shader(pg_ctx_t* ctx, pg_shader_t* shader)
+void pg_destroy_shader(const pg_ctx_t* ctx, pg_shader_t* shader)
 {
     (void)ctx;
 
@@ -1243,7 +1243,7 @@ void pg_set_uniform_block_internal(pg_shader_t* shader,
     block->dirty = true;
 }
 
-pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
+pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
                                 int width, int height,
                                 const uint8_t* data, size_t size,
                                 const pg_texture_opts_t* opts)
@@ -1285,7 +1285,7 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
     return texture;
 }
 
-pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
+pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
                                        int width, int height,
                                        const pg_texture_opts_t* opts)
 {
@@ -1328,7 +1328,7 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
     return texture;
 }
 
-void pg_destroy_texture(pg_ctx_t* ctx, pg_texture_t* texture)
+void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
 {
     (void)ctx;
 
@@ -1382,7 +1382,7 @@ static void pg_apply_uniforms(pg_shader_t* shader)
     }
 }
 
-pg_vbuffer_t* pg_create_vbuffer(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count)
+pg_vbuffer_t* pg_create_vbuffer(const pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count)
 {
     (void)ctx;
 
@@ -1405,7 +1405,7 @@ pg_vbuffer_t* pg_create_vbuffer(pg_ctx_t* ctx, const pg_vertex_t* vertices, size
     return buffer;
 }
 
-void pg_destroy_vbuffer(pg_ctx_t* ctx, pg_vbuffer_t* buffer)
+void pg_destroy_vbuffer(const pg_ctx_t* ctx, pg_vbuffer_t* buffer)
 {
     (void)ctx;
 
