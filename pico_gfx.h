@@ -92,6 +92,7 @@
     - PG_GFX_HT_MIN_CAPACITY (default: 8)
     - PG_GFX_HT_KEY_SIZE (default: 16)
     - PICO_GFX_BLOCK_NAME_SIZE (default: 32)
+    - PICO_GFX_MIN_ARENA_CAPACITY (default: 1024)
 
     Customization:
     --------
@@ -619,6 +620,10 @@ void pg_set_uniform_block_internal(pg_shader_t* shader,
 #define PG_GFX_HT_KEY_SIZE 16
 #endif
 
+#ifndef PICO_GFX_MIN_ARENA_CAPACITY
+#define PICO_GFX_MIN_ARENA_CAPACITY 512
+#endif
+
 #ifndef PICO_GFX_BLOCK_NAME_SIZE
 #define PICO_GFX_BLOCK_NAME_SIZE 32
 #endif
@@ -693,13 +698,26 @@ static bool pg_str_equal(const char* s1, const char* s2)
 
 typedef struct pg_hashtable_t pg_hashtable_t;
 typedef struct pg_hashtable_iterator_t pg_hashtable_iterator_t;
-typedef void (*pg_hashtable_iterator_fn)(pg_hashtable_iterator_t* iterator, char* key, void* value);
 
-static pg_hashtable_t* pg_hashtable_new(size_t capacity, size_t key_size, size_t value_size, void* mem_ctx);
+typedef void (*pg_hashtable_iterator_fn)(pg_hashtable_iterator_t* iterator,
+                                         char* key,
+                                         void* value);
+
+static pg_hashtable_t* pg_hashtable_new(size_t capacity, size_t key_size,
+                                        size_t value_size, void* mem_ctx);
+
 static void pg_hashtable_free(pg_hashtable_t* ht);
-static void pg_hashtable_init_iterator(const pg_hashtable_t* ht, pg_hashtable_iterator_t* iterator);
-static bool pg_hashtable_iterator_next(pg_hashtable_iterator_t* iterator, char** key, void** value);
-static void pg_hashtable_put(pg_hashtable_t* ht, const char* key, const void* value);
+
+static void pg_hashtable_init_iterator(const pg_hashtable_t* ht,
+                                       pg_hashtable_iterator_t* iterator);
+
+static bool pg_hashtable_iterator_next(pg_hashtable_iterator_t* iterator,
+                                       char** key, void** value);
+
+static void pg_hashtable_put(pg_hashtable_t* ht,
+                             const char* key,
+                             const void* value);
+
 static void* pg_hashtable_get(const pg_hashtable_t* ht, const char* key);
 
 struct pg_hashtable_iterator_t
@@ -1070,7 +1088,9 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
     ctx->state.pipeline = pipeline;
 }
 
-pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx, pg_shader_t* shader, const pg_pipeline_opts_t* opts)
+pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
+                                  pg_shader_t* shader,
+                                  const pg_pipeline_opts_t* opts)
 {
     (void)ctx;
 
@@ -1081,9 +1101,23 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx, pg_shader_t* shader, cons
 
     memset(&desc, 0, sizeof(sg_pipeline_desc));
 
-    desc.layout.attrs[0] = (sg_vertex_attr_desc){ .format = SG_VERTEXFORMAT_FLOAT3, .offset = offsetof(pg_vertex_t, pos) },
-    desc.layout.attrs[1] = (sg_vertex_attr_desc){ .format = SG_VERTEXFORMAT_FLOAT4, .offset = offsetof(pg_vertex_t, color) },
-    desc.layout.attrs[2] = (sg_vertex_attr_desc){ .format = SG_VERTEXFORMAT_FLOAT2, .offset = offsetof(pg_vertex_t, uv) },
+    desc.layout.attrs[0] = (sg_vertex_attr_desc)
+    {
+        .format = SG_VERTEXFORMAT_FLOAT3,
+        .offset = offsetof(pg_vertex_t, pos)
+    };
+
+    desc.layout.attrs[1] = (sg_vertex_attr_desc)
+    {
+        .format = SG_VERTEXFORMAT_FLOAT4,
+        .offset = offsetof(pg_vertex_t, color)
+    };
+
+    desc.layout.attrs[2] = (sg_vertex_attr_desc)
+    {
+        .format = SG_VERTEXFORMAT_FLOAT2,
+        .offset = offsetof(pg_vertex_t, uv)
+    };
 
     desc.primitive_type = pg_map_primitive(opts->primitive);
 
@@ -1171,7 +1205,7 @@ pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx, pg_shader_internal_t
                                               sizeof(pg_uniform_block_t),
                                               ctx->mem_ctx);
 
-    shader->arena = pg_arena_new(1024, ctx->mem_ctx);
+    shader->arena = pg_arena_new(PICO_GFX_MIN_ARENA_CAPACITY, ctx->mem_ctx);
 
     return shader;
 }
@@ -1382,7 +1416,9 @@ static void pg_apply_uniforms(pg_shader_t* shader)
     }
 }
 
-pg_vbuffer_t* pg_create_vbuffer(const pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count)
+pg_vbuffer_t* pg_create_vbuffer(const pg_ctx_t* ctx,
+                                const pg_vertex_t* vertices,
+                                size_t count)
 {
     (void)ctx;
 
@@ -1538,7 +1574,7 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
 }
 
 /*==============================================================================
- * GFX static functions
+ * GFX Static Functions
  *============================================================================*/
 
 static sg_primitive_type pg_map_primitive(pg_primitive_t primitive)
