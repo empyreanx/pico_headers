@@ -28,8 +28,8 @@
     Pico GFX is a high-level wrapper for the sokol_gfx, a low-level wrapper for
     OpenGL, Metal, and D3D. Pico GFX is designed to make the common case
     intuitive and convenient, especially for 2D applications. It provides access
-    to low-level primititives, such as render passes and pipelines, in a way
-    that is easy to use and understand.
+    to low-level constructs, such as render passes and pipelines, in a way that
+    is easy to use and understand.
 
     Pico GFX includes a default shader (and pipeline), but can be extended using
     the sokol shader compiler (`sokol-shdc`) which allows for a shader to be
@@ -1057,28 +1057,58 @@ void pg_pop_state(pg_ctx_t* ctx)
     pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
 }
 
-void pg_reset_state(pg_ctx_t* ctx)
+void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a)
+{
+    PICO_GFX_ASSERT(ctx);
+    ctx->state.clear_color = (sg_color){ r, g, b, a};
+}
+
+void pg_reset_clear_color(pg_ctx_t* ctx)
+{
+    PICO_GFX_ASSERT(ctx);
+    pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 1.f);
+}
+
+void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h)
+{
+    PICO_GFX_ASSERT(ctx);
+    ctx->state.viewport = (pg_rect_t){ x, y, w, h};
+}
+
+void pg_reset_viewport(pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
 
-    memset(&ctx->state, 0, sizeof(pg_state_t));
+    if (ctx->pass)
+    {
+        pg_texture_t* texture = ctx->pass->texture;
+        pg_set_viewport(ctx, 0, 0, texture->width, texture->height);
+    }
+    else
+    {
+        pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
+    }
+}
 
-    pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 1.f);
-    pg_set_pipeline(ctx, ctx->default_pipeline);
+void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h)
+{
+    PICO_GFX_ASSERT(ctx);
+    ctx->state.scissor = (pg_rect_t){ x, y, w, h};
+}
+
+void pg_reset_scissor(pg_ctx_t* ctx)
+{
+    PICO_GFX_ASSERT(ctx);
 
     if (ctx->pass)
     {
         pg_texture_t* texture = ctx->pass->texture;
         pg_set_scissor(ctx, 0, 0, texture->width, texture->height);
-        pg_set_viewport(ctx, 0, 0, texture->width, texture->height);
     }
     else
     {
         pg_set_scissor(ctx, 0, 0, ctx->window_width, ctx->window_height);
-        pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
     }
-
-    pg_set_identity(ctx);
 }
 
 void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
@@ -1086,6 +1116,25 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(pipeline);
     ctx->state.pipeline = pipeline;
+}
+
+void pg_reset_pipeline(pg_ctx_t* ctx)
+{
+    PICO_GFX_ASSERT(ctx);
+    pg_set_pipeline(ctx, ctx->default_pipeline);
+}
+
+void pg_reset_state(pg_ctx_t* ctx)
+{
+    PICO_GFX_ASSERT(ctx);
+
+    memset(&ctx->state, 0, sizeof(pg_state_t));
+
+    pg_reset_clear_color(ctx);
+    pg_reset_pipeline(ctx);
+    pg_reset_viewport(ctx);
+    pg_reset_scissor(ctx);
+    pg_set_identity(ctx);
 }
 
 pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
@@ -1166,21 +1215,6 @@ void pg_destroy_pipeline(const pg_ctx_t* ctx, pg_pipeline_t* pipeline)
 
     sg_destroy_pipeline(pipeline->handle);
     PICO_GFX_FREE(pipeline, ctx->mem_ctx);
-}
-
-void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a)
-{
-    ctx->state.clear_color = (sg_color){ r, g, b, a};
-}
-
-void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h)
-{
-    ctx->state.viewport = (pg_rect_t){ x, y, w, h};
-}
-
-void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h)
-{
-    ctx->state.scissor = (pg_rect_t){ x, y, w, h};
 }
 
 pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx, pg_shader_internal_t internal)
