@@ -27,9 +27,9 @@
 
     Pico GFX is a high-level wrapper for the sokol_gfx, a low-level wrapper for
     OpenGL, Metal, and D3D. Pico GFX is designed to make the common case
-    intuitive and convenient for 2D applications. It provides access to
-    low-level primititives, such as render passes and pipelines, in a way that
-    is easy to use and understand.
+    intuitive and convenient, especially for 2D applications. It provides access
+    to low-level primititives, such as render passes and pipelines, in a way
+    that is easy to use and understand.
 
     Pico GFX includes a default shader (and pipeline), but can be extended using
     the sokol shader compiler (`sokol-shdc`) which allows for a shader to be
@@ -89,8 +89,21 @@
 
     - PICO_GFX_STACK_MAX_SIZE (default: 16)
     - PICO_GFX_BUFFER_SIZE (default: 1024)
+    - PG_GFX_HT_MIN_CAPACITY (default: 8)
+    - PG_GFX_HT_KEY_SIZE (default: 16)
+    - PICO_GFX_BLOCK_NAME_SIZE (default: 32)
 
-    Must be defined before PICO_GFX_IMPLEMENTATION
+    Customization:
+    --------
+
+    - NDEBUG
+    - PICO_GFX_ASSERT
+    - PICO_GFX_LOG
+    - PICO_GFX_MALLOC
+    - PICO_GFX_REALLOC
+    - PICO_GFX_FREE
+
+    The above (constants/macros) must be defined before PICO_GFX_IMPLEMENTATION
 */
 
 #ifndef PICO_GFX_H
@@ -241,14 +254,14 @@ typedef struct pg_vbuffer_t pg_vbuffer_t;
  *
  * NOTE: This function calls `sg_setup`.
  */
-void pg_init();
+void pg_init(void);
 
 /**
  *  @brief Tears down pico_gfx and sokol_gfx
  *
  * NOTE: This function calls `sg_shutdown`
  */
-void pg_shutdown();
+void pg_shutdown(void);
 
 /**
  * @brief Creates a graphics context
@@ -389,27 +402,17 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader);
  * @brief Registers a uniform block (UB)
  * @param shader The shader owning the UB
  * @param stage The stage (VS or FS) associated with the UB
- * @param name The string name of the UB
- * @param size  The size of the UB struct
+ * @param name The name of the UB as supplied by `sokol_shdc` (no quotes)
  */
-/*void pg_register_uniform_block(pg_shader_t* shader,
-                               pg_stage_t stage,
-                               const char* name,
-                               size_t size);*/
-
 #define pg_register_uniform_block(shader, stage, name) \
         pg_register_uniform_block_internal(shader, stage, #name, sizeof(name##_t))
 
 /**
  * @brief Sets a uniform block (UB)
  * @param shader The shader owning the UB
- * @param name The string name of the UB
+ * @param name The name of the UB as supplied by `sokol_shdc` (no quotes)
  * @param data The data to set (must be the whole UB)
  */
-/*void pg_set_uniform_block(pg_shader_t* shader,
-                          const char* name,
-                          const void* data);*/
-
 #define pg_set_uniform_block(shader, name, data) \
         pg_set_uniform_block_internal(shader, #name, data)
 
@@ -431,7 +434,9 @@ typedef struct pg_pipeline_opts_t
  * @param opts Pipeline creation options
  * @returns A render pipeline object
  */
-pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx, pg_shader_t* shader, const pg_pipeline_opts_t* opts);
+pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
+                                  pg_shader_t* shader,
+                                  const pg_pipeline_opts_t* opts);
 
 /**
  * @brief Destroys a render pipeline
@@ -494,7 +499,8 @@ void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height);
  * @param count The number of vertices
  */
 pg_vbuffer_t* pg_create_vbuffer(pg_ctx_t* ctx,
-                                const pg_vertex_t* vertices, size_t count);
+                                const pg_vertex_t* vertices,
+                                size_t count);
 
 /**
  * @brief Destroys a vertex buffer
@@ -813,7 +819,7 @@ struct pg_vbuffer_t
     size_t count;
 };
 
-void pg_init()
+void pg_init(void)
 {
     sg_setup(&(sg_desc)
     {
@@ -828,7 +834,7 @@ void pg_init()
     });
 }
 
-void pg_shutdown()
+void pg_shutdown(void)
 {
     sg_shutdown();
 }
@@ -2001,6 +2007,7 @@ static size_t pg_hashtable_compute_hash(const pg_hashtable_t* ht, const char* ke
         hash *= prime;
     }
 
+    // Ensure hash is never zero
     if (hash == 0)
         hash++;
 
