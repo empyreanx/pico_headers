@@ -286,6 +286,11 @@ void pg_destroy_context(pg_ctx_t* ctx);
 void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset);
 
 /**
+ * @brief Gets the window size
+ */
+void pg_get_window_size(pg_ctx_t* ctx, int* width, int* height);
+
+/**
  * @brief Creates a render pass
  * @param texture The render target
  */
@@ -946,6 +951,15 @@ void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset)
         pg_reset_viewport(ctx);
         pg_reset_scissor(ctx);
     }
+}
+
+void pg_get_window_size(pg_ctx_t* ctx, int* width, int* height)
+{
+    if (width)
+        *width = ctx->window_width;
+
+    if (height)
+        *height = ctx->window_height;
 }
 
 pg_pass_t* pg_create_pass(const pg_ctx_t* ctx, pg_texture_t* texture)
