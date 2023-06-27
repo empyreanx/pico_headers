@@ -91,15 +91,15 @@ sprite_t* sprite_new(int w, int h, float d, pg_texture_t* tex)
         { { w, 0, d }, { 1, 1, 1, 1 }, { 1, 1 } }
     };
 
-    sprite->buf = pg_create_vbuffer(vertices, 6);
+    sprite->buf = pg_create_vbuffer(ctx, vertices, 6);
 
     return sprite;
 }
 
 void sprite_free(sprite_t* sprite)
 {
-    pg_destroy_vbuffer(sprite->buf);
-    pg_destroy_texture(sprite->tex);
+    pg_destroy_vbuffer(ctx, sprite->buf);
+    pg_destroy_texture(ctx, sprite->tex);
     free(sprite);
 }
 
@@ -209,7 +209,7 @@ pg_texture_t* load_texture(const char* file)
     assert(bitmap && c == 4);
 
     size_t size = w * h * c;
-    pg_texture_t* tex = pg_create_texture(w, h, bitmap, size, &(pg_texture_opts_t){0});
+    pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, &(pg_texture_opts_t){0});
 
     return tex;
 }
@@ -377,7 +377,7 @@ int main(int argc, char* argv[])
     int w = app.screen_w;
     int h = app.screen_h;
 
-    ctx = pg_create_context(w, h);
+    ctx = pg_create_context(w, h, NULL);
     pg_shader_t* default_shader = pg_get_default_shader(ctx);
 
     pg_set_projection(ctx, (pg_mat4_t)
@@ -388,7 +388,7 @@ int main(int argc, char* argv[])
        -1.0f,     -1.0f,   0.0f, 1.0f
     });
 
-    pg_pipeline_t* pip = pg_create_pipeline(default_shader, &(pg_pipeline_opts_t)
+    pg_pipeline_t* pip = pg_create_pipeline(ctx, default_shader, &(pg_pipeline_opts_t)
     {
         .blend_enabled = true,
         .blend =
@@ -476,7 +476,7 @@ int main(int argc, char* argv[])
 
     sg_free(sg);
 
-    pg_destroy_pipeline(pip);
+    pg_destroy_pipeline(ctx, pip);
 
     pg_destroy_context(ctx);
 

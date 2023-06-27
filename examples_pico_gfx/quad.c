@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     pg_init();
 
     // Initialize context
-    pg_ctx_t* ctx = pg_create_context(pixel_w, pixel_h);
+    pg_ctx_t* ctx = pg_create_context(pixel_w, pixel_h, NULL);
 
     // Register/set uniform
     pg_shader_t* default_shader = pg_get_default_shader(ctx);
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
     // Load texture
 
     size_t size = w * h * c;
-    pg_texture_t* tex = pg_create_texture(w, h, bitmap, size, &(pg_texture_opts_t){0});
+    pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, &(pg_texture_opts_t){0});
 
     assert(tex && c == 4);
 
@@ -108,10 +108,10 @@ int main(int argc, char *argv[])
 
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
 
-    pg_texture_t* target = pg_create_render_texture(pixel_w, pixel_h, &(pg_texture_opts_t){0});
-    pg_pass_t* pass = pg_create_pass(target);
+    pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, &(pg_texture_opts_t){0});
+    pg_pass_t* pass = pg_create_pass(ctx, target);
 
-    pg_pipeline_t* pip = pg_create_pipeline(default_shader, &(pg_pipeline_opts_t)
+    pg_pipeline_t* pip = pg_create_pipeline(ctx, default_shader, &(pg_pipeline_opts_t)
     {
         .indexed = true,
         .target = true
@@ -164,11 +164,11 @@ int main(int argc, char *argv[])
         SDL_GL_SwapWindow(window);
     }
 
-    pg_destroy_texture(target);
-    pg_destroy_texture(tex);
+    pg_destroy_texture(ctx, target);
+    pg_destroy_texture(ctx, tex);
 
-    pg_destroy_pipeline(pip);
-    pg_destroy_pass(pass);
+    pg_destroy_pipeline(ctx, pip);
+    pg_destroy_pass(ctx, pass);
     pg_destroy_context(ctx);
 
     pg_shutdown();
