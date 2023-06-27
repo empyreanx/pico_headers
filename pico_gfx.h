@@ -277,6 +277,15 @@ pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx);
 void pg_destroy_context(pg_ctx_t* ctx);
 
 /**
+ * @brief Sets the window dimensions
+ * @param ctx The graphics context
+ * @param width The window width
+ * @param height The window height
+ * @param reset Resets the viewport and scissor if true
+ */
+void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset);
+
+/**
  * @brief Creates a render pass
  * @param texture The render target
  */
@@ -925,6 +934,18 @@ void pg_destroy_context(pg_ctx_t* ctx)
     pg_destroy_shader(ctx, ctx->default_shader);
 
     PICO_GFX_FREE(ctx, ctx->mem_ctx);
+}
+
+void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset)
+{
+    ctx->window_width = width;
+    ctx->window_height = height;
+
+    if (reset)
+    {
+        pg_reset_viewport(ctx);
+        pg_reset_scissor(ctx);
+    }
 }
 
 pg_pass_t* pg_create_pass(const pg_ctx_t* ctx, pg_texture_t* texture)
