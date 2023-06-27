@@ -374,8 +374,8 @@ void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h);
         ctx,                            \
         (pg_shader_internal_t)          \
         {                               \
-		    prefix##_shader_desc,       \
-		    prefix##_uniformblock_slot, \
+            prefix##_shader_desc,       \
+            prefix##_uniformblock_slot, \
         }                               \
     )
 
