@@ -311,6 +311,60 @@ void pg_end_pass(pg_ctx_t* ctx);
 void pg_flush(pg_ctx_t* ctx);
 
 /**
+ * @brief Pushes the active state onto the stack.
+ *
+ * State consists of the pipeline, draw color, scissor, and viewport.
+ */
+void pg_push_state(pg_ctx_t* ctx);
+
+/**
+ * @brief Pops a state off the stack and makes it the active state
+ */
+void pg_pop_state(pg_ctx_t* ctx);
+
+/**
+ * @brief Sets the clear color state to be placed at the top of the state stack
+ */
+void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a);
+
+/**
+ * Resets the clear color
+ */
+void pg_reset_clear_color(pg_ctx_t* ctx);
+
+/**
+ * @brief Sets the viewport state to be placed at the top of the state stack
+ */
+void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h);
+
+/**
+ * Resets the viewport
+ */
+void pg_reset_viewport(pg_ctx_t* ctx);
+
+/**
+ * @brief Sets the scissor state to be placed at the top of the state stack
+ */
+void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h);
+
+/**
+ * Resets the scissor
+ */
+void pg_reset_scissor(pg_ctx_t* ctx);
+
+/**
+ * @brief Sets the pipeline state
+ * @param ctx The graphics context
+ * @param pipeline The pipeline to be placed on the top of the state stack
+ */
+void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
+
+/**
+ * Resets the pipeline
+ */
+void pg_reset_pipeline(pg_ctx_t* ctx);
+
+/**
  * @brief Set both the projection and model-view matrices to the identity matrix
  */
 void pg_set_identity(pg_ctx_t* ctx);
@@ -326,43 +380,9 @@ void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix);
 void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix);
 
 /**
- * @brief Pushes the active state onto the stack.
- *
- * State consists of the pipeline, draw color, scissor, and viewport.
- */
-void pg_push_state(pg_ctx_t* ctx);
-
-/**
- * @brief Pops a state off the stack and makes it the active state
- */
-void pg_pop_state(pg_ctx_t* ctx);
-
-/**
  * @brief Resets the active state to defaults
  */
 void pg_reset_state(pg_ctx_t* ctx);
-
-/**
- * @brief Sets the pipeline state
- * @param ctx The graphics context
- * @param pipeline The pipeline to be placed on the top of the state stack
- */
-void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
-
-/**
- * @brief Sets the clear color state to be placed at the top of the state stack
- */
-void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a);
-
-/**
- * @brief Sets the viewport state to be placed at the top of the state stack
- */
-void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h);
-
-/**
- * @brief Sets the scissor state to be placed at the top of the state stack
- */
-void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h);
 
 /**
  * @brief Creates the shader with the given prefix
@@ -1005,38 +1025,6 @@ void pg_flush(pg_ctx_t* ctx)
     PICO_GFX_ASSERT(sg_query_buffer_state(ctx->index_buffer) == SG_RESOURCESTATE_VALID);
 }
 
-void pg_set_identity(pg_ctx_t* ctx)
-{
-    ctx->state.vs_block = (pg_vs_block_t)
-    {
-        { 1.0f, 0.0f, 0.0f, 0.0f,
-          0.0f, 1.0f, 0.0f, 0.0f,
-          0.0f, 0.0f, 1.0f, 0.0f,
-          0.0f, 0.0f, 0.0f, 1.0f
-        },
-
-        { 1.0f, 0.0f, 0.0f, 0.0f,
-          0.0f, 1.0f, 0.0f, 0.0f,
-          0.0f, 0.0f, 1.0f, 0.0f,
-          0.0f, 0.0f, 0.0f, 1.0f
-        }
-    };
-
-    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
-}
-
-void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix)
-{
-    memcpy(ctx->state.vs_block.u_proj, matrix, sizeof(pg_mat4_t));
-    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
-}
-
-void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix)
-{
-    memcpy(ctx->state.vs_block.u_mv, matrix, sizeof(pg_mat4_t));
-    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
-}
-
 void pg_push_state(pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
@@ -1122,6 +1110,38 @@ void pg_reset_pipeline(pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
     pg_set_pipeline(ctx, ctx->default_pipeline);
+}
+
+void pg_set_identity(pg_ctx_t* ctx)
+{
+    ctx->state.vs_block = (pg_vs_block_t)
+    {
+        { 1.0f, 0.0f, 0.0f, 0.0f,
+          0.0f, 1.0f, 0.0f, 0.0f,
+          0.0f, 0.0f, 1.0f, 0.0f,
+          0.0f, 0.0f, 0.0f, 1.0f
+        },
+
+        { 1.0f, 0.0f, 0.0f, 0.0f,
+          0.0f, 1.0f, 0.0f, 0.0f,
+          0.0f, 0.0f, 1.0f, 0.0f,
+          0.0f, 0.0f, 0.0f, 1.0f
+        }
+    };
+
+    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
+}
+
+void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix)
+{
+    memcpy(ctx->state.vs_block.u_proj, matrix, sizeof(pg_mat4_t));
+    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
+}
+
+void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix)
+{
+    memcpy(ctx->state.vs_block.u_mv, matrix, sizeof(pg_mat4_t));
+    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
 }
 
 void pg_reset_state(pg_ctx_t* ctx)
