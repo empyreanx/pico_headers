@@ -598,6 +598,10 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 #define PG_GFX_HT_KEY_SIZE 16
 #endif
 
+#ifndef PICO_GFX_BLOCK_NAME_SIZE
+#define PICO_GFX_BLOCK_NAME_SIZE 32
+#endif
+
 /*=============================================================================
  * Macros
  *============================================================================*/
@@ -773,7 +777,7 @@ struct pg_shader_t
 
 typedef struct
 {
-    char       name[32]; //TODO: Define constant?
+    char       name[PICO_GFX_BLOCK_NAME_SIZE + 1];
     pg_stage_t stage;
     void*      data;
     size_t     size;
@@ -1140,6 +1144,7 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
     PICO_GFX_ASSERT(pg_str_equal(shader->desc->attrs[2].name, "a_uv"));
 
     shader->handle = sg_make_shader(shader->desc);
+
     shader->uniform_blocks = pg_hashtable_new(PG_GFX_HT_MIN_CAPACITY,
                                               PG_GFX_HT_KEY_SIZE,
                                               sizeof(pg_uniform_block_t),
@@ -1434,7 +1439,10 @@ void pg_draw_array(pg_ctx_t* ctx,
     PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
 
-    int offset = sg_append_buffer(ctx->buffer, &(sg_range) { .ptr = vertices, .size = count * sizeof(pg_vertex_t)});
+    int offset = sg_append_buffer(ctx->buffer, &(sg_range) {
+        .ptr = vertices,
+        .size = count * sizeof(pg_vertex_t)
+    });
 
     sg_bindings bindings;
 
@@ -1603,17 +1611,20 @@ static void pg_log_sg(const char* tag,                // e.g. 'sg'
 
     if (message_or_null && !filename_or_null)
     {
-        PICO_GFX_LOG("Tag: %s, Level: %s, Message: %s", tag, level[log_level], message_or_null);
+        PICO_GFX_LOG("Tag: %s, Level: %s, Message: %s",
+                      tag, level[log_level], message_or_null);
     }
 
     if (!message_or_null && filename_or_null)
     {
-        PICO_GFX_LOG("Tag: %s, Level: %s, File: %s, Line: %d", tag, level[log_level], filename_or_null, line_nr);
+        PICO_GFX_LOG("Tag: %s, Level: %s, File: %s, Line: %d",
+                      tag, level[log_level], filename_or_null, line_nr);
     }
 
     if (message_or_null && filename_or_null)
     {
-        PICO_GFX_LOG("Tag: %s, Level: %s, File: %s, Line: %d, Message: %s", tag, level[log_level], filename_or_null, line_nr, message_or_null);
+        PICO_GFX_LOG("Tag: %s, Level: %s, File: %s, Line: %d, Message: %s",
+                      tag, level[log_level], filename_or_null, line_nr, message_or_null);
     }
 }
 
@@ -1982,7 +1993,7 @@ static size_t pg_hashtable_compute_hash(const pg_hashtable_t* ht, const char* ke
 
 struct pg_arena_t
 {
-    void* mem_ctx;
+    void*  mem_ctx;
     size_t capacity;
     size_t size;
     void*  block;
