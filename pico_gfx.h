@@ -1756,6 +1756,9 @@ static void pg_hashtable_put(pg_hashtable_t* ht,
     }
 
     pg_hash_t hash = pg_hashtable_compute_hash(ht, key);
+
+    PICO_GFX_ASSERT(hash > 0);
+
     size_t start_index = hash % ht->capacity;
     size_t index = start_index;
 
@@ -1808,6 +1811,9 @@ static void* pg_hashtable_get(const pg_hashtable_t* ht, const char* key)
     PICO_GFX_ASSERT(NULL != ht);
 
     pg_hash_t hash = pg_hashtable_compute_hash(ht, key);
+
+    PICO_GFX_ASSERT(hash > 0);
+
     size_t start_index = hash % ht->capacity;
     size_t index = start_index;
 
@@ -1918,6 +1924,9 @@ static size_t pg_hashtable_compute_hash(const pg_hashtable_t* ht, const char* ke
         hash ^= (pg_hash_t)data[i];
         hash *= prime;
     }
+
+    if (hash == 0)
+        hash++;
 
     return hash;
 }
