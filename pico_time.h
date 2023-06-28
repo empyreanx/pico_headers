@@ -62,7 +62,7 @@ typedef uint64_t ptime_t;
 /**
  * @brief Returns the present high-res clock time
  */
-ptime_t pt_now();
+ptime_t pt_now(void);
 
 /**
  * @brief Sleeps for at least the specified duration
@@ -132,7 +132,7 @@ ptime_t pt_from_sec(double sec);
 
 #include <windows.h>
 
-ptime_t pt_now()
+ptime_t pt_now(void)
 {
     static LARGE_INTEGER freq = { 0 };
 
@@ -163,7 +163,7 @@ void pt_sleep(ptime_t duration)
 
 #include <mach/mach_time.h>
 
-ptime_t pt_now()
+ptime_t pt_now(void)
 {
     static mach_timebase_info_data_t freq = { 0, 0 };
 
@@ -183,7 +183,7 @@ ptime_t pt_now()
 #include <errno.h>
 #include <time.h>
 
-ptime_t pt_now()
+ptime_t pt_now(void)
 {
     struct timespec ti;
     clock_gettime(CLOCK_MONOTONIC, &ti);

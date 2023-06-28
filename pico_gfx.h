@@ -1982,7 +1982,7 @@ static void pg_hashtable_put(pg_hashtable_t* ht,
         {
             entry->hash = hash;
 
-            memcpy(entry->key, key, ht->key_size);
+            memcpy(entry->key, key, ht->key_size); //FIXME: use string copy function
             pg_hashtable_copy_value(ht, entry, value);
 
             ht->size++;

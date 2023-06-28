@@ -214,7 +214,7 @@ pg_texture_t* load_texture(const char* file)
     return tex;
 }
 
-void app_startup()
+void app_startup(void)
 {
     printf("Scene graph rendering demo\n");
 
@@ -248,7 +248,7 @@ void app_startup()
     stbi_set_flip_vertically_on_load(true);
 }
 
-void app_shutdown()
+void app_shutdown(void)
 {
     SDL_GL_DeleteContext(app.context);
     SDL_DestroyWindow(app.window);

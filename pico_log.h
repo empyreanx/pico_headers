@@ -457,7 +457,7 @@ static log_appender_data_t log_appenders[LOG_MAX_APPENDERS];
  * Initializes the logger provided it has not been initialized.
  */
 static void
-log_try_init ()
+log_try_init (void)
 {
     if (log_initialized)
     {

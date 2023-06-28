@@ -422,7 +422,7 @@ PM_INLINE pm_v2 pm_v2_lerp(pm_v2 v1, pm_v2 v2, pm_float alpha)
 /**
  * @brief Returns the zero vector
  */
-PM_INLINE pm_v2 pm_v2_zero()
+PM_INLINE pm_v2 pm_v2_zero(void)
 {
     return pm_v2_make(0.0f, 0.0f);
 }
@@ -479,7 +479,7 @@ PM_INLINE pm_v2 pm_v2_ceil(pm_v2 v)
 /**
  * @brief Return the identity transform
  */
-PM_INLINE pm_t2 pm_t2_identity()
+PM_INLINE pm_t2 pm_t2_identity(void)
 {
     return pm_t2_make(1.0f, 0.0f, 0.0f,
                       0.0f, 1.0f, 0.0f);
@@ -663,7 +663,7 @@ PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
 /**
  * @brief Returns an AABB that has zero size and coordinates
  */
-PM_INLINE pm_b2 pm_b2_zero()
+PM_INLINE pm_b2 pm_b2_zero(void)
 {
     return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
 }
