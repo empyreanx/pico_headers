@@ -647,7 +647,7 @@ void pg_set_uniform_block_internal(pg_shader_t* shader,
 #endif
 
 #ifndef PG_GFX_HT_MIN_CAPACITY
-#define PG_GFX_HT_MIN_CAPACITY 8
+#define PG_GFX_HT_MIN_CAPACITY 16
 #endif
 
 #ifndef PG_GFX_HT_KEY_SIZE
