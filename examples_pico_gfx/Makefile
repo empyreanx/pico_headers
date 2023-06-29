@@ -1,5 +1,5 @@
 ifeq ($(OS),Windows_NT)
-    CC     = clang # gcc
+    CC     = clang # gcc produces too many spurious warnings
     CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I .
     CLIBS  = -lmingw32 -lwinmm -lSDL2main -lSDL2 -lm
 else

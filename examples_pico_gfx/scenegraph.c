@@ -365,7 +365,7 @@ void sg_free(scenegraph_t* sg)
     free(sg);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     (void)argc;
     (void)argv;
