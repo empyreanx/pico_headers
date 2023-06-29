@@ -12,7 +12,7 @@ else
     ifeq ($(UNAME_S),Darwin)
         CC     = clang
         CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I .
-        CLIBS  = -lSDL2 -ldl -lm
+        CLIBS  = -lSDL2 -ldl -lm -framework OpenGL
     endif
 endif
 
