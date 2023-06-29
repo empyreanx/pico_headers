@@ -28,7 +28,7 @@ jobs:
         with:
           msystem: ${{ matrix.platform.msystem }}
           install: >-
-            ${{ matrix.platform.msys-env }}-gcc
+            ${{ matrix.platform.msys-env }}-clang
             make
       - name: Setup Linux dependencies
         if: runner.os == 'Linux'
@@ -52,4 +52,4 @@ jobs:
         run: |
              make clean
              make all
-        working-directory: examples_pico_gl
+        working-directory: [examples_pico_gfx examples_pico_gl]
