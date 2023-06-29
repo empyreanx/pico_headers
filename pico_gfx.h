@@ -658,10 +658,6 @@ void pg_set_uniform_block_internal(pg_shader_t* shader,
 #define PICO_GFX_MIN_ARENA_CAPACITY 512
 #endif
 
-#ifndef PICO_GFX_BLOCK_NAME_SIZE
-#define PICO_GFX_BLOCK_NAME_SIZE 32
-#endif
-
 /*=============================================================================
  * Macros
  *============================================================================*/
@@ -845,7 +841,6 @@ struct pg_shader_t
 
 typedef struct
 {
-    //char       name[PICO_GFX_BLOCK_NAME_SIZE + 1];
     int        slot;
     pg_stage_t stage;
     void*      data;
