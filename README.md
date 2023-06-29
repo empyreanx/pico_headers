@@ -7,7 +7,7 @@ Library | Docs | Description | Version
 ------- | -----| ------------| -------
 **[pico_b64](pico_b64.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__b64_8h.html)**  | Base64 encoding/decoding library            | 0.1
 **[pico_ecs](pico_ecs.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__ecs_8h.html)**  | Pure and simple ECS                         | 2.2
-**[pico_gl](pico_gfx.h)**    | **[docs](https://empyreanx.github.io/docs/ph/pico__gfx_8h.html)**  | Graphics library based on sokol_gfx         | 0.1
+**[pico_gfx](pico_gfx.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__gfx_8h.html)**  | Graphics library based on sokol_gfx         | 0.1
 **[pico_gl](pico_gl.h)**     | **[docs](https://empyreanx.github.io/docs/ph/pico__gl_8h.html)**   | Graphics library based on OpenGL            | 0.1
 **[pico_log](pico_log.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__log_8h.html)**  | Minimal and flexible logging framework      | 1.0
 **[pico_math](pico_math.h)** | **[docs](https://empyreanx.github.io/docs/ph/pico__math_8h.html)** | 2D math library for games                   | 1.0
