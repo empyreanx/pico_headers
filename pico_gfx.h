@@ -710,11 +710,6 @@ static void pg_log(const char* fmt, ...);
  * Utility
  *============================================================================*/
 
-static size_t pg_str_copy(char* dst, const char* src, size_t n)
-{
-    return snprintf(dst, n, "%s", src);
-}
-
 static bool pg_str_equal(const char* s1, const char* s2)
 {
     return strcmp(s1, s2) == 0;
@@ -850,7 +845,8 @@ struct pg_shader_t
 
 typedef struct
 {
-    char       name[PICO_GFX_BLOCK_NAME_SIZE + 1];
+    //char       name[PICO_GFX_BLOCK_NAME_SIZE + 1];
+    int        slot;
     pg_stage_t stage;
     void*      data;
     size_t     size;
@@ -1339,13 +1335,12 @@ void pg_register_uniform_block_internal(pg_shader_t* shader,
 
     pg_uniform_block_t block =
     {
+        .slot  = shader->internal.get_uniformblock_slot(pg_map_stage(stage), name),
         .stage = stage,
         .data  = pg_arena_alloc(shader->arena, size),
         .size  = size,
         .dirty = false
     };
-
-    pg_str_copy(block.name, name, sizeof(block.name));
 
     pg_hashtable_put(shader->uniform_blocks, name, &block);
 }
@@ -1496,9 +1491,7 @@ static void pg_apply_uniforms(pg_shader_t* shader)
 
             sg_shader_stage stage = pg_map_stage(block->stage);
 
-            int slot = shader->internal.get_uniformblock_slot(stage, block->name);
-
-            sg_apply_uniforms(stage, slot, &range);
+            sg_apply_uniforms(stage, block->slot, &range);
 
             block->dirty = false;
         //}
