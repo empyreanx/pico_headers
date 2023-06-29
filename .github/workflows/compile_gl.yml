@@ -20,7 +20,7 @@ jobs:
         - { name: Windows (mingw64), os: windows-latest, shell: 'msys2 {0}', msystem: mingw64, msys-env: mingw-w64-x86_64 }
         - { name: Linux,             os: ubuntu-latest,  shell: bash }
         - { name: MacOS,             os: macos-latest,   shell: bash }
-
+        test-dirs: [examples_pico_gfx examples_pico_gl]
     steps:
       - name: Set up MSYS2
         if: matrix.platform.shell == 'msys2 {0}'
@@ -52,4 +52,5 @@ jobs:
         run: |
              make clean
              make all
-        working-directory: [examples_pico_gfx examples_pico_gl]
+        working-directory: ${{ matrix.test-dirs }}
+
