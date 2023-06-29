@@ -25,11 +25,11 @@
     Summary:
     --------
 
-    Pico GFX (pico_gfx) is a high-level wrapper for the sokol_gfx, a low-level
-    wrapper for OpenGL, Metal, and D3D. Pico GFX is designed to make the common
-    case intuitive and convenient, especially for 2D applications. It provides
-    access to low-level constructs, such as render passes and pipelines, in a
-    way that is easy to use and understand.
+    Pico GFX (pico_gfx) is a high-level wrapper for [sokol_gfx](https://github.com/floooh/sokol/blob/master/sokol_gfx.h),
+    a low-level wrapper for OpenGL, Metal, and D3D. Pico GFX is designed to make
+    the common case intuitive and convenient, especially for 2D applications. It
+    provides access to low-level constructs, such as render passes and
+    pipelines, in a way that is easy to use and understand.
 
     pico_gfx includes a default shader (and pipeline), but can be extended using
     the sokol shader compiler (`sokol-shdc`) which allows for a shader to be
