@@ -25,22 +25,26 @@
     Summary:
     --------
 
-    Pico GFX is a high-level wrapper for the sokol_gfx, a low-level wrapper for
-    OpenGL, Metal, and D3D. Pico GFX is designed to make the common case
-    intuitive and convenient, especially for 2D applications. It provides access
-    to low-level constructs, such as render passes and pipelines, in a way that
-    is easy to use and understand.
+    Pico GFX (pico_gfx) is a high-level wrapper for the sokol_gfx, a low-level
+    wrapper for OpenGL, Metal, and D3D. Pico GFX is designed to make the common
+    case intuitive and convenient, especially for 2D applications. It provides
+    access to low-level constructs, such as render passes and pipelines, in a
+    way that is easy to use and understand.
 
-    Pico GFX includes a default shader (and pipeline), but can be extended using
+    pico_gfx includes a default shader (and pipeline), but can be extended using
     the sokol shader compiler (`sokol-shdc`) which allows for a shader to be
     written in a single language (e.g. GLSL) which is then transformed into
     shader sources for all suppported backends.
 
-    One thing Pico GFX does not support (and neither does sokol_gfx) is window
+    One thing pico_gfx does not support (and neither does sokol_gfx) is window
     and graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
     for some examples. It is worth mentioning that [SDL2](https://www.libsdl.org)
     can supply both a window and OpenGL context out of the box. SDL2 is used
     in the demos.
+
+    Another library that supports window/context creation on all supported
+    backends is [sokol_app](https://github.com/floooh/sokol/blob/master/sokol_app.h),
+    but it has yet to be tested with pico_gfx.
 
     State (pipeline/shader, the default uniform block, the viewport, scissor,
     and clear color) can be managed via the state stack. The stack enables
