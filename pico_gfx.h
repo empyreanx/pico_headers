@@ -91,7 +91,6 @@
     - PICO_GFX_BUFFER_SIZE (default: 1024)
     - PG_GFX_HT_MIN_CAPACITY (default: 8)
     - PG_GFX_HT_KEY_SIZE (default: 16)
-    - PICO_GFX_BLOCK_NAME_SIZE (default: 32)
     - PICO_GFX_MIN_ARENA_CAPACITY (default: 1024)
 
     Customization:
@@ -489,10 +488,10 @@ typedef struct pg_texture_opts_t
 } pg_texture_opts_t;
 
 /**
- * @brief Creates a texture from a bitmap
- * @param width Bitmap width
- * @param height Bitmap height
- * @param data Bitmap data (format must be RGBA8)
+ * @brief Creates a texture from an RGBA8 image
+ * @param width Image width
+ * @param height Image height
+ * @param data Image data (format must be RGBA8)
  * @param size Size of the data in bytes
  * @param opts Texture creation options (must not be NULL)
  * @returns A texture created from a bitmap
@@ -545,7 +544,7 @@ void pg_destroy_vbuffer(const pg_ctx_t* ctx, pg_vbuffer_t* buffer);
 /**
  * @brief Draws a vertex buffer
  * @param ctx The graphics context
- * @param buffer An array of vertices
+ * @param buffer The vertex buffer
  * @param start The first vertex to draw
  * @param count The number of vertices to draw
  * @param texture The texture to draw from
@@ -553,7 +552,7 @@ void pg_destroy_vbuffer(const pg_ctx_t* ctx, pg_vbuffer_t* buffer);
 void pg_draw_vbuffer(const pg_ctx_t* ctx,
                      const pg_vbuffer_t* buffer,
                      size_t start, size_t count,
-                     pg_texture_t* texture);
+                     const pg_texture_t* texture);
 
 /**
  * @brief Draws an array of vertices
@@ -564,7 +563,7 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
  */
 void pg_draw_array(pg_ctx_t* ctx,
                    const pg_vertex_t* vertices, size_t count,
-                   pg_texture_t* texture);
+                   const pg_texture_t* texture);
 
 /**
  * @brief Draws an indexed array of vertices
@@ -578,7 +577,7 @@ void pg_draw_array(pg_ctx_t* ctx,
 void pg_draw_indexed_array(pg_ctx_t* ctx,
                            const pg_vertex_t* vertices, size_t vertex_count,
                            const uint32_t* indices, size_t index_count,
-                           pg_texture_t* texture);
+                           const pg_texture_t* texture);
 
 /*=============================================================================
  * Types
@@ -1095,7 +1094,7 @@ void pg_reset_viewport(pg_ctx_t* ctx)
 
     if (ctx->pass)
     {
-        pg_texture_t* texture = ctx->pass->texture;
+        const pg_texture_t* texture = ctx->pass->texture;
         pg_set_viewport(ctx, 0, 0, texture->width, texture->height);
     }
     else
@@ -1116,7 +1115,7 @@ void pg_reset_scissor(pg_ctx_t* ctx)
 
     if (ctx->pass)
     {
-        pg_texture_t* texture = ctx->pass->texture;
+        const pg_texture_t* texture = ctx->pass->texture;
         pg_set_scissor(ctx, 0, 0, texture->width, texture->height);
     }
     else
@@ -1539,7 +1538,7 @@ static void pg_apply_view_state(const pg_ctx_t* ctx)
 void pg_draw_vbuffer(const pg_ctx_t* ctx,
                      const pg_vbuffer_t* buffer,
                      size_t start, size_t count,
-                     pg_texture_t* texture)
+                     const pg_texture_t* texture)
 {
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(buffer);
@@ -1570,7 +1569,7 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
 
 void pg_draw_array(pg_ctx_t* ctx,
                    const pg_vertex_t* vertices, size_t count,
-                   pg_texture_t* texture)
+                   const pg_texture_t* texture)
 {
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(vertices);
@@ -1578,7 +1577,8 @@ void pg_draw_array(pg_ctx_t* ctx,
     PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
 
-    int offset = sg_append_buffer(ctx->buffer, &(sg_range) {
+    int offset = sg_append_buffer(ctx->buffer, &(sg_range)
+    {
         .ptr = vertices,
         .size = count * sizeof(pg_vertex_t)
     });
@@ -1607,7 +1607,7 @@ void pg_draw_array(pg_ctx_t* ctx,
 void pg_draw_indexed_array(pg_ctx_t* ctx,
                            const pg_vertex_t* vertices, size_t vertex_count,
                            const uint32_t* indices, size_t index_count,
-                           pg_texture_t* texture)
+                           const pg_texture_t* texture)
 {
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(vertices);
@@ -1619,12 +1619,14 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
 
     int vertex_offset = sg_append_buffer(ctx->buffer, &(sg_range)
     {
-        .ptr = vertices, .size = vertex_count * sizeof(pg_vertex_t)
+        .ptr = vertices,
+        .size = vertex_count * sizeof(pg_vertex_t)
     });
 
     int index_offset = sg_append_buffer(ctx->index_buffer, &(sg_range)
     {
-        .ptr = indices, .size = index_count * sizeof(uint32_t)
+        .ptr = indices,
+        .size = index_count * sizeof(uint32_t)
     });
 
     sg_bindings bindings;
@@ -1682,7 +1684,7 @@ static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor)
         case PG_SRC_COLOR:           return SG_BLENDFACTOR_SRC_COLOR;
         case PG_ONE_MINUS_SRC_COLOR: return SG_BLENDFACTOR_ONE_MINUS_SRC_COLOR;
         case PG_DST_COLOR:           return SG_BLENDFACTOR_DST_COLOR;
-        case PG_ONE_MINUS_DST_COLOR: return SG_BLENDFACTOR_ZERO;
+        case PG_ONE_MINUS_DST_COLOR: return SG_BLENDFACTOR_ONE_MINUS_DST_COLOR;
         case PG_SRC_ALPHA:           return SG_BLENDFACTOR_SRC_ALPHA;
         case PG_ONE_MINUS_SRC_ALPHA: return SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
         case PG_DST_ALPHA:           return SG_BLENDFACTOR_DST_ALPHA;
