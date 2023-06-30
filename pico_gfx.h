@@ -313,7 +313,7 @@ void pg_destroy_pass(const pg_ctx_t* ctx, pg_pass_t* pass);
  * @param pass The render pass (NULL for the default pass)
  * @param clear Clears the render target or window
  */
-void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear);
+void pg_begin_pass(pg_ctx_t* ctx, pg_texture_t* target, bool clear);
 
 /**
  * @brief Ends a render pass (mandatory)
@@ -812,7 +812,7 @@ struct pg_ctx_t
     sg_buffer buffer;
     sg_buffer index_buffer;
     bool pass_active;
-    pg_pass_t* pass;
+    pg_texture_t* target;
     pg_shader_t* default_shader;
     pg_pipeline_t* default_pipeline;
     pg_state_t state;
@@ -857,6 +857,7 @@ struct pg_texture_t
     bool target;
     sg_image handle;
     sg_image depth_handle;
+    sg_pass pass_handle;
 };
 
 struct pg_vbuffer_t
@@ -956,36 +957,7 @@ void pg_get_window_size(pg_ctx_t* ctx, int* width, int* height)
         *height = ctx->window_height;
 }
 
-pg_pass_t* pg_create_pass(const pg_ctx_t* ctx, pg_texture_t* texture)
-{
-    (void)ctx;
-
-    PICO_GFX_ASSERT(texture);
-    PICO_GFX_ASSERT(texture->target);
-
-    pg_pass_t* pass = (pg_pass_t*)PICO_GFX_MALLOC(sizeof(pg_pass_t), ctx->mem_ctx);
-
-    pass->handle = sg_make_pass(&(sg_pass_desc)
-    {
-        .color_attachments[0].image = texture->handle,
-        .depth_stencil_attachment.image = texture->depth_handle
-    });
-
-    pass->texture = texture;
-
-    return pass;
-}
-
-void pg_destroy_pass(const pg_ctx_t* ctx, pg_pass_t* pass)
-{
-    (void)ctx;
-
-    PICO_GFX_ASSERT(pass);
-    sg_destroy_pass(pass->handle);
-    PICO_GFX_FREE(pass, ctx->mem_ctx);
-}
-
-void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
+void pg_begin_pass(pg_ctx_t* ctx, pg_texture_t* target, bool clear)
 {
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(!ctx->pass_active);
@@ -1005,10 +977,10 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
         };
     }
 
-    if (pass)
+    if (target)
     {
-        sg_begin_pass(pass->handle, &pass_action);
-        ctx->pass = pass;
+        sg_begin_pass(target->pass_handle, &pass_action);
+        ctx->target = target;
     }
     else
     {
@@ -1024,7 +996,7 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
 void pg_end_pass(pg_ctx_t* ctx)
 {
     sg_end_pass();
-    ctx->pass = NULL;
+    ctx->target = NULL;
     ctx->pass_active = false;
 }
 
@@ -1099,9 +1071,9 @@ void pg_reset_viewport(pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
 
-    if (ctx->pass)
+    if (ctx->target)
     {
-        const pg_texture_t* texture = ctx->pass->texture;
+        const pg_texture_t* texture = ctx->target;
         pg_set_viewport(ctx, 0, 0, texture->width, texture->height);
     }
     else
@@ -1120,9 +1092,9 @@ void pg_reset_scissor(pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
 
-    if (ctx->pass)
+    if (ctx->target)
     {
-        const pg_texture_t* texture = ctx->pass->texture;
+        const pg_texture_t* texture = ctx->target;
         pg_set_scissor(ctx, 0, 0, texture->width, texture->height);
     }
     else
@@ -1444,12 +1416,21 @@ pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
 
     PICO_GFX_ASSERT(sg_query_image_state(texture->depth_handle) == SG_RESOURCESTATE_VALID);
 
+    texture->pass_handle = sg_make_pass(&(sg_pass_desc)
+    {
+        .color_attachments[0].image = texture->handle,
+        .depth_stencil_attachment.image = texture->depth_handle
+    });
+
     return texture;
 }
 
 void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
 {
     (void)ctx;
+
+    if (texture->target)
+        sg_destroy_pass(texture->pass_handle);
 
     sg_destroy_image(texture->handle);
     PICO_GFX_FREE(texture, ctx->mem_ctx);

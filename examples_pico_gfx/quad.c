@@ -109,8 +109,6 @@ int main(int argc, char *argv[])
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
 
     pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, &(pg_texture_opts_t){0});
-    pg_pass_t* pass = pg_create_pass(ctx, target);
-
     pg_pipeline_t* pip = pg_create_pipeline(ctx, default_shader, &(pg_pipeline_opts_t)
     {
         .indexed = true,
@@ -145,7 +143,7 @@ int main(int argc, char *argv[])
         pg_push_state(ctx);
 
         // First pass: draw to render target
-        pg_begin_pass(ctx, pass, true);
+        pg_begin_pass(ctx, target, true);
         pg_set_pipeline(ctx, pip);
         pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6, tex);
         pg_end_pass(ctx);
@@ -168,7 +166,6 @@ int main(int argc, char *argv[])
     pg_destroy_texture(ctx, tex);
 
     pg_destroy_pipeline(ctx, pip);
-    pg_destroy_pass(ctx, pass);
     pg_destroy_context(ctx);
 
     pg_shutdown();
