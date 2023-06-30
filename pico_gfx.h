@@ -1430,7 +1430,10 @@ void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
     (void)ctx;
 
     if (texture->target)
+    {
         sg_destroy_pass(texture->pass_handle);
+        sg_destroy_image(texture->depth_handle);
+    }
 
     sg_destroy_image(texture->handle);
     PICO_GFX_FREE(texture, ctx->mem_ctx);
