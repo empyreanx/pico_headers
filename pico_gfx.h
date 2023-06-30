@@ -1015,6 +1015,9 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_pass_t* pass, bool clear)
         sg_begin_default_pass(&pass_action, ctx->window_width, ctx->window_height);
     }
 
+    pg_reset_viewport(ctx);
+    pg_reset_scissor(ctx);
+
     ctx->pass_active = true;
 }
 
