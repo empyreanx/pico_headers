@@ -371,14 +371,9 @@ void pg_reset_pipeline(pg_ctx_t* ctx);
 void pg_set_identity(pg_ctx_t* ctx);
 
 /**
- * @brief Sets the transform
+ * @brief Sets the MVP transform
  */
 void pg_set_transform(pg_ctx_t* ctx, pg_mat4_t matrix);
-
-/**
- * @brief Sets the model-view transform to the specified matrix
- */
-void pg_set_modelview(pg_ctx_t* ctx, pg_mat4_t matrix);
 
 /**
  * @brief Resets the active state to defaults
