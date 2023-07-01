@@ -36,7 +36,7 @@
     IMPORTANT: On POSIX systems, when defining PICO_TIME_IMPLEMENTATION, one of
     three conditions must hold:
 
-    1) #define_POSIX_C_SOURCE 199309L must precede any header include in the file
+    1) #define _POSIX_C_SOURCE 199309L must precede any header include in the file
     2) This library must be included before any other headers
     3) The build system must define `_POSIX_C_SOURCE 199309L`
 */
