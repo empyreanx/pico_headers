@@ -86,7 +86,7 @@ extern "C" {
 #elif defined(__GNUC__) || defined(__clang__)
     #define PM_INLINE static inline __attribute((always_inline))
 #else
-    #define PM_INLINE inline
+    #define PM_INLINE
 #endif
 
 // Types
