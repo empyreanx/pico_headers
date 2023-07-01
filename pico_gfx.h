@@ -57,9 +57,9 @@
     by calling `pg_set_uniform_block`. These functions typically operate on
     structs supplied by a custom shader,
 
-    The default shader provides a uniform block containing projection and
-    model-view transforms. These can be set using the `pg_set_projection` and
-    `pg_set_modelview` functions, and reset to the identity using
+    The default shader provides a uniform block containing a transformation
+    matrix (u_mvp) that is used to map vertices. This transformation can set
+    using `pg_set_transform` and reset to the identity by calling
     `pg_set_identity`.
 
     Please see the examples for more details.
