@@ -60,7 +60,7 @@
     The default shader provides a uniform block containing a transformation
     matrix (u_mvp) that is used to map vertices. This transformation can set
     using `pg_set_transform` and reset to the identity by calling
-    `pg_set_identity`.
+    `pg_reset_transform`.
 
     Please see the examples for more details.
 
@@ -314,7 +314,8 @@ void pg_flush(pg_ctx_t* ctx);
 /**
  * @brief Pushes the active state onto the stack.
  *
- * State consists of the pipeline, draw color, scissor, and viewport.
+ * State consists of the pipeline, draw color, scissor, viewport, and default
+ * MVP transform.
  */
 void pg_push_state(pg_ctx_t* ctx);
 
@@ -366,14 +367,14 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 void pg_reset_pipeline(pg_ctx_t* ctx);
 
 /**
- * @brief Set both the projection and model-view matrices to the identity matrix
- */
-void pg_set_identity(pg_ctx_t* ctx);
-
-/**
  * @brief Sets the MVP transform
  */
 void pg_set_transform(pg_ctx_t* ctx, pg_mat4_t matrix);
+
+/**
+ * @brief Set the transform (MVP) to the identity matrix
+ */
+void pg_reset_transform(pg_ctx_t* ctx);
 
 /**
  * @brief Resets the active state to defaults
@@ -1088,24 +1089,21 @@ void pg_reset_pipeline(pg_ctx_t* ctx)
     pg_set_pipeline(ctx, ctx->default_pipeline);
 }
 
-void pg_set_identity(pg_ctx_t* ctx)
-{
-    ctx->state.vs_block = (pg_vs_block_t)
-    {
-        { 1.0f, 0.0f, 0.0f, 0.0f,
-          0.0f, 1.0f, 0.0f, 0.0f,
-          0.0f, 0.0f, 1.0f, 0.0f,
-          0.0f, 0.0f, 0.0f, 1.0f
-        }
-    };
-
-    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
-}
-
 void pg_set_transform(pg_ctx_t* ctx, pg_mat4_t matrix)
 {
     memcpy(ctx->state.vs_block.u_mvp, matrix, sizeof(pg_mat4_t));
     pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
+}
+
+void pg_reset_transform(pg_ctx_t* ctx)
+{
+    pg_set_transform(ctx, (pg_mat4_t)
+    {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    });
 }
 
 void pg_reset_state(pg_ctx_t* ctx)
@@ -1118,7 +1116,7 @@ void pg_reset_state(pg_ctx_t* ctx)
     pg_reset_pipeline(ctx);
     pg_reset_viewport(ctx);
     pg_reset_scissor(ctx);
-    pg_set_identity(ctx);
+    pg_reset_transform(ctx);
 }
 
 pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
