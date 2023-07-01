@@ -6,15 +6,14 @@ layout(location = 1) in vec4 a_color;
 layout(location = 2) in vec2 a_uv;
 
 layout(binding = 0) uniform pg_vs_block {
-    mat4 u_proj;
-    mat4 u_mv;
+    mat4 u_transform;
 };
 
 out vec4 color;
 out vec2 uv;
 
 void main() {
-    gl_Position = u_proj * u_mv * vec4(a_pos, 1.0);
+    gl_Position = u_transform * vec4(a_pos, 1.0);
     color = a_color;
     uv = a_uv;
 }
