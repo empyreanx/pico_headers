@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
     // Load texture
 
     size_t size = w * h * c;
-    pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, &(pg_texture_opts_t){0});
+    pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, NULL);
 
     assert(tex && c == 4);
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
 
-    pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, &(pg_texture_opts_t){0});
+    pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
     pg_pipeline_t* pip = pg_create_pipeline(ctx, default_shader, &(pg_pipeline_opts_t)
     {
         .indexed = true,

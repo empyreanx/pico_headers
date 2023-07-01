@@ -58,9 +58,9 @@
     structs supplied by a custom shader,
 
     The default shader provides a uniform block containing a transformation
-    matrix (u_mvp) that is used to map vertices. This transformation can set
-    using `pg_set_transform` and reset to the identity by calling
-    `pg_reset_transform`.
+    matrix (u_mvp) that is used to map vertices to normalized device
+    coordinates. This transformation can be set using `pg_set_transform` and
+    reset to the identity by calling `pg_reset_transform`.
 
     Please see the examples for more details.
 
@@ -869,7 +869,7 @@ pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx)
     ctx->window_width  = window_width;
     ctx->window_height = window_height;
     ctx->default_shader = pg_create_shader(ctx, pg_default);
-    ctx->default_pipeline = pg_create_pipeline(ctx, ctx->default_shader, &(pg_pipeline_opts_t){ 0 });
+    ctx->default_pipeline = pg_create_pipeline(ctx, ctx->default_shader, NULL);
 
     pg_register_uniform_block(ctx->default_shader, PG_VS_STAGE, pg_vs_block);
 
@@ -1126,7 +1126,9 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
     (void)ctx;
 
     PICO_GFX_ASSERT(shader);
-    PICO_GFX_ASSERT(opts);
+
+    if (opts == NULL)
+        opts = &(pg_pipeline_opts_t){ 0 };
 
     sg_pipeline_desc desc;
 
@@ -1303,6 +1305,10 @@ pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
     PICO_GFX_ASSERT(height > 0);
     PICO_GFX_ASSERT(data);
     PICO_GFX_ASSERT(size > 0);
+
+    if (opts == NULL)
+        opts = &(pg_texture_opts_t){ 0 };
+
     PICO_GFX_ASSERT(opts->mipmaps >= 0);
 
     pg_texture_t* texture = (pg_texture_t*)PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
