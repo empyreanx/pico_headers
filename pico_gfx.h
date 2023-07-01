@@ -225,11 +225,6 @@ typedef float pg_mat4_t[16];
 typedef struct pg_ctx_t pg_ctx_t;
 
 /**
- * @brief Render pass. Writes draw calls to a render target or the window
- */
-typedef struct pg_pass_t pg_pass_t;
-
-/**
  * @brief Render state information
  */
 typedef struct pg_pipeline_t pg_pipeline_t;
@@ -292,17 +287,6 @@ void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset);
  * @brief Gets the window size
  */
 void pg_get_window_size(pg_ctx_t* ctx, int* width, int* height);
-
-/**
- * @brief Creates a render pass
- * @param texture The render target
- */
-pg_pass_t* pg_create_pass(const pg_ctx_t* ctx, pg_texture_t* texture);
-
-/**
- * @brief Destroys a render pass
-*/
-void pg_destroy_pass(const pg_ctx_t* ctx, pg_pass_t* pass);
 
 /**
  * @brief Starts a render pass (mandatory)
@@ -817,12 +801,6 @@ struct pg_ctx_t
     pg_state_t state;
     pg_state_t state_stack[PICO_GFX_STACK_MAX_SIZE];
     int stack_size;
-};
-
-struct pg_pass_t
-{
-    sg_pass handle;
-    pg_texture_t* texture;
 };
 
 struct pg_pipeline_t
