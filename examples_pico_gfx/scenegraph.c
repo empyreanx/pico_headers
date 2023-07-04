@@ -45,7 +45,6 @@
 #define FIXED_STEP (1.0 / 50.0)
 
 pg_ctx_t* ctx = NULL;
-pm_t2 projection;
 
 static struct
 {
@@ -180,15 +179,13 @@ void node_render(node_t* node, double alpha)
         // by the amount alpha in [0,1]
         pm_t2 render = pm_t2_lerp(&last, &world, alpha);
 
-        // MVP
-        pm_t2 mvp = pm_t2_mult(&projection, &render);
-
+        // Model-view
         pg_set_transform(ctx, (pg_mat4_t)
         {
-            mvp.t00, mvp.t10, 0.0f, 0.0f,
-            mvp.t01, mvp.t11, 0.0f, 0.0f,
-            0.0f,    0.0f,    0.0f, 0.0f,
-            mvp.tx,  mvp.ty,  0.0f, 1.0f,
+            render.t00, render.t10, 0.0f, 0.0f,
+            render.t01, render.t11, 0.0f, 0.0f,
+            0.0f,       0.0f,       0.0f, 0.0f,
+            render.tx,  render.ty,  0.0f, 1.0f,
         });
 
         // Draw vertices
@@ -382,10 +379,13 @@ int main(int argc, char *argv[])
     ctx = pg_create_context(w, h, NULL);
     pg_shader_t* default_shader = pg_get_default_shader(ctx);
 
-    projection = pm_t2_make(
-        2.0f / w, 0.0f,     -1.0f,
-        0.0f,     2.0f / h, -1.0f
-    );
+    pg_set_projection(ctx, (pg_mat4_t)
+    {
+        2.0f / w,  0.0f,     0.0f, 0.0f,
+        0.0f,      2.0f / h, 0.0f, 0.0f,
+        0.0f,      0.0f,     0.0f, 0.0f,
+       -1.0f,     -1.0f,     0.0f, 1.0f
+    });
 
     pg_pipeline_t* pip = pg_create_pipeline(ctx, default_shader, &(pg_pipeline_opts_t)
     {
