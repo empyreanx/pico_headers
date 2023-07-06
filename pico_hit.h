@@ -109,7 +109,9 @@ typedef struct
     pm_float alpha;
 } ph_raycast_t;
 
-bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2);
+bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
+bool ph_ray_poly(pm_v2 r1, pm_v2 r2, const ph_poly_t* poly, ph_raycast_t* raycast);
+bool ph_ray_circle(pm_v2 r1, pm_v2 r2, const ph_circle_t* circle, ph_raycast_t* raycast);
 
 /**
  * @brief Initializes a circle
@@ -692,6 +694,12 @@ static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line)
         return PH_VORONOI_MIDDLE;  // Point is somewhere in the middle
 }
 
+void ph_init_raycast(ph_raycast_t* raycast)
+{
+    raycast->normal = pm_v2_zero();
+    raycast->alpha = 0.0f;
+
+}
 
 typedef struct
 {
@@ -714,8 +722,11 @@ pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
     return (pm_v2){ m.a11 * v.x + m.a12 * v.y, m.a21 * v.x + m.a22 * v.y };
 }
 
-bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2)
+bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
 {
+    if (raycast)
+        ph_init_raycast(raycast);
+
     pm_v2 v = pm_v2_sub(r2, r1);
     pm_v2 w = pm_v2_sub(s2, s1);
 
@@ -735,8 +746,16 @@ bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2)
     pm_v2 c = pm_v2_sub(r1, s1);
     pm_v2 p = ph_m2_map(m_inv, c);
 
-    return 0.0f <= p.x && p.x <= 1.0f &&
-           0.0f <= p.y && p.y <= 1.0f;
+    bool hit = 0.0f <= p.x && p.x <= 1.0f &&
+               0.0f <= p.y && p.y <= 1.0f;
+
+    if (hit && raycast)
+    {
+        raycast->normal = pm_v2_normalize(pm_v2_perp(w));
+        raycast->alpha  = p.x;
+    }
+
+    return hit;
 }
 
 #endif // PICO_HIT_IMPLEMENTATION
