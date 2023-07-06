@@ -109,57 +109,7 @@ typedef struct
     pm_float alpha;
 } ph_raycast_t;
 
-typedef struct
-{
-    pm_v2 origin;
-    pm_v2 ray;
-} ph_ray_t;
-
-typedef struct
-{
-    pm_float a11, a12, a21, a22;
-} ph_m2;
-
-pm_float ph_m2_det(ph_m2 m)
-{
-    return m.a11 * m.a22 - m.a21 * m.a12;
-}
-
-ph_m2 ph_m2_inverse(ph_m2 m, float det)
-{
-    pm_float inv_det = 1.0f / det;
-    return (ph_m2) { m.a22 * inv_det, -m.a12 * inv_det, -m.a21 * inv_det, m.a11 * inv_det };
-}
-
-pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
-{
-    return (pm_v2){ m.a11 * v.x + m.a12 * v.y, m.a21 * v.x + m.a22 * v.y };
-}
-
-bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2)
-{
-    pm_v2 v = pm_v2_sub(r2, r1);
-    pm_v2 w = pm_v2_sub(s2, s1);
-
-    ph_m2 m =
-    {
-        w.x, -v.x,
-        w.y, -v.y
-    };
-
-    pm_float det = ph_m2_det(m);
-
-    if (pm_equal(det, 0.0f))
-        return false;
-
-    ph_m2 m_inv = ph_m2_inverse(m, det);
-
-    pm_v2 c = pm_v2_sub(r1, s1);
-    pm_v2 p = ph_m2_map(m_inv, c);
-
-    return 0.0f <= p.x && p.x <= 1.0f &&
-           0.0f <= p.y && p.y <= 1.0f;
-}
+bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2);
 
 /**
  * @brief Initializes a circle
@@ -740,6 +690,53 @@ static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line)
         return PH_VORONOI_RIGHT;
     else
         return PH_VORONOI_MIDDLE;  // Point is somewhere in the middle
+}
+
+
+typedef struct
+{
+    pm_float a11, a12, a21, a22;
+} ph_m2;
+
+pm_float ph_m2_det(ph_m2 m)
+{
+    return m.a11 * m.a22 - m.a21 * m.a12;
+}
+
+ph_m2 ph_m2_inverse(ph_m2 m, float det)
+{
+    pm_float inv_det = 1.0f / det;
+    return (ph_m2) { m.a22 * inv_det, -m.a12 * inv_det, -m.a21 * inv_det, m.a11 * inv_det };
+}
+
+pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
+{
+    return (pm_v2){ m.a11 * v.x + m.a12 * v.y, m.a21 * v.x + m.a22 * v.y };
+}
+
+bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2)
+{
+    pm_v2 v = pm_v2_sub(r2, r1);
+    pm_v2 w = pm_v2_sub(s2, s1);
+
+    ph_m2 m =
+    {
+        w.x, -v.x,
+        w.y, -v.y
+    };
+
+    pm_float det = ph_m2_det(m);
+
+    if (pm_equal(det, 0.0f))
+        return false;
+
+    ph_m2 m_inv = ph_m2_inverse(m, det);
+
+    pm_v2 c = pm_v2_sub(r1, s1);
+    pm_v2 p = ph_m2_map(m_inv, c);
+
+    return 0.0f <= p.x && p.x <= 1.0f &&
+           0.0f <= p.y && p.y <= 1.0f;
 }
 
 #endif // PICO_HIT_IMPLEMENTATION
