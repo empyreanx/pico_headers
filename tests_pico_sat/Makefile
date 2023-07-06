@@ -6,9 +6,9 @@ ifeq ($(UNAME_S),Darwin)
     CC = clang
 endif
 
-SRCS   = main.c
+SRCS   = main.c ray.c
 
-DEPS   = ../pico_sat.h
+DEPS   = ../pico_hit.h
 OBJS   = $(SRCS:.c=.o)
 
 all: tests

@@ -256,10 +256,13 @@ static TEST_SUITE(suite_sat)
     RUN_TEST_CASE(test_transform_circle);
 }
 
+TEST_SUITE(suite_ray);
+
 int main()
 {
     pu_display_colors(true);
     RUN_TEST_SUITE(suite_sat);
+    RUN_TEST_SUITE(suite_ray);
     pu_print_stats();
     return pu_test_failed();
 }
