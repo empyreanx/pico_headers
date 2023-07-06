@@ -11,6 +11,28 @@ TEST_CASE(test_segment)
 
     REQUIRE(ph_ray_segment(r1, r2, s1, s2));
 
+
+    r1 = (pm_v2){ 0.0f,  0.0f };
+    r2 = (pm_v2){ 10.0f, 0.0f };
+
+    s1 = (pm_v2){ 5.0f,  5.0f };
+    s2 = (pm_v2){ 5.0f, 2.0f };
+
+    REQUIRE(!ph_ray_segment(r1, r2, s1, s2));
+
+    s1 = (pm_v2){ 5.0f,  5.0f };
+    s2 = (pm_v2){ 5.0f, 10.0f };
+
+    REQUIRE(!ph_ray_segment(r1, r2, s1, s2));
+
+    r1 = (pm_v2){ 0.0f,  0.0f  };
+    r2 = (pm_v2){ 10.0f, 10.0f };
+
+    s1 = (pm_v2){ 0.0f,  5.0f };
+    s2 = (pm_v2){ 5.0f, -10.0f };
+
+    REQUIRE(ph_ray_segment(r1, r2, s1, s2));
+
     return true;
 }
 
