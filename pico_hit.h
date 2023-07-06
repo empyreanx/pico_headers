@@ -223,23 +223,23 @@ static void ph_init_manifold(ph_manifold_t* manifold);
 
 // Updates manifold if requried
 static void ph_update_manifold(ph_manifold_t* manifold,
-                                pm_v2 normal,
-                                pm_float overlap);
+                               pm_v2 normal,
+                               pm_float overlap);
 
 // Determines the polygon's limits when projected onto the normal vector
 static void ph_axis_range(const ph_poly_t* poly, pm_v2 normal, pm_float range[2]);
 
 // Determines the amount overlap of the polygons along the specified axis
 static pm_float ph_axis_overlap(const ph_poly_t* poly_a,
-                                 const ph_poly_t* poly_b,
-                                 pm_v2 axis);
+                                const ph_poly_t* poly_b,
+                                pm_v2 axis);
 
 // Line Voronoi regions
 typedef enum
 {
-    SAT_VORONOI_LEFT,
-    SAT_VORONOI_RIGHT,
-    SAT_VORONOI_MIDDLE
+    PH_VORONOI_LEFT,
+    PH_VORONOI_RIGHT,
+    PH_VORONOI_MIDDLE
 } ph_voronoi_region_t;
 
 // Determines the Voronoi region the point belongs to along the specified line
@@ -356,8 +356,8 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
 }
 
 bool ph_sat_poly_circle(const ph_poly_t* poly,
-                          const ph_circle_t* circle,
-                          ph_manifold_t* manifold)
+                        const ph_circle_t* circle,
+                        ph_manifold_t* manifold)
 {
     SAT_ASSERT(poly);
     SAT_ASSERT(circle);
@@ -391,7 +391,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         ph_voronoi_region_t region = ph_voronoi_region(point, edge);
 
         // Test if point is in the left Voronoi region
-        if (region == SAT_VORONOI_LEFT)
+        if (region == PH_VORONOI_LEFT)
         {
             // If it is, check if it is in the right Voronoi region of the
             // previous edge. If this is the case, the circle is "sandwiched"
@@ -403,7 +403,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
 
             region = ph_voronoi_region(point2, edge);
 
-            if (region == SAT_VORONOI_RIGHT)
+            if (region == PH_VORONOI_RIGHT)
             {
                 // The circle center is in the left/right Voronoi region, so
                 // check to see if it contains the vertex
@@ -433,14 +433,14 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
             }
         }
         // This case is symmetric to the above
-        else if (region == SAT_VORONOI_RIGHT)
+        else if (region == PH_VORONOI_RIGHT)
         {
             pm_v2 point2 = pm_v2_sub(circle->pos, poly->vertices[next]);
             edge = poly->edges[next];
 
             region = ph_voronoi_region(point2, edge);
 
-            if (region == SAT_VORONOI_LEFT)
+            if (region == PH_VORONOI_LEFT)
             {
                 pm_float diff2 = pm_v2_len2(point);
 
@@ -456,7 +456,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
                 }
             }
         }
-        else // SAT_VORONOI_MIDDLE
+        else // PH_VORONOI_MIDDLE
         {
             // In this case, the location of the circle is between the endpoints
             // of an edge.
@@ -505,8 +505,8 @@ bool ph_sat_circle_poly(const ph_circle_t* circle,
 }
 
 bool ph_sat_circle_circle(const ph_circle_t* circle_a,
-                            const ph_circle_t* circle_b,
-                            ph_manifold_t* manifold)
+                          const ph_circle_t* circle_b,
+                          ph_manifold_t* manifold)
 {
     SAT_ASSERT(circle_a);
     SAT_ASSERT(circle_b);
@@ -562,7 +562,7 @@ ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly)
 }
 
 ph_circle_t ph_transform_circle(const pm_t2* transform,
-                                 const ph_circle_t* circle)
+                                const ph_circle_t* circle)
 {
     return ph_make_circle(pm_t2_map(transform, circle->pos), circle->radius);
 }
@@ -645,8 +645,8 @@ static void ph_axis_range(const ph_poly_t* poly, pm_v2 normal, pm_float range[2]
 }
 
 static pm_float ph_axis_overlap(const ph_poly_t* poly_a,
-                                 const ph_poly_t* poly_b,
-                                 pm_v2 axis)
+                                const ph_poly_t* poly_b,
+                                pm_v2 axis)
 
 {
     SAT_ASSERT(poly_a);
@@ -677,11 +677,11 @@ static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line)
     pm_float dot  = pm_v2_dot(point, line);
 
     if (dot < 0.0f)                 // Point is to the left of the line
-        return SAT_VORONOI_LEFT;
+        return PH_VORONOI_LEFT;
     else if (dot > len2)            // Point is to the right of the line
-        return SAT_VORONOI_RIGHT;
+        return PH_VORONOI_RIGHT;
     else
-        return SAT_VORONOI_MIDDLE;  // Point is somewhere in the middle
+        return PH_VORONOI_MIDDLE;  // Point is somewhere in the middle
 }
 
 #endif // PICO_HIT_IMPLEMENTATION
