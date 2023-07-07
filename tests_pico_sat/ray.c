@@ -17,6 +17,8 @@ TEST_CASE(test_segment_hit)
     s1 = (pm_v2){ 0.0f,  5.0f };
     s2 = (pm_v2){ 5.0f, -10.0f };
 
+    REQUIRE(ph_ray_segment(r1, r2, s1, s2, NULL));
+
     return true;
 }
 
