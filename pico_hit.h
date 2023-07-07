@@ -113,7 +113,7 @@ typedef struct
 typedef struct
 {
     pm_v2 normal;
-    pm_float alpha;
+    pm_float dist;
 } ph_raycast_t;
 
 /**
@@ -709,13 +709,6 @@ static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line)
         return PH_VORONOI_MIDDLE;  // Point is somewhere in the middle
 }
 
-void ph_init_raycast(ph_raycast_t* raycast)
-{
-    raycast->normal = pm_v2_zero();
-    raycast->alpha = 0.0f;
-
-}
-
 typedef struct
 {
     pm_float a11, a12, a21, a22;
@@ -739,9 +732,6 @@ pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
 
 bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
 {
-    if (raycast)
-        ph_init_raycast(raycast);
-
     pm_v2 r1 = ray->pos;
     pm_v2 r2 = pm_v2_add(ray->pos, pm_v2_scale(ray->dir, ray->dist));
 
@@ -770,7 +760,7 @@ bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* rayca
     if (hit && raycast)
     {
         raycast->normal = pm_v2_normalize(pm_v2_perp(w));
-        raycast->alpha  = p.x;
+        raycast->dist  = p.x * ray->dist;
     }
 
     return hit;
