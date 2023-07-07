@@ -732,8 +732,8 @@ bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycas
 
     ph_m2 m =
     {
-        w.x, -v.x,
-        w.y, -v.y
+        -v.x, w.x,
+        -v.y, w.y,
     };
 
     pm_float det = ph_m2_det(m);

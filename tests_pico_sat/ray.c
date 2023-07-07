@@ -41,21 +41,42 @@ TEST_CASE(test_segment_no_hit)
 
 TEST_CASE(test_segment_raycast)
 {
-    pm_v2 r1 = { 0.0f,  0.0f  };
-    pm_v2 r2 = { 10.0f, 10.0f };
+    { // Case 1
+        pm_v2 r1 = { 0.0f,  0.0f  };
+        pm_v2 r2 = { 10.0f, 10.0f };
 
-    pm_v2 s1 = { 0.0f, 10.0f };
-    pm_v2 s2 = { 10.0f, 0.0f };
+        pm_v2 s1 = { 0.0f, 10.0f };
+        pm_v2 s2 = { 10.0f, 0.0f };
 
-    ph_raycast_t raycast;
+        ph_raycast_t raycast;
 
-    REQUIRE(ph_ray_segment(r1, r2, s1, s2, &raycast));
+        REQUIRE(ph_ray_segment(r1, r2, s1, s2, &raycast));
 
-    pm_v2 normal = pm_v2_normalize(pm_v2_make(1.f, 1.f));
+        pm_v2 normal = pm_v2_normalize(pm_v2_make(1.f, 1.f));
 
-    REQUIRE(pm_v2_equal(raycast.normal, normal));
+        REQUIRE(pm_v2_equal(raycast.normal, normal));
 
-    REQUIRE(pm_equal(raycast.alpha, .5f));
+        REQUIRE(pm_equal(raycast.alpha, .5f));
+    }
+
+    { // Case 2
+
+        pm_v2 r1 = { 7.5f,  7.5f  };
+        pm_v2 r2 = { 7.5f,  0.0f };
+
+        pm_v2 s1 = { 0.0f, 0.5f };
+        pm_v2 s2 = { 10.0f, 0.5f };
+
+        ph_raycast_t raycast;
+
+        REQUIRE(ph_ray_segment(r1, r2, s1, s2, &raycast));
+
+        pm_v2 normal = pm_v2_normalize(pm_v2_make(0.f, 1.f));
+
+        REQUIRE(pm_v2_equal(raycast.normal, normal));
+
+        REQUIRE(pm_equal(raycast.alpha, 7.f / 7.5f));
+    }
 
     return true;
 }
