@@ -91,6 +91,13 @@ typedef struct
     pm_v2 edges[PICO_HIT_MAX_POLY_VERTS];    //!< Edges of polygon
 } ph_poly_t;
 
+typedef struct
+{
+    pm_v2 pos;
+    pm_v2 dir;
+    pm_float dist;
+} ph_ray_t;
+
 /**
  * @brief A collision manifold
  * Provides information about a collision. Normals always point from shape 1 to
@@ -109,10 +116,6 @@ typedef struct
     pm_float alpha;
 } ph_raycast_t;
 
-bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
-bool ph_ray_poly(pm_v2 r1, pm_v2 r2, const ph_poly_t* poly, ph_raycast_t* raycast);
-bool ph_ray_circle(pm_v2 r1, pm_v2 r2, const ph_circle_t* circle, ph_raycast_t* raycast);
-
 /**
  * @brief Initializes a circle
  * @param pos    Circle center
@@ -127,6 +130,9 @@ ph_circle_t ph_make_circle(pm_v2 pos, pm_float radius);
  * @returns The polygon with the given vertices
  */
 ph_poly_t ph_make_poly(const pm_v2 vertices[], int vertex_count);
+
+ph_ray_t ph_make_ray(pm_v2 pos, pm_v2 dir, pm_float dist);
+
 
 /**
  * @brief Converts and axis-aligned bounding box (AABB) to a polygon
@@ -186,6 +192,10 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
  * @returns A new polygon
  */
 ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
+
+bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
+bool ph_ray_poly(pm_v2 r1, pm_v2 r2, const ph_poly_t* poly, ph_raycast_t* raycast);
+bool ph_ray_circle(pm_v2 r1, pm_v2 r2, const ph_circle_t* circle, ph_raycast_t* raycast);
 
 /**
  * @brief Transforms a circle using an affine transform
@@ -300,6 +310,11 @@ ph_poly_t ph_make_poly(const pm_v2 vertices[], int vertex_count)
     }
 
     return poly;
+}
+
+ph_ray_t ph_make_ray(pm_v2 pos, pm_v2 dir, pm_float dist)
+{
+    return (ph_ray_t){ pos, dir, dist };
 }
 
 ph_poly_t ph_aabb_to_poly(const pm_b2* aabb)
@@ -722,10 +737,13 @@ pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
     return (pm_v2){ m.a11 * v.x + m.a12 * v.y, m.a21 * v.x + m.a22 * v.y };
 }
 
-bool ph_ray_segment(pm_v2 r1, pm_v2 r2, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
+bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
 {
     if (raycast)
         ph_init_raycast(raycast);
+
+    pm_v2 r1 = ray->pos;
+    pm_v2 r2 = pm_v2_add(ray->pos, pm_v2_scale(ray->dir, ray->dist));
 
     pm_v2 v = pm_v2_sub(r2, r1);
     pm_v2 w = pm_v2_sub(s2, s1);
