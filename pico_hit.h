@@ -194,7 +194,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
 ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
 
 bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
-bool ph_ray_poly(pm_v2 r1, pm_v2 r2, const ph_poly_t* poly, ph_raycast_t* raycast);
+bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast);
 bool ph_ray_circle(pm_v2 r1, pm_v2 r2, const ph_circle_t* circle, ph_raycast_t* raycast);
 
 /**
@@ -314,7 +314,7 @@ ph_poly_t ph_make_poly(const pm_v2 vertices[], int vertex_count)
 
 ph_ray_t ph_make_ray(pm_v2 pos, pm_v2 dir, pm_float dist)
 {
-    return (ph_ray_t){ pos, dir, dist };
+    return (ph_ray_t){ pos, pm_v2_normalize(dir), dist };
 }
 
 ph_poly_t ph_aabb_to_poly(const pm_b2* aabb)
@@ -764,6 +764,50 @@ bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* rayca
     }
 
     return hit;
+}
+
+bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast)
+{
+    pm_v2 min_normal = pm_v2_zero();
+    pm_float min_dist = PM_FLOAT_MAX;
+
+    bool has_hit = false;
+
+    for (int i = 0; i < poly->vertex_count; i++)
+    {
+        int next = (i + 1) == poly->vertex_count ? 0 : i + 1;
+
+        pm_v2 s1 = poly->vertices[next];
+        pm_v2 s2 = poly->vertices[i];
+
+        bool hit = ph_ray_segment(ray, s1, s2, raycast);
+
+        if (hit && raycast)
+        {
+            has_hit = true;
+
+            if (raycast->dist < min_dist)
+            {
+                min_dist = raycast->dist;
+                min_normal = raycast->normal;
+            }
+        }
+        else if (hit)
+        {
+            return true;
+        }
+    }
+
+    if (has_hit)
+    {
+        raycast->dist = min_dist;
+        raycast->normal = min_normal;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 #endif // PICO_HIT_IMPLEMENTATION
