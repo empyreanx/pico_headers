@@ -79,7 +79,7 @@ TEST_CASE(test_segment_raycast)
     return true;
 }
 
-TEST_CASE(test_poly)
+TEST_CASE(test_poly_hit)
 {
     ph_poly_t poly = ph_aabb_to_poly(&pm_b2_make(2.5f, 2.5f, 2.5f, 2.5f));
 
@@ -101,6 +101,33 @@ TEST_CASE(test_poly)
     {   // Bottom
         ph_ray_t ray = ph_make_ray(pm_v2_make(3.f, 7.f), pm_v2_make(0.f, -1.f), 10.f);
         REQUIRE(ph_ray_poly(&ray, &poly, NULL));
+    }
+
+    return true;
+}
+
+TEST_CASE(test_poly_no_hit)
+{
+    ph_poly_t poly = ph_aabb_to_poly(&pm_b2_make(2.5f, 2.5f, 2.5f, 2.5f));
+
+    {   // Left
+        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 3.f), pm_v2_make(1.f, 2.f), 10.f);
+        REQUIRE(!ph_ray_poly(&ray, &poly, NULL));
+    }
+
+    {   // Right
+        ph_ray_t ray = ph_make_ray(pm_v2_make(7.f, 3.f), pm_v2_make(1.f, 0.f), 10.f);
+        REQUIRE(!ph_ray_poly(&ray, &poly, NULL));
+    }
+
+    {   // Top
+        ph_ray_t ray = ph_make_ray(pm_v2_make(3.f, 0.f), pm_v2_make(0.f, -1.f), 10.f);
+        REQUIRE(!ph_ray_poly(&ray, &poly, NULL));
+    }
+
+    {   // Bottom
+        ph_ray_t ray = ph_make_ray(pm_v2_make(3.f, 7.f), pm_v2_make(0.f, 1.f), 10.f);
+        REQUIRE(!ph_ray_poly(&ray, &poly, NULL));
     }
 
     return true;
@@ -179,7 +206,6 @@ TEST_CASE(test_circle_no_hit)
     return true;
 }
 
-
 TEST_CASE(test_circle_raycast)
 {
     ph_circle_t circle = ph_make_circle(pm_v2_make(5.f, 5.f), 2.f);
@@ -200,7 +226,8 @@ TEST_SUITE(suite_ray)
     RUN_TEST_CASE(test_segment_hit);
     RUN_TEST_CASE(test_segment_no_hit);
     RUN_TEST_CASE(test_segment_raycast);
-    RUN_TEST_CASE(test_poly);
+    RUN_TEST_CASE(test_poly_hit);
+    RUN_TEST_CASE(test_poly_no_hit);
     RUN_TEST_CASE(test_poly_raycast);
     RUN_TEST_CASE(test_circle_hit);
     RUN_TEST_CASE(test_circle_no_hit);
