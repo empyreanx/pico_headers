@@ -54,6 +54,8 @@
     > #include "pico_math.h"
 
     to the same or other source file (once).
+
+    IMPORTANT: pico_math.h must be in the include path!
 */
 
 #ifndef PICO_HIT_H
@@ -91,11 +93,14 @@ typedef struct
     pm_v2 edges[PICO_HIT_MAX_POLY_VERTS];    //!< Edges of polygon
 } ph_poly_t;
 
+/**
+ * @brief A ray
+*/
 typedef struct
 {
-    pm_v2 pos;
-    pm_v2 dir;
-    pm_float dist;
+    pm_v2 pos;     //!< The origin of the ray
+    pm_v2 dir;     //!< The direction of the ray (normalized)
+    pm_float dist; //!< The length of the way
 } ph_ray_t;
 
 /**
@@ -110,10 +115,13 @@ typedef struct
     pm_v2    vector;  //!< Vector defined by `vector = normal * overlap`
 } ph_manifold_t;
 
+/**
+ *  @brief Raycast information
+ */
 typedef struct
 {
-    pm_v2 normal;
-    pm_float dist;
+    pm_v2 normal;  //!< The surface normal at the point of impact
+    pm_float dist; //!< The distance to the point of impact
 } ph_raycast_t;
 
 /**
@@ -131,8 +139,13 @@ ph_circle_t ph_make_circle(pm_v2 pos, pm_float radius);
  */
 ph_poly_t ph_make_poly(const pm_v2 vertices[], int vertex_count);
 
+/**
+ * @brief Constructs a ray
+ * @param pos The origin of the array
+ * @param dir The direction of the ray
+ * @param dist The length of the ray
+ */
 ph_ray_t ph_make_ray(pm_v2 pos, pm_v2 dir, pm_float dist);
-
 
 /**
  * @brief Converts and axis-aligned bounding box (AABB) to a polygon
@@ -194,7 +207,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
 ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
 
 /*
- * @brief Tests if ray intersects a line segment
+ * @brief Tests if ray intersects a (directed) line segment
  *
  * @param ray Ray to test
  * @param s1 First endpoint of segment
