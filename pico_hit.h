@@ -206,7 +206,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
  */
 ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
 
-/*
+/**
  * @brief Tests if ray intersects a (directed) line segment
  *
  * @param ray Ray to test
@@ -217,7 +217,7 @@ ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
  */
 bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
 
-/*
+/**
  * @brief Tests if ray intersects a polygon
  *
  * @param ray Ray to test
@@ -227,7 +227,7 @@ bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* rayca
  */
 bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast);
 
-/*
+/**
  * @brief Tests if ray intersects a circle
  *
  * @param ray Ray to test
