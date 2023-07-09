@@ -777,8 +777,8 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
     {
         int next = (i + 1) == poly->vertex_count ? 0 : i + 1;
 
-        pm_v2 s1 = poly->vertices[next];
-        pm_v2 s2 = poly->vertices[i];
+        pm_v2 s1 = poly->vertices[i];
+        pm_v2 s2 = poly->vertices[next];
 
         bool hit = ph_ray_segment(ray, s1, s2, raycast);
 
