@@ -384,7 +384,7 @@ int main(int argc, char *argv[])
 
     projection = pm_t2_make(
         2.0f / w, 0.0f,     -1.0f,
-        0.0f,     2.0f / h, -1.0f
+        0.0f,     -2.0f / h, 1.0f
     );
 
     pg_pipeline_t* pip = pg_create_pipeline(ctx, default_shader, &(pg_pipeline_opts_t)

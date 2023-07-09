@@ -86,7 +86,12 @@ typedef double qt_float;
 typedef float  qt_float;
 #endif
 
-#ifdef PICO_QT_USE_UINTPTR
+#if defined(PICO_QT_USE_PTR)
+/**
+ * @brief Value data type that can store a pointer
+ */
+typedef void* qt_value_t;
+#elif defined(PICO_QT_USE_UINTPTR)
 /**
  * @brief Value data type that can store an integer or pointer
  */
