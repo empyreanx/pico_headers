@@ -193,8 +193,35 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
  */
 ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
 
+/*
+ * @brief Tests if ray intersects a line segment
+ *
+ * @param ray Ray to test
+ * @param s1 First endpoint of segment
+ * @param s2 Second endpoint of segment
+ * @param raycast Normal and distance of collision (if not NULL)
+ * @returns True if the ray collides with the line segment and false otherwise
+ */
 bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
+
+/*
+ * @brief Tests if ray intersects a polygon
+ *
+ * @param ray Ray to test
+ * @param poly The polygon
+ * @param raycast Normal and distance of collision (if not NULL). May terminate early if NULL
+ * @returns True if the ray collides with the polygon and false otherwise
+ */
 bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast);
+
+/*
+ * @brief Tests if ray intersects a circle
+ *
+ * @param ray Ray to test
+ * @param circle The circle
+ * @param raycast Normal and distance of collision (if not NULL).
+ * @returns True if the ray collides with the circle and false otherwise
+ */
 bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast);
 
 /**
@@ -709,27 +736,37 @@ static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line)
         return PH_VORONOI_MIDDLE;  // Point is somewhere in the middle
 }
 
+// 2D matrix
 typedef struct
 {
     pm_float a11, a12, a21, a22;
 } ph_m2;
 
-pm_float ph_m2_det(ph_m2 m)
+// Determinant of 2D matrix
+static pm_float ph_m2_det(ph_m2 m)
 {
     return m.a11 * m.a22 - m.a21 * m.a12;
 }
 
-ph_m2 ph_m2_inverse(ph_m2 m, float det)
+// Inverse of 2D matrix
+static ph_m2 ph_m2_inverse(ph_m2 m, float det)
 {
     pm_float inv_det = 1.0f / det;
     return (ph_m2) { m.a22 * inv_det, -m.a12 * inv_det, -m.a21 * inv_det, m.a11 * inv_det };
 }
 
-pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
+// Map 2D vector by 2D matrix
+static pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
 {
     return (pm_v2){ m.a11 * v.x + m.a12 * v.y, m.a21 * v.x + m.a22 * v.y };
 }
 
+/*
+    The basic idea here is to represent the rays in parametric form and
+    solve a linear equation to get the parameters where they intersect.
+    In this application we are only interested in the case where both of them
+    are contained in the interval [0, 1]
+*/
 bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
 {
     pm_v2 r1 = ray->pos;
@@ -766,6 +803,11 @@ bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* rayca
     return hit;
 }
 
+/*
+    The idea behind this function is to use ph_ray_segment on each of the edges
+    that make up the polygon. The function can exit early if the raycast is null.
+    Otherwise all edges of the polygon will be tested.
+*/
 bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast)
 {
     pm_v2 min_normal = pm_v2_zero();
@@ -810,6 +852,14 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
     }
 }
 
+/*
+    The idea behind this function is to represent a constraint, that determines
+    whether the ray intersects the circle, as a polynomial. The discriminant of
+    the quadratic fomula is used to test various cases corresponding to the
+    location and direction of the ray, and the circle.
+
+    Source: Real-Time Collision Detection by Christer Ericson
+*/
 bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast)
 {
     pm_float r = circle->radius;
@@ -832,10 +882,10 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
         if (dist < 0.0f)
             dist = 0.0f;
 
-        pm_v2 ip = pm_v2_add(ray->pos, pm_v2_scale(ray->dir, dist));
+        pm_v2 p = pm_v2_add(ray->pos, pm_v2_scale(ray->dir, dist));
 
         raycast->dist = dist;
-        raycast->normal = pm_v2_normalize(pm_v2_sub(ip, circle->pos));
+        raycast->normal = pm_v2_normalize(pm_v2_sub(p, circle->pos));
     }
 
     return true;
