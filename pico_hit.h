@@ -762,7 +762,7 @@ static pm_float ph_m2_det(ph_m2 m)
 }
 
 // Inverse of 2D matrix
-static ph_m2 ph_m2_inverse(ph_m2 m, float det)
+static ph_m2 ph_m2_inverse(ph_m2 m, pm_float det)
 {
     pm_float inv_det = 1.0f / det;
     return (ph_m2) { m.a22 * inv_det, -m.a12 * inv_det, -m.a21 * inv_det, m.a11 * inv_det };
