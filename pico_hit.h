@@ -195,7 +195,7 @@ ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
 
 bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
 bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast);
-bool ph_ray_circle(pm_v2 r1, pm_v2 r2, const ph_circle_t* circle, ph_raycast_t* raycast);
+bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast);
 
 /**
  * @brief Transforms a circle using an affine transform
@@ -808,6 +808,24 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
     {
         return false;
     }
+}
+
+bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast)
+{
+    pm_float r = circle->radius;
+    pm_v2 m = pm_v2_sub(ray->pos, circle->pos);
+    pm_float b = pm_v2_dot(m, ray->dir);
+    pm_float c = pm_v2_dot(m, m) - r * r;
+
+    if (c > 0.0f && b > 0.0f)
+        return false;
+
+    pm_float discr = b * b - c;
+
+    if (discr < 0.0f)
+        return false;
+
+    return true;
 }
 
 #endif // PICO_HIT_IMPLEMENTATION
