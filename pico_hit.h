@@ -825,6 +825,19 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
     if (discr < 0.0f)
         return false;
 
+    if (raycast)
+    {
+        pm_float dist = -b - pm_sqrt(discr);
+
+        if (dist < 0.0f)
+            dist = 0.0f;
+
+        pm_v2 ip = pm_v2_add(ray->pos, pm_v2_scale(ray->dir, dist));
+
+        raycast->dist = dist;
+        raycast->normal = pm_v2_normalize(pm_v2_sub(ip, circle->pos));
+    }
+
     return true;
 }
 

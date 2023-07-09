@@ -179,6 +179,22 @@ TEST_CASE(test_circle_no_hit)
     return true;
 }
 
+
+TEST_CASE(test_circle_raycast)
+{
+    ph_circle_t circle = ph_make_circle(pm_v2_make(5.f, 5.f), 2.f);
+
+    { // Case 1
+        ph_raycast_t raycast;
+        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 5.f), pm_v2_make(1.f, 0.f), 5.f);
+        REQUIRE(ph_ray_circle(&ray, &circle, &raycast));
+        REQUIRE(pm_v2_equal(raycast.normal, pm_v2_make(-1.f, 0.f)));
+        REQUIRE(pm_equal(raycast.dist, 3.f));
+    }
+
+    return true;
+}
+
 TEST_SUITE(suite_ray)
 {
     RUN_TEST_CASE(test_segment_hit);
@@ -188,4 +204,5 @@ TEST_SUITE(suite_ray)
     RUN_TEST_CASE(test_poly_raycast);
     RUN_TEST_CASE(test_circle_hit);
     RUN_TEST_CASE(test_circle_no_hit);
+    RUN_TEST_CASE(test_circle_raycast);
 }
