@@ -40,7 +40,7 @@
     To use this library in your project, add the following
 
     > #define PICO_HIT_IMPLEMENTATION
-    > #include "pico_sat.h"
+    > #include "pico_hit.h"
 
     to a source file (once), then simply include the header normally.
 
@@ -54,8 +54,6 @@
     > #include "pico_math.h"
 
     to the same or other source file (once).
-
-    IMPORTANT: pico_math.h must be in the include path!
 */
 
 #ifndef PICO_HIT_H
@@ -94,13 +92,13 @@ typedef struct
 } ph_poly_t;
 
 /**
- * @brief A ray
+ * @brief A ray (directed line segment)
 */
 typedef struct
 {
     pm_v2 pos;     //!< The origin of the ray
     pm_v2 dir;     //!< The direction of the ray (normalized)
-    pm_float dist; //!< The length of the way
+    pm_float dist; //!< The length of the ray
 } ph_ray_t;
 
 /**
