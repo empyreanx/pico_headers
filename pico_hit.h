@@ -202,14 +202,6 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
                           ph_manifold_t* manifold);
 
 /**
- * @brief Transforms a polygon using an affine transform
- * @param transform The transform
- * @param poly      The polygon to transform
- * @returns A new polygon
- */
-ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
-
-/**
  * @brief Tests if ray intersects a (directed) line segment
  *
  * @param ray Ray to test
@@ -239,6 +231,19 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
  * @returns True if the ray collides with the circle and false otherwise
  */
 bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast);
+
+/**
+ * @brief Finds the point along the ray at the specified distance from the origin
+ */
+pm_v2 ph_ray_at(const ph_ray_t* ray, pm_float dist);
+
+/**
+ * @brief Transforms a polygon using an affine transform
+ * @param transform The transform
+ * @param poly      The polygon to transform
+ * @returns A new polygon
+ */
+ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
 
 /**
  * @brief Transforms a circle using an affine transform
@@ -750,10 +755,8 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
         raycast->normal = min_normal;
         return true;
     }
-    else
-    {
-        return false;
-    }
+
+    return false;
 }
 
 /*
@@ -793,6 +796,11 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
     }
 
     return true;
+}
+
+pm_v2 ph_ray_at(const ph_ray_t* ray, pm_float dist)
+{
+    return pm_v2_add(ray->pos, pm_v2_scale(ray->dir, dist));
 }
 
 /*=============================================================================
