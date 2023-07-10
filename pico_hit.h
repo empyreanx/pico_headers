@@ -574,9 +574,9 @@ bool ph_sat_circle_poly(const ph_circle_t* circle,
     SAT_ASSERT(poly);
     SAT_ASSERT(circle);
 
-    bool collides = ph_sat_poly_circle(poly, circle, (manifold) ? manifold : NULL);
+    bool hit = ph_sat_poly_circle(poly, circle, (manifold) ? manifold : NULL);
 
-    if (manifold)
+    if (hit && manifold)
     {
         // Since arguments were swapped, reversing these vectors is all that is
         // required
@@ -584,7 +584,7 @@ bool ph_sat_circle_poly(const ph_circle_t* circle,
         manifold->vector = pm_v2_reflect(manifold->vector);
     }
 
-    return collides;
+    return hit;
 }
 
 bool ph_sat_circle_circle(const ph_circle_t* circle_a,
@@ -664,7 +664,6 @@ pm_b2 ph_circle_to_aabb(const ph_circle_t* circle)
 
     return pm_b2_make_minmax(min, max);
 }
-
 
 /*
     The basic idea here is to represent the rays in parametric form and
