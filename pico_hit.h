@@ -72,7 +72,7 @@ extern "C" {
 
 // Maximum number of vertices in a polygon
 #ifndef PICO_HIT_MAX_POLY_VERTS
-#define PICO_HIT_MAX_POLY_VERTS 8
+#define PICO_HIT_MAX_POLY_VERTS 16
 #endif
 
 /**
@@ -124,7 +124,7 @@ typedef struct
 typedef struct
 {
     pm_v2 normal;  //!< The surface normal at the point of impact
-    pm_float dist; //!< The distance to the point of impact
+    pm_float dist; //!< The distance fromt the origin to the point of impact
 } ph_raycast_t;
 
 /**
@@ -215,7 +215,7 @@ ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
  * @param ray Ray to test
  * @param s1 First endpoint of segment
  * @param s2 Second endpoint of segment
- * @param raycast Normal and distance of collision (if not NULL)
+ * @param raycast Normal and distance of impact (or NULL)
  * @returns True if the ray collides with the line segment and false otherwise
  */
 bool ph_ray_line(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
@@ -225,7 +225,7 @@ bool ph_ray_line(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
  *
  * @param ray Ray to test
  * @param poly The polygon
- * @param raycast Normal and distance of collision (if not NULL). May terminate early if NULL
+ * @param raycast Normal and distance of impact (or NULL). May terminate early if NULL
  * @returns True if the ray collides with the polygon and false otherwise
  */
 bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast);
@@ -235,7 +235,7 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
  *
  * @param ray Ray to test
  * @param circle The circle
- * @param raycast Normal and distance of collision (if not NULL).
+ * @param raycast Normal and distance of impact (if not NULL).
  * @returns True if the ray collides with the circle and false otherwise
  */
 bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast);
@@ -312,6 +312,21 @@ typedef enum
 //            |    ^  (0)      |
 //               line
 static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line);
+
+// 2D matrix
+typedef struct
+{
+    pm_float a11, a12, a21, a22;
+} ph_m2;
+
+// Determinant of 2D matrix
+static pm_float ph_m2_det(ph_m2 m);
+
+// Inverse of 2D matrix
+static ph_m2 ph_m2_inverse(ph_m2 m, pm_float det);
+
+// Map 2D vector by 2D matrix
+static pm_v2 ph_m2_map(ph_m2 m, pm_v2 v);
 
 /*=============================================================================
  * Public API implementation
@@ -650,132 +665,6 @@ pm_b2 ph_circle_to_aabb(const ph_circle_t* circle)
     return pm_b2_make_minmax(min, max);
 }
 
-/*=============================================================================
- * Internal function definitions
- *============================================================================*/
-
-static void ph_init_manifold(ph_manifold_t* manifold)
-{
-    SAT_ASSERT(manifold);
-
-    manifold->overlap = PM_FLOAT_MAX;
-    manifold->normal  = pm_v2_zero();
-    manifold->vector  = pm_v2_zero();
-}
-
-static void ph_update_manifold(ph_manifold_t* manifold, pm_v2 normal, pm_float overlap)
-{
-    SAT_ASSERT(manifold);
-
-    pm_float abs_overlap = pm_abs(overlap);
-
-    // Only update if the new overlap is smaller than the old one
-    if (abs_overlap < manifold->overlap)
-    {
-        // Update overlap (always positive)
-        manifold->overlap = abs_overlap;
-
-        // If the overlap is less that zero the normal must be reversed
-        if (overlap < 0.0f)
-            manifold->normal = pm_v2_reflect(normal);
-        else if (overlap > 0.0f)
-            manifold->normal = normal;
-
-        manifold->vector = pm_v2_scale(manifold->normal, manifold->overlap);
-    }
-}
-
-static void ph_axis_range(const ph_poly_t* poly, pm_v2 normal, pm_float range[2])
-{
-    SAT_ASSERT(poly);
-    SAT_ASSERT(range);
-
-    pm_float dot = pm_v2_dot(poly->vertices[0], normal);
-    pm_float min = dot;
-    pm_float max = dot;
-
-    // Find the minimum and maximum distance of the polygon along the normal
-    for (int i = 1; i < poly->vertex_count; i++)
-    {
-        dot = pm_v2_dot(poly->vertices[i], normal);
-
-        if (dot < min)
-            min = dot;
-
-        if (dot > max)
-            max = dot;
-    }
-
-    // The range defines the interval induced by the polygon projected onto the
-    // normal vector
-    range[0] = min;
-    range[1] = max;
-}
-
-static pm_float ph_axis_overlap(const ph_poly_t* poly_a,
-                                const ph_poly_t* poly_b,
-                                pm_v2 axis)
-
-{
-    SAT_ASSERT(poly_a);
-    SAT_ASSERT(poly_b);
-
-    pm_float range_a[2];
-    pm_float range_b[2];
-
-    // Get the ranges of polygons projected onto the axis vector
-    ph_axis_range(poly_a, axis, range_a);
-    ph_axis_range(poly_b, axis, range_b);
-
-    // Ranges do not overlaps
-    if (range_a[1] < range_b[0] || range_b[1] < range_a[0])
-        return 0.0f;
-
-    // Calculate overlap candidates
-    pm_float overlap1 = range_a[1] - range_b[0];
-    pm_float overlap2 = range_b[1] - range_a[0];
-
-    // Return the smaller overlap
-    return (overlap2 > overlap1) ? overlap1 : -overlap2;
-}
-
-static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line)
-{
-    pm_float len2 = pm_v2_len2(line);
-    pm_float dot  = pm_v2_dot(point, line);
-
-    if (dot < 0.0f)                 // Point is to the left of the line
-        return PH_VORONOI_LEFT;
-    else if (dot > len2)            // Point is to the right of the line
-        return PH_VORONOI_RIGHT;
-    else
-        return PH_VORONOI_MIDDLE;  // Point is somewhere in the middle
-}
-
-// 2D matrix
-typedef struct
-{
-    pm_float a11, a12, a21, a22;
-} ph_m2;
-
-// Determinant of 2D matrix
-static pm_float ph_m2_det(ph_m2 m)
-{
-    return m.a11 * m.a22 - m.a21 * m.a12;
-}
-
-// Inverse of 2D matrix
-static ph_m2 ph_m2_inverse(ph_m2 m, pm_float det)
-{
-    pm_float inv_det = 1.0f / det;
-    return (ph_m2) { m.a22 * inv_det, -m.a12 * inv_det, -m.a21 * inv_det, m.a11 * inv_det };
-}
-
-// Map 2D vector by 2D matrix
-static pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
-{
-    return (pm_v2){ m.a11 * v.x + m.a12 * v.y, m.a21 * v.x + m.a22 * v.y };
-}
 
 /*
     The basic idea here is to represent the rays in parametric form and
@@ -905,6 +794,127 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
     }
 
     return true;
+}
+
+/*=============================================================================
+ * Internal function definitions
+ *============================================================================*/
+
+static void ph_init_manifold(ph_manifold_t* manifold)
+{
+    SAT_ASSERT(manifold);
+
+    manifold->overlap = PM_FLOAT_MAX;
+    manifold->normal  = pm_v2_zero();
+    manifold->vector  = pm_v2_zero();
+}
+
+static void ph_update_manifold(ph_manifold_t* manifold, pm_v2 normal, pm_float overlap)
+{
+    SAT_ASSERT(manifold);
+
+    pm_float abs_overlap = pm_abs(overlap);
+
+    // Only update if the new overlap is smaller than the old one
+    if (abs_overlap < manifold->overlap)
+    {
+        // Update overlap (always positive)
+        manifold->overlap = abs_overlap;
+
+        // If the overlap is less that zero the normal must be reversed
+        if (overlap < 0.0f)
+            manifold->normal = pm_v2_reflect(normal);
+        else if (overlap > 0.0f)
+            manifold->normal = normal;
+
+        manifold->vector = pm_v2_scale(manifold->normal, manifold->overlap);
+    }
+}
+
+static void ph_axis_range(const ph_poly_t* poly, pm_v2 normal, pm_float range[2])
+{
+    SAT_ASSERT(poly);
+    SAT_ASSERT(range);
+
+    pm_float dot = pm_v2_dot(poly->vertices[0], normal);
+    pm_float min = dot;
+    pm_float max = dot;
+
+    // Find the minimum and maximum distance of the polygon along the normal
+    for (int i = 1; i < poly->vertex_count; i++)
+    {
+        dot = pm_v2_dot(poly->vertices[i], normal);
+
+        if (dot < min)
+            min = dot;
+
+        if (dot > max)
+            max = dot;
+    }
+
+    // The range defines the interval induced by the polygon projected onto the
+    // normal vector
+    range[0] = min;
+    range[1] = max;
+}
+
+static pm_float ph_axis_overlap(const ph_poly_t* poly_a,
+                                const ph_poly_t* poly_b,
+                                pm_v2 axis)
+
+{
+    SAT_ASSERT(poly_a);
+    SAT_ASSERT(poly_b);
+
+    pm_float range_a[2];
+    pm_float range_b[2];
+
+    // Get the ranges of polygons projected onto the axis vector
+    ph_axis_range(poly_a, axis, range_a);
+    ph_axis_range(poly_b, axis, range_b);
+
+    // Ranges do not overlaps
+    if (range_a[1] < range_b[0] || range_b[1] < range_a[0])
+        return 0.0f;
+
+    // Calculate overlap candidates
+    pm_float overlap1 = range_a[1] - range_b[0];
+    pm_float overlap2 = range_b[1] - range_a[0];
+
+    // Return the smaller overlap
+    return (overlap2 > overlap1) ? overlap1 : -overlap2;
+}
+
+static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line)
+{
+    pm_float len2 = pm_v2_len2(line);
+    pm_float dot  = pm_v2_dot(point, line);
+
+    if (dot < 0.0f)                 // Point is to the left of the line
+        return PH_VORONOI_LEFT;
+    else if (dot > len2)            // Point is to the right of the line
+        return PH_VORONOI_RIGHT;
+    else
+        return PH_VORONOI_MIDDLE;  // Point is somewhere in the middle
+}
+
+// Determinant of 2D matrix
+static pm_float ph_m2_det(ph_m2 m)
+{
+    return m.a11 * m.a22 - m.a21 * m.a12;
+}
+
+// Inverse of 2D matrix
+static ph_m2 ph_m2_inverse(ph_m2 m, pm_float det)
+{
+    pm_float inv_det = 1.0f / det;
+    return (ph_m2) { m.a22 * inv_det, -m.a12 * inv_det, -m.a21 * inv_det, m.a11 * inv_det };
+}
+
+// Map 2D vector by 2D matrix
+static pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
+{
+    return (pm_v2){ m.a11 * v.x + m.a12 * v.y, m.a21 * v.x + m.a22 * v.y };
 }
 
 #endif // PICO_HIT_IMPLEMENTATION
