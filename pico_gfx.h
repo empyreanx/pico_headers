@@ -367,22 +367,22 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 void pg_reset_pipeline(pg_ctx_t* ctx);
 
 /**
- * @brief Sets the MVP transform
+ * @brief Sets the projection matrix
  */
 void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix);
 
 /**
- * @brief Set the transform (MVP) to the identity matrix
+ * @brief Resets the projection matrix to the identity
  */
 void pg_reset_projection(pg_ctx_t* ctx);
 
 /**
- * @brief Sets the MVP transform
+ * @brief Sets the (modelview) transform matrix
  */
 void pg_set_transform(pg_ctx_t* ctx, pg_mat4_t matrix);
 
 /**
- * @brief Set the transform (MVP) to the identity matrix
+ * @brief Resets the (modelview) transform matrix to the identity
  */
 void pg_reset_transform(pg_ctx_t* ctx);
 
