@@ -12,6 +12,7 @@
     - Single header library for easy build system integration
     - Tests overlaps for AABBs, polygons, and circles using SAT
     - Provides collision information including the normal and amount of overlap
+    - Ray casts against line segments, polygons, and circles
     - Permissive license (MIT)
 
     Summary:
@@ -30,6 +31,10 @@
     that, in the case of a collision, they will contain the colliding edge
     normal, overlap (minimum translational distance or MTD), and a vector
     (minimum translation vector or MTV).
+
+    Rays (directed line segments) can be cast against line segments, polygons,
+    and circles. Aside from reporting hits, the normal at and distance to the
+    point of impact is also available.
 
     IMPORTANT: Polygons in this library use counter-clockwise (CCW) winding. See
     the `ph_aabb_to_poly` for an example.
