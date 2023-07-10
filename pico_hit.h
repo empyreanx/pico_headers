@@ -218,7 +218,7 @@ ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
  * @param raycast Normal and distance of collision (if not NULL)
  * @returns True if the ray collides with the line segment and false otherwise
  */
-bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
+bool ph_ray_line(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
 
 /**
  * @brief Tests if ray intersects a polygon
@@ -783,7 +783,7 @@ static pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
     In this application we are only interested in the case where both of them
     are contained in the interval [0, 1]
 */
-bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
+bool ph_ray_line(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
 {
     pm_v2 r1 = ray->pos;
     pm_v2 r2 = pm_v2_add(ray->pos, pm_v2_scale(ray->dir, ray->dist));
@@ -820,7 +820,7 @@ bool ph_ray_segment(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* rayca
 }
 
 /*
-    The idea behind this function is to use ph_ray_segment on each of the edges
+    The idea behind this function is to use ph_ray_line on each of the edges
     that make up the polygon. The function can exit early if the raycast is null.
     Otherwise all edges of the polygon will be tested.
 */
@@ -838,7 +838,7 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
         pm_v2 s1 = poly->vertices[i];
         pm_v2 s2 = poly->vertices[next];
 
-        bool hit = ph_ray_segment(ray, s1, s2, raycast);
+        bool hit = ph_ray_line(ray, s1, s2, raycast);
 
         if (hit && raycast)
         {
