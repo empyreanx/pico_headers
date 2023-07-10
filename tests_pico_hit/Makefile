@@ -6,7 +6,7 @@ ifeq ($(UNAME_S),Darwin)
     CC = clang
 endif
 
-SRCS   = main.c ray.c
+SRCS   = main.c ray.c sat.c
 
 DEPS   = ../pico_hit.h
 OBJS   = $(SRCS:.c=.o)
