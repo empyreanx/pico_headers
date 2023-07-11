@@ -221,6 +221,16 @@ TEST_CASE(test_circle_raycast)
     return true;
 }
 
+TEST_CASE(test_ray_at)
+{
+    ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 0.f), pm_v2_make(1.f, 1.f), 0.f);
+    pm_v2 point = ph_ray_at(&ray, pm_sqrt(200.f));
+
+    REQUIRE(pm_v2_equal(point, pm_v2_make(10.f, 10.f)));
+
+    return true;
+}
+
 TEST_SUITE(suite_ray)
 {
     RUN_TEST_CASE(test_segment_hit);
@@ -232,4 +242,5 @@ TEST_SUITE(suite_ray)
     RUN_TEST_CASE(test_circle_hit);
     RUN_TEST_CASE(test_circle_no_hit);
     RUN_TEST_CASE(test_circle_raycast);
+    RUN_TEST_CASE(test_ray_at);
 }
