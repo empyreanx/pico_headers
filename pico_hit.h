@@ -637,39 +637,6 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
     return true;
 }
 
-ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly)
-{
-    pm_v2 vertices[poly->vertex_count];
-
-    for (int i = 0; i < poly->vertex_count; i++)
-    {
-        vertices[i] = pm_t2_map(transform, poly->vertices[i]);
-    }
-
-    return ph_make_poly(vertices, poly->vertex_count);
-}
-
-ph_circle_t ph_transform_circle(const pm_t2* transform,
-                                const ph_circle_t* circle)
-{
-    return ph_make_circle(pm_t2_map(transform, circle->pos), circle->radius);
-}
-
-pm_b2 ph_poly_to_aabb(const ph_poly_t* poly)
-{
-    return pm_b2_enclosing(poly->vertices, poly->vertex_count);
-}
-
-pm_b2 ph_circle_to_aabb(const ph_circle_t* circle)
-{
-    pm_v2 half_radius = pm_v2_make(circle->radius / 2.0f, circle->radius / 2.0f);
-
-    pm_v2 min = pm_v2_sub(circle->pos, half_radius);
-    pm_v2 max = pm_v2_add(circle->pos, half_radius);
-
-    return pm_b2_make_minmax(min, max);
-}
-
 /*
     The basic idea here is to represent the rays in parametric form and
     solve a linear equation to get the parameters where they intersect.
@@ -801,6 +768,39 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
 pm_v2 ph_ray_at(const ph_ray_t* ray, pm_float dist)
 {
     return pm_v2_add(ray->pos, pm_v2_scale(ray->dir, dist));
+}
+
+ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly)
+{
+    pm_v2 vertices[poly->vertex_count];
+
+    for (int i = 0; i < poly->vertex_count; i++)
+    {
+        vertices[i] = pm_t2_map(transform, poly->vertices[i]);
+    }
+
+    return ph_make_poly(vertices, poly->vertex_count);
+}
+
+ph_circle_t ph_transform_circle(const pm_t2* transform,
+                                const ph_circle_t* circle)
+{
+    return ph_make_circle(pm_t2_map(transform, circle->pos), circle->radius);
+}
+
+pm_b2 ph_poly_to_aabb(const ph_poly_t* poly)
+{
+    return pm_b2_enclosing(poly->vertices, poly->vertex_count);
+}
+
+pm_b2 ph_circle_to_aabb(const ph_circle_t* circle)
+{
+    pm_v2 half_radius = pm_v2_make(circle->radius / 2.0f, circle->radius / 2.0f);
+
+    pm_v2 min = pm_v2_sub(circle->pos, half_radius);
+    pm_v2 max = pm_v2_add(circle->pos, half_radius);
+
+    return pm_b2_make_minmax(min, max);
 }
 
 /*=============================================================================
