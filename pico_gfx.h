@@ -138,6 +138,18 @@ extern "C" {
 #endif
 
 /**
+ * @brief Graphics backends
+*/
+typedef enum
+{
+    PG_BACKEND_GL,
+    PG_BACKEND_GLES,
+    PG_BACKEND_D3D,
+    PG_BACKEND_METAL,
+    PG_BACKEND_WGPU
+} pg_backend_t;
+
+/**
  * @brief Drawing primitives
  */
 typedef enum
@@ -273,6 +285,11 @@ pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx);
  * @brief Destroys a graphics context
  */
 void pg_destroy_context(pg_ctx_t* ctx);
+
+/**
+ * @brief Returns the backend in use at runtime
+*/
+pg_backend_t pg_query_backend();
 
 /**
  * @brief Sets the window dimensions
@@ -918,6 +935,23 @@ void pg_destroy_context(pg_ctx_t* ctx)
     pg_destroy_shader(ctx, ctx->default_shader);
 
     PICO_GFX_FREE(ctx, ctx->mem_ctx);
+}
+
+pg_backend_t pg_query_backend()
+{
+    #if defined (PICO_GFX_GL)
+        return PG_BACKEND_GL;
+    #elif defined (PICO_GFX_GLES)
+        return PG_BACKEND_GLES;
+    #elif defined (PICO_GFX_D3D)
+        return PG_BACKEND_D3D;
+    #elif defined (PICO_GFX_METAL)
+        return PG_BACKEND_METAL;
+    #elif defined (PICO_GFX_WEBGPU)
+        return PG_BACKEND_WGPU;
+    #else
+        #error "Unknown backend"
+    #endif
 }
 
 void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset)
