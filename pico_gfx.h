@@ -289,7 +289,7 @@ void pg_destroy_context(pg_ctx_t* ctx);
 /**
  * @brief Returns the backend in use at runtime
 */
-pg_backend_t pg_query_backend();
+pg_backend_t pg_backend();
 
 /**
  * @brief Sets the window dimensions
@@ -937,7 +937,7 @@ void pg_destroy_context(pg_ctx_t* ctx)
     PICO_GFX_FREE(ctx, ctx->mem_ctx);
 }
 
-pg_backend_t pg_query_backend()
+pg_backend_t pg_backend()
 {
     #if defined (PICO_GFX_GL)
         return PG_BACKEND_GL;

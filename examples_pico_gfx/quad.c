@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     (void)argc;
     (void)argv;
 
-    assert(pg_query_backend() == PG_BACKEND_GL);
+    assert(pg_backend() == PG_BACKEND_GL);
 
     printf("Quad rendering demo\n");
 
