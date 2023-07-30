@@ -28,6 +28,8 @@ int main(int argc, char *argv[])
     (void)argc;
     (void)argv;
 
+    assert(pg_query_backend() == PG_BACKEND_GL);
+
     printf("Quad rendering demo\n");
 
     stbi_set_flip_vertically_on_load(true);
