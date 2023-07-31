@@ -950,7 +950,7 @@ pg_backend_t pg_backend()
     #elif defined (PICO_GFX_WEBGPU)
         return PG_BACKEND_WGPU;
     #else
-        #error "Unknown backend"
+        #error "Unknown GFX backend"
     #endif
 }
 
