@@ -891,6 +891,8 @@ pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx)
 {
     pg_ctx_t* ctx = (pg_ctx_t*)PICO_GFX_MALLOC(sizeof(pg_ctx_t), mem_ctx);
 
+    if (!ctx) return NULL;
+
     memset(ctx, 0, sizeof(pg_ctx_t));
 
     ctx->mem_ctx = mem_ctx;
