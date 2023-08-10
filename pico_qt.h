@@ -346,7 +346,11 @@ struct qt_t
 
 // Helper to assert this pointer is indeed a dynamic array.
 // Like a "canary in the coal mine".
-#define QT_ARRAY_CANARY(a) ((a) ? QT_ASSERT(qt_hdr(a)->cookie == QT_ARRAY_COOKIE) : (void)0)
+#ifdef NDEBUG
+    #define QT_ARRAY_CANARY(a) ((void)0)
+#else
+    #define QT_ARRAY_CANARY(a) ((a) ? QT_ASSERT(qt_hdr(a)->cookie == QT_ARRAY_COOKIE) : (void)0)
+#endif
 
 // A magic number for `QT_ARRAY_CANARY`.
 #define QT_ARRAY_COOKIE 0xE6F7E359
