@@ -73,7 +73,7 @@ typedef struct node_s
     sprite_t* sprite;
 } node_t;
 
-sprite_t* sprite_new(int w, int h, float d, pg_texture_t* tex)
+sprite_t* sprite_new(int w, int h, pg_texture_t* tex)
 {
     sprite_t* sprite = malloc(sizeof(sprite_t));
     sprite->w = w;
@@ -82,13 +82,13 @@ sprite_t* sprite_new(int w, int h, float d, pg_texture_t* tex)
 
     pg_vertex_t vertices[6] =
     {
-        { { 0, 0, d }, { 1, 1, 1, 1 }, { 0, 1 } },
-        { { 0, h, d }, { 1, 1, 1, 1 }, { 0, 0 } },
-        { { w, 0, d }, { 1, 1, 1, 1 }, { 1, 1 } },
+        { { 0, 0, 0 }, { 1, 1, 1, 1 }, { 0, 1 } },
+        { { 0, h, 0 }, { 1, 1, 1, 1 }, { 0, 0 } },
+        { { w, 0, 0 }, { 1, 1, 1, 1 }, { 1, 1 } },
 
-        { { 0, h, d }, { 1, 1, 1, 1 }, { 0, 0 } },
-        { { w, h, d }, { 1, 1, 1, 1 }, { 1, 0 } },
-        { { w, 0, d }, { 1, 1, 1, 1 }, { 1, 1 } }
+        { { 0, h, 0 }, { 1, 1, 1, 1 }, { 0, 0 } },
+        { { w, h, 0 }, { 1, 1, 1, 1 }, { 1, 0 } },
+        { { w, 0, 0 }, { 1, 1, 1, 1 }, { 1, 1 } }
     };
 
     sprite->buf = pg_create_vbuffer(ctx, vertices, 6);
@@ -166,6 +166,12 @@ void node_update_last(node_t* node)
 
 void node_render(node_t* node, double alpha)
 {
+    // Render children
+    for (int i = 0; i < node->child_count; i++)
+    {
+        node_render(node->children[i], alpha);
+    }
+
     // Render sprite if there is one
     if (node->sprite)
     {
@@ -190,12 +196,6 @@ void node_render(node_t* node, double alpha)
 
         // Draw vertices
         pg_draw_vbuffer(ctx, sprite->buf, 0, 6, sprite->tex);
-    }
-
-    // Render children
-    for (int i = 0; i < node->child_count; i++)
-    {
-        node_render(node->children[i], alpha);
     }
 }
 
@@ -288,7 +288,7 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
     pg_get_texture_size(bg_tex, &w, &h);
 
     // New sprite
-    sg->bg_sprite = sprite_new(scene_w, scene_h, 10.0f, bg_tex);
+    sg->bg_sprite = sprite_new(scene_w, scene_h, bg_tex);
 
     // Create a new node that uses this sprite. In theory more than one node
     // could have the same sprite.
@@ -304,7 +304,7 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
     pg_texture_t* star_tex = load_texture("./star.png");
     pg_get_texture_size(star_tex, &w, &h);
 
-    sg->star_sprite = sprite_new(w / 3, h / 3, 0.0f, star_tex);
+    sg->star_sprite = sprite_new(w / 3, h / 3, star_tex);
     node_t* star_node = node_new(sg->star_sprite);
 
     pm_v2 screen_center = pm_v2_make(scene_w / 2, scene_h / 2);
@@ -330,7 +330,7 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
 
     int ship_w = w;
 
-    sg->ship_sprite = sprite_new(w, h, 5.0f, ship_tex);
+    sg->ship_sprite = sprite_new(w, h, ship_tex);
     node_t* ship_node = node_new(sg->ship_sprite);
 
     pm_t2_translate(&ship_node->local, pm_v2_make(-w / 2, -h / 2));
@@ -343,7 +343,7 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
     pg_texture_t* jet_tex = load_texture("./jet.png");
     pg_get_texture_size(jet_tex, &w, &h);
 
-    sg->jet_sprite = sprite_new(w, h, 0.0f, jet_tex);
+    sg->jet_sprite = sprite_new(w, h, jet_tex);
     node_t* jet_node = node_new(sg->jet_sprite);
 
     pm_t2_translate(&jet_node->local, pm_v2_make(0, 32));
