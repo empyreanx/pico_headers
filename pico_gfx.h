@@ -653,7 +653,7 @@ void pg_set_uniform_block_internal(pg_shader_t* shader,
 #endif
 
 #ifndef PICO_GFX_BUFFER_SIZE
-#define PICO_GFX_BUFFER_SIZE 1024
+#define PICO_GFX_BUFFER_SIZE 16384
 #endif
 
 #ifndef PG_GFX_HT_MIN_CAPACITY
