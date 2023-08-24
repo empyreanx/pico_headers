@@ -504,7 +504,7 @@ typedef struct pg_texture_opts_t
  * @param height Image height
  * @param data Image data (format must be RGBA8)
  * @param size Size of the data in bytes
- * @param opts Texture creation options (must not be NULL)
+ * @param opts Texture creation options (NULL for defaults)
  * @returns A texture created from a bitmap
  */
 pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
@@ -516,7 +516,7 @@ pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
  * @brief Creates a render target
  * @param width Render target width
  * @param height Render target height
- * @param opts Texture creation options (must not be NULL)
+ * @param opts Texture creation options (NULL for defaults)
  * @returns A render texture
  */
 pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
