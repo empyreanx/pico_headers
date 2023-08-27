@@ -79,6 +79,16 @@ TEST_CASE(test_b2_overlaps)
         REQUIRE(pm_b2_overlaps(&b1, &b2));
     }
 
+    { // Case 3
+
+        pm_b2 b1 = pm_b2_make(0, 0, 32, 64);
+        pm_b2 b2 = pm_b2_make(32, 5, 10, 10);
+        REQUIRE(pm_b2_overlaps(&b1, &b2));
+
+        b2 = pm_b2_make(33, 0, 10, 10);
+        REQUIRE(!pm_b2_overlaps(&b1, &b2));
+    }
+
     return true;
 }
 
