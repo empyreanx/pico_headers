@@ -1078,7 +1078,7 @@ void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a)
 void pg_reset_clear_color(pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
-    pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 1.f);
+    pg_set_clear_color(ctx, 0.f, 0.f, 0.f, 0.f);
 }
 
 void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h)
