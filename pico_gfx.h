@@ -57,10 +57,12 @@
     by calling `pg_set_uniform_block`. These functions typically operate on
     structs supplied by a custom shader,
 
-    The default shader provides a uniform block containing a transformation
-    matrix (u_mvp) that is used to map vertices to normalized device
-    coordinates. This transformation can be set using `pg_set_transform` and
-    reset to the identity by calling `pg_reset_transform`.
+    The default shader provides a uniform block containing a projection and
+    transformation matrix that are used to map vertices to normalized device
+    coordinates. This projection matrix can be set using `pg_set_projection`
+    and the (model-view) transformation matrix can be set using
+    `pg_set_transform`. They can be reset to the identity by calling
+    `pg_reset_projection` and `pg_reset_transform` respectively.
 
     Please see the examples for more details.
 
