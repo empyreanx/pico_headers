@@ -80,8 +80,8 @@ extern "C" {
  */
 typedef struct
 {
-    pm_v2  pos;      //!< Center of circle
-    pm_float radius; //!< Radius of the circle
+    pv2  pos;      //!< Center of circle
+    pfloat radius; //!< Radius of the circle
 } ph_circle_t;
 
 /**
@@ -91,9 +91,9 @@ typedef struct
 typedef struct
 {
     int   vertex_count;                      //!< Number of vertices in polygon
-    pm_v2 vertices[PICO_HIT_MAX_POLY_VERTS]; //!< Polygon vertices
-    pm_v2 normals[PICO_HIT_MAX_POLY_VERTS];  //!< Polygon edge normals
-    pm_v2 edges[PICO_HIT_MAX_POLY_VERTS];    //!< Edges of polygon
+    pv2 vertices[PICO_HIT_MAX_POLY_VERTS]; //!< Polygon vertices
+    pv2 normals[PICO_HIT_MAX_POLY_VERTS];  //!< Polygon edge normals
+    pv2 edges[PICO_HIT_MAX_POLY_VERTS];    //!< Edges of polygon
 } ph_poly_t;
 
 /**
@@ -101,9 +101,9 @@ typedef struct
 */
 typedef struct
 {
-    pm_v2 pos;     //!< The origin of the ray
-    pm_v2 dir;     //!< The direction of the ray (normalized)
-    pm_float dist; //!< The length of the ray
+    pv2 pos;     //!< The origin of the ray
+    pv2 dir;     //!< The direction of the ray (normalized)
+    pfloat dist; //!< The length of the ray
 } ph_ray_t;
 
 /**
@@ -113,9 +113,9 @@ typedef struct
  */
 typedef struct
 {
-    pm_v2    normal;  //!< Normal to colliding edge (in direction of MTV)
-    pm_float overlap; //!< Amount of overlap between two shapes along colliding axis (MTD)
-    pm_v2    vector;  //!< Vector defined by `vector = normal * overlap`
+    pv2    normal;  //!< Normal to colliding edge (in direction of MTV)
+    pfloat overlap; //!< Amount of overlap between two shapes along colliding axis (MTD)
+    pv2    vector;  //!< Vector defined by `vector = normal * overlap`
 } ph_manifold_t;
 
 /**
@@ -123,8 +123,8 @@ typedef struct
  */
 typedef struct
 {
-    pm_v2 normal;  //!< The surface normal at the point of impact
-    pm_float dist; //!< The distance fromt the origin to the point of impact
+    pv2 normal;  //!< The surface normal at the point of impact
+    pfloat dist; //!< The distance fromt the origin to the point of impact
 } ph_raycast_t;
 
 /**
@@ -132,7 +132,7 @@ typedef struct
  * @param pos    Circle center
  * @param radius Circle radius
  */
-ph_circle_t ph_make_circle(pm_v2 pos, pm_float radius);
+ph_circle_t ph_make_circle(pv2 pos, pfloat radius);
 
 /**
  * @brief Initializes a polygon
@@ -140,7 +140,7 @@ ph_circle_t ph_make_circle(pm_v2 pos, pm_float radius);
  * @param vertices     The vertices of the polygon (must use CCW winding)
  * @returns The polygon with the given vertices
  */
-ph_poly_t ph_make_poly(const pm_v2 vertices[], int vertex_count);
+ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count);
 
 /**
  * @brief Constructs a ray
@@ -148,14 +148,14 @@ ph_poly_t ph_make_poly(const pm_v2 vertices[], int vertex_count);
  * @param dir The direction of the ray
  * @param dist The length of the ray
  */
-ph_ray_t ph_make_ray(pm_v2 pos, pm_v2 dir, pm_float dist);
+ph_ray_t ph_make_ray(pv2 pos, pv2 dir, pfloat dist);
 
 /**
  * @brief Converts and axis-aligned bounding box (AABB) to a polygon
  * @brief aabb The AABB
  * @returns the AABB as a polygon
  */
-ph_poly_t ph_aabb_to_poly(const pm_b2* aabb);
+ph_poly_t ph_aabb_to_poly(const pb2* aabb);
 
 /**
  * @brief Tests to see if one polygon overlaps with another
@@ -210,7 +210,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
  * @param raycast Normal and distance of impact (or NULL)
  * @returns True if the ray collides with the line segment and false otherwise
  */
-bool ph_ray_line(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast);
+bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast);
 
 /**
  * @brief Tests if ray intersects a polygon
@@ -235,7 +235,7 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
 /**
  * @brief Finds the point along the ray at the specified distance from the origin
  */
-pm_v2 ph_ray_at(const ph_ray_t* ray, pm_float dist);
+pv2 ph_ray_at(const ph_ray_t* ray, pfloat dist);
 
 /**
  * @brief Transforms a polygon using an affine transform
@@ -243,7 +243,7 @@ pm_v2 ph_ray_at(const ph_ray_t* ray, pm_float dist);
  * @param poly      The polygon to transform
  * @returns A new polygon
  */
-ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
+ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly);
 
 /**
  * @brief Transforms a circle using an affine transform
@@ -251,17 +251,17 @@ ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly);
  * @param poly      The circle to transform
  * @returns A new circle
  */
-ph_circle_t ph_transform_circle(const pm_t2* transform, const ph_circle_t* circle);
+ph_circle_t ph_transform_circle(const pt2* transform, const ph_circle_t* circle);
 
 /**
  * @brief Returns the bounding box for the given polygon
  */
-pm_b2 ph_poly_to_aabb(const ph_poly_t* poly);
+pb2 ph_poly_to_aabb(const ph_poly_t* poly);
 
 /**
  * @brief Returns the bounding box for the given circle
  */
-pm_b2 ph_circle_to_aabb(const ph_circle_t* circle);
+pb2 ph_circle_to_aabb(const ph_circle_t* circle);
 
 #ifdef __cplusplus
 }
@@ -291,16 +291,16 @@ static void ph_init_manifold(ph_manifold_t* manifold);
 
 // Updates manifold if requried
 static void ph_update_manifold(ph_manifold_t* manifold,
-                               pm_v2 normal,
-                               pm_float overlap);
+                               pv2 normal,
+                               pfloat overlap);
 
 // Determines the polygon's limits when projected onto the normal vector
-static void ph_axis_range(const ph_poly_t* poly, pm_v2 normal, pm_float range[2]);
+static void ph_axis_range(const ph_poly_t* poly, pv2 normal, pfloat range[2]);
 
 // Determines the amount overlap of the polygons along the specified axis
-static pm_float ph_axis_overlap(const ph_poly_t* poly_a,
+static pfloat ph_axis_overlap(const ph_poly_t* poly_a,
                                 const ph_poly_t* poly_b,
-                                pm_v2 axis);
+                                pv2 axis);
 
 // Line Voronoi regions
 typedef enum
@@ -316,28 +316,28 @@ typedef enum
 //     (-1)  [L]--------------[R]  (1)
 //            |    ^  (0)      |
 //               line
-static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line);
+static ph_voronoi_region_t ph_voronoi_region(pv2 point, pv2 line);
 
 // 2D matrix
 typedef struct
 {
-    pm_float a11, a12, a21, a22;
+    pfloat a11, a12, a21, a22;
 } ph_m2;
 
 // Determinant of 2D matrix
-static pm_float ph_m2_det(ph_m2 m);
+static pfloat ph_m2_det(ph_m2 m);
 
 // Inverse of 2D matrix
-static ph_m2 ph_m2_inverse(ph_m2 m, pm_float det);
+static ph_m2 ph_m2_inverse(ph_m2 m, pfloat det);
 
 // Map 2D vector by 2D matrix
-static pm_v2 ph_m2_map(ph_m2 m, pm_v2 v);
+static pv2 ph_m2_map(ph_m2 m, pv2 v);
 
 /*=============================================================================
  * Public API implementation
  *============================================================================*/
 
-ph_circle_t ph_make_circle(pm_v2 pos, pm_float radius)
+ph_circle_t ph_make_circle(pv2 pos, pfloat radius)
 {
     ph_circle_t circle;
     circle.pos = pos;
@@ -345,7 +345,7 @@ ph_circle_t ph_make_circle(pm_v2 pos, pm_float radius)
     return circle;
 }
 
-ph_poly_t ph_make_poly(const pm_v2 vertices[], int vertex_count)
+ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count)
 {
     SAT_ASSERT(vertex_count <= PICO_HIT_MAX_POLY_VERTS);
     SAT_ASSERT(vertices);
@@ -365,31 +365,31 @@ ph_poly_t ph_make_poly(const pm_v2 vertices[], int vertex_count)
     {
         int next = (i + 1) == vertex_count ? 0 : i + 1;
 
-        pm_v2 v1 = vertices[i];
-        pm_v2 v2 = vertices[next];
-        poly.edges[i] = pm_v2_sub(v2, v1);
-        poly.normals[i] = pm_v2_perp(poly.edges[i]);
-        poly.normals[i] = pm_v2_normalize(poly.normals[i]);
+        pv2 v1 = vertices[i];
+        pv2 v2 = vertices[next];
+        poly.edges[i] = pv2_sub(v2, v1);
+        poly.normals[i] = pv2_perp(poly.edges[i]);
+        poly.normals[i] = pv2_normalize(poly.normals[i]);
     }
 
     return poly;
 }
 
-ph_ray_t ph_make_ray(pm_v2 pos, pm_v2 dir, pm_float dist)
+ph_ray_t ph_make_ray(pv2 pos, pv2 dir, pfloat dist)
 {
-    return (ph_ray_t){ pos, pm_v2_normalize(dir), dist };
+    return (ph_ray_t){ pos, pv2_normalize(dir), dist };
 }
 
-ph_poly_t ph_aabb_to_poly(const pm_b2* aabb)
+ph_poly_t ph_aabb_to_poly(const pb2* aabb)
 {
     SAT_ASSERT(aabb);
 
     // Get AABB properties
-    pm_v2 pos = pm_b2_pos(aabb);
-    pm_v2 size = pm_b2_size(aabb);
+    pv2 pos = pb2_pos(aabb);
+    pv2 size = pb2_size(aabb);
 
     // Specify AABB vertices using CCW winding
-    pm_v2 vertices[] =
+    pv2 vertices[] =
     {
         { pos.x, pos.y                   },
         { pos.x,          pos.y + size.y },
@@ -414,7 +414,7 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
     for (int i = 0; i < poly_a->vertex_count; i++)
     {
         // Get signed overlap of poly_a on poly_b along specified normal direction
-        pm_float overlap = ph_axis_overlap(poly_a, poly_b, poly_a->normals[i]);
+        pfloat overlap = ph_axis_overlap(poly_a, poly_b, poly_a->normals[i]);
 
         // Axis is separating, polygons do not overlap
         if (overlap == 0.0f)
@@ -429,7 +429,7 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
     for (int i = 0; i < poly_b->vertex_count; i++)
     {
         // Get signed overlap of poly_b on poly_a along specified normal direction
-        pm_float overlap = ph_axis_overlap(poly_b, poly_a, poly_b->normals[i]);
+        pfloat overlap = ph_axis_overlap(poly_b, poly_a, poly_b->normals[i]);
 
         // Axis is separating, polygons do not overlap
         if (overlap == 0.0f)
@@ -453,7 +453,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
     if (manifold)
         ph_init_manifold(manifold);
 
-    pm_float radius2 = circle->radius * circle->radius;
+    pfloat radius2 = circle->radius * circle->radius;
 
     // The main idea behind this function is to classify the position of the
     // circle relative to the Voronoi region(s) it is part of. This uses very
@@ -469,10 +469,10 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         int prev = (i - 1) <= 0 ? count - 1 : i - 1;
 
         // Edge to test
-        pm_v2 edge = poly->edges[i];
+        pv2 edge = poly->edges[i];
 
         // Postion of circle relative to vertex
-        pm_v2 point = pm_v2_sub(circle->pos, poly->vertices[i]);
+        pv2 point = pv2_sub(circle->pos, poly->vertices[i]);
 
         // Find the Voronoi region of the point (circle center relative to
         // vertex)  with respect to the edge
@@ -486,7 +486,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
             // in the intersection of the Voronoi regions defined by the
             // endpoints of the edges.
 
-            pm_v2 point2 = pm_v2_sub(circle->pos, poly->vertices[prev]);
+            pv2 point2 = pv2_sub(circle->pos, poly->vertices[prev]);
             edge = poly->edges[prev];
 
             region = ph_voronoi_region(point2, edge);
@@ -495,7 +495,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
             {
                 // The circle center is in the left/right Voronoi region, so
                 // check to see if it contains the vertex
-                pm_float diff2 = pm_v2_len2(point);
+                pfloat diff2 = pv2_len2(point);
 
                 // Equivalent to diff > radius
                 if (diff2 > radius2)
@@ -507,13 +507,13 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
                 if (manifold)
                 {
                     // Calculate distance because we need it now
-                    pm_float diff = pm_sqrt(diff2);
+                    pfloat diff = pm_sqrt(diff2);
 
                     // Calculate overlap
-                    pm_float overlap = circle->radius - diff;
+                    pfloat overlap = circle->radius - diff;
 
                     // Normal direction is just the circle relative to the vertex
-                    pm_v2 normal = pm_v2_normalize(point);
+                    pv2 normal = pv2_normalize(point);
 
                     // Update manifold
                     ph_update_manifold(manifold, normal, overlap);
@@ -523,23 +523,23 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         // This case is symmetric to the above
         else if (region == PH_VORONOI_RIGHT)
         {
-            pm_v2 point2 = pm_v2_sub(circle->pos, poly->vertices[next]);
+            pv2 point2 = pv2_sub(circle->pos, poly->vertices[next]);
             edge = poly->edges[next];
 
             region = ph_voronoi_region(point2, edge);
 
             if (region == PH_VORONOI_LEFT)
             {
-                pm_float diff2 = pm_v2_len2(point);
+                pfloat diff2 = pv2_len2(point);
 
                 if (diff2 > radius2)
                     return false;
 
                 if (manifold)
                 {
-                    pm_float diff = pm_sqrt(diff2);
-                    pm_float overlap = circle->radius - diff;
-                    pm_v2 normal = pm_v2_normalize(point);
+                    pfloat diff = pm_sqrt(diff2);
+                    pfloat overlap = circle->radius - diff;
+                    pv2 normal = pv2_normalize(point);
                     ph_update_manifold(manifold, normal, overlap);
                 }
             }
@@ -548,11 +548,11 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         {
             // In this case, the location of the circle is between the endpoints
             // of an edge.
-            pm_v2 normal = poly->normals[i];
+            pv2 normal = poly->normals[i];
 
             // Location of center of circle along the edge normal
-            pm_float diff = pm_v2_dot(normal, point);
-            pm_float abs_diff = pm_abs(diff);
+            pfloat diff = pv2_dot(normal, point);
+            pfloat abs_diff = pm_abs(diff);
 
             // Test if circle does not intersect edge
             if (diff > 0.0f && abs_diff > circle->radius)
@@ -561,7 +561,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
             if (manifold)
             {
                 // Calculate overlap
-                pm_float overlap = circle->radius - diff;
+                pfloat overlap = circle->radius - diff;
 
                 // Update manifold
                 ph_update_manifold(manifold, normal, overlap);
@@ -585,8 +585,8 @@ bool ph_sat_circle_poly(const ph_circle_t* circle,
     {
         // Since arguments were swapped, reversing these vectors is all that is
         // required
-        manifold->normal = pm_v2_reflect(manifold->normal);
-        manifold->vector = pm_v2_reflect(manifold->vector);
+        manifold->normal = pv2_reflect(manifold->normal);
+        manifold->vector = pv2_reflect(manifold->vector);
     }
 
     return hit;
@@ -603,17 +603,17 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
         ph_init_manifold(manifold);
 
     // Position of circle_b relative to circle_a
-    pm_v2 diff = pm_v2_sub(circle_b->pos, circle_a->pos);
+    pv2 diff = pv2_sub(circle_b->pos, circle_a->pos);
 
     // Squared distance between circle centers
-    pm_float dist2 = pm_v2_len2(diff);
+    pfloat dist2 = pv2_len2(diff);
 
     // Sum of radii
-    pm_float total_radius = circle_a->radius + circle_b->radius;
+    pfloat total_radius = circle_a->radius + circle_b->radius;
 
     // Square sum of radii for optimization (avoid calculating length until we
     // have to)
-    pm_float total_radius2 = total_radius * total_radius;
+    pfloat total_radius2 = total_radius * total_radius;
 
     // Equivalent to dist >= total_radius
     if (dist2 >= total_radius2)
@@ -622,13 +622,13 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
     if (manifold)
     {
          // Calculate distance because we need it now
-        pm_float dist = pm_sqrt(dist2);
+        pfloat dist = pm_sqrt(dist2);
 
         // Calculate overlap
-        pm_float overlap = total_radius - dist;
+        pfloat overlap = total_radius - dist;
 
         // Normal direction is just circle_b relative to circle_a
-        pm_v2 normal = pm_v2_normalize(diff);
+        pv2 normal = pv2_normalize(diff);
 
         // Update manifold
         ph_update_manifold(manifold, normal, overlap);
@@ -643,13 +643,13 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
     In this application we are only interested in the case where both of them
     are contained in the interval [0, 1]
 */
-bool ph_ray_line(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
+bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast)
 {
-    pm_v2 r1 = ray->pos;
-    pm_v2 r2 = pm_v2_add(ray->pos, pm_v2_scale(ray->dir, ray->dist));
+    pv2 r1 = ray->pos;
+    pv2 r2 = pv2_add(ray->pos, pv2_scale(ray->dir, ray->dist));
 
-    pm_v2 v = pm_v2_sub(r2, r1);
-    pm_v2 w = pm_v2_sub(s2, s1);
+    pv2 v = pv2_sub(r2, r1);
+    pv2 w = pv2_sub(s2, s1);
 
     ph_m2 m =
     {
@@ -657,22 +657,22 @@ bool ph_ray_line(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
         -v.y, w.y,
     };
 
-    pm_float det = ph_m2_det(m);
+    pfloat det = ph_m2_det(m);
 
     if (pm_equal(det, 0.0f))
         return false;
 
     ph_m2 m_inv = ph_m2_inverse(m, det);
 
-    pm_v2 c = pm_v2_sub(r1, s1);
-    pm_v2 p = ph_m2_map(m_inv, c);
+    pv2 c = pv2_sub(r1, s1);
+    pv2 p = ph_m2_map(m_inv, c);
 
     bool hit = 0.0f <= p.x && p.x <= 1.0f &&
                0.0f <= p.y && p.y <= 1.0f;
 
     if (hit && raycast)
     {
-        raycast->normal = pm_v2_normalize(pm_v2_perp(w));
+        raycast->normal = pv2_normalize(pv2_perp(w));
         raycast->dist  = p.x * ray->dist;
     }
 
@@ -686,8 +686,8 @@ bool ph_ray_line(const ph_ray_t* ray, pm_v2 s1, pm_v2 s2, ph_raycast_t* raycast)
 */
 bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast)
 {
-    pm_v2 min_normal = pm_v2_zero();
-    pm_float min_dist = PM_FLOAT_MAX;
+    pv2 min_normal = pv2_zero();
+    pfloat min_dist = PM_FLOAT_MAX;
 
     bool has_hit = false;
 
@@ -695,8 +695,8 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
     {
         int next = (i + 1) == poly->vertex_count ? 0 : i + 1;
 
-        pm_v2 s1 = poly->vertices[i];
-        pm_v2 s2 = poly->vertices[next];
+        pv2 s1 = poly->vertices[i];
+        pv2 s2 = poly->vertices[next];
 
         bool hit = ph_ray_line(ray, s1, s2, raycast);
 
@@ -736,71 +736,71 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
 */
 bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast)
 {
-    pm_float r = circle->radius;
-    pm_v2 m = pm_v2_sub(ray->pos, circle->pos);
-    pm_float b = pm_v2_dot(m, ray->dir);
-    pm_float c = pm_v2_dot(m, m) - r * r;
+    pfloat r = circle->radius;
+    pv2 m = pv2_sub(ray->pos, circle->pos);
+    pfloat b = pv2_dot(m, ray->dir);
+    pfloat c = pv2_dot(m, m) - r * r;
 
     if (c > 0.0f && b > 0.0f)
         return false;
 
-    pm_float discr = b * b - c;
+    pfloat discr = b * b - c;
 
     if (discr < 0.0f)
         return false;
 
     if (raycast)
     {
-        pm_float dist = -b - pm_sqrt(discr);
+        pfloat dist = -b - pm_sqrt(discr);
 
         if (dist < 0.0f)
             dist = 0.0f;
 
-        pm_v2 p = pm_v2_add(ray->pos, pm_v2_scale(ray->dir, dist));
+        pv2 p = pv2_add(ray->pos, pv2_scale(ray->dir, dist));
 
         raycast->dist = dist;
-        raycast->normal = pm_v2_normalize(pm_v2_sub(p, circle->pos));
+        raycast->normal = pv2_normalize(pv2_sub(p, circle->pos));
     }
 
     return true;
 }
 
-pm_v2 ph_ray_at(const ph_ray_t* ray, pm_float dist)
+pv2 ph_ray_at(const ph_ray_t* ray, pfloat dist)
 {
-    return pm_v2_add(ray->pos, pm_v2_scale(ray->dir, dist));
+    return pv2_add(ray->pos, pv2_scale(ray->dir, dist));
 }
 
-ph_poly_t ph_transform_poly(const pm_t2* transform, const ph_poly_t* poly)
+ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly)
 {
-    pm_v2 vertices[poly->vertex_count];
+    pv2 vertices[poly->vertex_count];
 
     for (int i = 0; i < poly->vertex_count; i++)
     {
-        vertices[i] = pm_t2_map(transform, poly->vertices[i]);
+        vertices[i] = pt2_map(transform, poly->vertices[i]);
     }
 
     return ph_make_poly(vertices, poly->vertex_count);
 }
 
-ph_circle_t ph_transform_circle(const pm_t2* transform,
+ph_circle_t ph_transform_circle(const pt2* transform,
                                 const ph_circle_t* circle)
 {
-    return ph_make_circle(pm_t2_map(transform, circle->pos), circle->radius);
+    return ph_make_circle(pt2_map(transform, circle->pos), circle->radius);
 }
 
-pm_b2 ph_poly_to_aabb(const ph_poly_t* poly)
+pb2 ph_poly_to_aabb(const ph_poly_t* poly)
 {
-    return pm_b2_enclosing(poly->vertices, poly->vertex_count);
+    return pb2_enclosing(poly->vertices, poly->vertex_count);
 }
 
-pm_b2 ph_circle_to_aabb(const ph_circle_t* circle)
+pb2 ph_circle_to_aabb(const ph_circle_t* circle)
 {
-    pm_v2 half_radius = pm_v2_make(circle->radius / 2.0f, circle->radius / 2.0f);
+    pv2 half_radius = pv2_make(circle->radius / 2.0f, circle->radius / 2.0f);
 
-    pm_v2 min = pm_v2_sub(circle->pos, half_radius);
-    pm_v2 max = pm_v2_add(circle->pos, half_radius);
+    pv2 min = pv2_sub(circle->pos, half_radius);
+    pv2 max = pv2_add(circle->pos, half_radius);
 
-    return pm_b2_make_minmax(min, max);
+    return pb2_make_minmax(min, max);
 }
 
 /*=============================================================================
@@ -812,15 +812,15 @@ static void ph_init_manifold(ph_manifold_t* manifold)
     SAT_ASSERT(manifold);
 
     manifold->overlap = PM_FLOAT_MAX;
-    manifold->normal  = pm_v2_zero();
-    manifold->vector  = pm_v2_zero();
+    manifold->normal  = pv2_zero();
+    manifold->vector  = pv2_zero();
 }
 
-static void ph_update_manifold(ph_manifold_t* manifold, pm_v2 normal, pm_float overlap)
+static void ph_update_manifold(ph_manifold_t* manifold, pv2 normal, pfloat overlap)
 {
     SAT_ASSERT(manifold);
 
-    pm_float abs_overlap = pm_abs(overlap);
+    pfloat abs_overlap = pm_abs(overlap);
 
     // Only update if the new overlap is smaller than the old one
     if (abs_overlap < manifold->overlap)
@@ -830,27 +830,27 @@ static void ph_update_manifold(ph_manifold_t* manifold, pm_v2 normal, pm_float o
 
         // If the overlap is less that zero the normal must be reversed
         if (overlap < 0.0f)
-            manifold->normal = pm_v2_reflect(normal);
+            manifold->normal = pv2_reflect(normal);
         else if (overlap > 0.0f)
             manifold->normal = normal;
 
-        manifold->vector = pm_v2_scale(manifold->normal, manifold->overlap);
+        manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
     }
 }
 
-static void ph_axis_range(const ph_poly_t* poly, pm_v2 normal, pm_float range[2])
+static void ph_axis_range(const ph_poly_t* poly, pv2 normal, pfloat range[2])
 {
     SAT_ASSERT(poly);
     SAT_ASSERT(range);
 
-    pm_float dot = pm_v2_dot(poly->vertices[0], normal);
-    pm_float min = dot;
-    pm_float max = dot;
+    pfloat dot = pv2_dot(poly->vertices[0], normal);
+    pfloat min = dot;
+    pfloat max = dot;
 
     // Find the minimum and maximum distance of the polygon along the normal
     for (int i = 1; i < poly->vertex_count; i++)
     {
-        dot = pm_v2_dot(poly->vertices[i], normal);
+        dot = pv2_dot(poly->vertices[i], normal);
 
         if (dot < min)
             min = dot;
@@ -865,16 +865,16 @@ static void ph_axis_range(const ph_poly_t* poly, pm_v2 normal, pm_float range[2]
     range[1] = max;
 }
 
-static pm_float ph_axis_overlap(const ph_poly_t* poly_a,
+static pfloat ph_axis_overlap(const ph_poly_t* poly_a,
                                 const ph_poly_t* poly_b,
-                                pm_v2 axis)
+                                pv2 axis)
 
 {
     SAT_ASSERT(poly_a);
     SAT_ASSERT(poly_b);
 
-    pm_float range_a[2];
-    pm_float range_b[2];
+    pfloat range_a[2];
+    pfloat range_b[2];
 
     // Get the ranges of polygons projected onto the axis vector
     ph_axis_range(poly_a, axis, range_a);
@@ -885,17 +885,17 @@ static pm_float ph_axis_overlap(const ph_poly_t* poly_a,
         return 0.0f;
 
     // Calculate overlap candidates
-    pm_float overlap1 = range_a[1] - range_b[0];
-    pm_float overlap2 = range_b[1] - range_a[0];
+    pfloat overlap1 = range_a[1] - range_b[0];
+    pfloat overlap2 = range_b[1] - range_a[0];
 
     // Return the smaller overlap
     return (overlap2 > overlap1) ? overlap1 : -overlap2;
 }
 
-static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line)
+static ph_voronoi_region_t ph_voronoi_region(pv2 point, pv2 line)
 {
-    pm_float len2 = pm_v2_len2(line);
-    pm_float dot  = pm_v2_dot(point, line);
+    pfloat len2 = pv2_len2(line);
+    pfloat dot  = pv2_dot(point, line);
 
     if (dot < 0.0f)                 // Point is to the left of the line
         return PH_VORONOI_LEFT;
@@ -906,22 +906,22 @@ static ph_voronoi_region_t ph_voronoi_region(pm_v2 point, pm_v2 line)
 }
 
 // Determinant of 2D matrix
-static pm_float ph_m2_det(ph_m2 m)
+static pfloat ph_m2_det(ph_m2 m)
 {
     return m.a11 * m.a22 - m.a21 * m.a12;
 }
 
 // Inverse of 2D matrix
-static ph_m2 ph_m2_inverse(ph_m2 m, pm_float det)
+static ph_m2 ph_m2_inverse(ph_m2 m, pfloat det)
 {
-    pm_float inv_det = 1.0f / det;
+    pfloat inv_det = 1.0f / det;
     return (ph_m2) { m.a22 * inv_det, -m.a12 * inv_det, -m.a21 * inv_det, m.a11 * inv_det };
 }
 
 // Map 2D vector by 2D matrix
-static pm_v2 ph_m2_map(ph_m2 m, pm_v2 v)
+static pv2 ph_m2_map(ph_m2 m, pv2 v)
 {
-    return (pm_v2){ m.a11 * v.x + m.a12 * v.y, m.a21 * v.x + m.a22 * v.y };
+    return (pv2){ m.a11 * v.x + m.a12 * v.y, m.a21 * v.x + m.a22 * v.y };
 }
 
 #endif // PICO_HIT_IMPLEMENTATION

@@ -3,17 +3,17 @@
 
 TEST_CASE(test_segment_hit)
 {
-    ph_ray_t r = ph_make_ray(pm_v2_make(0.f, 0.f), pm_v2_make(1.f, 0.f), 10.f);
+    ph_ray_t r = ph_make_ray(pv2_make(0.f, 0.f), pv2_make(1.f, 0.f), 10.f);
 
-    pm_v2 s1 = { 5.f,  5.f };
-    pm_v2 s2 = { 5.f, -1.f };
+    pv2 s1 = { 5.f,  5.f };
+    pv2 s2 = { 5.f, -1.f };
 
     REQUIRE(ph_ray_line(&r, s1, s2, NULL));
 
-    r = ph_make_ray(pm_v2_make(0.f, 0.f), pm_v2_normalize(pm_v2_make(1.f, 1.f)), 10.f);
+    r = ph_make_ray(pv2_make(0.f, 0.f), pv2_normalize(pv2_make(1.f, 1.f)), 10.f);
 
-    s1 = (pm_v2){ 0.f,  5.f };
-    s2 = (pm_v2){ 5.f, -10.f };
+    s1 = (pv2){ 0.f,  5.f };
+    s2 = (pv2){ 5.f, -10.f };
 
     REQUIRE(ph_ray_line(&r, s1, s2, NULL));
 
@@ -22,15 +22,15 @@ TEST_CASE(test_segment_hit)
 
 TEST_CASE(test_segment_no_hit)
 {
-    ph_ray_t r = ph_make_ray(pm_v2_make(0.f, 0.f), pm_v2_make(1.f, 0.f), 10.f);
+    ph_ray_t r = ph_make_ray(pv2_make(0.f, 0.f), pv2_make(1.f, 0.f), 10.f);
 
-    pm_v2 s1 = { 5.0f,  5.0f };
-    pm_v2 s2 = { 5.0f,  2.0f };
+    pv2 s1 = { 5.0f,  5.0f };
+    pv2 s2 = { 5.0f,  2.0f };
 
     REQUIRE(!ph_ray_line(&r, s1, s2, NULL));
 
-    s1 = (pm_v2){ 5.0f,  5.0f };
-    s2 = (pm_v2){ 5.0f, 10.0f };
+    s1 = (pv2){ 5.0f,  5.0f };
+    s2 = (pv2){ 5.0f, 10.0f };
 
     REQUIRE(!ph_ray_line(&r, s1, s2, NULL));
 
@@ -41,37 +41,37 @@ TEST_CASE(test_segment_raycast)
 {
     { // Case 1
 
-        pm_float dist = pm_sqrt(pm_pow(10.f, 2.f) + pm_pow(10.f, 2.f));
-        ph_ray_t r = ph_make_ray(pm_v2_make(0.f, 0.f), pm_v2_normalize(pm_v2_make(1.f, 1.f)), dist);
+        pfloat dist = pm_sqrt(pm_pow(10.f, 2.f) + pm_pow(10.f, 2.f));
+        ph_ray_t r = ph_make_ray(pv2_make(0.f, 0.f), pv2_normalize(pv2_make(1.f, 1.f)), dist);
 
-        pm_v2 s1 = { 0.0f, 10.0f };
-        pm_v2 s2 = { 10.0f, 0.0f };
+        pv2 s1 = { 0.0f, 10.0f };
+        pv2 s2 = { 10.0f, 0.0f };
 
         ph_raycast_t raycast;
 
         REQUIRE(ph_ray_line(&r, s1, s2, &raycast));
 
-        pm_v2 normal = pm_v2_normalize(pm_v2_make(1.f, 1.f));
+        pv2 normal = pv2_normalize(pv2_make(1.f, 1.f));
 
-        REQUIRE(pm_v2_equal(raycast.normal, normal));
+        REQUIRE(pv2_equal(raycast.normal, normal));
 
         REQUIRE(pm_equal(raycast.dist, dist * .5f));
     }
 
     { // Case 2
 
-        ph_ray_t r = ph_make_ray(pm_v2_make(7.5f, 7.5f), pm_v2_normalize(pm_v2_make(0.f, -1.f)), 7.5f);
+        ph_ray_t r = ph_make_ray(pv2_make(7.5f, 7.5f), pv2_normalize(pv2_make(0.f, -1.f)), 7.5f);
 
-        pm_v2 s1 = { 0.0f, 0.5f };
-        pm_v2 s2 = { 10.0f, 0.5f };
+        pv2 s1 = { 0.0f, 0.5f };
+        pv2 s2 = { 10.0f, 0.5f };
 
         ph_raycast_t raycast;
 
         REQUIRE(ph_ray_line(&r, s1, s2, &raycast));
 
-        pm_v2 normal = pm_v2_normalize(pm_v2_make(0.f, 1.f));
+        pv2 normal = pv2_normalize(pv2_make(0.f, 1.f));
 
-        REQUIRE(pm_v2_equal(raycast.normal, normal));
+        REQUIRE(pv2_equal(raycast.normal, normal));
 
         REQUIRE(pm_equal(raycast.dist, 7.f));
     }
@@ -81,25 +81,25 @@ TEST_CASE(test_segment_raycast)
 
 TEST_CASE(test_poly_hit)
 {
-    ph_poly_t poly = ph_aabb_to_poly(&pm_b2_make(2.5f, 2.5f, 2.5f, 2.5f));
+    ph_poly_t poly = ph_aabb_to_poly(&pb2_make(2.5f, 2.5f, 2.5f, 2.5f));
 
     {   // Left
-        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 3.f), pm_v2_make(1.f, 0.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(0.f, 3.f), pv2_make(1.f, 0.f), 10.f);
         REQUIRE(ph_ray_poly(&ray, &poly, NULL));
     }
 
     {   // Right
-        ph_ray_t ray = ph_make_ray(pm_v2_make(7.f, 3.f), pm_v2_make(-1.f, 0.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(7.f, 3.f), pv2_make(-1.f, 0.f), 10.f);
         REQUIRE(ph_ray_poly(&ray, &poly, NULL));
     }
 
     {   // Top
-        ph_ray_t ray = ph_make_ray(pm_v2_make(3.f, 0.f), pm_v2_make(0.f, 1.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(3.f, 0.f), pv2_make(0.f, 1.f), 10.f);
         REQUIRE(ph_ray_poly(&ray, &poly, NULL));
     }
 
     {   // Bottom
-        ph_ray_t ray = ph_make_ray(pm_v2_make(3.f, 7.f), pm_v2_make(0.f, -1.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(3.f, 7.f), pv2_make(0.f, -1.f), 10.f);
         REQUIRE(ph_ray_poly(&ray, &poly, NULL));
     }
 
@@ -108,25 +108,25 @@ TEST_CASE(test_poly_hit)
 
 TEST_CASE(test_poly_no_hit)
 {
-    ph_poly_t poly = ph_aabb_to_poly(&pm_b2_make(2.5f, 2.5f, 2.5f, 2.5f));
+    ph_poly_t poly = ph_aabb_to_poly(&pb2_make(2.5f, 2.5f, 2.5f, 2.5f));
 
     {   // Left
-        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 3.f), pm_v2_make(1.f, 2.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(0.f, 3.f), pv2_make(1.f, 2.f), 10.f);
         REQUIRE(!ph_ray_poly(&ray, &poly, NULL));
     }
 
     {   // Right
-        ph_ray_t ray = ph_make_ray(pm_v2_make(7.f, 3.f), pm_v2_make(1.f, 0.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(7.f, 3.f), pv2_make(1.f, 0.f), 10.f);
         REQUIRE(!ph_ray_poly(&ray, &poly, NULL));
     }
 
     {   // Top
-        ph_ray_t ray = ph_make_ray(pm_v2_make(3.f, 0.f), pm_v2_make(0.f, -1.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(3.f, 0.f), pv2_make(0.f, -1.f), 10.f);
         REQUIRE(!ph_ray_poly(&ray, &poly, NULL));
     }
 
     {   // Bottom
-        ph_ray_t ray = ph_make_ray(pm_v2_make(3.f, 7.f), pm_v2_make(0.f, 1.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(3.f, 7.f), pv2_make(0.f, 1.f), 10.f);
         REQUIRE(!ph_ray_poly(&ray, &poly, NULL));
     }
 
@@ -135,37 +135,37 @@ TEST_CASE(test_poly_no_hit)
 
 TEST_CASE(test_poly_raycast)
 {
-    ph_poly_t poly = ph_aabb_to_poly(&pm_b2_make(2.5f, 2.5f, 2.5f, 2.5f));
+    ph_poly_t poly = ph_aabb_to_poly(&pb2_make(2.5f, 2.5f, 2.5f, 2.5f));
 
     {   // Left
-        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 3.f), pm_v2_make(1.f, 0.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(0.f, 3.f), pv2_make(1.f, 0.f), 10.f);
         ph_raycast_t raycast;
         REQUIRE(ph_ray_poly(&ray, &poly, &raycast));
-        REQUIRE(pm_v2_equal(raycast.normal, pm_v2_make(-1.f, 0.f)));
+        REQUIRE(pv2_equal(raycast.normal, pv2_make(-1.f, 0.f)));
         REQUIRE(pm_equal(raycast.dist, 2.5f));
     }
 
     {   // Right
-        ph_ray_t ray = ph_make_ray(pm_v2_make(7.f, 3.f), pm_v2_make(-1.f, 0.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(7.f, 3.f), pv2_make(-1.f, 0.f), 10.f);
         ph_raycast_t raycast;
         REQUIRE(ph_ray_poly(&ray, &poly, &raycast));
-        REQUIRE(pm_v2_equal(raycast.normal, pm_v2_make(1.f, 0.f)));
+        REQUIRE(pv2_equal(raycast.normal, pv2_make(1.f, 0.f)));
         REQUIRE(pm_equal(raycast.dist, 2.f));
     }
 
     {   // Top
-        ph_ray_t ray = ph_make_ray(pm_v2_make(3.f, 0.f), pm_v2_make(0.f, 1.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(3.f, 0.f), pv2_make(0.f, 1.f), 10.f);
         ph_raycast_t raycast;
         REQUIRE(ph_ray_poly(&ray, &poly, &raycast));
-        REQUIRE(pm_v2_equal(raycast.normal, pm_v2_make(0.f, -1.f)));
+        REQUIRE(pv2_equal(raycast.normal, pv2_make(0.f, -1.f)));
         REQUIRE(pm_equal(raycast.dist, 2.5f));
     }
 
     {   // Bottom
-        ph_ray_t ray = ph_make_ray(pm_v2_make(3.f, 7.f), pm_v2_make(0.f, -1.f), 10.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(3.f, 7.f), pv2_make(0.f, -1.f), 10.f);
         ph_raycast_t raycast;
         REQUIRE(ph_ray_poly(&ray, &poly, &raycast));
-        REQUIRE(pm_v2_equal(raycast.normal, pm_v2_make(0.f, 1.f)));
+        REQUIRE(pv2_equal(raycast.normal, pv2_make(0.f, 1.f)));
         REQUIRE(pm_equal(raycast.dist, 2.f));
     }
 
@@ -174,15 +174,15 @@ TEST_CASE(test_poly_raycast)
 
 TEST_CASE(test_circle_hit)
 {
-    ph_circle_t circle = ph_make_circle(pm_v2_make(5.f, 5.f), 2.f);
+    ph_circle_t circle = ph_make_circle(pv2_make(5.f, 5.f), 2.f);
 
     { // Case 1
-        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 5.f), pm_v2_make(1.f, 0.f), 5.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(0.f, 5.f), pv2_make(1.f, 0.f), 5.f);
         REQUIRE(ph_ray_circle(&ray, &circle, NULL));
     }
 
     { // Case 2
-        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 5.f), pm_v2_make(5.f, 1.f), 5.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(0.f, 5.f), pv2_make(5.f, 1.f), 5.f);
         REQUIRE(ph_ray_circle(&ray, &circle, NULL));
     }
 
@@ -191,15 +191,15 @@ TEST_CASE(test_circle_hit)
 
 TEST_CASE(test_circle_no_hit)
 {
-    ph_circle_t circle = ph_make_circle(pm_v2_make(5.f, 5.f), 2.f);
+    ph_circle_t circle = ph_make_circle(pv2_make(5.f, 5.f), 2.f);
 
     { // Case 1
-        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 5.f), pm_v2_make(-1.f, 0.f), 5.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(0.f, 5.f), pv2_make(-1.f, 0.f), 5.f);
         REQUIRE(!ph_ray_circle(&ray, &circle, NULL));
     }
 
     { // Case 2
-        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 5.f), pm_v2_make(1.f, 3.f), 5.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(0.f, 5.f), pv2_make(1.f, 3.f), 5.f);
         REQUIRE(!ph_ray_circle(&ray, &circle, NULL));
     }
 
@@ -208,13 +208,13 @@ TEST_CASE(test_circle_no_hit)
 
 TEST_CASE(test_circle_raycast)
 {
-    ph_circle_t circle = ph_make_circle(pm_v2_make(5.f, 5.f), 2.f);
+    ph_circle_t circle = ph_make_circle(pv2_make(5.f, 5.f), 2.f);
 
     { // Case 1
         ph_raycast_t raycast;
-        ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 5.f), pm_v2_make(1.f, 0.f), 5.f);
+        ph_ray_t ray = ph_make_ray(pv2_make(0.f, 5.f), pv2_make(1.f, 0.f), 5.f);
         REQUIRE(ph_ray_circle(&ray, &circle, &raycast));
-        REQUIRE(pm_v2_equal(raycast.normal, pm_v2_make(-1.f, 0.f)));
+        REQUIRE(pv2_equal(raycast.normal, pv2_make(-1.f, 0.f)));
         REQUIRE(pm_equal(raycast.dist, 3.f));
     }
 
@@ -223,10 +223,10 @@ TEST_CASE(test_circle_raycast)
 
 TEST_CASE(test_ray_at)
 {
-    ph_ray_t ray = ph_make_ray(pm_v2_make(0.f, 0.f), pm_v2_make(1.f, 1.f), 0.f);
-    pm_v2 point = ph_ray_at(&ray, pm_sqrt(200.f));
+    ph_ray_t ray = ph_make_ray(pv2_make(0.f, 0.f), pv2_make(1.f, 1.f), 0.f);
+    pv2 point = ph_ray_at(&ray, pm_sqrt(200.f));
 
-    REQUIRE(pm_v2_equal(point, pm_v2_make(10.f, 10.f)));
+    REQUIRE(pv2_equal(point, pv2_make(10.f, 10.f)));
 
     return true;
 }
