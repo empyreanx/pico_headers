@@ -67,9 +67,9 @@ typedef struct node_s
     struct node_s* parent;
     struct node_s* children[MAX_CHILDREN];
     int child_count;
-    pm_t2 local;
-    pm_t2 world;
-    pm_t2 last;
+    pt2 local;
+    pt2 world;
+    pt2 last;
     sprite_t* sprite;
 } node_t;
 
@@ -109,9 +109,9 @@ node_t* node_new(sprite_t* sprite)
     memset(node, 0, sizeof(node_t));
     node->sprite = sprite;
     node->parent = NULL;
-    node->local = pm_t2_identity();
-    node->world = pm_t2_identity();
-    node->last = pm_t2_identity();
+    node->local = pt2_identity();
+    node->world = pt2_identity();
+    node->last = pt2_identity();
     return node;
 }
 
@@ -140,7 +140,7 @@ void node_update_transform(node_t* node)
     if (node->parent)
     {
         node_update_transform(node->parent);
-        node->world = pm_t2_mult(&node->parent->world, &node->local);
+        node->world = pt2_mult(&node->parent->world, &node->local);
     }
     else
     {
@@ -148,7 +148,7 @@ void node_update_transform(node_t* node)
     }
 }
 
-pm_t2 node_get_world(node_t* node)
+pt2 node_get_world(node_t* node)
 {
     node_update_transform(node);
     return node->world;
@@ -178,12 +178,12 @@ void node_render(node_t* node, double alpha)
         sprite_t* sprite = node->sprite;
 
         // Get transforms
-        pm_t2 last = node->last;
-        pm_t2 world = node_get_world(node);
+        pt2 last = node->last;
+        pt2 world = node_get_world(node);
 
         // Linearly interpolate between the last and current world transforms
         // by the amount alpha in [0,1]
-        pm_t2 render = pm_t2_lerp(&last, &world, alpha);
+        pt2 render = pt2_lerp(&last, &world, alpha);
 
         // Model-view
         pg_set_transform(ctx, (pg_mat4_t)
@@ -307,11 +307,11 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
     sg->star_sprite = sprite_new(w / 3, h / 3, star_tex);
     node_t* star_node = node_new(sg->star_sprite);
 
-    pm_v2 screen_center = pm_v2_make(scene_w / 2, scene_h / 2);
+    pv2 screen_center = pv2_make(scene_w / 2, scene_h / 2);
 
-    pm_v2 star_center = pm_v2_make(w / 6, h / 6);
-    pm_t2_translate(&star_node->local, pm_v2_scale(star_center, -1.0f));
-    pm_t2_translate(&star_node->local, screen_center);
+    pv2 star_center = pv2_make(w / 6, h / 6);
+    pt2_translate(&star_node->local, pv2_scale(star_center, -1.0f));
+    pt2_translate(&star_node->local, screen_center);
 
     node_add_child(sg->root_node, star_node);
 
@@ -320,7 +320,7 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
     node_t* pivot_node = node_new(NULL);
     sg->pivot_node = pivot_node;
 
-    pm_t2_translate(&pivot_node->local, screen_center);
+    pt2_translate(&pivot_node->local, screen_center);
     node_add_child(sg->root_node, pivot_node);
 
     //////////// Ship Node ////////////
@@ -333,8 +333,8 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
     sg->ship_sprite = sprite_new(w, h, ship_tex);
     node_t* ship_node = node_new(sg->ship_sprite);
 
-    pm_t2_translate(&ship_node->local, pm_v2_make(-w / 2, -h / 2));
-    pm_t2_translate(&ship_node->local, pm_v2_make(200, 0));
+    pt2_translate(&ship_node->local, pv2_make(-w / 2, -h / 2));
+    pt2_translate(&ship_node->local, pv2_make(200, 0));
 
     node_add_child(pivot_node, ship_node);
 
@@ -346,8 +346,8 @@ scenegraph_t* sg_build(int scene_w, int scene_h)
     sg->jet_sprite = sprite_new(w, h, jet_tex);
     node_t* jet_node = node_new(sg->jet_sprite);
 
-    pm_t2_translate(&jet_node->local, pm_v2_make(0, 32));
-    pm_t2_translate(&jet_node->local, pm_v2_make(ship_w / 2 - w / 2, 0));
+    pt2_translate(&jet_node->local, pv2_make(0, 32));
+    pt2_translate(&jet_node->local, pv2_make(ship_w / 2 - w / 2, 0));
 
     node_add_child(ship_node, jet_node);
 
@@ -436,11 +436,11 @@ int main(int argc, char *argv[])
             node_update_last(sg->root_node);
 
             // Rotate the pivot
-            pm_v2 scene_center = pm_v2_make(sg->w / 2, sg->h / 2);
+            pv2 scene_center = pv2_make(sg->w / 2, sg->h / 2);
 
-            pm_t2_translate(&sg->pivot_node->local, pm_v2_scale(scene_center, -1.0f));
-            pm_t2_rotate(&sg->pivot_node->local, -(PM_PI / 8.0f) * FIXED_STEP);
-            pm_t2_translate(&sg->pivot_node->local, scene_center);
+            pt2_translate(&sg->pivot_node->local, pv2_scale(scene_center, -1.0f));
+            pt2_rotate(&sg->pivot_node->local, -(PM_PI / 8.0f) * FIXED_STEP);
+            pt2_translate(&sg->pivot_node->local, scene_center);
         }
 
         SDL_Event event;
