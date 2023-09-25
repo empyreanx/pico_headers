@@ -105,13 +105,13 @@ typedef uint32_t ecs_id_t;
 typedef int8_t ecs_ret_t;
 
 /**
- * @brief Determine floating point type
+ * @brief Determine delta-time type
  */
-#ifdef ECS_USE_FLOAT
-    typedef float  ecs_dt_t;
-#else
-    typedef double ecs_dt_t;
+#ifndef ECS_DT_TYPE
+#define ECS_DT_TYPE double
 #endif
+
+typedef ECS_DT_TYPE ecs_dt_t;
 
 /**
  * @brief Creates an ECS instance.
