@@ -19,8 +19,8 @@
     Summary:
     --------
 
-    This library provides functions that act on three 2D types: vectors (pm_v2),
-    transforms (pm_t2), and axis-align bounding boxes (pm_b2). The library also
+    This library provides functions that act on three 2D types: vectors (pv2),
+    transforms (pt2), and axis-align bounding boxes (pb2). The library also
     provides some scalar functions as well as a random number generator.
 
     This library aims to strike a balance between performance and simplicity.
@@ -93,7 +93,7 @@ extern "C" {
 
 #ifdef PICO_MATH_DOUBLE
     /// @brief A double precision floating point number
-    typedef double pm_float;
+    typedef double pfloat;
 
     #define PM_EPSILON 1e-7
 
@@ -120,7 +120,7 @@ extern "C" {
 
 #else
     /// @brief A single precision floating point number
-    typedef float pm_float;
+    typedef float pfloat;
 
     #define PM_EPSILON 1e-5f
 
@@ -151,24 +151,24 @@ extern "C" {
  */
 typedef struct
 {
-    pm_float x, y;
-} pm_v2;
+    pfloat x, y;
+} pv2;
 
 /**
  * @brief A 2D transform
  */
 typedef struct
 {
-    pm_float t00, t10, t01, t11, tx, ty;
-} pm_t2;
+    pfloat t00, t10, t01, t11, tx, ty;
+} pt2;
 
 /**
  * @brief A 2D axis-aligned-bounding-box (AABB)
  */
 typedef struct
 {
-    pm_v2 min, max;
-} pm_b2;
+    pv2 min, max;
+} pb2;
 
 /*==============================================================================
  * Scalar functions and macros
@@ -202,7 +202,7 @@ typedef struct
 /**
  * @brief Returns `true` if the values are within epsilon of one another
  */
-PM_INLINE bool pm_equal(pm_float c1, pm_float c2)
+PM_INLINE bool pm_equal(pfloat c1, pfloat c2)
 {
     return pm_abs(c1 - c2) < PM_EPSILON;
 }
@@ -214,7 +214,7 @@ PM_INLINE bool pm_equal(pm_float c1, pm_float c2)
  * @param alpha A number in [0, 1] that specifies the position between the
  * endpoints
  */
-PM_INLINE pm_float pm_lerp(pm_float a, pm_float b, pm_float alpha)
+PM_INLINE pfloat pm_lerp(pfloat a, pfloat b, pfloat alpha)
 {
     return a + (b - a) * alpha;
 }
@@ -226,12 +226,12 @@ PM_INLINE pm_float pm_lerp(pm_float a, pm_float b, pm_float alpha)
  * @param angle2 The second endpoint
  * @param alpha The normalized distance between angle1 and angle2
  */
-pm_float pm_lerp_angle(pm_float angle1, pm_float angle2, pm_float alpha);
+pfloat pm_lerp_angle(pfloat angle1, pfloat angle2, pfloat alpha);
 
 /**
  * @brief Clamps the angle to be in [0, 2 * PI]
  */
-PM_INLINE pm_float pm_normalize_angle(pm_float angle)
+PM_INLINE pfloat pm_normalize_angle(pfloat angle)
 {
     while (angle >= PM_PI2)
         angle -= PM_PI2;
@@ -267,12 +267,12 @@ PM_INLINE uint32_t pm_next_pow2(uint32_t c)
 /**
  * @brief Constructs a vector
  */
-#define pm_v2_make(x, y) ((const pm_v2){ x, y })
+#define pv2_make(x, y) ((const pv2){ x, y })
 
 /**
  * @brief Returns true if the vectors are equal (within epsilon)
  */
-PM_INLINE bool pm_v2_equal(pm_v2 v1, pm_v2 v2)
+PM_INLINE bool pv2_equal(pv2 v1, pv2 v2)
 {
     return pm_equal(v1.x, v2.x) &&
            pm_equal(v1.y, v2.y);
@@ -283,9 +283,9 @@ PM_INLINE bool pm_v2_equal(pm_v2 v1, pm_v2 v2)
  * @param v1 First vector
  * @param v2 Second vector
  */
-PM_INLINE pm_v2 pm_v2_add(pm_v2 v1, pm_v2 v2)
+PM_INLINE pv2 pv2_add(pv2 v1, pv2 v2)
 {
-    return pm_v2_make(v1.x + v2.x, v1.y + v2.y);
+    return pv2_make(v1.x + v2.x, v1.y + v2.y);
 }
 
 /**
@@ -293,9 +293,9 @@ PM_INLINE pm_v2 pm_v2_add(pm_v2 v1, pm_v2 v2)
  * @param v1 First vector
  * @param v2 Second vector
  */
-PM_INLINE pm_v2 pm_v2_sub(pm_v2 v1, pm_v2 v2)
+PM_INLINE pv2 pv2_sub(pv2 v1, pv2 v2)
 {
-    return pm_v2_make(v1.x - v2.x, v1.y - v2.y);
+    return pv2_make(v1.x - v2.x, v1.y - v2.y);
 }
 
 /**
@@ -303,15 +303,15 @@ PM_INLINE pm_v2 pm_v2_sub(pm_v2 v1, pm_v2 v2)
  * @param v Vector to scale
  * @param c The scale factor
  */
-PM_INLINE pm_v2 pm_v2_scale(pm_v2 v, pm_float c)
+PM_INLINE pv2 pv2_scale(pv2 v, pfloat c)
 {
-    return pm_v2_make(v.x * c, v.y * c);
+    return pv2_make(v.x * c, v.y * c);
 }
 
 /**
  * @brief Dot product
  */
-PM_INLINE pm_float pm_v2_dot(pm_v2 v1, pm_v2 v2)
+PM_INLINE pfloat pv2_dot(pv2 v1, pv2 v2)
 {
     return v1.x * v2.x + v1.y * v2.y;
 }
@@ -319,17 +319,17 @@ PM_INLINE pm_float pm_v2_dot(pm_v2 v1, pm_v2 v2)
 /**
  * @brief Returns the square of the length of the vector
  */
-PM_INLINE pm_float pm_v2_len2(pm_v2 v)
+PM_INLINE pfloat pv2_len2(pv2 v)
 {
-    return pm_v2_dot(v, v);
+    return pv2_dot(v, v);
 }
 
 /**
  * @brief Returns the length of the vector
  */
-PM_INLINE pm_float pm_v2_len(pm_v2 v)
+PM_INLINE pfloat pv2_len(pv2 v)
 {
-    return pm_sqrt(pm_v2_len2(v));
+    return pm_sqrt(pv2_len2(v));
 }
 
 /**
@@ -337,14 +337,14 @@ PM_INLINE pm_float pm_v2_len(pm_v2 v)
  * @param v The vector to normalize
  * @returns The normalized vector
  */
-PM_INLINE pm_v2 pm_v2_normalize(pm_v2 v)
+PM_INLINE pv2 pv2_normalize(pv2 v)
 {
-    pm_float c = pm_v2_len(v);
+    pfloat c = pv2_len(v);
 
     if (c < PM_EPSILON)
-        return pm_v2_make(0.0f, 0.0f);
+        return pv2_make(0.0f, 0.0f);
     else
-        return pm_v2_scale(v, 1.0f / c);
+        return pv2_scale(v, 1.0f / c);
 }
 
 /**
@@ -352,9 +352,9 @@ PM_INLINE pm_v2 pm_v2_normalize(pm_v2 v)
   * @param The vector to negate
   * @returns The negated vecotor
   */
-PM_INLINE pm_v2 pm_v2_reflect(pm_v2 v)
+PM_INLINE pv2 pv2_reflect(pv2 v)
 {
-    return pm_v2_scale(v, -1.0f);
+    return pv2_scale(v, -1.0f);
 }
 
 /**
@@ -362,24 +362,24 @@ PM_INLINE pm_v2 pm_v2_reflect(pm_v2 v)
  * @param v The vector to be made perpendicular
  * @returns The perpendicular vector
  */
-PM_INLINE pm_v2 pm_v2_perp(pm_v2 v)
+PM_INLINE pv2 pv2_perp(pv2 v)
 {
-    return pm_v2_make(-v.y, v.x);
+    return pv2_make(-v.y, v.x);
 }
 
 /**
  * @brief A 2D analog of the 3D cross product
  */
-PM_INLINE pm_float pm_v2_cross(pm_v2 v1, pm_v2 v2)
+PM_INLINE pfloat pv2_cross(pv2 v1, pv2 v2)
 {
-    pm_v2 perp = pm_v2_perp(v1);
-    return pm_v2_dot(perp, v2);
+    pv2 perp = pv2_perp(v1);
+    return pv2_dot(perp, v2);
 }
 
 /**
  * @brief Returns the angle the vector with respect to the current basis
  */
-PM_INLINE pm_float pm_v2_angle(pm_v2 v)
+PM_INLINE pfloat pv2_angle(pv2 v)
 {
     return pm_atan2(v.y, v.x);
 }
@@ -390,19 +390,19 @@ PM_INLINE pm_float pm_v2_angle(pm_v2 v)
  * @param v2 The vector to project onto
  * @returns The projection of v1 onto v2
  */
-PM_INLINE pm_v2 pm_v2_proj(pm_v2 v1, pm_v2 v2)
+PM_INLINE pv2 pv2_proj(pv2 v1, pv2 v2)
 {
-    pm_float d = pm_v2_dot(v1, v2) / pm_v2_dot(v2, v2);
-    return pm_v2_scale(v2, d);
+    pfloat d = pv2_dot(v1, v2) / pv2_dot(v2, v2);
+    return pv2_scale(v2, d);
 }
 
 /**
  * @brief Returns the distance between the two vectors
  */
-PM_INLINE pm_float pm_v2_dist(pm_v2 v1, pm_v2 v2)
+PM_INLINE pfloat pv2_dist(pv2 v1, pv2 v2)
 {
-    pm_v2 v = pm_v2_sub(v1, v2);
-    return pm_v2_len(v);
+    pv2 v = pv2_sub(v1, v2);
+    return pv2_len(v);
 }
 
 /**
@@ -411,9 +411,9 @@ PM_INLINE pm_float pm_v2_dist(pm_v2 v1, pm_v2 v2)
  * @param v2 The second endpoint
  * @param alpha The normalized distance between v1 and v2
  */
-PM_INLINE pm_v2 pm_v2_lerp(pm_v2 v1, pm_v2 v2, pm_float alpha)
+PM_INLINE pv2 pv2_lerp(pv2 v1, pv2 v2, pfloat alpha)
 {
-    pm_v2 out;
+    pv2 out;
     out.x = pm_lerp(v1.x, v2.x, alpha);
     out.y = pm_lerp(v1.y, v2.y, alpha);
     return out;
@@ -422,49 +422,49 @@ PM_INLINE pm_v2 pm_v2_lerp(pm_v2 v1, pm_v2 v2, pm_float alpha)
 /**
  * @brief Returns the zero vector
  */
-PM_INLINE pm_v2 pm_v2_zero(void)
+PM_INLINE pv2 pv2_zero(void)
 {
-    return pm_v2_make(0.0f, 0.0f);
+    return pv2_make(0.0f, 0.0f);
 }
 
 /**
  * @brief Contructs a vector in polar coordinates
  */
-PM_INLINE pm_v2 pm_v2_polar(pm_float angle, pm_float len)
+PM_INLINE pv2 pv2_polar(pfloat angle, pfloat len)
 {
-    return pm_v2_make(len * pm_cos(angle), len * pm_sin(angle));
+    return pv2_make(len * pm_cos(angle), len * pm_sin(angle));
 }
 
 /**
  * @brief Computes the component-wise minimum of two vectors
  */
-PM_INLINE pm_v2 pm_v2_min(pm_v2 v1, pm_v2 v2)
+PM_INLINE pv2 pv2_min(pv2 v1, pv2 v2)
 {
-    return pm_v2_make(pm_min(v1.x, v2.x), pm_min(v1.y, v2.y));
+    return pv2_make(pm_min(v1.x, v2.x), pm_min(v1.y, v2.y));
 }
 
 /**
  * @brief Computes the component-wise maximum of two vectors
  */
-PM_INLINE pm_v2 pm_v2_max(pm_v2 v1, pm_v2 v2)
+PM_INLINE pv2 pv2_max(pv2 v1, pv2 v2)
 {
-    return pm_v2_make(pm_max(v1.x, v2.x), pm_max(v1.y, v2.y));
+    return pv2_make(pm_max(v1.x, v2.x), pm_max(v1.y, v2.y));
 }
 
 /**
  * @brief Computes the component-wise floor of the specified vector
  */
-PM_INLINE pm_v2 pm_v2_floor(pm_v2 v)
+PM_INLINE pv2 pv2_floor(pv2 v)
 {
-    return pm_v2_make(pm_floor(v.x), pm_floor(v.y));
+    return pv2_make(pm_floor(v.x), pm_floor(v.y));
 }
 
 /**
  * @brief Computes the component-wise ceiling of the specified vector
  */
-PM_INLINE pm_v2 pm_v2_ceil(pm_v2 v)
+PM_INLINE pv2 pv2_ceil(pv2 v)
 {
-    return pm_v2_make(pm_ceil(v.x), pm_ceil(v.y));
+    return pv2_make(pm_ceil(v.x), pm_ceil(v.y));
 }
 
 /*==============================================================================
@@ -474,29 +474,29 @@ PM_INLINE pm_v2 pm_v2_ceil(pm_v2 v)
 /**
  * @brief Constructs a 2D transform
  */
-#define pm_t2_make(t00, t01, tx, t10, t11, ty) ((const pm_t2){ t00, t10, t01, t11, tx, ty })
+#define pt2_make(t00, t01, tx, t10, t11, ty) ((const pt2){ t00, t10, t01, t11, tx, ty })
 
 /**
  * @brief Return the identity transform
  */
-PM_INLINE pm_t2 pm_t2_identity(void)
+PM_INLINE pt2 pt2_identity(void)
 {
-    return pm_t2_make(1.0f, 0.0f, 0.0f,
-                      0.0f, 1.0f, 0.0f);
+    return pt2_make(1.0f, 0.0f, 0.0f,
+                    0.0f, 1.0f, 0.0f);
 }
 
 /**
  * @brief Returns true if the transforms are equal (within epsilon)
  */
-bool pm_t2_equal(const pm_t2* t1, const pm_t2* t2);
+bool pt2_equal(const pt2* t1, const pt2* t2);
 
 /**
  * @brief Gets the translation components of the transform
  * @param t Pointer to the transform
  */
-PM_INLINE pm_v2 pm_t2_get_pos(const pm_t2* t)
+PM_INLINE pv2 pt2_get_pos(const pt2* t)
 {
-    return pm_v2_make(t->tx, t->ty);
+    return pv2_make(t->tx, t->ty);
 }
 
 /**
@@ -504,7 +504,7 @@ PM_INLINE pm_v2 pm_t2_get_pos(const pm_t2* t)
  * @param t Pointer to the transform
  * @param pos The position vector
  */
-PM_INLINE void pm_t2_set_pos(pm_t2* t, pm_v2 pos)
+PM_INLINE void pt2_set_pos(pt2* t, pv2 pos)
 {
     t->tx = pos.x;
     t->ty = pos.y;
@@ -513,7 +513,7 @@ PM_INLINE void pm_t2_set_pos(pm_t2* t, pm_v2 pos)
 /**
  * @brief Gets the angle of rotation of the transform
  */
-PM_INLINE pm_float pm_t2_get_angle(const pm_t2* t)
+PM_INLINE pfloat pt2_get_angle(const pt2* t)
 {
     return pm_normalize_angle(pm_atan2(t->t10, t->t00));
 }
@@ -528,7 +528,7 @@ PM_INLINE pm_float pm_t2_get_angle(const pm_t2* t)
  * @param t The transform
  * @param scale The vector containing scale factors in the x/y directions
  */
-void pm_t2_set_scale(pm_t2* t, pm_v2 scale);
+void pt2_set_scale(pt2* t, pv2 scale);
 
 /**
  * @brief Gets the scale of the transform
@@ -539,21 +539,21 @@ void pm_t2_set_scale(pm_t2* t, pm_v2 scale);
  *
  * @param t The transform
  */
-pm_v2 pm_t2_get_scale(const pm_t2* t);
+pv2 pt2_get_scale(const pt2* t);
 
 /**
  * @brief Sets the angle of the transform
  */
-void pm_t2_set_angle(pm_t2* t, pm_float angle);
+void pt2_set_angle(pt2* t, pfloat angle);
 
 /**
  * @brief Transforms a vector
  * @param t The transform
  * @param v The vector to be transformed
  */
-PM_INLINE pm_v2 pm_t2_map(const pm_t2* t, pm_v2 v)
+PM_INLINE pv2 pt2_map(const pt2* t, pv2 v)
 {
-    pm_v2 out;
+    pv2 out;
     out.x = t->t00 * v.x + t->t01 * v.y + t->tx;
     out.y = t->t10 * v.x + t->t11 * v.y + t->ty;
     return out;
@@ -562,7 +562,7 @@ PM_INLINE pm_v2 pm_t2_map(const pm_t2* t, pm_v2 v)
 /**
  * @brief Returns the determinant of the transform
  */
-PM_INLINE pm_float pm_t2_det(const pm_t2* t)
+PM_INLINE pfloat pt2_det(const pt2* t)
 {
     return t->t00 * t->t11 - t->t01 * t->t10;
 }
@@ -571,48 +571,48 @@ PM_INLINE pm_float pm_t2_det(const pm_t2* t)
  * @brief Calculates the inverse of the transform
  * @param t The transform to invert
  */
-pm_t2 pm_t2_inv(const pm_t2* t);
+pt2 pt2_inv(const pt2* t);
 
 /**
  * @brief Composes two transformations
  */
-pm_t2 pm_t2_mult(const pm_t2* t1, const pm_t2* t2);
+pt2 pt2_mult(const pt2* t1, const pt2* t2);
 
 /**
  * @brief Linearly interpolates two transforms
  */
-pm_t2 pm_t2_lerp(const pm_t2* t1, const pm_t2* t2, pm_float alpha);
+pt2 pt2_lerp(const pt2* t1, const pt2* t2, pfloat alpha);
 
 /**
  * @brief Constructs a scaling transform
  * @param scale The scaling components
  */
-PM_INLINE pm_t2 pm_t2_scaling(pm_v2 scale)
+PM_INLINE pt2 pt2_scaling(pv2 scale)
 {
-     return pm_t2_make(scale.x, 0.0f,    0.0f,
-                       0.0f,    scale.y, 0.0f);
+     return pt2_make(scale.x, 0.0f,    0.0f,
+                     0.0f,    scale.y, 0.0f);
 }
 
 /**
  * @brief Constructs a rotation transform
  * @param angle The angle of rotation
  */
-PM_INLINE pm_t2 pm_t2_rotation(pm_float angle)
+PM_INLINE pt2 pt2_rotation(pfloat angle)
 {
-    pm_float c = pm_cos(angle);
-    pm_float s = pm_sin(angle);
+    pfloat c = pm_cos(angle);
+    pfloat s = pm_sin(angle);
 
-    return pm_t2_make(c, -s, 0.0f,
-                      s,  c, 0.0f);
+    return pt2_make(c, -s, 0.0f,
+                    s,  c, 0.0f);
 }
 
 /**
  * @brief Constructs a translation transform
  * @param pos The translation coordinates
  */
-PM_INLINE pm_t2 pm_t2_translation(pm_v2 pos)
+PM_INLINE pt2 pt2_translation(pv2 pos)
 {
-    return pm_t2_make(1.0f, 0.0f, pos.x,
+    return pt2_make(1.0f, 0.0f, pos.x,
                       0.0f, 1.0f, pos.y);
 }
 
@@ -621,10 +621,10 @@ PM_INLINE pm_t2 pm_t2_translation(pm_v2 pos)
  * @param t The transform to scale
  * @param scale The scaling parameters
  */
-PM_INLINE void pm_t2_scale(pm_t2* t, pm_v2 scale)
+PM_INLINE void pt2_scale(pt2* t, pv2 scale)
 {
-    pm_t2 scaling = pm_t2_scaling(scale);
-    *t = pm_t2_mult(&scaling, t);
+    pt2 scaling = pt2_scaling(scale);
+    *t = pt2_mult(&scaling, t);
 }
 
 /**
@@ -632,10 +632,10 @@ PM_INLINE void pm_t2_scale(pm_t2* t, pm_v2 scale)
  * @param t The transform to rotate
  * @param angle The angle to rotate by
  */
-PM_INLINE void pm_t2_rotate(pm_t2* t, pm_float angle)
+PM_INLINE void pt2_rotate(pt2* t, pfloat angle)
 {
-    pm_t2 rotation = pm_t2_rotation(angle);
-    *t = pm_t2_mult(&rotation, t);
+    pt2 rotation = pt2_rotation(angle);
+    *t = pt2_mult(&rotation, t);
 }
 
 /**
@@ -643,35 +643,35 @@ PM_INLINE void pm_t2_rotate(pm_t2* t, pm_float angle)
  * @param t The transform to translate
  * @param pos The translation components
  */
-PM_INLINE void pm_t2_translate(pm_t2* t, pm_v2 pos)
+PM_INLINE void pt2_translate(pt2* t, pv2 pos)
 {
-    pm_t2 translation = pm_t2_translation(pos);
-    *t = pm_t2_mult(&translation, t);
+    pt2 translation = pt2_translation(pos);
+    *t = pt2_mult(&translation, t);
 }
 
 /*==============================================================================
  * 2D Box (AABB)
  *============================================================================*/
 
-#define pm_b2_make_minmax(min, max) ((const pm_b2){ min, max })
+#define pb2_make_minmax(min, max) ((const pb2){ min, max })
 
 /**
  * @brief Constructs a 2D box (rectangle)
  */
-#define pm_b2_make(x, y, w, h) ((const pm_b2){ { x, y }, { x + w, y + h } })
+#define pb2_make(x, y, w, h) ((const pb2){ { x, y }, { x + w, y + h } })
 
 /**
  * @brief Returns an AABB that has zero size and coordinates
  */
-PM_INLINE pm_b2 pm_b2_zero(void)
+PM_INLINE pb2 pb2_zero(void)
 {
-    return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
+    return pb2_make(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /**
  * brief Returns the position of an AABB
  */
-PM_INLINE pm_v2 pm_b2_pos(const pm_b2* b)
+PM_INLINE pv2 pb2_pos(const pb2* b)
 {
     return b->min;
 }
@@ -679,30 +679,30 @@ PM_INLINE pm_v2 pm_b2_pos(const pm_b2* b)
 /**
  * brief Returns the dimensions of an AABB
  */
-PM_INLINE pm_v2 pm_b2_size(const pm_b2* b)
+PM_INLINE pv2 pb2_size(const pb2* b)
 {
-    return pm_v2_sub(b->max, b->min);
+    return pv2_sub(b->max, b->min);
 }
 
 /**
  * @brief Returns `true` if the bounding boxes are equal (within epsilon)
  */
-bool pm_b2_equal(const pm_b2* b1, const pm_b2* b2);
+bool pb2_equal(const pb2* b1, const pb2* b2);
 
 /**
  * @brief Computes the union of `b1` and `b2
  */
-pm_b2 pm_b2_combine(const pm_b2* b1, const pm_b2* b2);
+pb2 pb2_combine(const pb2* b1, const pb2* b2);
 
 /**
  * @brief Computes the intersection of `b1` and `b2`
  */
-pm_b2 pm_b2_overlap(const pm_b2* b1, const pm_b2* b2);
+pb2 pb2_overlap(const pb2* b1, const pb2* b2);
 
 /**
  * @brief Return `true` if the two bounding boxes intersect
  */
-PM_INLINE bool pm_b2_overlaps(const pm_b2* b1, const pm_b2* b2)
+PM_INLINE bool pb2_overlaps(const pb2* b1, const pb2* b2)
 {
     return b1->max.x >= b2->min.x &&
            b1->max.y >= b2->min.y &&
@@ -713,7 +713,7 @@ PM_INLINE bool pm_b2_overlaps(const pm_b2* b1, const pm_b2* b2)
 /**
  * @brief Returns `true` if the first box is contained within the second.
  */
-PM_INLINE bool pm_b2_contains(const pm_b2* b1, const pm_b2* b2)
+PM_INLINE bool pb2_contains(const pb2* b1, const pb2* b2)
 {
     return b2->min.x >= b1->min.x &&
            b2->min.y >= b1->min.y &&
@@ -724,10 +724,10 @@ PM_INLINE bool pm_b2_contains(const pm_b2* b1, const pm_b2* b2)
 /**
  * @brief Returns `true` if the box contains the point `v`
  */
-PM_INLINE bool pm_b2_contains_point(const pm_b2* b, pm_v2 v)
+PM_INLINE bool pb2_contains_point(const pb2* b, pv2 v)
 {
-    pm_float x = v.x;
-    pm_float y = v.y;
+    pfloat x = v.x;
+    pfloat y = v.y;
 
     return x > b->min.x &&
            y > b->min.y &&
@@ -738,7 +738,7 @@ PM_INLINE bool pm_b2_contains_point(const pm_b2* b, pm_v2 v)
 /**
  * @brief Returns the area of the box
  */
-PM_INLINE pm_float pm_b2_area(const pm_b2* b)
+PM_INLINE pfloat pb2_area(const pb2* b)
 {
     return (b->max.x - b->min.x) * (b->max.y - b->min.y);
 }
@@ -746,10 +746,10 @@ PM_INLINE pm_float pm_b2_area(const pm_b2* b)
 /**
  * @brief Computes the center of the box
  */
-PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
+PM_INLINE pv2 pb2_center(const pb2* b)
 {
-    pm_v2 offset = pm_v2_scale(pm_v2_sub(b->max, b->min), 1.0f / 2.0f);
-    return pm_v2_add(offset, b->min);
+    pv2 offset = pv2_scale(pv2_sub(b->max, b->min), 1.0f / 2.0f);
+    return pv2_add(offset, b->min);
 }
 
 /**
@@ -757,13 +757,13 @@ PM_INLINE pm_v2 pm_b2_center(const pm_b2* b)
  * @param verts The vertices
  * @param count The number of vertices
  */
-pm_b2 pm_b2_enclosing(const pm_v2 verts[], int count);
+pb2 pb2_enclosing(const pv2 verts[], int count);
 
 /**
  * @brief Computes the minimum AABB obtained by transforming the vertices of
  * the specified AABB
  */
-pm_b2 pm_b2_transform(const pm_t2* t, const pm_b2* b);
+pb2 pb2_transform(const pt2* t, const pb2* b);
 
 /**
  * @brief The pseudo random number generator (RNG) state
@@ -789,7 +789,7 @@ uint32_t pm_random(pm_rng_t* rng);
 /**
  * @brief Generates a psuedo random number in [0, 1]
  */
-pm_float pm_random_float(pm_rng_t* rng);
+pfloat pm_random_float(pm_rng_t* rng);
 
 #ifdef __cplusplus
 }
@@ -799,39 +799,39 @@ pm_float pm_random_float(pm_rng_t* rng);
 
 #ifdef PICO_MATH_IMPLEMENTATION
 
-pm_float pm_lerp_angle(pm_float angle1, pm_float angle2, pm_float alpha)
+pfloat pm_lerp_angle(pfloat angle1, pfloat angle2, pfloat alpha)
 {
-    const pm_v2 v1 = pm_v2_make(pm_cos(angle1), pm_sin(angle1));
-    const pm_v2 v2 = pm_v2_make(pm_cos(angle2), pm_sin(angle2));
+    const pv2 v1 = pv2_make(pm_cos(angle1), pm_sin(angle1));
+    const pv2 v2 = pv2_make(pm_cos(angle2), pm_sin(angle2));
 
     // Calculuate cosine of angle between the two vectors
-    pm_float dot = pm_clamp(pm_v2_dot(v1, v2), -1.0f, 1.0f);
+    pfloat dot = pm_clamp(pv2_dot(v1, v2), -1.0f, 1.0f);
 
     // LERP if the cosine is too close to its limits
     if (pm_equal(dot, 1.0f) || pm_equal(dot, -1.0f))
     {
-        pm_v2 tmp = pm_v2_lerp(v1, v2, alpha);
+        pv2 tmp = pv2_lerp(v1, v2, alpha);
         return pm_normalize_angle(pm_atan2(tmp.y, tmp.x));
     }
 
     // Calculate angle
-    pm_float angle = pm_acos(dot) * alpha;
+    pfloat angle = pm_acos(dot) * alpha;
 
     // Gram-Schmidt(construct a new vector 'v0' that is orthogonal to 'v1')
-    pm_v2 v0  = pm_v2_sub(v2, pm_v2_scale(v1, dot));
-    v0 = pm_v2_normalize(v0);
+    pv2 v0  = pv2_sub(v2, pv2_scale(v1, dot));
+    v0 = pv2_normalize(v0);
 
     // Calcuate vector in new coordinate system
-    pm_v2 tmp1 = pm_v2_scale(v1, pm_cos(angle));
-    pm_v2 tmp2 = pm_v2_scale(v0, pm_sin(angle));
+    pv2 tmp1 = pv2_scale(v1, pm_cos(angle));
+    pv2 tmp2 = pv2_scale(v0, pm_sin(angle));
 
-    pm_v2 tmp = pm_v2_add(tmp1, tmp2);
+    pv2 tmp = pv2_add(tmp1, tmp2);
 
     // Calculate new angle
     return pm_normalize_angle(pm_atan2(tmp.y, tmp.x));
 }
 
-bool pm_t2_equal(const pm_t2* t1, const pm_t2* t2)
+bool pt2_equal(const pt2* t1, const pt2* t2)
 {
     return pm_equal(t1->t00, t2->t00) &&
            pm_equal(t1->t10, t2->t10) &&
@@ -841,26 +841,26 @@ bool pm_t2_equal(const pm_t2* t1, const pm_t2* t2)
            pm_equal(t1->ty,  t2->ty);
 }
 
-void pm_t2_set_scale(pm_t2* t, pm_v2 scale)
+void pt2_set_scale(pt2* t, pv2 scale)
 {
-    pm_float angle = pm_t2_get_angle(t);
+    pfloat angle = pt2_get_angle(t);
 
-    pm_float c = pm_cos(angle);
-    pm_float s = pm_sin(angle);
+    pfloat c = pm_cos(angle);
+    pfloat s = pm_sin(angle);
 
-    pm_float sx = scale.x;
-    pm_float sy = scale.y;
+    pfloat sx = scale.x;
+    pfloat sy = scale.y;
 
     t->t00 = sx * c; t->t01 = sy * -s;
     t->t10 = sx * s; t->t11 = sy *  c;
 }
 
-pm_v2 pm_t2_get_scale(const pm_t2* t)
+pv2 pt2_get_scale(const pt2* t)
 {
-    pm_float angle = pm_t2_get_angle(t);
-    pm_float cos_sign = pm_sign(pm_cos(angle));
+    pfloat angle = pt2_get_angle(t);
+    pfloat cos_sign = pm_sign(pm_cos(angle));
 
-    pm_v2 out;
+    pv2 out;
 
     if (0.0f == cos_sign) //TODO: pm_equal?
     {
@@ -869,41 +869,41 @@ pm_v2 pm_t2_get_scale(const pm_t2* t)
         return out;
     }
 
-    pm_v2 v1 = pm_v2_make(t->t00, t->t10);
-    pm_v2 v2 = pm_v2_make(t->t01, t->t11);
+    pv2 v1 = pv2_make(t->t00, t->t10);
+    pv2 v2 = pv2_make(t->t01, t->t11);
 
-    out.x = pm_sign(t->t00) * cos_sign * pm_v2_len(v1);
-    out.y = pm_sign(t->t11) * cos_sign * pm_v2_len(v2);
+    out.x = pm_sign(t->t00) * cos_sign * pv2_len(v1);
+    out.y = pm_sign(t->t11) * cos_sign * pv2_len(v2);
 
     return out;
 }
 
-void pm_t2_set_angle(pm_t2* t, pm_float angle)
+void pt2_set_angle(pt2* t, pfloat angle)
 {
-    pm_float c = pm_cos(angle);
-    pm_float s = pm_sin(angle);
+    pfloat c = pm_cos(angle);
+    pfloat s = pm_sin(angle);
 
-    pm_v2 scale = pm_t2_get_scale(t);
+    pv2 scale = pt2_get_scale(t);
 
-    pm_float sx = scale.x;
-    pm_float sy = scale.y;
+    pfloat sx = scale.x;
+    pfloat sy = scale.y;
 
     t->t00 = sx * c; t->t01 = sy * -s;
     t->t10 = sx * s; t->t11 = sy *  c;
 }
 
-pm_t2 pm_t2_inv(const pm_t2* t)
+pt2 pt2_inv(const pt2* t)
 {
-    pm_float det = pm_t2_det(t);
+    pfloat det = pt2_det(t);
 
     if (0.0f == det) // Intentionally not using epsilon because determinants
     {                // can be really small and still be valid
-        return pm_t2_identity();
+        return pt2_identity();
     }
 
-    pm_float inv_det = 1.0f / det;
+    pfloat inv_det = 1.0f / det;
 
-    pm_t2 out;
+    pt2 out;
 
     out.t00 =  t->t11 * inv_det; out.t01 = -t->t01 * inv_det;
     out.t10 = -t->t10 * inv_det; out.t11 =  t->t00 * inv_det;
@@ -914,9 +914,9 @@ pm_t2 pm_t2_inv(const pm_t2* t)
     return out;
 }
 
-pm_t2 pm_t2_mult(const pm_t2* t1, const pm_t2* t2)
+pt2 pt2_mult(const pt2* t1, const pt2* t2)
 {
-    pm_t2 out;
+    pt2 out;
 
     out.t00 = t1->t00 * t2->t00 + t1->t01 * t2->t10;
     out.t10 = t1->t10 * t2->t00 + t1->t11 * t2->t10;
@@ -930,31 +930,31 @@ pm_t2 pm_t2_mult(const pm_t2* t1, const pm_t2* t2)
     return out;
 }
 
-pm_t2 pm_t2_lerp(const pm_t2* t1, const pm_t2* t2, pm_float alpha)
+pt2 pt2_lerp(const pt2* t1, const pt2* t2, pfloat alpha)
 {
-    pm_v2 scale1 = pm_t2_get_scale(t1);
-    pm_v2 scale2 = pm_t2_get_scale(t2);
+    pv2 scale1 = pt2_get_scale(t1);
+    pv2 scale2 = pt2_get_scale(t2);
 
-    pm_float angle1 = pm_t2_get_angle(t1);
-    pm_float angle2 = pm_t2_get_angle(t2);
+    pfloat angle1 = pt2_get_angle(t1);
+    pfloat angle2 = pt2_get_angle(t2);
 
-    pm_v2 pos1 = pm_t2_get_pos(t1);
-    pm_v2 pos2 = pm_t2_get_pos(t2);
+    pv2 pos1 = pt2_get_pos(t1);
+    pv2 pos2 = pt2_get_pos(t2);
 
-    pm_v2 scale = pm_v2_lerp(scale1, scale2, alpha);
-    pm_v2 pos = pm_v2_lerp(pos1, pos2, alpha);
-    pm_float angle = pm_lerp_angle(angle1, angle2, alpha);
+    pv2 scale = pv2_lerp(scale1, scale2, alpha);
+    pv2 pos = pv2_lerp(pos1, pos2, alpha);
+    pfloat angle = pm_lerp_angle(angle1, angle2, alpha);
 
-    pm_float c = pm_cos(angle);
-    pm_float s = pm_sin(angle);
+    pfloat c = pm_cos(angle);
+    pfloat s = pm_sin(angle);
 
-    pm_float sx = scale.x;
-    pm_float sy = scale.y;
+    pfloat sx = scale.x;
+    pfloat sy = scale.y;
 
-    pm_float tx = pos.x;
-    pm_float ty = pos.y;
+    pfloat tx = pos.x;
+    pfloat ty = pos.y;
 
-    pm_t2 out;
+    pt2 out;
 
     out.t00 = sx * c; out.t01 = sy * -s; out.tx = tx;
     out.t10 = sx * s; out.t11 = sy *  c; out.ty = ty;
@@ -962,66 +962,66 @@ pm_t2 pm_t2_lerp(const pm_t2* t1, const pm_t2* t2, pm_float alpha)
     return out;
 }
 
-bool pm_b2_equal(const pm_b2* b1, const pm_b2* b2)
+bool pb2_equal(const pb2* b1, const pb2* b2)
 {
-    return pm_v2_equal(b1->min, b2->min) && pm_v2_equal(b1->max, b2->max);
+    return pv2_equal(b1->min, b2->min) && pv2_equal(b1->max, b2->max);
 }
 
-pm_b2 pm_b2_combine(const pm_b2* b1, const pm_b2* b2)
+pb2 pb2_combine(const pb2* b1, const pb2* b2)
 {
-    pm_v2 min = pm_v2_min(b1->min, b2->min);
-    pm_v2 max = pm_v2_max(b1->max, b2->max);
-    return pm_b2_make_minmax(min, max);
+    pv2 min = pv2_min(b1->min, b2->min);
+    pv2 max = pv2_max(b1->max, b2->max);
+    return pb2_make_minmax(min, max);
 }
 
-pm_b2 pm_b2_overlap(const pm_b2* b1, const pm_b2* b2)
+pb2 pb2_overlap(const pb2* b1, const pb2* b2)
 {
-    if (!pm_b2_overlaps(b1, b2))
-        return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
+    if (!pb2_overlaps(b1, b2))
+        return pb2_make(0.0f, 0.0f, 0.0f, 0.0f);
 
-    pm_v2 min = pm_v2_max(b1->min, b2->min);
-    pm_v2 max = pm_v2_min(b1->max, b2->max);
-    return pm_b2_make_minmax(min, max);
+    pv2 min = pv2_max(b1->min, b2->min);
+    pv2 max = pv2_min(b1->max, b2->max);
+    return pb2_make_minmax(min, max);
 }
 
-pm_b2 pm_b2_enclosing(const pm_v2 verts[], int count)
+pb2 pb2_enclosing(const pv2 verts[], int count)
 {
     if (0 == count)
-        return pm_b2_make(0.0f, 0.0f, 0.0f, 0.0f);
+        return pb2_make(0.0f, 0.0f, 0.0f, 0.0f);
 
-    pm_v2 min = verts[0];
-    pm_v2 max = verts[0];
+    pv2 min = verts[0];
+    pv2 max = verts[0];
 
     for (int i = 1; i < count; i++)
     {
-        min = pm_v2_min(min, verts[i]);
-        max = pm_v2_max(max, verts[i]);
+        min = pv2_min(min, verts[i]);
+        max = pv2_max(max, verts[i]);
     }
 
-    return pm_b2_make_minmax(min, max);
+    return pb2_make_minmax(min, max);
 }
 
-pm_b2 pm_b2_transform(const pm_t2* t, const pm_b2* b)
+pb2 pb2_transform(const pt2* t, const pb2* b)
 {
-    pm_v2 pos  = pm_b2_pos(b);
-    pm_v2 size = pm_b2_size(b);
+    pv2 pos  = pb2_pos(b);
+    pv2 size = pb2_size(b);
 
-    pm_float w = size.x;
-    pm_float h = size.y;
+    pfloat w = size.x;
+    pfloat h = size.y;
 
-    pm_v2 verts[4];
+    pv2 verts[4];
 
     verts[0] = pos;
-    verts[1] = pm_v2_make(pos.x,     pos.y + h);
-    verts[2] = pm_v2_make(pos.x + w, pos.y + h);
-    verts[3] = pm_v2_make(pos.x + w, pos.y);
+    verts[1] = pv2_make(pos.x,     pos.y + h);
+    verts[2] = pv2_make(pos.x + w, pos.y + h);
+    verts[3] = pv2_make(pos.x + w, pos.y);
 
-    verts[0] = pm_t2_map(t, verts[0]);
-    verts[1] = pm_t2_map(t, verts[1]);
-    verts[2] = pm_t2_map(t, verts[2]);
-    verts[3] = pm_t2_map(t, verts[3]);
+    verts[0] = pt2_map(t, verts[0]);
+    verts[1] = pt2_map(t, verts[1]);
+    verts[2] = pt2_map(t, verts[2]);
+    verts[3] = pt2_map(t, verts[3]);
 
-    return pm_b2_enclosing(verts, 4);
+    return pb2_enclosing(verts, 4);
 }
 
 /*
@@ -1067,9 +1067,9 @@ uint32_t pm_random(pm_rng_t* rng)
 	return result;
 }
 
-pm_float pm_random_float(pm_rng_t* rng)
+pfloat pm_random_float(pm_rng_t* rng)
 {
-    return (pm_float)pm_random(rng) / (pm_float)UINT32_MAX;
+    return (pfloat)pm_random(rng) / (pfloat)UINT32_MAX;
 }
 
 #endif // PICO_MATH_IMPLEMENTATION
