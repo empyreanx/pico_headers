@@ -63,7 +63,7 @@ TEST_CASE(test_v2_dot)
 
     pfloat exp = 1 * 3 + 2 * 4;
 
-    REQUIRE(pm_equal(exp, pv2_dot(v1, v2)));
+    REQUIRE(p_equal(exp, pv2_dot(v1, v2)));
 
     return true;
 }
@@ -72,7 +72,7 @@ TEST_CASE(test_v2_len)
 {
     pv2 v = pv2_make(1, 1);
 
-    REQUIRE(pm_equal(sqrtf(2), pv2_len(v)));
+    REQUIRE(p_equal(sqrtf(2), pv2_len(v)));
 
     return true;
 }
@@ -83,7 +83,7 @@ TEST_CASE(test_v2_normalize)
 
     v = pv2_normalize(v);
 
-    REQUIRE(pm_equal(1, pv2_len(v)));
+    REQUIRE(p_equal(1, pv2_len(v)));
 
     return true;
 }
@@ -107,7 +107,7 @@ TEST_CASE(test_v2_perp)
 
     pv2 res = pv2_perp(v1);
 
-    REQUIRE(pm_equal(0, pv2_dot(res, v2)));
+    REQUIRE(p_equal(0, pv2_dot(res, v2)));
 
     return true;
 }
@@ -122,7 +122,7 @@ TEST_CASE(test_v2_cross)
 
         c /= (2 * sqrtf(2));
 
-        REQUIRE(pm_equal(c, pm_sin(PM_PI / 4)));
+        REQUIRE(p_equal(c, p_sin(P_PI / 4)));
     }
 
     { // Should be negative
@@ -130,7 +130,7 @@ TEST_CASE(test_v2_cross)
 
         c /= (2 * sqrtf(2));
 
-        REQUIRE(pm_equal(c, -pm_sin(PM_PI / 4)));
+        REQUIRE(p_equal(c, -p_sin(P_PI / 4)));
     }
 
     return true;
@@ -140,7 +140,7 @@ TEST_CASE(test_v2_angle)
 {
     pv2 v = pv2_make(1, 1);
     pfloat a = pv2_angle(v);
-    REQUIRE(pm_equal(a, PM_PI / 4));
+    REQUIRE(p_equal(a, P_PI / 4));
 
     return true;
 }
@@ -164,11 +164,11 @@ TEST_CASE(test_v2_dist)
     pv2 v2 = pv2_make(1, 1);
     pv2 v3 = pv2_make(2, 2);
 
-    REQUIRE(pm_equal(0, pv2_dist(v1, v1)));
-    REQUIRE(pm_equal(pm_sqrt(2), pv2_dist(v1, v2)));
-    REQUIRE(pm_equal(pm_sqrt(2) * 2, pv2_dist(v1, v3)));
-    REQUIRE(pm_equal(pm_sqrt(2) * 2, pv2_dist(v3, v1)));
-    REQUIRE(pm_equal(pm_sqrt(2), pv2_dist(v2, v3)));
+    REQUIRE(p_equal(0, pv2_dist(v1, v1)));
+    REQUIRE(p_equal(p_sqrt(2), pv2_dist(v1, v2)));
+    REQUIRE(p_equal(p_sqrt(2) * 2, pv2_dist(v1, v3)));
+    REQUIRE(p_equal(p_sqrt(2) * 2, pv2_dist(v3, v1)));
+    REQUIRE(p_equal(p_sqrt(2), pv2_dist(v2, v3)));
 
     return true;
 }
@@ -201,10 +201,10 @@ TEST_CASE(test_v2_lerp)
 
 TEST_CASE(test_v2_polar)
 {
-    pv2 v = pv2_polar(PM_PI / 8, 3);
+    pv2 v = pv2_polar(P_PI / 8, 3);
 
-    REQUIRE(pm_equal(3, pv2_len(v)));
-    REQUIRE(pm_equal(PM_PI / 8, pv2_angle(v)));
+    REQUIRE(p_equal(3, pv2_len(v)));
+    REQUIRE(p_equal(P_PI / 8, pv2_angle(v)));
 
     return true;
 }
