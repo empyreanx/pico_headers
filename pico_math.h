@@ -89,7 +89,9 @@ extern "C" {
     #define P_INLINE
 #endif
 
-// Types
+/*==============================================================================
+ * Types, constants, and function aliases
+ *============================================================================*/
 
 #ifdef PICO_MATH_DOUBLE
     /// @brief A double precision floating point number
@@ -145,6 +147,10 @@ extern "C" {
     #define p_ceil  ceilf
     #define p_log2  log2f
 #endif
+
+/*==============================================================================
+ * Data structures
+ *============================================================================*/
 
 /**
  * @brief A 2D vector
@@ -349,7 +355,7 @@ PM_INLINE pv2 pv2_normalize(pv2 v)
 
 /**
   * @brief Negates a vector (scales it by -1.0)
-  * @param The vector to negate
+  * @param v The vector to negate
   * @returns The negated vecotor
   */
 PM_INLINE pv2 pv2_reflect(pv2 v)
