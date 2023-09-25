@@ -469,7 +469,7 @@ int main(int argc, char *argv[])
             pv2 scene_center = pv2_make(sg->w / 2, sg->h / 2);
 
             pt2_translate(&sg->pivot_node->local, pv2_scale(scene_center, -1.0f));
-            pt2_rotate(&sg->pivot_node->local, -(PM_PI / 8.0f) * FIXED_STEP);
+            pt2_rotate(&sg->pivot_node->local, -(P_PI / 8.0f) * FIXED_STEP);
             pt2_translate(&sg->pivot_node->local, scene_center);
         }
 
