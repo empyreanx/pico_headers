@@ -6,7 +6,7 @@ A collection of cross-platform single header libraries written in C.
 Library | Docs | Description | Version
 ------- | -----| ------------| -------
 **[pico_b64](pico_b64.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__b64_8h.html)**  | Base64 encoding/decoding library             | 0.1
-**[pico_ecs](pico_ecs.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__ecs_8h.html)**  | Pure and simple ECS                          | 2.2
+**[pico_ecs](pico_ecs.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__ecs_8h.html)**  | Pure and simple ECS                          | 2.3
 **[pico_gfx](pico_gfx.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__gfx_8h.html)**  | Graphics library based on sokol_gfx          | 0.1
 **[pico_gl](pico_gl.h)**     | **[docs](https://empyreanx.github.io/docs/ph/pico__gl_8h.html)**   | Graphics library based on OpenGL             | 0.1
 **[pico_hit](pico_hit.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__hit_8h.html)**  | 2D collision detection (SAT) and ray casting | 0.2
