@@ -15,7 +15,7 @@ TEST_CASE(test_aabb_aabb_collide)
 
         REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
 
-        REQUIRE(pm_equal(manifold.overlap, 1));
+        REQUIRE(p_equal(manifold.overlap, 1));
         REQUIRE(pv2_equal(manifold.normal, pv2_make(1, 0)));
         REQUIRE(pv2_equal(manifold.vector, pv2_make(1, 0)));
     }
@@ -29,7 +29,7 @@ TEST_CASE(test_aabb_aabb_collide)
 
         REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
 
-        REQUIRE(pm_equal(manifold.overlap, 1));
+        REQUIRE(p_equal(manifold.overlap, 1));
         REQUIRE(pv2_equal(manifold.normal, pv2_make(-1, 0)));
         REQUIRE(pv2_equal(manifold.vector, pv2_make(-1, 0)));
     }
@@ -61,7 +61,7 @@ TEST_CASE(test_poly_poly)
 
     REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
 
-    REQUIRE(pm_equal(manifold.overlap, 10));
+    REQUIRE(p_equal(manifold.overlap, 10));
     REQUIRE(pv2_equal(manifold.normal, pv2_make(1, 0)));
 
     return true;
@@ -104,7 +104,7 @@ TEST_CASE(test_aabb_circle_collide)
 
         REQUIRE(ph_sat_poly_circle(&p, &c, &manifold));
 
-        REQUIRE(pm_equal(manifold.overlap, 1));
+        REQUIRE(p_equal(manifold.overlap, 1));
         REQUIRE(pv2_equal(manifold.normal, pv2_make(1, 0)));
         REQUIRE(pv2_equal(manifold.vector, pv2_make(1, 0)));
     }
@@ -122,7 +122,7 @@ TEST_CASE(test_aabb_circle_collide)
 
         REQUIRE(ph_sat_poly_circle(&p, &c, &manifold));
 
-        REQUIRE(pm_equal(manifold.overlap, 1.0f));
+        REQUIRE(p_equal(manifold.overlap, 1.0f));
 
         REQUIRE(pv2_equal(manifold.normal, pv2_make(-1,  0)) ||
                   pv2_equal(manifold.normal, pv2_make( 0, -1)));
@@ -155,7 +155,7 @@ TEST_CASE(test_circle_cicle_collide)
 
     REQUIRE(ph_sat_circle_circle(&c1, &c2, &manifold));
 
-    REQUIRE(pm_equal(manifold.overlap, 1));
+    REQUIRE(p_equal(manifold.overlap, 1));
     REQUIRE(pv2_equal(manifold.normal, pv2_make(-1, 0)));
     REQUIRE(pv2_equal(manifold.vector, pv2_make(-1, 0)));
 
@@ -209,11 +209,11 @@ TEST_CASE(test_transform_poly)
     ph_poly_t p = ph_aabb_to_poly(&b);
 
     pt2 t = pt2_identity();
-    pt2_rotate(&t, PM_PI / 4.0f);
+    pt2_rotate(&t, P_PI / 4.0f);
 
     ph_poly_t res = ph_transform_poly(&t, &p);
 
-    const pfloat half_diag = 0.5f * pm_sqrt(2.0f);
+    const pfloat half_diag = 0.5f * p_sqrt(2.0f);
 
     REQUIRE(pv2_equal(res.vertices[0], pv2_make(0.0f, -half_diag)));
     REQUIRE(pv2_equal(res.vertices[1], pv2_make(-half_diag, 0.0f)));
@@ -228,7 +228,7 @@ TEST_CASE(test_transform_circle)
     ph_circle_t c = ph_make_circle(pv2_make(1, 0), 1);
 
     pt2 t = pt2_identity();
-    pt2_rotate(&t, PM_PI / 2.0f);
+    pt2_rotate(&t, P_PI / 2.0f);
     pt2_translate(&t, pv2_make(0, 1));
 
     ph_circle_t res = ph_transform_circle(&t, &c);
