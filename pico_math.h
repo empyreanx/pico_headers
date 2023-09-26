@@ -13,7 +13,7 @@
     substantially. To summarize, 'pm_v2', 'pm_t2', and 'pm_b2' have all been
     replaced by 'pv2', 'pt2', and 'pb2'. These changes affect both type
     defintions as well as function names. With scalar functions 'pm_' has been
-    replaced by 'p_', for example 'pm_equal' is now just 'p_equal'. The purpose
+    replaced by 'pf_', for example 'pm_equal' is now just 'pf_equal'. The purpose
     of these changes is largely to make type and function names more compact.
 
     Features:
@@ -116,19 +116,19 @@ extern "C" {
     #define P_FLOAT_MIN DBL_MIN
     #define P_FLOAT_MAX DBL_MAX
 
-    #define p_sqrt  sqrt
-    #define p_cos   cos
-    #define p_sin   sin
-    #define p_acos  acos
-    #define p_asin  asin
-    #define p_atan2 atan2
-    #define p_abs   fabs
-    #define p_fmod  fmod
-    #define p_exp   exp
-    #define p_pow   pow
-    #define p_floor floor
-    #define p_ceil  ceil
-    #define p_log2  log2
+    #define pf_sqrt  sqrt
+    #define pf_cos   cos
+    #define pf_sin   sin
+    #define pf_acos  acos
+    #define pf_asin  asin
+    #define pf_atan2 atan2
+    #define pf_abs   fabs
+    #define pf_fmod  fmod
+    #define pf_exp   exp
+    #define pf_pow   pow
+    #define pf_floor floor
+    #define pf_ceil  ceil
+    #define pf_log2  log2
 
 #else
     /// @brief A single precision floating point number
@@ -143,19 +143,19 @@ extern "C" {
     #define P_FLOAT_MIN FLT_MIN
     #define P_FLOAT_MAX FLT_MAX
 
-    #define p_sqrt  sqrtf
-    #define p_cos   cosf
-    #define p_sin   sinf
-    #define p_acos  acosf
-    #define p_asin  asinf
-    #define p_atan2 atan2f
-    #define p_abs   fabsf
-    #define p_fmod  fmodf
-    #define p_exp   expf
-    #define p_pow   powf
-    #define p_floor floorf
-    #define p_ceil  ceilf
-    #define p_log2  log2f
+    #define pf_sqrt  sqrtf
+    #define pf_cos   cosf
+    #define pf_sin   sinf
+    #define pf_acos  acosf
+    #define pf_asin  asinf
+    #define pf_atan2 atan2f
+    #define pf_abs   fabsf
+    #define pf_fmod  fmodf
+    #define pf_exp   expf
+    #define pf_pow   powf
+    #define pf_floor floorf
+    #define pf_ceil  ceilf
+    #define pf_log2  log2f
 #endif
 
 /*==============================================================================
@@ -193,17 +193,17 @@ typedef struct
 /**
  * @brief Computes the minimum of the two numbers
  */
-#define p_min(a, b) (a < b ? a : b)
+#define pf_min(a, b) (a < b ? a : b)
 
 /**
  * @brief Computes the maximum of the two number
  */
-#define p_max(a, b) (a > b ? a : b)
+#define pf_max(a, b) (a > b ? a : b)
 
 /**
  * @brief Clamps the value to the given range
  */
-#define p_clamp(val, min, max) ((val < min) ? min : ((val > max) ? max : val))
+#define pf_clamp(val, min, max) ((val < min) ? min : ((val > max) ? max : val))
 
 /**
  * @brief Computes the sign of the number
@@ -213,14 +213,14 @@ typedef struct
  *  0 if `val` is equal to zero
  *  1 if `val` is greater than zero
  */
-#define p_sign(val) ((0 == val) ? 0 : ((val > 0) ? 1 : -1))
+#define pf_sign(val) ((0 == val) ? 0 : ((val > 0) ? 1 : -1))
 
 /**
  * @brief Returns `true` if the values are within epsilon of one another
  */
-PM_INLINE bool p_equal(pfloat c1, pfloat c2)
+PM_INLINE bool pf_equal(pfloat c1, pfloat c2)
 {
-    return p_abs(c1 - c2) < P_EPSILON;
+    return pf_abs(c1 - c2) < P_EPSILON;
 }
 
 /**
@@ -230,7 +230,7 @@ PM_INLINE bool p_equal(pfloat c1, pfloat c2)
  * @param alpha A number in [0, 1] that specifies the position between the
  * endpoints
  */
-PM_INLINE pfloat p_lerp(pfloat a, pfloat b, pfloat alpha)
+PM_INLINE pfloat pf_lerp(pfloat a, pfloat b, pfloat alpha)
 {
     return a + (b - a) * alpha;
 }
@@ -242,12 +242,12 @@ PM_INLINE pfloat p_lerp(pfloat a, pfloat b, pfloat alpha)
  * @param angle2 The second endpoint
  * @param alpha The normalized distance between angle1 and angle2
  */
-pfloat p_lerp_angle(pfloat angle1, pfloat angle2, pfloat alpha);
+pfloat pf_lerp_angle(pfloat angle1, pfloat angle2, pfloat alpha);
 
 /**
  * @brief Clamps the angle to be in [0, 2 * PI]
  */
-PM_INLINE pfloat p_normalize_angle(pfloat angle)
+PM_INLINE pfloat pf_normalize_angle(pfloat angle)
 {
     while (angle >= P_PI2)
         angle -= P_PI2;
@@ -261,7 +261,7 @@ PM_INLINE pfloat p_normalize_angle(pfloat angle)
 /**
  * @brief Returns `true` if the value is a power of two
  */
-PM_INLINE bool p_is_pow2(uint32_t c)
+PM_INLINE bool pf_is_pow2(uint32_t c)
 {
     return (c & (c - 1)) == 0;
 }
@@ -270,9 +270,9 @@ PM_INLINE bool p_is_pow2(uint32_t c)
  * @brief Returns the next power of two even if the argument is not a value of
  * two
  */
-PM_INLINE uint32_t p_next_pow2(uint32_t c)
+PM_INLINE uint32_t pf_next_pow2(uint32_t c)
 {
-    uint32_t n = (uint32_t)p_ceil(p_log2(c + 1));
+    uint32_t n = (uint32_t)pf_ceil(pf_log2(c + 1));
     return (1UL << n);
 }
 
@@ -290,8 +290,8 @@ PM_INLINE uint32_t p_next_pow2(uint32_t c)
  */
 PM_INLINE bool pv2_equal(pv2 v1, pv2 v2)
 {
-    return p_equal(v1.x, v2.x) &&
-           p_equal(v1.y, v2.y);
+    return pf_equal(v1.x, v2.x) &&
+           pf_equal(v1.y, v2.y);
 }
 
 /**
@@ -345,7 +345,7 @@ PM_INLINE pfloat pv2_len2(pv2 v)
  */
 PM_INLINE pfloat pv2_len(pv2 v)
 {
-    return p_sqrt(pv2_len2(v));
+    return pf_sqrt(pv2_len2(v));
 }
 
 /**
@@ -397,7 +397,7 @@ PM_INLINE pfloat pv2_cross(pv2 v1, pv2 v2)
  */
 PM_INLINE pfloat pv2_angle(pv2 v)
 {
-    return p_atan2(v.y, v.x);
+    return pf_atan2(v.y, v.x);
 }
 
 /**
@@ -430,8 +430,8 @@ PM_INLINE pfloat pv2_dist(pv2 v1, pv2 v2)
 PM_INLINE pv2 pv2_lerp(pv2 v1, pv2 v2, pfloat alpha)
 {
     pv2 out;
-    out.x = p_lerp(v1.x, v2.x, alpha);
-    out.y = p_lerp(v1.y, v2.y, alpha);
+    out.x = pf_lerp(v1.x, v2.x, alpha);
+    out.y = pf_lerp(v1.y, v2.y, alpha);
     return out;
 }
 
@@ -448,7 +448,7 @@ PM_INLINE pv2 pv2_zero(void)
  */
 PM_INLINE pv2 pv2_polar(pfloat angle, pfloat len)
 {
-    return pv2_make(len * p_cos(angle), len * p_sin(angle));
+    return pv2_make(len * pf_cos(angle), len * pf_sin(angle));
 }
 
 /**
@@ -456,7 +456,7 @@ PM_INLINE pv2 pv2_polar(pfloat angle, pfloat len)
  */
 PM_INLINE pv2 pv2_min(pv2 v1, pv2 v2)
 {
-    return pv2_make(p_min(v1.x, v2.x), p_min(v1.y, v2.y));
+    return pv2_make(pf_min(v1.x, v2.x), pf_min(v1.y, v2.y));
 }
 
 /**
@@ -464,7 +464,7 @@ PM_INLINE pv2 pv2_min(pv2 v1, pv2 v2)
  */
 PM_INLINE pv2 pv2_max(pv2 v1, pv2 v2)
 {
-    return pv2_make(p_max(v1.x, v2.x), p_max(v1.y, v2.y));
+    return pv2_make(pf_max(v1.x, v2.x), pf_max(v1.y, v2.y));
 }
 
 /**
@@ -472,7 +472,7 @@ PM_INLINE pv2 pv2_max(pv2 v1, pv2 v2)
  */
 PM_INLINE pv2 pv2_floor(pv2 v)
 {
-    return pv2_make(p_floor(v.x), p_floor(v.y));
+    return pv2_make(pf_floor(v.x), pf_floor(v.y));
 }
 
 /**
@@ -480,7 +480,7 @@ PM_INLINE pv2 pv2_floor(pv2 v)
  */
 PM_INLINE pv2 pv2_ceil(pv2 v)
 {
-    return pv2_make(p_ceil(v.x), p_ceil(v.y));
+    return pv2_make(pf_ceil(v.x), pf_ceil(v.y));
 }
 
 /*==============================================================================
@@ -531,7 +531,7 @@ PM_INLINE void pt2_set_pos(pt2* t, pv2 pos)
  */
 PM_INLINE pfloat pt2_get_angle(const pt2* t)
 {
-    return p_normalize_angle(p_atan2(t->t10, t->t00));
+    return pf_normalize_angle(pf_atan2(t->t10, t->t00));
 }
 
 /**
@@ -615,8 +615,8 @@ PM_INLINE pt2 pt2_scaling(pv2 scale)
  */
 PM_INLINE pt2 pt2_rotation(pfloat angle)
 {
-    pfloat c = p_cos(angle);
-    pfloat s = p_sin(angle);
+    pfloat c = pf_cos(angle);
+    pfloat s = pf_sin(angle);
 
     return pt2_make(c, -s, 0.0f,
                     s,  c, 0.0f);
@@ -787,25 +787,25 @@ pb2 pb2_transform(const pt2* t, const pb2* b);
 typedef struct
 {
     uint32_t s[4];
-} p_rng_t;
+} pf_rng_t;
 
 /**
  * @brief Initialize and seed the RNG
  * @param rng A reference to the RNG
  * @param seed The seed (choosing the same seed will yield identical sequences)
  */
-void p_rng_seed(p_rng_t* rng, uint64_t seed);
+void pf_rng_seed(pf_rng_t* rng, uint64_t seed);
 
 /**
  * @brief Generates a pseudo random number in [0, UINT32_MAX]
  * @param rng A reference to the RNG
  */
-uint32_t p_random(p_rng_t* rng);
+uint32_t pf_random(pf_rng_t* rng);
 
 /**
  * @brief Generates a psuedo random number in [0, 1]
  */
-pfloat p_random_float(p_rng_t* rng);
+pfloat pf_random_float(pf_rng_t* rng);
 
 #ifdef __cplusplus
 }
@@ -815,54 +815,54 @@ pfloat p_random_float(p_rng_t* rng);
 
 #ifdef PICO_MATH_IMPLEMENTATION
 
-pfloat p_lerp_angle(pfloat angle1, pfloat angle2, pfloat alpha)
+pfloat pf_lerp_angle(pfloat angle1, pfloat angle2, pfloat alpha)
 {
-    const pv2 v1 = pv2_make(p_cos(angle1), p_sin(angle1));
-    const pv2 v2 = pv2_make(p_cos(angle2), p_sin(angle2));
+    const pv2 v1 = pv2_make(pf_cos(angle1), pf_sin(angle1));
+    const pv2 v2 = pv2_make(pf_cos(angle2), pf_sin(angle2));
 
     // Calculuate cosine of angle between the two vectors
-    pfloat dot = p_clamp(pv2_dot(v1, v2), -1.0f, 1.0f);
+    pfloat dot = pf_clamp(pv2_dot(v1, v2), -1.0f, 1.0f);
 
     // LERP if the cosine is too close to its limits
-    if (p_equal(dot, 1.0f) || p_equal(dot, -1.0f))
+    if (pf_equal(dot, 1.0f) || pf_equal(dot, -1.0f))
     {
         pv2 tmp = pv2_lerp(v1, v2, alpha);
-        return p_normalize_angle(p_atan2(tmp.y, tmp.x));
+        return pf_normalize_angle(pf_atan2(tmp.y, tmp.x));
     }
 
     // Calculate angle
-    pfloat angle = p_acos(dot) * alpha;
+    pfloat angle = pf_acos(dot) * alpha;
 
     // Gram-Schmidt(construct a new vector 'v0' that is orthogonal to 'v1')
     pv2 v0  = pv2_sub(v2, pv2_scale(v1, dot));
     v0 = pv2_normalize(v0);
 
     // Calcuate vector in new coordinate system
-    pv2 tmp1 = pv2_scale(v1, p_cos(angle));
-    pv2 tmp2 = pv2_scale(v0, p_sin(angle));
+    pv2 tmp1 = pv2_scale(v1, pf_cos(angle));
+    pv2 tmp2 = pv2_scale(v0, pf_sin(angle));
 
     pv2 tmp = pv2_add(tmp1, tmp2);
 
     // Calculate new angle
-    return p_normalize_angle(p_atan2(tmp.y, tmp.x));
+    return pf_normalize_angle(pf_atan2(tmp.y, tmp.x));
 }
 
 bool pt2_equal(const pt2* t1, const pt2* t2)
 {
-    return p_equal(t1->t00, t2->t00) &&
-           p_equal(t1->t10, t2->t10) &&
-           p_equal(t1->t01, t2->t01) &&
-           p_equal(t1->t11, t2->t11) &&
-           p_equal(t1->tx,  t2->tx)  &&
-           p_equal(t1->ty,  t2->ty);
+    return pf_equal(t1->t00, t2->t00) &&
+           pf_equal(t1->t10, t2->t10) &&
+           pf_equal(t1->t01, t2->t01) &&
+           pf_equal(t1->t11, t2->t11) &&
+           pf_equal(t1->tx,  t2->tx)  &&
+           pf_equal(t1->ty,  t2->ty);
 }
 
 void pt2_set_scale(pt2* t, pv2 scale)
 {
     pfloat angle = pt2_get_angle(t);
 
-    pfloat c = p_cos(angle);
-    pfloat s = p_sin(angle);
+    pfloat c = pf_cos(angle);
+    pfloat s = pf_sin(angle);
 
     pfloat sx = scale.x;
     pfloat sy = scale.y;
@@ -874,11 +874,11 @@ void pt2_set_scale(pt2* t, pv2 scale)
 pv2 pt2_get_scale(const pt2* t)
 {
     pfloat angle = pt2_get_angle(t);
-    pfloat cos_sign = p_sign(p_cos(angle));
+    pfloat cos_sign = pf_sign(pf_cos(angle));
 
     pv2 out;
 
-    if (0.0f == cos_sign) //TODO: p_equal?
+    if (0.0f == cos_sign) //TODO: pf_equal?
     {
         out.x =  t->t10;
         out.y = -t->t01;
@@ -888,16 +888,16 @@ pv2 pt2_get_scale(const pt2* t)
     pv2 v1 = pv2_make(t->t00, t->t10);
     pv2 v2 = pv2_make(t->t01, t->t11);
 
-    out.x = p_sign(t->t00) * cos_sign * pv2_len(v1);
-    out.y = p_sign(t->t11) * cos_sign * pv2_len(v2);
+    out.x = pf_sign(t->t00) * cos_sign * pv2_len(v1);
+    out.y = pf_sign(t->t11) * cos_sign * pv2_len(v2);
 
     return out;
 }
 
 void pt2_set_angle(pt2* t, pfloat angle)
 {
-    pfloat c = p_cos(angle);
-    pfloat s = p_sin(angle);
+    pfloat c = pf_cos(angle);
+    pfloat s = pf_sin(angle);
 
     pv2 scale = pt2_get_scale(t);
 
@@ -959,10 +959,10 @@ pt2 pt2_lerp(const pt2* t1, const pt2* t2, pfloat alpha)
 
     pv2 scale = pv2_lerp(scale1, scale2, alpha);
     pv2 pos = pv2_lerp(pos1, pos2, alpha);
-    pfloat angle = p_lerp_angle(angle1, angle2, alpha);
+    pfloat angle = pf_lerp_angle(angle1, angle2, alpha);
 
-    pfloat c = p_cos(angle);
-    pfloat s = p_sin(angle);
+    pfloat c = pf_cos(angle);
+    pfloat s = pf_sin(angle);
 
     pfloat sx = scale.x;
     pfloat sy = scale.y;
@@ -1045,7 +1045,7 @@ pb2 pb2_transform(const pt2* t, const pb2* b)
  * https://en.wikipedia.org/wiki/Xorshift
  */
 
-void p_rng_seed(p_rng_t* rng, uint64_t seed)
+void pf_rng_seed(pf_rng_t* rng, uint64_t seed)
 {
     for (int i = 0; i < 2; i++)
     {
@@ -1066,7 +1066,7 @@ static uint32_t rng_rol32(uint32_t x, int k)
 	return (x << k) | (x >> (32 - k));
 }
 
-uint32_t p_random(p_rng_t* rng)
+uint32_t pf_random(pf_rng_t* rng)
 {
 	uint32_t *s = rng->s;
 	uint32_t const result = rng_rol32(s[1] * 5, 7) * 9;
@@ -1083,9 +1083,9 @@ uint32_t p_random(p_rng_t* rng)
 	return result;
 }
 
-pfloat p_random_float(p_rng_t* rng)
+pfloat pf_random_float(pf_rng_t* rng)
 {
-    return (pfloat)p_random(rng) / (pfloat)UINT32_MAX;
+    return (pfloat)pf_random(rng) / (pfloat)UINT32_MAX;
 }
 
 #endif // PICO_MATH_IMPLEMENTATION

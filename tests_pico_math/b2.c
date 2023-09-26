@@ -177,7 +177,7 @@ TEST_CASE(test_b2_transform)
     pt2_rotate(&t, -P_PI / 4.0f);
 
     pb2 res = pb2_transform(&t, &b);
-    pfloat len = p_sin(P_PI / 4.0f);
+    pfloat len = pf_sin(P_PI / 4.0f);
     pb2 exp = pb2_make(-len, -len, 2.0f * len, 2.0f * len);
 
     REQUIRE(pb2_equal(&res, &exp));

@@ -59,10 +59,10 @@ TEST_CASE(test_t2_set_pos)
 TEST_CASE(test_t2_get_angle)
 {
     pt2 t = pt2_rotation(P_PI / 8.0f);
-    REQUIRE(p_equal(pt2_get_angle(&t), P_PI / 8.0f));
+    REQUIRE(pf_equal(pt2_get_angle(&t), P_PI / 8.0f));
 
     t = pt2_rotation(P_PI / 2.0f);
-    REQUIRE(p_equal(pt2_get_angle(&t), P_PI / 2.0f));
+    REQUIRE(pf_equal(pt2_get_angle(&t), P_PI / 2.0f));
 
     return true;
 }
@@ -115,49 +115,49 @@ TEST_CASE(test_t2_set_angle)
     { // Case 0
         pt2_set_angle(&t3, P_PI / 8.0f);
         pfloat angle = pt2_get_angle(&t3);
-        REQUIRE(p_equal(angle, P_PI / 8.0f));
+        REQUIRE(pf_equal(angle, P_PI / 8.0f));
     }
 
     { // Case 1
         pt2_set_angle(&t3, P_PI / 4.0f);
         pfloat angle = pt2_get_angle(&t3);
-        REQUIRE(p_equal(angle, P_PI / 4.0f));
+        REQUIRE(pf_equal(angle, P_PI / 4.0f));
     }
 
     { // Case 2
         pt2_set_angle(&t3, P_PI * 3.0f / 8.0f);
         pfloat angle = pt2_get_angle(&t3);
-        REQUIRE(p_equal(angle, P_PI * 3.0f / 8.0f));
+        REQUIRE(pf_equal(angle, P_PI * 3.0f / 8.0f));
     }
 
     { // Case 3
         pt2_set_angle(&t3, P_PI * 7.0f / 8.0f);
         pfloat angle = pt2_get_angle(&t3);
-        REQUIRE(p_equal(angle, P_PI * 7.0f / 8.0f));
+        REQUIRE(pf_equal(angle, P_PI * 7.0f / 8.0f));
     }
 
     { // Case 4
         pt2_set_angle(&t3, P_PI / 2.0f);
         pfloat angle = pt2_get_angle(&t3);
-        REQUIRE(p_equal(angle, P_PI / 2.0f));
+        REQUIRE(pf_equal(angle, P_PI / 2.0f));
     }
 
     { // Case 5
         pt2_set_angle(&t3, P_PI);
         pfloat angle = pt2_get_angle(&t3);
-        REQUIRE(p_equal(angle, P_PI));
+        REQUIRE(pf_equal(angle, P_PI));
     }
 
     { // Case 6
         pt2_set_angle(&t3, P_PI * 3.0f / 4.0f);
         pfloat angle = pt2_get_angle(&t3);
-        REQUIRE(p_equal(angle, P_PI * 3.0f / 4.0f));
+        REQUIRE(pf_equal(angle, P_PI * 3.0f / 4.0f));
     }
 
     { // Case 9
         pt2_set_angle(&t3, P_PI * 9.0f / 8.0f);
         pfloat angle = pt2_get_angle(&t3);
-        REQUIRE(p_equal(angle, P_PI * 9.0f / 8.0f));
+        REQUIRE(pf_equal(angle, P_PI * 9.0f / 8.0f));
     }
 
     return true;
@@ -171,7 +171,7 @@ TEST_CASE(test_t2_map)
 
     pv2 v = pv2_make(1, 0);
 
-    pv2 exp = pv2_make(p_sqrt(2), p_sqrt(2));
+    pv2 exp = pv2_make(pf_sqrt(2), pf_sqrt(2));
     pv2 res = pt2_map(&t3, v);
 
     REQUIRE(pv2_equal(res, exp));
@@ -186,14 +186,14 @@ TEST_CASE(test_t2_compose)
     pt2 t3 = pt2_mult(&t1, &t2);
 
     pfloat angle = pt2_get_angle(&t3);
-    REQUIRE(p_equal(angle, P_PI / 4.0f));
+    REQUIRE(pf_equal(angle, P_PI / 4.0f));
 
     t2 = pt2_scaling(pv2_make(2, 2));
     t3 = pt2_mult(&t3, &t2);
 
     pv2 scale = pt2_get_scale(&t3);
 
-    REQUIRE(p_equal(angle, P_PI / 4.0f));
+    REQUIRE(pf_equal(angle, P_PI / 4.0f));
 
     pv2 exp = pv2_make(2, 2);
 
@@ -256,7 +256,7 @@ TEST_CASE(test_t2_lerp)
 
     pfloat angle = pt2_get_angle(&t3);
 
-    REQUIRE(p_equal(angle, P_PI * 3.0f / 8.0f));
+    REQUIRE(pf_equal(angle, P_PI * 3.0f / 8.0f));
 
     pv2 exp_scale = pv2_make(1.5, 1.5);
     pv2 exp_pos = pv2_make(1, 1);
