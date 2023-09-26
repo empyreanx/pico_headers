@@ -13,8 +13,8 @@
     substantially. To summarize, 'pm_v2', 'pm_t2', and 'pm_b2' have all been
     replaced by 'pv2', 'pt2', and 'pb2'. These changes affect both type
     defintions as well as function names. With scalar functions 'pm_' has been
-    replaced by 'pf_', for example 'pm_equal' is now just 'pf_equal'. The purpose
-    of these changes is largely to make type and function names more compact.
+    replaced by 'pf_', for example 'pm_equal' is now 'pf_equal'. The purpose of
+    these changes is largely to make type and function names more compact.
 
     Features:
     ---------

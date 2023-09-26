@@ -507,7 +507,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
                 if (manifold)
                 {
                     // Calculate distance because we need it now
-                    pfloat diff = p_sqrt(diff2);
+                    pfloat diff = pf_sqrt(diff2);
 
                     // Calculate overlap
                     pfloat overlap = circle->radius - diff;
@@ -537,7 +537,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
 
                 if (manifold)
                 {
-                    pfloat diff = p_sqrt(diff2);
+                    pfloat diff = pf_sqrt(diff2);
                     pfloat overlap = circle->radius - diff;
                     pv2 normal = pv2_normalize(point);
                     ph_update_manifold(manifold, normal, overlap);
@@ -552,7 +552,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
 
             // Location of center of circle along the edge normal
             pfloat diff = pv2_dot(normal, point);
-            pfloat abs_diff = p_abs(diff);
+            pfloat abs_diff = pf_abs(diff);
 
             // Test if circle does not intersect edge
             if (diff > 0.0f && abs_diff > circle->radius)
@@ -622,7 +622,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
     if (manifold)
     {
          // Calculate distance because we need it now
-        pfloat dist = p_sqrt(dist2);
+        pfloat dist = pf_sqrt(dist2);
 
         // Calculate overlap
         pfloat overlap = total_radius - dist;
@@ -659,7 +659,7 @@ bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast)
 
     pfloat det = ph_m2_det(m);
 
-    if (p_equal(det, 0.0f))
+    if (pf_equal(det, 0.0f))
         return false;
 
     ph_m2 m_inv = ph_m2_inverse(m, det);
@@ -751,7 +751,7 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
 
     if (raycast)
     {
-        pfloat dist = -b - p_sqrt(discr);
+        pfloat dist = -b - pf_sqrt(discr);
 
         if (dist < 0.0f)
             dist = 0.0f;
@@ -820,7 +820,7 @@ static void ph_update_manifold(ph_manifold_t* manifold, pv2 normal, pfloat overl
 {
     SAT_ASSERT(manifold);
 
-    pfloat abs_overlap = p_abs(overlap);
+    pfloat abs_overlap = pf_abs(overlap);
 
     // Only update if the new overlap is smaller than the old one
     if (abs_overlap < manifold->overlap)
