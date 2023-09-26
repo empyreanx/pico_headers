@@ -6,6 +6,16 @@
     Licensing information at end of header
     ----------------------------------------------------------------------------
 
+    Notice:
+    ---------
+    This library has undergone a major revision with release 2.0. Although the
+    functionality is more or less the same, the naming conventions differ
+    substantially. To summarize, 'pm_v2', 'pm_t2', and 'pm_b2' have all been
+    replaced by 'pv2', 'pt2', and 'pb2'. These changes affect both type
+    defintions as well as function names. With scalar functions 'pm_' has been
+    replaced by 'p_', for example 'pm_equal' is now just 'p_equal'. The purpose
+    of these changes is largely to make type and function names more compact.
+
     Features:
     ---------
     - Written in C99
