@@ -14,7 +14,9 @@
     replaced by 'pv2', 'pt2', and 'pb2'. These changes affect both type
     defintions as well as function names. With scalar functions 'pm_' has been
     replaced by 'pf_', for example 'pm_equal' is now 'pf_equal'. The purpose of
-    these changes is largely to make type and function names more compact.
+    these changes is largely to make type and function names more specific and
+    compact. The old (and no longer maintained) version can be found at
+    https://github.com/empyreanx/pico_headers_deprecated
 
     Features:
     ---------
