@@ -174,10 +174,10 @@ TEST_CASE(test_b2_transform)
 
     pt2 t = pt2_identity();
     pt2_translate(&t, pv2_make(-0.5f, -0.5f));
-    pt2_rotate(&t, -P_PI / 4.0f);
+    pt2_rotate(&t, -PM_PI / 4.0f);
 
     pb2 res = pb2_transform(&t, &b);
-    pfloat len = pf_sin(P_PI / 4.0f);
+    pfloat len = pf_sin(PM_PI / 4.0f);
     pb2 exp = pb2_make(-len, -len, 2.0f * len, 2.0f * len);
 
     REQUIRE(pb2_equal(&res, &exp));

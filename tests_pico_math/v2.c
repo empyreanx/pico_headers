@@ -122,7 +122,7 @@ TEST_CASE(test_v2_cross)
 
         c /= (2 * sqrtf(2));
 
-        REQUIRE(pf_equal(c, pf_sin(P_PI / 4)));
+        REQUIRE(pf_equal(c, pf_sin(PM_PI / 4)));
     }
 
     { // Should be negative
@@ -130,7 +130,7 @@ TEST_CASE(test_v2_cross)
 
         c /= (2 * sqrtf(2));
 
-        REQUIRE(pf_equal(c, -pf_sin(P_PI / 4)));
+        REQUIRE(pf_equal(c, -pf_sin(PM_PI / 4)));
     }
 
     return true;
@@ -140,7 +140,7 @@ TEST_CASE(test_v2_angle)
 {
     pv2 v = pv2_make(1, 1);
     pfloat a = pv2_angle(v);
-    REQUIRE(pf_equal(a, P_PI / 4));
+    REQUIRE(pf_equal(a, PM_PI / 4));
 
     return true;
 }
@@ -201,10 +201,10 @@ TEST_CASE(test_v2_lerp)
 
 TEST_CASE(test_v2_polar)
 {
-    pv2 v = pv2_polar(P_PI / 8, 3);
+    pv2 v = pv2_polar(PM_PI / 8, 3);
 
     REQUIRE(pf_equal(3, pv2_len(v)));
-    REQUIRE(pf_equal(P_PI / 8, pv2_angle(v)));
+    REQUIRE(pf_equal(PM_PI / 8, pv2_angle(v)));
 
     return true;
 }

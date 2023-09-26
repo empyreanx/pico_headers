@@ -687,7 +687,7 @@ bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast)
 bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast)
 {
     pv2 min_normal = pv2_zero();
-    pfloat min_dist = P_FLOAT_MAX;
+    pfloat min_dist = PM_FLOAT_MAX;
 
     bool has_hit = false;
 
@@ -811,7 +811,7 @@ static void ph_init_manifold(ph_manifold_t* manifold)
 {
     SAT_ASSERT(manifold);
 
-    manifold->overlap = P_FLOAT_MAX;
+    manifold->overlap = PM_FLOAT_MAX;
     manifold->normal  = pv2_zero();
     manifold->vector  = pv2_zero();
 }

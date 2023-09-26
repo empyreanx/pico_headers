@@ -96,7 +96,7 @@ extern "C" {
 #elif defined(__GNUC__) || defined(__clang__)
     #define PM_INLINE static inline __attribute((always_inline))
 #else
-    #define P_INLINE
+    #define PM_INLINE
 #endif
 
 /*==============================================================================
@@ -107,14 +107,14 @@ extern "C" {
     /// @brief A double precision floating point number
     typedef double pfloat;
 
-    #define P_EPSILON 1e-7
+    #define PM_EPSILON 1e-7
 
-    #define P_PI   3.14159265358979323846264338327950288
-    #define P_PI2 (2.0 * P_PI)
-    #define P_E    2.71828182845904523536028747135266250
+    #define PM_PI   3.14159265358979323846264338327950288
+    #define PM_PI2 (2.0 * PM_PI)
+    #define PM_E    2.71828182845904523536028747135266250
 
-    #define P_FLOAT_MIN DBL_MIN
-    #define P_FLOAT_MAX DBL_MAX
+    #define PM_FLOAT_MIN DBL_MIN
+    #define PM_FLOAT_MAX DBL_MAX
 
     #define pf_sqrt  sqrt
     #define pf_cos   cos
@@ -134,14 +134,14 @@ extern "C" {
     /// @brief A single precision floating point number
     typedef float pfloat;
 
-    #define P_EPSILON 1e-5f
+    #define PM_EPSILON 1e-5f
 
-    #define P_PI   3.14159265359f
-    #define P_PI2 (2.0f * P_PI)
-    #define P_E    2.71828182845f
+    #define PM_PI   3.14159265359f
+    #define PM_PI2 (2.0f * PM_PI)
+    #define PM_E    2.71828182845f
 
-    #define P_FLOAT_MIN FLT_MIN
-    #define P_FLOAT_MAX FLT_MAX
+    #define PM_FLOAT_MIN FLT_MIN
+    #define PM_FLOAT_MAX FLT_MAX
 
     #define pf_sqrt  sqrtf
     #define pf_cos   cosf
@@ -220,7 +220,7 @@ typedef struct
  */
 PM_INLINE bool pf_equal(pfloat c1, pfloat c2)
 {
-    return pf_abs(c1 - c2) < P_EPSILON;
+    return pf_abs(c1 - c2) < PM_EPSILON;
 }
 
 /**
@@ -249,11 +249,11 @@ pfloat pf_lerp_angle(pfloat angle1, pfloat angle2, pfloat alpha);
  */
 PM_INLINE pfloat pf_normalize_angle(pfloat angle)
 {
-    while (angle >= P_PI2)
-        angle -= P_PI2;
+    while (angle >= PM_PI2)
+        angle -= PM_PI2;
 
     while (angle < 0.0f)
-        angle += P_PI2;
+        angle += PM_PI2;
 
     return angle;
 }
@@ -357,7 +357,7 @@ PM_INLINE pv2 pv2_normalize(pv2 v)
 {
     pfloat c = pv2_len(v);
 
-    if (c < P_EPSILON)
+    if (c < PM_EPSILON)
         return pv2_make(0.0f, 0.0f);
     else
         return pv2_scale(v, 1.0f / c);

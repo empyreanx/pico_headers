@@ -33,27 +33,27 @@ TEST_CASE(test_next_pow2)
 
 TEST_CASE(test_lerp_angle)
 {
-    pfloat angle = pf_lerp_angle(0.0f, P_PI / 4.0, 0.5f);
-    REQUIRE(pf_equal(angle, P_PI / 8.0f));
+    pfloat angle = pf_lerp_angle(0.0f, PM_PI / 4.0, 0.5f);
+    REQUIRE(pf_equal(angle, PM_PI / 8.0f));
 
-    angle = pf_lerp_angle(P_PI / 4.0, P_PI * 3.0 / 4.0, 0.5f);
-    REQUIRE(pf_equal(angle, P_PI / 2.0f));
+    angle = pf_lerp_angle(PM_PI / 4.0, PM_PI * 3.0 / 4.0, 0.5f);
+    REQUIRE(pf_equal(angle, PM_PI / 2.0f));
 
-    angle = pf_lerp_angle(P_PI / 4.0, P_PI * 3.0 / 4.0, 0.0f);
-    REQUIRE(pf_equal(angle, P_PI / 4.0f));
+    angle = pf_lerp_angle(PM_PI / 4.0, PM_PI * 3.0 / 4.0, 0.0f);
+    REQUIRE(pf_equal(angle, PM_PI / 4.0f));
 
-    angle = pf_lerp_angle(P_PI / 4.0, P_PI * 3.0 / 4.0, 1.0f);
-    REQUIRE(pf_equal(angle, P_PI * 3.0 / 4.0));
+    angle = pf_lerp_angle(PM_PI / 4.0, PM_PI * 3.0 / 4.0, 1.0f);
+    REQUIRE(pf_equal(angle, PM_PI * 3.0 / 4.0));
 
     //NOTE: This pathological
-    //angle = pf_lerp_angle(P_PI / 4.0f, P_PI * 7.0f / 4.0f, 0.5);
+    //angle = pf_lerp_angle(PM_PI / 4.0f, PM_PI * 7.0f / 4.0f, 0.5);
     //REQUIRE(pf_equal(angle, 0.0f));
 
-    //angle = pf_lerp_angle(P_PI / 4.0f, P_PI * 7.0f / 4.0f, 0.5);
-    //REQUIRE(pf_equal(angle, P_PI));
+    //angle = pf_lerp_angle(PM_PI / 4.0f, PM_PI * 7.0f / 4.0f, 0.5);
+    //REQUIRE(pf_equal(angle, PM_PI));
 
-    angle = pf_lerp_angle(P_PI * 7.0f / 4.0f, P_PI / 4.0f, 0.75);
-    REQUIRE(pf_equal(angle, P_PI / 8.0f));
+    angle = pf_lerp_angle(PM_PI * 7.0f / 4.0f, PM_PI / 4.0f, 0.75);
+    REQUIRE(pf_equal(angle, PM_PI / 8.0f));
 
     return true;
 }

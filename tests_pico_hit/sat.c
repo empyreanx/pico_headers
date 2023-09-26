@@ -209,7 +209,7 @@ TEST_CASE(test_transform_poly)
     ph_poly_t p = ph_aabb_to_poly(&b);
 
     pt2 t = pt2_identity();
-    pt2_rotate(&t, P_PI / 4.0f);
+    pt2_rotate(&t, PM_PI / 4.0f);
 
     ph_poly_t res = ph_transform_poly(&t, &p);
 
@@ -228,7 +228,7 @@ TEST_CASE(test_transform_circle)
     ph_circle_t c = ph_make_circle(pv2_make(1, 0), 1);
 
     pt2 t = pt2_identity();
-    pt2_rotate(&t, P_PI / 2.0f);
+    pt2_rotate(&t, PM_PI / 2.0f);
     pt2_translate(&t, pv2_make(0, 1));
 
     ph_circle_t res = ph_transform_circle(&t, &c);
