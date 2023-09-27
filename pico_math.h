@@ -786,28 +786,28 @@ pb2 pb2_transform(const pt2* t, const pb2* b);
 /**
  * @brief The pseudo random number generator (RNG) state
  */
-typedef struct
+typedef struct prng_t // TODO: hide struct
 {
     uint32_t s[4];
-} pf_rng_t;
+} prng_t;
 
 /**
  * @brief Initialize and seed the RNG
  * @param rng A reference to the RNG
  * @param seed The seed (choosing the same seed will yield identical sequences)
  */
-void pf_rng_seed(pf_rng_t* rng, uint64_t seed);
+void prng_seed(prng_t* rng, uint64_t seed);
 
 /**
  * @brief Generates a pseudo random number in [0, UINT32_MAX]
  * @param rng A reference to the RNG
  */
-uint32_t pf_random(pf_rng_t* rng);
+uint32_t prng_random(prng_t* rng);
 
 /**
  * @brief Generates a psuedo random number in [0, 1]
  */
-pfloat pf_random_float(pf_rng_t* rng);
+pfloat pf_random(prng_t* rng);
 
 #ifdef __cplusplus
 }
@@ -1047,7 +1047,7 @@ pb2 pb2_transform(const pt2* t, const pb2* b)
  * https://en.wikipedia.org/wiki/Xorshift
  */
 
-void pf_rng_seed(pf_rng_t* rng, uint64_t seed)
+void pf_rng_seed(prng_t* rng, uint64_t seed)
 {
     for (int i = 0; i < 2; i++)
     {
@@ -1068,7 +1068,7 @@ static uint32_t rng_rol32(uint32_t x, int k)
 	return (x << k) | (x >> (32 - k));
 }
 
-uint32_t pf_random(pf_rng_t* rng)
+uint32_t prng_random(prng_t* rng)
 {
 	uint32_t *s = rng->s;
 	uint32_t const result = rng_rol32(s[1] * 5, 7) * 9;
@@ -1085,9 +1085,9 @@ uint32_t pf_random(pf_rng_t* rng)
 	return result;
 }
 
-pfloat pf_random_float(pf_rng_t* rng)
+pfloat pf_random(prng_t* rng)
 {
-    return (pfloat)pf_random(rng) / (pfloat)UINT32_MAX;
+    return (pfloat)prng_random(rng) / (pfloat)UINT32_MAX;
 }
 
 #endif // PICO_MATH_IMPLEMENTATION
