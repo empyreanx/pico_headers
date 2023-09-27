@@ -59,9 +59,9 @@
     functions for computing unions and intersections of AABBs as well as
     for computing the minimum enclosing AABB for a set of points.
 
-    The random number generator uses the Mersenne Twister algorithm, which is
-    substantially better than `rand()` in terms of the quality of its output.
-    It is slower than `rand()` but still has pretty decent performance.
+    The random number generator uses the xoshiro128** algorithm, which is
+    substantially better than `rand()` in terms of the quality of its output
+    without sacrificing much performance.
 
     Please see the unit tests for some concrete examples.
 
@@ -74,9 +74,6 @@
     > #include "pico_ml.h"
 
     to a source file (once), then simply include the header normally.
-
-    Todo:
-    -----
 */
 
 #ifndef PICO_MATH_H
