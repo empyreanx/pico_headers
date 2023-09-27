@@ -1047,7 +1047,7 @@ pb2 pb2_transform(const pt2* t, const pb2* b)
  * https://en.wikipedia.org/wiki/Xorshift
  */
 
-void pf_rng_seed(prng_t* rng, uint64_t seed)
+void prng_seed(prng_t* rng, uint64_t seed)
 {
     for (int i = 0; i < 2; i++)
     {
