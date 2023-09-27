@@ -786,7 +786,7 @@ pb2 pb2_transform(const pt2* t, const pb2* b);
 /**
  * @brief The pseudo random number generator (RNG) state
  */
-typedef struct prng_t // TODO: hide struct
+typedef struct prng_t
 {
     uint32_t s[4];
 } prng_t;
