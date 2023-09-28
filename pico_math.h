@@ -13,9 +13,10 @@
     substantially. To summarize, 'pm_v2', 'pm_t2', and 'pm_b2' have all been
     replaced by 'pv2', 'pt2', and 'pb2'. These changes affect both type
     defintions as well as function names. With scalar functions 'pm_' has been
-    replaced by 'pf_', for example 'pm_equal' is now 'pf_equal'. The purpose of
-    these changes is largely to make type and function names more specific and
-    compact. The old (and no longer maintained) version can be found at
+    replaced by 'pf_', for example 'pm_equal' is now 'pf_equal'. The type
+    'pm_float' has been replaced by 'pfloat'. The purpose of these changes is
+    largely to make type and function names more specific and compact. The old
+    (and no longer maintained) version can be found at
     https://github.com/empyreanx/pico_headers_deprecated
 
     Features:
@@ -211,7 +212,7 @@ PM_INLINE pfloat pf_clamp(pfloat val, pfloat min, pfloat max)
  */
 PM_INLINE pfloat pf_sign(pfloat val)
 {
-    return ((0 == val) ? 0 : ((val > 0) ? 1.0f : -1.0f));
+    return ((0 == val) ? 0.0f : ((val > 0.0f) ? 1.0f : -1.0f));
 }
 
 /**
@@ -610,7 +611,7 @@ PM_INLINE pt2 pt2_rotation(pfloat angle)
 PM_INLINE pt2 pt2_translation(pv2 pos)
 {
     return pt2_make(1.0f, 0.0f, pos.x,
-                      0.0f, 1.0f, pos.y);
+                    0.0f, 1.0f, pos.y);
 }
 
 /**
