@@ -667,7 +667,7 @@ PM_INLINE pb2 pb2_zero(void)
 }
 
 /**
- * brief Returns the position of an AABB
+ * @brief Returns the position of an AABB
  */
 PM_INLINE pv2 pb2_get_pos(const pb2* b)
 {
@@ -675,11 +675,33 @@ PM_INLINE pv2 pb2_get_pos(const pb2* b)
 }
 
 /**
- * brief Returns the dimensions of an AABB
+ * @brief Returns the dimensions of an AABB
  */
 PM_INLINE pv2 pb2_get_size(const pb2* b)
 {
     return pv2_sub(b->max, b->min);
+}
+
+/**
+ * @brief Sets the position of an AABB
+ * @param b The AABB
+ * @param pos The new position
+ */
+PM_INLINE void pb2_set_pos(pb2* b, pv2 pos)
+{
+    pv2 size = pb2_get_size(b);
+    *b = pb2_make(pos.x, pos.y, size.x, size.y);
+}
+
+/**
+ * @brief Sets the dimensions of an AABB
+ * @param b The AABB
+ * @param size The new size
+ */
+PM_INLINE void pb2_set_size(pb2* b, pv2 size)
+{
+    pv2 pos = pb2_get_pos(b);
+    *b = pb2_make(pos.x, pos.y, size.x, size.y);
 }
 
 /**
