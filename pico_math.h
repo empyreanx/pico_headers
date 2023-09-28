@@ -669,7 +669,7 @@ PM_INLINE pb2 pb2_zero(void)
 /**
  * brief Returns the position of an AABB
  */
-PM_INLINE pv2 pb2_pos(const pb2* b)
+PM_INLINE pv2 pb2_get_pos(const pb2* b)
 {
     return b->min;
 }
@@ -677,7 +677,7 @@ PM_INLINE pv2 pb2_pos(const pb2* b)
 /**
  * brief Returns the dimensions of an AABB
  */
-PM_INLINE pv2 pb2_size(const pb2* b)
+PM_INLINE pv2 pb2_get_size(const pb2* b)
 {
     return pv2_sub(b->max, b->min);
 }
@@ -1001,8 +1001,8 @@ pb2 pb2_enclosing(const pv2 verts[], int count)
 
 pb2 pb2_transform(const pt2* t, const pb2* b)
 {
-    pv2 pos  = pb2_pos(b);
-    pv2 size = pb2_size(b);
+    pv2 pos  = pb2_get_pos(b);
+    pv2 size = pb2_get_size(b);
 
     pfloat w = size.x;
     pfloat h = size.y;

@@ -1,11 +1,11 @@
 #include "../pico_math.h"
 #include "../pico_unit.h"
 
-TEST_CASE(test_b2_pos)
+TEST_CASE(test_b2_get_pos)
 {
     pb2 b = pb2_make(1.0f, 2.0f, 3.0f, 4.0f);
 
-    pv2 res = pb2_pos(&b);
+    pv2 res = pb2_get_pos(&b);
     pv2 exp = pv2_make(1.0f, 2.0f);
 
     REQUIRE(pv2_equal(res, exp));
@@ -13,11 +13,11 @@ TEST_CASE(test_b2_pos)
     return true;
 }
 
-TEST_CASE(test_b2_size)
+TEST_CASE(test_b2_get_size)
 {
     pb2 b = pb2_make(1.0f, 2.0f, 3.0f, 4.0f);
 
-    pv2 res = pb2_size(&b);
+    pv2 res = pb2_get_size(&b);
     pv2 exp = pv2_make(3.0f, 4.0f);
 
     REQUIRE(pv2_equal(res, exp));
@@ -187,8 +187,8 @@ TEST_CASE(test_b2_transform)
 
 TEST_SUITE(suite_b2)
 {
-    RUN_TEST_CASE(test_b2_pos);
-    RUN_TEST_CASE(test_b2_size);
+    RUN_TEST_CASE(test_b2_get_pos);
+    RUN_TEST_CASE(test_b2_get_size);
     RUN_TEST_CASE(test_b2_equal);
     RUN_TEST_CASE(test_b2_combine);
     RUN_TEST_CASE(test_b2_overlaps);
