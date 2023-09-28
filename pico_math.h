@@ -128,6 +128,8 @@ extern "C" {
     #define pf_floor floor
     #define pf_ceil  ceil
     #define pf_log2  log2
+    #define pf_max   fmax
+    #define pf_min   fmin
 
 #else
     /// @brief A single precision floating point number
@@ -155,6 +157,8 @@ extern "C" {
     #define pf_floor floorf
     #define pf_ceil  ceilf
     #define pf_log2  log2f
+    #define pf_max   fmaxf
+    #define pf_min   fminf
 #endif
 
 /*==============================================================================
@@ -188,22 +192,6 @@ typedef struct
 /*==============================================================================
  * Scalar functions and macros
  *============================================================================*/
-
-/**
- * @brief Computes the minimum of the two numbers
- */
-PM_INLINE pfloat pf_min(pfloat a, pfloat b)
- {
-    return (a < b ? a : b);
- }
-
-/**
- * @brief Computes the maximum of the two number
- */
-PM_INLINE pfloat pf_max(pfloat a, pfloat b)
-{
-    return (a > b ? a : b);
-}
 
 /**
  * @brief Clamps the value to the given range
