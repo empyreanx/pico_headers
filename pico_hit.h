@@ -385,8 +385,8 @@ ph_poly_t ph_aabb_to_poly(const pb2* aabb)
     SAT_ASSERT(aabb);
 
     // Get AABB properties
-    pv2 pos = pb2_pos(aabb);
-    pv2 size = pb2_size(aabb);
+    pv2 pos = pb2_get_pos(aabb);
+    pv2 size = pb2_get_size(aabb);
 
     // Specify AABB vertices using CCW winding
     pv2 vertices[] =
