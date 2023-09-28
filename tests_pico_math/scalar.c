@@ -22,15 +22,6 @@ TEST_CASE(test_clamp)
     return true;
 }
 
-TEST_CASE(test_next_pow2)
-{
-    REQUIRE(16 == pf_next_pow2(9));
-    REQUIRE(16 == pf_next_pow2(8));
-    REQUIRE(16 == pf_next_pow2(15));
-
-    return true;
-}
-
 TEST_CASE(test_lerp_angle)
 {
     pfloat angle = pf_lerp_angle(0.0f, PM_PI / 4.0, 0.5f);
@@ -63,6 +54,5 @@ TEST_SUITE(suite_scalar)
     RUN_TEST_CASE(test_min);
     RUN_TEST_CASE(test_max);
     RUN_TEST_CASE(test_clamp);
-    RUN_TEST_CASE(test_next_pow2);
     RUN_TEST_CASE(test_lerp_angle);
 }

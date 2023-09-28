@@ -61,7 +61,7 @@
 
     The random number generator uses the xoshiro128** algorithm, which is
     substantially better than `rand()` in terms of the quality of its output
-    without sacrificing much performance.
+    without sacrificing too much performance.
 
     Please see the unit tests for some concrete examples.
 
@@ -192,17 +192,26 @@ typedef struct
 /**
  * @brief Computes the minimum of the two numbers
  */
-#define pf_min(a, b) (a < b ? a : b)
+PM_INLINE pfloat pf_min(pfloat a, pfloat b)
+ {
+    return (a < b ? a : b);
+ }
 
 /**
  * @brief Computes the maximum of the two number
  */
-#define pf_max(a, b) (a > b ? a : b)
+PM_INLINE pfloat pf_max(pfloat a, pfloat b)
+{
+    return (a > b ? a : b);
+}
 
 /**
  * @brief Clamps the value to the given range
  */
-#define pf_clamp(val, min, max) ((val < min) ? min : ((val > max) ? max : val))
+PM_INLINE pfloat pf_clamp(pfloat val, pfloat min, pfloat max)
+ {
+    return ((val < min) ? min : ((val > max) ? max : val));
+ }
 
 /**
  * @brief Computes the sign of the number
@@ -212,7 +221,10 @@ typedef struct
  *  0 if `val` is equal to zero
  *  1 if `val` is greater than zero
  */
-#define pf_sign(val) ((0 == val) ? 0 : ((val > 0) ? 1 : -1))
+PM_INLINE pfloat pf_sign(pfloat val)
+{
+    return ((0 == val) ? 0 : ((val > 0) ? 1.0f : -1.0f));
+}
 
 /**
  * @brief Returns `true` if the values are within epsilon of one another
@@ -255,24 +267,6 @@ PM_INLINE pfloat pf_normalize_angle(pfloat angle)
         angle += PM_PI2;
 
     return angle;
-}
-
-/**
- * @brief Returns `true` if the value is a power of two
- */
-PM_INLINE bool pf_is_pow2(uint32_t c)
-{
-    return (c & (c - 1)) == 0;
-}
-
-/**
- * @brief Returns the next power of two even if the argument is not a value of
- * two
- */
-PM_INLINE uint32_t pf_next_pow2(uint32_t c)
-{
-    uint32_t n = (uint32_t)pf_ceil(pf_log2(c + 1));
-    return (1UL << n);
 }
 
 /*==============================================================================
