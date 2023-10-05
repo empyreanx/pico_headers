@@ -22,7 +22,7 @@ TEST_CASE(test_t2_equal)
 TEST_CASE(test_t2_identity)
 {
     pt2 exp = pt2_make(1, 0, 0,
-                             0, 1, 0);
+                       0, 1, 0);
 
     pt2 res = pt2_identity();
     REQUIRE(pt2_equal(&res, &exp));
