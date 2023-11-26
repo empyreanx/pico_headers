@@ -747,10 +747,10 @@ static void
 log_append_timestamp (char* entry_str, const char* time_fmt)
 {
     char time_str[LOG_TIMESTAMP_LEN + 1];
-    char tmp_str[LOG_TIMESTAMP_LEN + 1];
+    char tmp_str[LOG_TIMESTAMP_LEN];
 
-    snprintf(time_str, LOG_TIMESTAMP_LEN, "%s ",
-             log_time_str(time_fmt, tmp_str, LOG_TIMESTAMP_LEN));
+    snprintf(time_str, sizeof(time_str), "%s ",
+             log_time_str(time_fmt, tmp_str, sizeof(tmp_str)));
 
     strncat(entry_str, time_str, LOG_TIMESTAMP_LEN);
 }
