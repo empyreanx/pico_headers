@@ -1092,14 +1092,14 @@ static inline bool ecs_bitset_is_zero(ecs_bitset_t* set)
 static inline void ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on)
 {
     if (on)
-        *set |=  (1 << bit);
+        *set |=  ((uint64_t)1 << bit);
     else
-        *set &= ~(1 << bit);
+        *set &= ~((uint64_t)1 << bit);
 }
 
 static inline bool ecs_bitset_test(ecs_bitset_t* set, int bit)
 {
-    return *set & (1 << bit);
+    return *set & ((uint64_t)1 << bit);
 }
 
 static inline ecs_bitset_t ecs_bitset_and(ecs_bitset_t* set1, ecs_bitset_t* set2)
@@ -1145,15 +1145,15 @@ static inline void ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on)
     int index = bit / ECS_BITSET_WIDTH;
 
     if (on)
-        set->array[index] |=  (1 << bit % ECS_BITSET_WIDTH);
+        set->array[index] |=  ((uint64_t)1 << bit % ECS_BITSET_WIDTH);
     else
-        set->array[index] &= ~(1 << bit % ECS_BITSET_WIDTH);
+        set->array[index] &= ~((uint64_t)1 << bit % ECS_BITSET_WIDTH);
 }
 
 static inline bool ecs_bitset_test(ecs_bitset_t* set, int bit)
 {
     int index = bit / ECS_BITSET_WIDTH;
-    return set->array[index] & (1 << bit % ECS_BITSET_WIDTH);
+    return set->array[index] & ((uint64_t)1 << bit % ECS_BITSET_WIDTH);
 }
 
 static inline ecs_bitset_t ecs_bitset_and(ecs_bitset_t* set1,
