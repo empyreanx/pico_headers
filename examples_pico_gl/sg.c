@@ -29,7 +29,7 @@
 
 #define _POSIX_C_SOURCE 199309L
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #define PICO_TIME_IMPLEMENTATION
 #include "../pico_time.h"

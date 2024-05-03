@@ -12,7 +12,7 @@
      * Drawing the vertices
 */
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -182,5 +182,4 @@ int main(int argc, char *argv[])
 
 #define PICO_GFX_IMPLEMENTATION
 #include "../pico_gfx.h"
-
 

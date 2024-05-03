@@ -17,7 +17,7 @@
      * Froper error handling
 */
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include <assert.h>
 #include <stdio.h>

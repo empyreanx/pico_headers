@@ -1,18 +1,21 @@
+CFLAGS = $(shell pkg-config --cflags sdl2)
+CLIBS  = $(shell pkg-config --libs sdl2)
+
 ifeq ($(OS),Windows_NT)
     CC     = clang # gcc produces too many spurious warnings
-    CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I .
-    CLIBS  = -lmingw32 -lwinmm -lSDL2main -lSDL2 -lm
+    CFLAGS += -g -std=c11 -Wall -Wextra -Wpedantic -I .
+    CLIBS  += -lmingw32 -lwinmm -lSDL2main -lSDL2 -lm
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
         CC     = gcc
-        CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I . -pg
-        CLIBS  = -lSDL2 -ldl -lm -lGL -pg
+        CFLAGS += -g -std=c11 -Wall -Wextra -Wpedantic -I . -pg
+        CLIBS  += -lSDL2 -ldl -lm -lGL -pg
     endif
     ifeq ($(UNAME_S),Darwin)
         CC     = clang
-        CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I .
-        CLIBS  = -lSDL2 -ldl -lm -framework OpenGL
+        CFLAGS += -g -std=c11 -Wall -Wextra -Wpedantic -I .
+        CLIBS  += -lSDL2 -ldl -lm -framework OpenGL
     endif
 endif
 
