@@ -38,6 +38,7 @@ jobs:
       - name: Setup MinGW64 Dependences
         if: runner.os == 'Windows' && matrix.platform.msystem == 'mingw64'
         run: |
+             pacman --noconfirm -S mingw-w64-x86_64-pkg-config
              pacman --noconfirm -S mingw-w64-x86_64-SDL2
       - name: Setup MinGW32 Dependences
         if: runner.os == 'Windows' && matrix.platform.msystem == 'mingw32'
