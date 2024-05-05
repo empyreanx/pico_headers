@@ -53,8 +53,7 @@
     A few macros can be overridden simply by defining them before including this
     source file. Here is a list of them.
 
-    PICO_QT_USE_DOUBLE
-    PICO_QT_USE_UINTPTR
+    PICO_QT_VALUE_TYPE
     PICO_QT_BLOCK_SIZE
     PICO_QT_ASSERT
     PICO_QT_MALLOC
@@ -86,22 +85,15 @@ typedef double qt_float;
 typedef float  qt_float;
 #endif
 
-#if defined(PICO_QT_USE_PTR)
-/**
- * @brief Value data type that can store a pointer
- */
-typedef void* qt_value_t;
-#elif defined(PICO_QT_USE_UINTPTR)
-/**
- * @brief Value data type that can store an integer or pointer
- */
-typedef uintptr_t qt_value_t;
-#else
-/**
- * @brief Value data type that can store an integer
- */
-typedef uint32_t qt_value_t;
+// Node value default type
+#ifndef PICO_QT_VALUE_TYPE
+#define PICO_QT_VALUE_TYPE uint32_t
 #endif
+
+/**
+ * @brief Node value type (default: uint32_t)
+ */
+typedef PICO_QT_VALUE_TYPE qt_value_t;
 
 /**
  * @brief Quadtree data structure
