@@ -422,7 +422,7 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
 
         // Update manifold information with new overlap and normal
         if (manifold)
-            ph_update_manifold(manifold, poly_b->normals[i], overlap);
+            ph_update_manifold(manifold, poly_a->normals[i], overlap);
     }
 
     // Test axises on poly_b
