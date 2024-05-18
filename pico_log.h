@@ -733,10 +733,10 @@ log_display_function (log_appender_t id, bool enabled)
  * Formats the current time as as string.
  */
 static char*
-log_time_str (const char* time_fmt, char* str, int len)
+log_time_str (const char* time_fmt, char* str, size_t len)
 {
     time_t now = time(0);
-    int ret = strftime(str, len, time_fmt, localtime(&now));
+    size_t ret = strftime(str, len, time_fmt, localtime(&now));
 
     LOG_ASSERT(ret > 0);
 
