@@ -898,11 +898,12 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args)
     // Get pointer to component
     void* ptr = ecs_get(ecs, entity_id, comp_id);
 
+    // Zero component
+    memset(ptr, 0, comp_array->size);
+
     // Call constructor
     if (comp->constructor)
         comp->constructor(ecs, entity_id, ptr, args);
-    else
-        memset(ptr, 0, comp_array->size);
 
     // Set entity component bit that determines which systems this entity
     // belongs to
