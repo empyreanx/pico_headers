@@ -420,10 +420,7 @@ PM_INLINE pv2 pv2_lerp(pv2 v1, pv2 v2, pfloat alpha)
 /**
  * @brief Returns the zero vector
  */
-PM_INLINE pv2 pv2_zero(void)
-{
-    return pv2_make(0.0f, 0.0f);
-}
+#define pv2_zero() (pv2_make(0.0f, 0.0f))
 
 /**
  * @brief Contructs a vector in polar coordinates
@@ -661,10 +658,7 @@ PM_INLINE void pt2_translate(pt2* t, pv2 pos)
 /**
  * @brief Returns an AABB that has zero size and coordinates
  */
-PM_INLINE pb2 pb2_zero(void)
-{
-    return pb2_make(0.0f, 0.0f, 0.0f, 0.0f);
-}
+#define pb2_zero() (pb2_make(0.0f, 0.0f, 0.0f, 0.0f))
 
 /**
  * @brief Returns the position of an AABB
