@@ -533,6 +533,8 @@ pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
  */
 void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture);
 
+void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture);
+
 /**
  * @brief Returns a texture ID
  */
@@ -553,6 +555,8 @@ pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
                                 const pg_sampler_opts_t* opts);
 
 void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler);
+
+void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler);
 
 /**
  * @brief Creates a vertex buffer
@@ -578,8 +582,7 @@ void pg_destroy_vbuffer(const pg_ctx_t* ctx, pg_vbuffer_t* buffer);
  */
 void pg_draw_vbuffer(const pg_ctx_t* ctx,
                      const pg_vbuffer_t* buffer,
-                     size_t start, size_t count,
-                     const pg_texture_t* texture);
+                     size_t start, size_t count);
 
 /**
  * @brief Draws an array of vertices
@@ -588,9 +591,7 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
  * @param count The number of vertices
  * @param texture The texture to draw from
  */
-void pg_draw_array(pg_ctx_t* ctx,
-                   const pg_vertex_t* vertices, size_t count,
-                   const pg_texture_t* texture);
+void pg_draw_array(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count);
 
 /**
  * @brief Draws an indexed array of vertices
@@ -603,8 +604,7 @@ void pg_draw_array(pg_ctx_t* ctx,
  */
 void pg_draw_indexed_array(pg_ctx_t* ctx,
                            const pg_vertex_t* vertices, size_t vertex_count,
-                           const uint32_t* indices, size_t index_count,
-                           const pg_texture_t* texture);
+                           const uint32_t* indices, size_t index_count);
 
 /*=============================================================================
  * Types
@@ -1418,13 +1418,6 @@ pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
     desc.height = texture->height = height;
 
     desc.num_mipmaps = opts->mipmaps;
-
-/*    desc.min_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
-    desc.mag_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
-
-    desc.wrap_u = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
-    desc.wrap_v = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
-*/
     desc.data.subimage[0][0] = (sg_range){ .ptr = data, .size = size };
 
     texture->target = false;
@@ -1495,6 +1488,11 @@ void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
     PICO_GFX_FREE(texture, ctx->mem_ctx);
 }
 
+void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture)
+{
+    ctx->state.textures[slot] = texture;
+}
+
 uint32_t pg_get_texture_id(const pg_texture_t* texture)
 {
     PICO_GFX_ASSERT(texture);
@@ -1517,6 +1515,9 @@ pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
 {
     (void)ctx;
 
+    if (opts == NULL)
+        opts = &(pg_sampler_opts_t){ 0 };
+
     pg_sampler_t* sampler = PICO_GFX_MALLOC(sizeof(*sampler), ctx->mem_ctx);
 
     sg_sampler_desc desc = { 0 };
@@ -1538,6 +1539,11 @@ void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler)
 
     sg_destroy_sampler(sampler->handle);
     PICO_GFX_FREE(sampler, ctx->mem_ctx);
+}
+
+void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* texture)
+{
+    ctx->state.samplers[slot] = texture;
 }
 
 static void pg_apply_uniforms(pg_shader_t* shader)
@@ -1610,10 +1616,31 @@ static void pg_apply_view_state(const pg_ctx_t* ctx)
     sg_apply_scissor_rect(s_rect->x, s_rect->y, s_rect->width, s_rect->height, true);
 }
 
+static void pg_apply_textures(const pg_ctx_t* ctx, sg_bindings* bindings)
+{
+    for (int i = 0; i < PICO_GFX_MAX_TEXTURE_SLOTS; i++)
+    {
+        if (!ctx->state.textures[i])
+            continue;
+
+        bindings->fs.images[i] = ctx->state.textures[i]->handle;
+    }
+}
+
+static void pg_apply_samplers(const pg_ctx_t* ctx, sg_bindings* bindings)
+{
+    for (int i = 0; i < PICO_GFX_MAX_SAMPLER_SLOTS; i++)
+    {
+        if (!ctx->state.samplers[i])
+            continue;
+
+        bindings->fs.samplers[i] = ctx->state.samplers[i]->handle;
+    }
+}
+
 void pg_draw_vbuffer(const pg_ctx_t* ctx,
                      const pg_vbuffer_t* buffer,
-                     size_t start, size_t count,
-                     const pg_texture_t* texture)
+                     size_t start, size_t count)
 {
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(buffer);
@@ -1624,8 +1651,8 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
 
     memset(&bindings, 0, sizeof(sg_bindings));
 
-    if (texture)
-        bindings.fs.images[0] = texture->handle;
+    pg_apply_textures(ctx, &bindings);
+    pg_apply_samplers(ctx, &bindings);
 
     bindings.vertex_buffers[0] = buffer->handle;
 
@@ -1642,9 +1669,7 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
     sg_draw(start, count, 1);
 }
 
-void pg_draw_array(pg_ctx_t* ctx,
-                   const pg_vertex_t* vertices, size_t count,
-                   const pg_texture_t* texture)
+void pg_draw_array(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count)
 {
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(vertices);
@@ -1658,12 +1683,12 @@ void pg_draw_array(pg_ctx_t* ctx,
         .size = count * sizeof(pg_vertex_t)
     });
 
-    sg_bindings bindings;
+    sg_bindings bindings = { 0 };
 
     memset(&bindings, 0, sizeof(sg_bindings));
 
-    if (texture)
-        bindings.fs.images[0] = texture->handle;
+    pg_apply_textures(ctx, &bindings);
+    pg_apply_samplers(ctx, &bindings);
 
     bindings.vertex_buffer_offsets[0] = offset;
     bindings.vertex_buffers[0] = ctx->buffer;
@@ -1681,8 +1706,7 @@ void pg_draw_array(pg_ctx_t* ctx,
 
 void pg_draw_indexed_array(pg_ctx_t* ctx,
                            const pg_vertex_t* vertices, size_t vertex_count,
-                           const uint32_t* indices, size_t index_count,
-                           const pg_texture_t* texture)
+                           const uint32_t* indices, size_t index_count)
 {
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(vertices);
@@ -1704,12 +1728,10 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
         .size = index_count * sizeof(uint32_t)
     });
 
-    sg_bindings bindings;
+    sg_bindings bindings = { 0 };
 
-    memset(&bindings, 0, sizeof(sg_bindings));
-
-    if (texture)
-        bindings.fs.images[0] = texture->handle;
+    pg_apply_textures(ctx, &bindings);
+    pg_apply_samplers(ctx, &bindings);
 
     bindings.vertex_buffer_offsets[0] = vertex_offset;
     bindings.index_buffer_offset = index_offset;
