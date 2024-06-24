@@ -587,7 +587,7 @@ typedef struct
 
 /**
  * @brief Creates a sampler represents an object that can control how shaders
- & transform and filter texture resource data.
+ * transform and filter texture resource data.
  * @param opts Sampler options
  */
 pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
