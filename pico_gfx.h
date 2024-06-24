@@ -65,6 +65,15 @@
     `pg_reset_projection` and `pg_reset_transform` respectively. Note,
     These functions only work with the default shader.
 
+    Default shader
+    --------
+
+    The default shader now lives in it's own separate header file. This was done
+    to make it easier to update the shader and to reduce clutter in the header.
+    A single change was introduced after compilation; the once pragma was
+    replaced with an ifdef style include guard. In general, when using custom
+    shaders, this is probably not a neccessary step.
+
     C++
     --------
 
