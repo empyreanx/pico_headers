@@ -388,6 +388,28 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 void pg_reset_pipeline(pg_ctx_t* ctx);
 
 /**
+ * @brief Binds a texture to a slot
+ * @param ctx The graphics context
+ * @param texture The texture to bind
+ */
+void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture);
+
+/**
+ * @brief Resets the texture bindings for the current state
+ */
+void pg_reset_textures(pg_ctx_t* ctx);
+
+/**
+ *@brief Binds a sampler to a slot
+ */
+void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler);
+
+/**
+ * @brief Resets the sampler bindings for the current state
+ */
+void pg_reset_samplers(pg_ctx_t* ctx);
+
+/**
  * @brief Sets the projection matrix
  */
 void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix);
@@ -530,10 +552,6 @@ pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
  */
 void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture);
 
-void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture);
-
-void pg_reset_textures(pg_ctx_t* ctx);
-
 /**
  * @brief Returns a texture ID
  */
@@ -544,20 +562,27 @@ uint32_t pg_get_texture_id(const pg_texture_t* texture);
  */
 void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height);
 
+/**
+ * @brief Sampler options
+ */
 typedef struct
 {
     bool smooth; //!< Linear filtering if true, nearest otherwise
     bool repeat; //!< Repeat if true, clamp-to-edge otherwise
 } pg_sampler_opts_t;
 
+/**
+ * @brief A sampler represents an object that can control how shaders transform
+ * and filter texture resource data.
+ * @param opts Sampler options
+ */
 pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
                                 const pg_sampler_opts_t* opts);
 
+/**
+ * @brief Destroys a sampler object
+ */
 void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler);
-
-void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler);
-
-void pg_reset_samplers(pg_ctx_t* ctx);
 
 /**
  * @brief Creates a vertex buffer
@@ -617,7 +642,8 @@ typedef struct
 	int (*get_uniformblock_slot)(sg_shader_stage stage, const char* ub_name);
 } pg_shader_internal_t;
 
-pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx, pg_shader_internal_t internal);
+pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx,
+                                       pg_shader_internal_t internal);
 
 void pg_register_uniform_block_internal(pg_shader_t* shader,
                                         pg_stage_t stage,
@@ -1155,6 +1181,27 @@ void pg_reset_pipeline(pg_ctx_t* ctx)
     pg_set_pipeline(ctx, ctx->default_pipeline);
 }
 
+void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture)
+{
+    PICO_GFX_ASSERT(slot < PICO_GFX_MAX_TEXTURE_SLOTS);
+    ctx->state.textures[slot] = texture;
+}
+
+void pg_reset_textures(pg_ctx_t* ctx)
+{
+    memset(&ctx->state.textures, 0, sizeof(ctx->state.textures));
+}
+
+void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler)
+{
+    ctx->state.samplers[slot] = sampler;
+}
+
+void pg_reset_samplers(pg_ctx_t* ctx)
+{
+    memset(&ctx->state.samplers, 0, sizeof(ctx->state.samplers));
+}
+
 void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix)
 {
     memcpy(ctx->state.vs_block.u_proj, matrix, sizeof(pg_mat4_t));
@@ -1473,16 +1520,7 @@ void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
     PICO_GFX_FREE(texture, ctx->mem_ctx);
 }
 
-void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture)
-{
-    PICO_GFX_ASSERT(slot < PICO_GFX_MAX_TEXTURE_SLOTS);
-    ctx->state.textures[slot] = texture;
-}
 
-void pg_reset_textures(pg_ctx_t* ctx)
-{
-    memset(&ctx->state.textures, 0, sizeof(ctx->state.textures));
-}
 
 uint32_t pg_get_texture_id(const pg_texture_t* texture)
 {
@@ -1530,16 +1568,6 @@ void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler)
 
     sg_destroy_sampler(sampler->handle);
     PICO_GFX_FREE(sampler, ctx->mem_ctx);
-}
-
-void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler)
-{
-    ctx->state.samplers[slot] = sampler;
-}
-
-void pg_reset_samplers(pg_ctx_t* ctx)
-{
-    memset(&ctx->state.samplers, 0, sizeof(ctx->state.samplers));
 }
 
 static void pg_apply_uniforms(pg_shader_t* shader)
