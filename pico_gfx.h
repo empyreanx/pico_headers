@@ -117,7 +117,7 @@
 
 // Backend conversion macros
 #if defined (PICO_GFX_GL)
-    #define SOKOL_GLCORE33
+    #define SOKOL_GLCORE
 #elif defined (PICO_GFX_GLES)
     #define SOKOL_GLES3
 #elif defined (PICO_GFX_D3D)
@@ -252,6 +252,11 @@ typedef struct pg_shader_t pg_shader_t;
  * @brief Represents an image or render target in VRAM
  */
 typedef struct pg_texture_t pg_texture_t;
+
+/**
+ * @brief Represents sampler
+ */
+typedef struct pg_sampler_t pg_sampler_t;
 
 /**
  * @brief A vertex array buffer
@@ -496,8 +501,6 @@ void pg_destroy_pipeline(const pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 typedef struct pg_texture_opts_t
 {
     int mipmaps; //!< Mipmap level
-    bool smooth; //!< Linear filtering if true, nearest otherwise
-    bool repeat; //!< Repeat if true, clamp-to-edge otherwise
 } pg_texture_opts_t;
 
 /**
@@ -539,6 +542,17 @@ uint32_t pg_get_texture_id(const pg_texture_t* texture);
  * @brief Gets a texture's dimensions
  */
 void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height);
+
+typedef struct
+{
+    bool smooth; //!< Linear filtering if true, nearest otherwise
+    bool repeat; //!< Repeat if true, clamp-to-edge otherwise
+} pg_sampler_opts_t;
+
+pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
+                                const pg_sampler_opts_t* opts);
+
+void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler);
 
 /**
  * @brief Creates a vertex buffer
@@ -668,6 +682,14 @@ void pg_set_uniform_block_internal(pg_shader_t* shader,
 
 #ifndef PICO_GFX_MIN_ARENA_CAPACITY
 #define PICO_GFX_MIN_ARENA_CAPACITY 512
+#endif
+
+#ifndef PICO_GFX_MAX_TEXTURE_SLOTS
+#define PICO_GFX_MAX_TEXTURE_SLOTS 16
+#endif
+
+#ifndef PICO_GFX_MAX_SAMPLER_SLOTS
+#define PICO_GFX_MAX_SAMPLER_SLOTS 16
 #endif
 
 /*=============================================================================
@@ -810,6 +832,8 @@ typedef struct pg_state_t
     pg_rect_t      scissor;
     pg_shader_t*   shader;
     pg_vs_block_t  vs_block;
+    pg_texture_t*  textures[PICO_GFX_MAX_TEXTURE_SLOTS];
+    pg_sampler_t*  samplers[PICO_GFX_MAX_SAMPLER_SLOTS];
 } pg_state_t;
 
 struct pg_ctx_t
@@ -822,6 +846,7 @@ struct pg_ctx_t
     sg_buffer index_buffer;
     bool pass_active;
     pg_texture_t* target;
+    sg_pass default_pass;
     pg_shader_t* default_shader;
     pg_pipeline_t* default_pipeline;
     pg_state_t state;
@@ -860,7 +885,12 @@ struct pg_texture_t
     bool target;
     sg_image handle;
     sg_image depth_handle;
-    sg_pass pass_handle;
+    sg_attachments attachments;
+};
+
+struct pg_sampler_t
+{
+    sg_sampler handle;
 };
 
 struct pg_vbuffer_t
@@ -876,11 +906,11 @@ void pg_init(void)
         .logger.func = pg_log_sg,
         .allocator =
         {
-            .alloc = pg_malloc,
-            .free = pg_free,
+            .alloc_fn = pg_malloc,
+            .free_fn = pg_free,
             .user_data = NULL,
         },
-        .context.color_format = SG_PIXELFORMAT_RGBA8,
+        .environment.defaults.color_format = SG_PIXELFORMAT_RGBA8,
     });
 }
 
@@ -984,30 +1014,28 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_texture_t* target, bool clear)
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(!ctx->pass_active);
 
-    sg_pass_action pass_action;
-
-    memset(&pass_action, 0, sizeof(sg_pass_action));
+    sg_pass_action action = { 0 };
 
     if (clear)
     {
         sg_color color = ctx->state.clear_color;
 
-        pass_action.colors[0] = (sg_color_attachment_action)
+        action.colors[0] = (sg_color_attachment_action)
         {
             .load_action = SG_LOADACTION_CLEAR,
             .clear_value = color
         };
     }
 
+    sg_pass pass = { .action = action };
+
     if (target)
     {
-        sg_begin_pass(target->pass_handle, &pass_action);
+        pass.attachments = target->attachments;
         ctx->target = target;
     }
-    else
-    {
-        sg_begin_default_pass(&pass_action, ctx->window_width, ctx->window_height);
-    }
+
+    sg_begin_pass(&pass);
 
     pg_reset_viewport(ctx);
     pg_reset_scissor(ctx);
@@ -1201,19 +1229,19 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
 
     memset(&desc, 0, sizeof(sg_pipeline_desc));
 
-    desc.layout.attrs[0] = (sg_vertex_attr_desc)
+    desc.layout.attrs[0] = (sg_vertex_attr_state)
     {
         .format = SG_VERTEXFORMAT_FLOAT3,
         .offset = offsetof(pg_vertex_t, pos)
     };
 
-    desc.layout.attrs[1] = (sg_vertex_attr_desc)
+    desc.layout.attrs[1] = (sg_vertex_attr_state)
     {
         .format = SG_VERTEXFORMAT_FLOAT4,
         .offset = offsetof(pg_vertex_t, color)
     };
 
-    desc.layout.attrs[2] = (sg_vertex_attr_desc)
+    desc.layout.attrs[2] = (sg_vertex_attr_state)
     {
         .format = SG_VERTEXFORMAT_FLOAT2,
         .offset = offsetof(pg_vertex_t, uv)
@@ -1391,12 +1419,12 @@ pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
 
     desc.num_mipmaps = opts->mipmaps;
 
-    desc.min_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
+/*    desc.min_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
     desc.mag_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
 
     desc.wrap_u = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
     desc.wrap_v = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
-
+*/
     desc.data.subimage[0][0] = (sg_range){ .ptr = data, .size = size };
 
     texture->target = false;
@@ -1435,12 +1463,6 @@ pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
 
     desc.num_mipmaps = opts->mipmaps;
 
-    desc.min_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
-    desc.mag_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
-
-    desc.wrap_u = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
-    desc.wrap_v = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
-
     texture->handle = sg_make_image(&desc);
     texture->target = true;
 
@@ -1451,10 +1473,10 @@ pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
 
     PICO_GFX_ASSERT(sg_query_image_state(texture->depth_handle) == SG_RESOURCESTATE_VALID);
 
-    texture->pass_handle = sg_make_pass(&(sg_pass_desc)
+    texture->attachments = sg_make_attachments(&(sg_attachments_desc)
     {
-        .color_attachments[0].image = texture->handle,
-        .depth_stencil_attachment.image = texture->depth_handle
+        .colors[0].image = texture->handle,
+        .depth_stencil.image = texture->depth_handle,
     });
 
     return texture;
@@ -1466,7 +1488,6 @@ void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
 
     if (texture->target)
     {
-        sg_destroy_pass(texture->pass_handle);
         sg_destroy_image(texture->depth_handle);
     }
 
@@ -1489,6 +1510,34 @@ void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height)
 
     if (height)
         *height = texture->height;
+}
+
+pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
+                                const pg_sampler_opts_t* opts)
+{
+    (void)ctx;
+
+    pg_sampler_t* sampler = PICO_GFX_MALLOC(sizeof(*sampler), ctx->mem_ctx);
+
+    sg_sampler_desc desc = { 0 };
+
+    desc.min_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
+    desc.mag_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
+
+    desc.wrap_u = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
+    desc.wrap_v = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
+
+    sampler->handle = sg_make_sampler(&desc);
+
+    return sampler;
+}
+
+void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler)
+{
+    (void)ctx;
+
+    sg_destroy_sampler(sampler->handle);
+    PICO_GFX_FREE(sampler, ctx->mem_ctx);
 }
 
 static void pg_apply_uniforms(pg_shader_t* shader)
@@ -1576,7 +1625,7 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
     memset(&bindings, 0, sizeof(sg_bindings));
 
     if (texture)
-        bindings.fs_images[0] = texture->handle;
+        bindings.fs.images[0] = texture->handle;
 
     bindings.vertex_buffers[0] = buffer->handle;
 
@@ -1614,7 +1663,7 @@ void pg_draw_array(pg_ctx_t* ctx,
     memset(&bindings, 0, sizeof(sg_bindings));
 
     if (texture)
-        bindings.fs_images[0] = texture->handle;
+        bindings.fs.images[0] = texture->handle;
 
     bindings.vertex_buffer_offsets[0] = offset;
     bindings.vertex_buffers[0] = ctx->buffer;
@@ -1660,7 +1709,7 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
     memset(&bindings, 0, sizeof(sg_bindings));
 
     if (texture)
-        bindings.fs_images[0] = texture->handle;
+        bindings.fs.images[0] = texture->handle;
 
     bindings.vertex_buffer_offsets[0] = vertex_offset;
     bindings.index_buffer_offset = index_offset;
@@ -2211,7 +2260,7 @@ static void pg_arena_free(pg_arena_t* arena)
 /*==============================================================================
  * Default Shader Internals
  *============================================================================*/
-#if defined(SOKOL_GLCORE33)
+#if defined(SOKOL_GLCORE)
 /*
     #version 330
 

@@ -26,12 +26,13 @@ void main() {
 layout (location = 0) in vec4 color;
 layout (location = 1) in vec2 uv;
 
-layout (binding = 0) uniform sampler2D u_tex;
+layout (binding = 0) uniform texture2D u_tex;
+layout (binding = 1) uniform sampler   u_smp;
 
 out vec4 frag_color;
 
 void main() {
-    frag_color = texture(u_tex, uv) * color;
+    frag_color = texture(sampler2D(u_tex, u_smp), uv);
 }
 
 @end
