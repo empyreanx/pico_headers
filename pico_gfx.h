@@ -534,7 +534,7 @@ pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
  */
 void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture);
 
-void pg_set_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture);
+void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture);
 
 void pg_reset_textures(pg_ctx_t* ctx);
 
@@ -559,7 +559,7 @@ pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
 
 void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler);
 
-void pg_set_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler);
+void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler);
 
 void pg_reset_samples(pg_ctx_t* ctx);
 
@@ -1485,7 +1485,7 @@ void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
     PICO_GFX_FREE(texture, ctx->mem_ctx);
 }
 
-void pg_set_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture)
+void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture)
 {
     PICO_GFX_ASSERT(slot < PICO_GFX_MAX_TEXTURE_SLOTS);
     ctx->state.textures[slot] = texture;
@@ -1544,7 +1544,7 @@ void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler)
     PICO_GFX_FREE(sampler, ctx->mem_ctx);
 }
 
-void pg_set_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler)
+void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler)
 {
     ctx->state.samplers[slot] = sampler;
 }
@@ -1692,8 +1692,6 @@ void pg_draw_array(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count)
     });
 
     sg_bindings bindings = { 0 };
-
-    memset(&bindings, 0, sizeof(sg_bindings));
 
     pg_apply_textures(ctx, &bindings);
     pg_apply_samplers(ctx, &bindings);
