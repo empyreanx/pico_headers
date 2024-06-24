@@ -398,8 +398,9 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 void pg_reset_pipeline(pg_ctx_t* ctx);
 
 /**
- * @brief Binds a texture to a slot
+ * @brief Binds a texture to a slot in the current state
  * @param ctx The graphics context
+ * @param slot The binding slot
  * @param texture The texture to bind
  */
 void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture);
@@ -410,7 +411,10 @@ void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture);
 void pg_reset_textures(pg_ctx_t* ctx);
 
 /**
- *@brief Binds a sampler to a slot
+ * @brief Binds a sampler to a slot in the current state
+ * @param ctx The graphics context
+ * @param slot The binding slot
+ * @param sampler The sampler to bind
  */
 void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler);
 
@@ -582,8 +586,8 @@ typedef struct
 } pg_sampler_opts_t;
 
 /**
- * @brief A sampler represents an object that can control how shaders transform
- * and filter texture resource data.
+ * @brief Creates a sampler represents an object that can control how shaders
+ & transform and filter texture resource data.
  * @param opts Sampler options
  */
 pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
