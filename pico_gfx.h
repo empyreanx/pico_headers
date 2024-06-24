@@ -136,10 +136,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Graphics backends
 */
@@ -561,7 +557,7 @@ void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler);
 
 void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler);
 
-void pg_reset_samples(pg_ctx_t* ctx);
+void pg_reset_samplers(pg_ctx_t* ctx);
 
 /**
  * @brief Creates a vertex buffer
@@ -631,10 +627,6 @@ void pg_register_uniform_block_internal(pg_shader_t* shader,
 void pg_set_uniform_block_internal(pg_shader_t* shader,
                                    const char* name,
                                    const void* data);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // PICO_GFX_H
 
@@ -908,7 +900,7 @@ void pg_shutdown(void)
 
 pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx)
 {
-    pg_ctx_t* ctx = (pg_ctx_t*)PICO_GFX_MALLOC(sizeof(pg_ctx_t), mem_ctx);
+    pg_ctx_t* ctx = PICO_GFX_MALLOC(sizeof(pg_ctx_t), mem_ctx);
 
     if (!ctx) return NULL;
 
@@ -1209,6 +1201,8 @@ void pg_reset_state(pg_ctx_t* ctx)
     pg_reset_scissor(ctx);
     pg_reset_projection(ctx);
     pg_reset_transform(ctx);
+    pg_reset_textures(ctx);
+    pg_reset_samplers(ctx);
 }
 
 pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
@@ -1222,9 +1216,7 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
     if (opts == NULL)
         opts = &(pg_pipeline_opts_t){ 0 };
 
-    sg_pipeline_desc desc;
-
-    memset(&desc, 0, sizeof(sg_pipeline_desc));
+    sg_pipeline_desc desc = { 0 };
 
     desc.layout.attrs[0] = (sg_vertex_attr_state)
     {
@@ -1273,7 +1265,7 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
 
     desc.shader = shader->handle;
 
-    pg_pipeline_t* pipeline = (pg_pipeline_t*)PICO_GFX_MALLOC(sizeof(pg_pipeline_t), ctx->mem_ctx);
+    pg_pipeline_t* pipeline = PICO_GFX_MALLOC(sizeof(pg_pipeline_t), ctx->mem_ctx);
 
     pipeline->handle = sg_make_pipeline(&desc);
 
@@ -1297,7 +1289,7 @@ pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx, pg_shader_internal_t
 {
     (void)ctx;
 
-    pg_shader_t* shader = (pg_shader_t*)PICO_GFX_MALLOC(sizeof(pg_shader_t), ctx->mem_ctx);
+    pg_shader_t* shader = PICO_GFX_MALLOC(sizeof(pg_shader_t), ctx->mem_ctx);
 
     shader->internal = internal;
 
@@ -1403,11 +1395,9 @@ pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
 
     PICO_GFX_ASSERT(opts->mipmaps >= 0);
 
-    pg_texture_t* texture = (pg_texture_t*)PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
+    pg_texture_t* texture = PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
 
-    sg_image_desc desc;
-
-    memset(&desc, 0, sizeof(sg_image_desc));
+    sg_image_desc desc = { 0 };
 
     desc.pixel_format = SG_PIXELFORMAT_RGBA8;
 
@@ -1439,11 +1429,9 @@ pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
 
     PICO_GFX_ASSERT(opts->mipmaps >= 0);
 
-    pg_texture_t* texture = (pg_texture_t*)PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
+    pg_texture_t* texture = PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
 
-    sg_image_desc desc;
-
-    memset(&desc, 0, sizeof(sg_image_desc));
+    sg_image_desc desc = { 0 };
 
     desc.render_target = true;
     desc.pixel_format = SG_PIXELFORMAT_RGBA8;
@@ -1521,7 +1509,7 @@ pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
     if (opts == NULL)
         opts = &(pg_sampler_opts_t){ 0 };
 
-    pg_sampler_t* sampler = PICO_GFX_MALLOC(sizeof(*sampler), ctx->mem_ctx);
+    pg_sampler_t* sampler = PICO_GFX_MALLOC(sizeof(pg_sampler_t), ctx->mem_ctx);
 
     sg_sampler_desc desc = { 0 };
 
@@ -1590,7 +1578,7 @@ pg_vbuffer_t* pg_create_vbuffer(const pg_ctx_t* ctx,
     PICO_GFX_ASSERT(vertices);
     PICO_GFX_ASSERT(count > 0);
 
-    pg_vbuffer_t* buffer = (pg_vbuffer_t*)PICO_GFX_MALLOC(sizeof(pg_vbuffer_t), ctx->mem_ctx);
+    pg_vbuffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_vbuffer_t), ctx->mem_ctx);
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
@@ -1655,9 +1643,7 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
     PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
 
-    sg_bindings bindings;
-
-    memset(&bindings, 0, sizeof(sg_bindings));
+    sg_bindings bindings = { 0 };
 
     pg_apply_textures(ctx, &bindings);
     pg_apply_samplers(ctx, &bindings);
