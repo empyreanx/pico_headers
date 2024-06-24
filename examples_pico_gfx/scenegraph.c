@@ -195,9 +195,9 @@ void node_render(node_t* node, double alpha)
         });
 
         // Draw vertices
-        pg_bind_texture(ctx, 0, sprite->tex);
+        pg_set_texture(ctx, 0, sprite->tex);
         pg_draw_vbuffer(ctx, sprite->buf, 0, 6);
-        pg_bind_texture(ctx, 0, NULL);
+        pg_set_texture(ctx, 0, NULL);
     }
 }
 
@@ -404,7 +404,7 @@ int main(int argc, char *argv[])
     pg_set_pipeline(ctx, pip);
 
     pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
-    pg_bind_sampler(ctx, 0, sampler);
+    pg_set_sampler(ctx, 0, sampler);
 
     // Build scene graph
     scenegraph_t* sg = sg_build(app.screen_w, app.screen_h);
