@@ -10,9 +10,9 @@
     ---------
 
     - Written in C99
-    - Single header library for easy build system integration
-    - Easy to use Low-level constructs (render passes and pipelines)
-    - Simple texture and shader creation
+    - Two header library for easy build system integration
+    - Easy to use Low-level constructs (render passes, pipelines, and samplers)
+    - Simple texture, shader, and sampler creation
     - Default shader and uniform block
     - Render to texture
     - Rendering of dynamic vertex arrays, indexed vertex arrays
@@ -25,11 +25,11 @@
     Summary:
     --------
 
-    Pico GFX (pico_gfx) is a high-level wrapper for [sokol_gfx](https://github.com/floooh/sokol/blob/master/sokol_gfx.h),
-    a low-level wrapper for OpenGL, Metal, and D3D. Pico GFX is designed to make
-    the common case intuitive and convenient, especially for 2D applications. It
-    provides access to low-level constructs, such as render passes and
-    pipelines, in a way that is easy to use and understand.
+    pico_gfx is a 2D, high-level wrapper for [sokol_gfx](https://github.com/floooh/sokol/blob/master/sokol_gfx.h),
+    a low-level wrapper for OpenGL, Metal, D3D, and WebGPU written in C.
+    pico_gfx is designed make the common case intuitive and convenient. It
+    provides access to low-level constructs, such as render passes and pipelines,
+    in a way that is easy to use and understand.
 
     pico_gfx includes a default shader (and pipeline), but can be extended using
     the sokol shader compiler (`sokol-shdc`) which allows for a shader to be
@@ -47,10 +47,10 @@
     but it has yet to be tested with pico_gfx.
 
     State (pipeline/shader, the default uniform block, the viewport, scissor,
-    and clear color) can be managed via the state stack. The stack enables
-    changes to be isolated. Simply push the current state to the top of the
-    stack, make some local changes, and then pop the stack to restore the
-    original state.
+    and clear color, texture and sampler bindings) can be managed via the state
+    stack. The stack enables changes to be isolated. Simply push the current
+    state to the top of the stack, make some local changes, and then pop the
+    stack to restore the original state.
 
     Shaders expose uniforms in blocks. These blocks must be registered with the
     shader by calling `pg_register_uniform_block`. They may then be set at will
@@ -62,7 +62,15 @@
     coordinates. This projection matrix can be set using `pg_set_projection`
     and the (model-view) transformation matrix can be set using
     `pg_set_transform`. They can be reset to the identity by calling
-    `pg_reset_projection` and `pg_reset_transform` respectively.
+    `pg_reset_projection` and `pg_reset_transform` respectively. Note,
+    These functions only work with the default shader.
+
+    C++
+    --------
+
+    In this iteration, considerations for C++ have been removed for convenience,
+    elegance. and because the author is not a C++ developer. Proper C++
+    compatibility will probably be introduced in the future.
 
     Please see the examples for more details.
 
@@ -86,7 +94,7 @@
 
     before including pico_gfx.h
 
-    IMPORTANT: sokol_gfx.h must be in the include path!
+    IMPORTANT: sokol_gfx.h and pico_gfx_shader.h must be in the include path!
 
     See the examples for build details.
 
@@ -98,6 +106,8 @@
     - PG_GFX_HT_MIN_CAPACITY (default: 8)
     - PG_GFX_HT_KEY_SIZE (default: 16)
     - PICO_GFX_MIN_ARENA_CAPACITY (default: 1024)
+    - PICO_GFX_MAX_TEXTURE_SLOTS (default: 16)
+    - PICO_GFX_MAX_SAMPLER_SLOTS (default: 16)
 
     Customization:
     --------
