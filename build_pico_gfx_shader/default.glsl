@@ -32,7 +32,7 @@ layout (binding = 1) uniform sampler   u_smp;
 out vec4 frag_color;
 
 void main() {
-    frag_color = texture(sampler2D(u_tex, u_smp), uv);
+    frag_color = texture(sampler2D(u_tex, u_smp), uv) * color;
 }
 
 @end

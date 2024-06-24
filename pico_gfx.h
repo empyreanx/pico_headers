@@ -821,6 +821,7 @@ typedef struct pg_state_t
 struct pg_ctx_t
 {
     void* mem_ctx;
+    sg_swapchain swapchain;
     int window_width;
     int window_height;
     bool indexed;
@@ -937,6 +938,12 @@ pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx)
 
     PICO_GFX_ASSERT(sg_query_buffer_state(ctx->index_buffer) == SG_RESOURCESTATE_VALID);
 
+    ctx->swapchain = (sg_swapchain)
+    {
+        .width = window_width,
+        .height = window_height,
+    };
+
     return ctx;
 }
 
@@ -1015,6 +1022,10 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_texture_t* target, bool clear)
     {
         pass.attachments = target->attachments;
         ctx->target = target;
+    }
+    else
+    {
+        pass.swapchain = ctx->swapchain;
     }
 
     sg_begin_pass(&pass);
