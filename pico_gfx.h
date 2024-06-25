@@ -468,6 +468,7 @@ void pg_reset_state(pg_ctx_t* ctx);
         (pg_shader_internal_t)          \
         {                               \
             prefix##_shader_desc,       \
+            prefix##_attr_slot,         \
             prefix##_uniformblock_slot, \
         }                               \
     )
@@ -478,6 +479,17 @@ void pg_reset_state(pg_ctx_t* ctx);
 void pg_destroy_shader(const pg_ctx_t* ctx, pg_shader_t* shader);
 
 /**
+ * @brief Returns the slot of the attribute with the specified name, or -1 if
+ * the attribute does not exist.
+ */
+int pg_get_attr_slot(const pg_shader_t* shader, const char* name);
+
+/**
+ * @brief Returns a shader ID
+ */
+uint32_t pg_get_shader_id(const pg_shader_t* shader);
+
+/**
  * @brief Returns the default shader
  */
 pg_shader_t* pg_get_default_shader(const pg_ctx_t* ctx);
@@ -486,11 +498,6 @@ pg_shader_t* pg_get_default_shader(const pg_ctx_t* ctx);
  * @brief Returns the default pipeline
  */
 pg_pipeline_t* pg_get_default_pipeline(const pg_ctx_t* ctx);
-
-/**
- * @brief Returns a shader ID
- */
-uint32_t pg_get_shader_id(const pg_shader_t* shader);
 
 /**
  * @brief Registers a uniform block (UB)
@@ -668,6 +675,7 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
 typedef struct
 {
 	const sg_shader_desc* (*get_shader_desc)(sg_backend backend);
+	int (*get_attr_slot)(const char* attr_name);
 	int (*get_uniformblock_slot)(sg_shader_stage stage, const char* ub_name);
 } pg_shader_internal_t;
 
@@ -1111,6 +1119,8 @@ void pg_flush(pg_ctx_t* ctx)
 
     PICO_GFX_ASSERT(sg_query_buffer_state(ctx->buffer) == SG_RESOURCESTATE_VALID);
 
+//  sg_update_buffer(ctx->buffer, &(sg_range){ .ptr = NULL, .size = 0 });
+
     sg_destroy_buffer(ctx->index_buffer);
 
     ctx->index_buffer = sg_make_buffer(&(sg_buffer_desc)
@@ -1294,23 +1304,38 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
 
     sg_pipeline_desc desc = { 0 };
 
-    desc.layout.attrs[0] = (sg_vertex_attr_state)
-    {
-        .format = SG_VERTEXFORMAT_FLOAT3,
-        .offset = offsetof(pg_vertex_t, pos)
-    };
+    int slot = pg_get_attr_slot(shader, "a_pos");
 
-    desc.layout.attrs[1] = (sg_vertex_attr_state)
+    if (slot >= 0)
     {
-        .format = SG_VERTEXFORMAT_FLOAT4,
-        .offset = offsetof(pg_vertex_t, color)
-    };
+        desc.layout.attrs[slot] = (sg_vertex_attr_state)
+        {
+            .format = SG_VERTEXFORMAT_FLOAT3,
+            .offset = offsetof(pg_vertex_t, pos)
+        };
+    }
 
-    desc.layout.attrs[2] = (sg_vertex_attr_state)
+    slot = pg_get_attr_slot(shader, "a_color");
+
+    if (slot >= 0)
     {
-        .format = SG_VERTEXFORMAT_FLOAT2,
-        .offset = offsetof(pg_vertex_t, uv)
-    };
+        desc.layout.attrs[slot] = (sg_vertex_attr_state)
+        {
+            .format = SG_VERTEXFORMAT_FLOAT4,
+            .offset = offsetof(pg_vertex_t, color)
+        };
+    }
+
+    slot = pg_get_attr_slot(shader, "a_uv");
+
+    if (slot >= 0)
+    {
+        desc.layout.attrs[slot] = (sg_vertex_attr_state)
+        {
+            .format = SG_VERTEXFORMAT_FLOAT2,
+            .offset = offsetof(pg_vertex_t, uv)
+        };
+    }
 
     desc.primitive_type = pg_map_primitive(opts->primitive);
 
@@ -1368,13 +1393,9 @@ pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx, pg_shader_internal_t
     pg_shader_t* shader = PICO_GFX_MALLOC(sizeof(pg_shader_t), ctx->mem_ctx);
 
     shader->internal = internal;
-
     shader->desc = internal.get_shader_desc(sg_query_backend());
 
     PICO_GFX_ASSERT(shader->desc);
-    PICO_GFX_ASSERT(pg_str_equal(shader->desc->attrs[0].name, "a_pos"));
-    PICO_GFX_ASSERT(pg_str_equal(shader->desc->attrs[1].name, "a_color"));
-    PICO_GFX_ASSERT(pg_str_equal(shader->desc->attrs[2].name, "a_uv"));
 
     shader->handle = sg_make_shader(shader->desc);
 
@@ -1399,6 +1420,17 @@ void pg_destroy_shader(const pg_ctx_t* ctx, pg_shader_t* shader)
     PICO_GFX_FREE(shader, ctx->mem_ctx);
 }
 
+int pg_get_attr_slot(const pg_shader_t* shader, const char* name)
+{
+    return shader->internal.get_attr_slot(name);
+}
+
+uint32_t pg_get_shader_id(const pg_shader_t* shader)
+{
+    PICO_GFX_ASSERT(shader);
+    return shader->handle.id;
+}
+
 pg_shader_t* pg_get_default_shader(const pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
@@ -1409,12 +1441,6 @@ pg_pipeline_t* pg_get_default_pipeline(const pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
     return ctx->default_pipeline;
-}
-
-uint32_t pg_get_shader_id(const pg_shader_t* shader)
-{
-    PICO_GFX_ASSERT(shader);
-    return shader->handle.id;
 }
 
 void pg_register_uniform_block_internal(pg_shader_t* shader,
