@@ -63,7 +63,7 @@
     and the (model-view) transformation matrix can be set using
     `pg_set_transform`. They can be reset to the identity by calling
     `pg_reset_projection` and `pg_reset_transform` respectively. Note,
-    These functions only work with the default shader.
+    these functions only work with the default shader.
 
     Default shader
     --------
@@ -584,6 +584,12 @@ uint32_t pg_get_texture_id(const pg_texture_t* texture);
  * @brief Gets a texture's dimensions
  */
 void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height);
+
+/**
+ * @brief Updates a texture with the given data. This can only be called once
+ * per frame
+ */
+void pg_update_texture(pg_texture_t* texture, char* data, int width, int height);
 
 /**
  * @brief Sampler options
@@ -1543,7 +1549,13 @@ void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
     PICO_GFX_FREE(texture, ctx->mem_ctx);
 }
 
-
+void pg_update_texture(pg_texture_t* texture, char* data, int width, int height)
+{
+    sg_image_data img_data = { 0 };
+    img_data.subimage[0][0].ptr = data;
+    img_data.subimage[0][0].size = (size_t)(width * height);
+    sg_update_image(texture->handle, &img_data);
+}
 
 uint32_t pg_get_texture_id(const pg_texture_t* texture)
 {
