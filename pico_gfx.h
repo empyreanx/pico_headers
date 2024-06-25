@@ -469,6 +469,8 @@ void pg_reset_state(pg_ctx_t* ctx);
         {                               \
             prefix##_shader_desc,       \
             prefix##_attr_slot,         \
+            prefix##_image_slot,        \
+            prefix##_sampler_slot,      \
             prefix##_uniformblock_slot, \
         }                               \
     )
@@ -482,7 +484,19 @@ void pg_destroy_shader(const pg_ctx_t* ctx, pg_shader_t* shader);
  * @brief Returns the slot of the attribute with the specified name, or -1 if
  * the attribute does not exist.
  */
-int pg_get_attr_slot(const pg_shader_t* shader, const char* name);
+int pg_get_attribute_slot(const pg_shader_t* shader, const char* name);
+
+/**
+ * @brief Returns the slot of the image with the specified name, or -1 if
+ * the iamge slot does not exist.
+ */
+int pg_get_image_slot(const pg_shader_t* shader, const char* name);
+
+/**
+ * @brief Returns the slot of the sampler with the specified name, or -1 if
+ * the sampler does not exist.
+ */
+int pg_get_sampler_slot(const pg_shader_t* shader, const char* name);
 
 /**
  * @brief Returns a shader ID
@@ -676,6 +690,8 @@ typedef struct
 {
 	const sg_shader_desc* (*get_shader_desc)(sg_backend backend);
 	int (*get_attr_slot)(const char* attr_name);
+	int (*get_img_slot)(sg_shader_stage stage, const char* name);
+	int (*get_smp_slot)(sg_shader_stage stage, const char* name);
 	int (*get_uniformblock_slot)(sg_shader_stage stage, const char* ub_name);
 } pg_shader_internal_t;
 
@@ -776,15 +792,6 @@ static void pg_log_sg(const char* tag,              // e.g. 'sg'
                       void* user_data);
 
 static void pg_log(const char* fmt, ...);
-
-/*=============================================================================
- * Utility
- *============================================================================*/
-
-static bool pg_str_equal(const char* s1, const char* s2)
-{
-    return strcmp(s1, s2) == 0;
-}
 
 /*=============================================================================
  * Hashtable Declarations
@@ -1304,7 +1311,7 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
 
     sg_pipeline_desc desc = { 0 };
 
-    int slot = pg_get_attr_slot(shader, "a_pos");
+    int slot = pg_get_attribute_slot(shader, "a_pos");
 
     if (slot >= 0)
     {
@@ -1315,7 +1322,7 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
         };
     }
 
-    slot = pg_get_attr_slot(shader, "a_color");
+    slot = pg_get_attribute_slot(shader, "a_color");
 
     if (slot >= 0)
     {
@@ -1326,7 +1333,7 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
         };
     }
 
-    slot = pg_get_attr_slot(shader, "a_uv");
+    slot = pg_get_attribute_slot(shader, "a_uv");
 
     if (slot >= 0)
     {
@@ -1420,9 +1427,19 @@ void pg_destroy_shader(const pg_ctx_t* ctx, pg_shader_t* shader)
     PICO_GFX_FREE(shader, ctx->mem_ctx);
 }
 
-int pg_get_attr_slot(const pg_shader_t* shader, const char* name)
+int pg_get_attribute_slot(const pg_shader_t* shader, const char* name)
 {
     return shader->internal.get_attr_slot(name);
+}
+
+int pg_get_image_slot(const pg_shader_t* shader, const char* name)
+{
+    return shader->internal.get_img_slot(SG_SHADERSTAGE_FS, name);
+}
+
+int pg_get_sampler_slot(const pg_shader_t* shader, const char* name)
+{
+    return shader->internal.get_smp_slot(SG_SHADERSTAGE_FS, name);
 }
 
 uint32_t pg_get_shader_id(const pg_shader_t* shader)
