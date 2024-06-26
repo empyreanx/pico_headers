@@ -98,8 +98,8 @@ sprite_t* sprite_new(int w, int h, pg_texture_t* tex)
 
 void sprite_free(sprite_t* sprite)
 {
-    pg_destroy_vbuffer(ctx, sprite->buf);
-    pg_destroy_texture(ctx, sprite->tex);
+    pg_destroy_vbuffer(sprite->buf);
+    pg_destroy_texture(sprite->tex);
     free(sprite);
 }
 
@@ -482,8 +482,8 @@ int main(int argc, char *argv[])
 
     sg_free(sg);
 
-    pg_destroy_pipeline(ctx, pip);
-    pg_destroy_sampler(ctx, sampler);
+    pg_destroy_pipeline(pip);
+    pg_destroy_sampler(sampler);
 
     pg_destroy_context(ctx);
 

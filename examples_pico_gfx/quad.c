@@ -177,11 +177,11 @@ int main(int argc, char *argv[])
         SDL_GL_SwapWindow(window);
     }
 
-    pg_destroy_texture(ctx, target);
-    pg_destroy_texture(ctx, tex);
-    pg_destroy_sampler(ctx, sampler);
+    pg_destroy_texture(target);
+    pg_destroy_texture(tex);
+    pg_destroy_sampler(sampler);
 
-    pg_destroy_pipeline(ctx, pip);
+    pg_destroy_pipeline(pip);
     pg_destroy_context(ctx);
 
     pg_shutdown();

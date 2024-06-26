@@ -478,7 +478,7 @@ void pg_reset_state(pg_ctx_t* ctx);
 /**
  * @brief Destroys a shader
  */
-void pg_destroy_shader(const pg_ctx_t* ctx, pg_shader_t* shader);
+void pg_destroy_shader(pg_shader_t* shader);
 
 /**
  * @brief Returns the slot of the attribute with the specified name, or -1 if
@@ -549,14 +549,14 @@ typedef struct pg_pipeline_opts_t
  * @param opts Pipeline creation options
  * @returns A render pipeline object
  */
-pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
+pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
                                   pg_shader_t* shader,
                                   const pg_pipeline_opts_t* opts);
 
 /**
  * @brief Destroys a render pipeline
 */
-void pg_destroy_pipeline(const pg_ctx_t* ctx, pg_pipeline_t* pipeline);
+void pg_destroy_pipeline(pg_pipeline_t* pipeline);
 
 /**
  * @brief Texture creation options
@@ -575,7 +575,7 @@ typedef struct pg_texture_opts_t
  * @param opts Texture creation options (NULL for defaults)
  * @returns A texture created from a bitmap
  */
-pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
+pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
                                 int width, int height,
                                 const uint8_t* data, size_t size,
                                 const pg_texture_opts_t* opts);
@@ -587,14 +587,14 @@ pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
  * @param opts Texture creation options (NULL for defaults)
  * @returns A render texture
  */
-pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
+pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
                                        int width, int height,
                                        const pg_texture_opts_t* opts);
 
 /**
  * @brief Destroys a texture
  */
-void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture);
+void pg_destroy_texture(pg_texture_t* texture);
 
 /**
  * @brief Returns a texture ID
@@ -626,27 +626,26 @@ typedef struct
  * transform and filter texture resource data.
  * @param opts Sampler options
  */
-pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
-                                const pg_sampler_opts_t* opts);
+pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts);
 
 /**
  * @brief Destroys a sampler object
  */
-void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler);
+void pg_destroy_sampler(pg_sampler_t* sampler);
 
 /**
  * @brief Creates a vertex buffer
  * @param vertices An array of vertices (position, color, uv)
  * @param count The number of vertices
  */
-pg_vbuffer_t* pg_create_vbuffer(const pg_ctx_t* ctx,
+pg_vbuffer_t* pg_create_vbuffer(pg_ctx_t* ctx,
                                 const pg_vertex_t* vertices,
                                 size_t count);
 
 /**
  * @brief Destroys a vertex buffer
  */
-void pg_destroy_vbuffer(const pg_ctx_t* ctx, pg_vbuffer_t* buffer);
+void pg_destroy_vbuffer(pg_vbuffer_t* buffer);
 
 /**
  * @brief Draws a vertex buffer
@@ -695,7 +694,7 @@ typedef struct
 	int (*get_uniformblock_slot)(sg_shader_stage stage, const char* ub_name);
 } pg_shader_internal_t;
 
-pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx,
+pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx,
                                        pg_shader_internal_t internal);
 
 void pg_register_uniform_block_internal(pg_shader_t* shader,
@@ -905,6 +904,7 @@ struct pg_ctx_t
 
 struct pg_pipeline_t
 {
+    pg_ctx_t* ctx;
     sg_pipeline handle;
     bool indexed;
     pg_shader_t* shader;
@@ -912,6 +912,7 @@ struct pg_pipeline_t
 
 struct pg_shader_t
 {
+    pg_ctx_t* ctx;
     const sg_shader_desc* desc;
     sg_shader handle;
     pg_shader_internal_t internal;
@@ -930,6 +931,7 @@ typedef struct
 
 struct pg_texture_t
 {
+    pg_ctx_t* ctx;
     int width, height;
     bool target;
     sg_image handle;
@@ -939,11 +941,13 @@ struct pg_texture_t
 
 struct pg_sampler_t
 {
+    pg_ctx_t* ctx;
     sg_sampler handle;
 };
 
 struct pg_vbuffer_t
 {
+    pg_ctx_t* ctx;
     sg_buffer handle;
     size_t count;
 };
@@ -1020,8 +1024,8 @@ void pg_destroy_context(pg_ctx_t* ctx)
     sg_destroy_buffer(ctx->buffer);
     sg_destroy_buffer(ctx->index_buffer);
 
-    pg_destroy_pipeline(ctx, ctx->default_pipeline);
-    pg_destroy_shader(ctx, ctx->default_shader);
+    pg_destroy_pipeline(ctx->default_pipeline);
+    pg_destroy_shader(ctx->default_shader);
 
     PICO_GFX_FREE(ctx, ctx->mem_ctx);
 }
@@ -1298,11 +1302,11 @@ void pg_reset_state(pg_ctx_t* ctx)
     pg_reset_samplers(ctx);
 }
 
-pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
+pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
                                   pg_shader_t* shader,
                                   const pg_pipeline_opts_t* opts)
 {
-    (void)ctx;
+
 
     PICO_GFX_ASSERT(shader);
 
@@ -1374,7 +1378,7 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
     desc.shader = shader->handle;
 
     pg_pipeline_t* pipeline = PICO_GFX_MALLOC(sizeof(pg_pipeline_t), ctx->mem_ctx);
-
+    pipeline->ctx = ctx;
     pipeline->handle = sg_make_pipeline(&desc);
 
     PICO_GFX_ASSERT(sg_query_pipeline_state(pipeline->handle) == SG_RESOURCESTATE_VALID);
@@ -1385,20 +1389,21 @@ pg_pipeline_t* pg_create_pipeline(const pg_ctx_t* ctx,
     return pipeline;
 }
 
-void pg_destroy_pipeline(const pg_ctx_t* ctx, pg_pipeline_t* pipeline)
+void pg_destroy_pipeline(pg_pipeline_t* pipeline)
 {
-    (void)ctx;
+
 
     sg_destroy_pipeline(pipeline->handle);
-    PICO_GFX_FREE(pipeline, ctx->mem_ctx);
+    PICO_GFX_FREE(pipeline, pipeline->ctx->mem_ctx);
 }
 
-pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx, pg_shader_internal_t internal)
+pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal)
 {
-    (void)ctx;
+
 
     pg_shader_t* shader = PICO_GFX_MALLOC(sizeof(pg_shader_t), ctx->mem_ctx);
 
+    shader->ctx = ctx;
     shader->internal = internal;
     shader->desc = internal.get_shader_desc(sg_query_backend());
 
@@ -1416,15 +1421,15 @@ pg_shader_t* pg_create_shader_internal(const pg_ctx_t* ctx, pg_shader_internal_t
     return shader;
 }
 
-void pg_destroy_shader(const pg_ctx_t* ctx, pg_shader_t* shader)
+void pg_destroy_shader(pg_shader_t* shader)
 {
-    (void)ctx;
+
 
     PICO_GFX_ASSERT(shader);
     sg_destroy_shader(shader->handle);
     pg_hashtable_free(shader->uniform_blocks);
     pg_arena_free(shader->arena);
-    PICO_GFX_FREE(shader, ctx->mem_ctx);
+    PICO_GFX_FREE(shader, shader->ctx->mem_ctx);
 }
 
 int pg_get_attribute_slot(const pg_shader_t* shader, const char* name)
@@ -1497,12 +1502,12 @@ void pg_set_uniform_block_internal(pg_shader_t* shader,
     block->dirty = true;
 }
 
-pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
+pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
                                 int width, int height,
                                 const uint8_t* data, size_t size,
                                 const pg_texture_opts_t* opts)
 {
-    (void)ctx;
+
 
     PICO_GFX_ASSERT(width > 0);
     PICO_GFX_ASSERT(height > 0);
@@ -1526,6 +1531,7 @@ pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
     desc.num_mipmaps = opts->mipmaps;
     desc.data.subimage[0][0] = (sg_range){ .ptr = data, .size = size };
 
+    texture->ctx = ctx;
     texture->target = false;
     texture->handle = sg_make_image(&desc);
 
@@ -1534,11 +1540,11 @@ pg_texture_t* pg_create_texture(const pg_ctx_t* ctx,
     return texture;
 }
 
-pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
+pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
                                        int width, int height,
                                        const pg_texture_opts_t* opts)
 {
-    (void)ctx;
+
 
     PICO_GFX_ASSERT(width > 0);
     PICO_GFX_ASSERT(height > 0);
@@ -1560,6 +1566,7 @@ pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
 
     desc.num_mipmaps = opts->mipmaps;
 
+    texture->ctx = ctx;
     texture->handle = sg_make_image(&desc);
     texture->target = true;
 
@@ -1579,9 +1586,9 @@ pg_texture_t* pg_create_render_texture(const pg_ctx_t* ctx,
     return texture;
 }
 
-void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
+void pg_destroy_texture(pg_texture_t* texture)
 {
-    (void)ctx;
+
 
     if (texture->target)
     {
@@ -1589,7 +1596,7 @@ void pg_destroy_texture(const pg_ctx_t* ctx, pg_texture_t* texture)
     }
 
     sg_destroy_image(texture->handle);
-    PICO_GFX_FREE(texture, ctx->mem_ctx);
+    PICO_GFX_FREE(texture, texture->ctx->mem_ctx);
 }
 
 void pg_update_texture(pg_texture_t* texture, char* data, int width, int height)
@@ -1617,10 +1624,9 @@ void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height)
         *height = texture->height;
 }
 
-pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
-                                const pg_sampler_opts_t* opts)
+pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts)
 {
-    (void)ctx;
+
 
     if (opts == NULL)
         opts = &(pg_sampler_opts_t){ 0 };
@@ -1635,17 +1641,18 @@ pg_sampler_t* pg_create_sampler(const pg_ctx_t* ctx,
     desc.wrap_u = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
     desc.wrap_v = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
 
+    sampler->ctx = ctx;
     sampler->handle = sg_make_sampler(&desc);
 
     return sampler;
 }
 
-void pg_destroy_sampler(const pg_ctx_t* ctx, pg_sampler_t* sampler)
+void pg_destroy_sampler(pg_sampler_t* sampler)
 {
-    (void)ctx;
+
 
     sg_destroy_sampler(sampler->handle);
-    PICO_GFX_FREE(sampler, ctx->mem_ctx);
+    PICO_GFX_FREE(sampler, sampler->ctx->mem_ctx);
 }
 
 static void pg_apply_uniforms(pg_shader_t* shader)
@@ -1675,17 +1682,14 @@ static void pg_apply_uniforms(pg_shader_t* shader)
     }
 }
 
-pg_vbuffer_t* pg_create_vbuffer(const pg_ctx_t* ctx,
-                                const pg_vertex_t* vertices,
-                                size_t count)
+pg_vbuffer_t* pg_create_vbuffer(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count)
 {
-    (void)ctx;
-
     PICO_GFX_ASSERT(vertices);
     PICO_GFX_ASSERT(count > 0);
 
     pg_vbuffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_vbuffer_t), ctx->mem_ctx);
 
+    buffer->ctx = ctx;
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
         .type  = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -1700,13 +1704,11 @@ pg_vbuffer_t* pg_create_vbuffer(const pg_ctx_t* ctx,
     return buffer;
 }
 
-void pg_destroy_vbuffer(const pg_ctx_t* ctx, pg_vbuffer_t* buffer)
+void pg_destroy_vbuffer(pg_vbuffer_t* buffer)
 {
-    (void)ctx;
-
     PICO_GFX_ASSERT(buffer);
     sg_destroy_buffer(buffer->handle);
-    PICO_GFX_FREE(buffer, ctx->mem_ctx);
+    PICO_GFX_FREE(buffer, buffer->ctx->mem_ctx);
 }
 
 static void pg_apply_view_state(const pg_ctx_t* ctx)
