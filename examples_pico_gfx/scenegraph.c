@@ -52,7 +52,7 @@ static struct
     SDL_GLContext context;
     int screen_w;
     int screen_h;
-    pg_vs_block_t vs_block;
+    vs_block_t vs_block;
 } app;
 
 typedef struct

@@ -501,8 +501,10 @@ pg_pipeline_t* pg_get_default_pipeline(const pg_ctx_t* ctx);
  * @param stage The stage (VS or FS) associated with the UB
  * @param name The name of the UB as supplied by `sokol_shdc` (no quotes)
  */
-#define pg_register_uniform_block(shader, stage, name) \
-        pg_register_uniform_block_internal(shader, stage, #name, sizeof(name##_t))
+void pg_init_uniform_block(pg_shader_t* shader,
+                           pg_stage_t stage,
+                           const char* name,
+                           size_t size);
 
 /**
  * @brief Sets a uniform block (UB)
@@ -510,8 +512,7 @@ pg_pipeline_t* pg_get_default_pipeline(const pg_ctx_t* ctx);
  * @param name The name of the UB as supplied by `sokol_shdc` (no quotes)
  * @param data The data to set (must be the whole UB)
  */
-#define pg_set_uniform_block(shader, name, data) \
-        pg_set_uniform_block_internal(shader, #name, data)
+void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
 
 /**
  * @brief Pipeline creation options
@@ -678,15 +679,6 @@ typedef struct
 
 pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx,
                                        pg_shader_internal_t internal);
-
-void pg_register_uniform_block_internal(pg_shader_t* shader,
-                                        pg_stage_t stage,
-                                        const char* name,
-                                        size_t size);
-
-void pg_set_uniform_block_internal(pg_shader_t* shader,
-                                   const char* name,
-                                   const void* data);
 
 #endif // PICO_GFX_H
 
@@ -860,7 +852,7 @@ typedef struct pg_state_t
     pg_rect_t      viewport;
     pg_rect_t      scissor;
     pg_shader_t*   shader;
-    pg_vs_block_t  vs_block;
+    vs_block_t  vs_block;
     pg_texture_t*  textures[PICO_GFX_MAX_TEXTURE_SLOTS];
     pg_sampler_t*  samplers[PICO_GFX_MAX_SAMPLER_SLOTS];
 } pg_state_t;
@@ -968,7 +960,7 @@ pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx)
     ctx->default_shader = pg_create_shader(ctx, pg_default);
     ctx->default_pipeline = pg_create_pipeline(ctx, ctx->default_shader, NULL);
 
-    pg_register_uniform_block(ctx->default_shader, PG_VS_STAGE, pg_vs_block);
+    pg_init_uniform_block(ctx->default_shader, PG_VS_STAGE, "vs_block", sizeof(vs_block_t));
 
     pg_reset_state(ctx);
 
@@ -1143,7 +1135,7 @@ void pg_pop_state(pg_ctx_t* ctx)
     ctx->state = ctx->state_stack[ctx->stack_size - 1];
     ctx->stack_size--;
 
-    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
+    pg_set_uniform_block(pg_get_default_shader(ctx), "vs_block", &ctx->state.vs_block);
 }
 
 void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a)
@@ -1246,7 +1238,7 @@ void pg_reset_samplers(pg_ctx_t* ctx)
 void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix)
 {
     memcpy(ctx->state.vs_block.u_proj, matrix, sizeof(pg_mat4_t));
-    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
+    pg_set_uniform_block(pg_get_default_shader(ctx), "vs_block", &ctx->state.vs_block);
 }
 
 void pg_reset_projection(pg_ctx_t* ctx)
@@ -1263,7 +1255,7 @@ void pg_reset_projection(pg_ctx_t* ctx)
 void pg_set_transform(pg_ctx_t* ctx, pg_mat4_t matrix)
 {
     memcpy(ctx->state.vs_block.u_tr, matrix, sizeof(pg_mat4_t));
-    pg_set_uniform_block(pg_get_default_shader(ctx), pg_vs_block, &ctx->state.vs_block);
+    pg_set_uniform_block(pg_get_default_shader(ctx), "vs_block", &ctx->state.vs_block);
 }
 
 void pg_reset_transform(pg_ctx_t* ctx)
@@ -1441,10 +1433,10 @@ pg_pipeline_t* pg_get_default_pipeline(const pg_ctx_t* ctx)
     return ctx->default_pipeline;
 }
 
-void pg_register_uniform_block_internal(pg_shader_t* shader,
-                                        pg_stage_t stage,
-                                        const char* name,
-                                        size_t size)
+void pg_init_uniform_block(pg_shader_t* shader,
+                           pg_stage_t stage,
+                           const char* name,
+                           size_t size)
 {
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
@@ -1462,9 +1454,9 @@ void pg_register_uniform_block_internal(pg_shader_t* shader,
     pg_hashtable_put(shader->uniform_blocks, name, &block);
 }
 
-void pg_set_uniform_block_internal(pg_shader_t* shader,
-                                   const char* name,
-                                   const void* data)
+void pg_set_uniform_block(pg_shader_t* shader,
+                          const char* name,
+                          const void* data)
 {
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
