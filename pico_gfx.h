@@ -412,7 +412,7 @@ void pg_reset_pipeline(pg_ctx_t* ctx);
  * @param slot The binding slot
  * @param texture The texture to bind
  */
-void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture);
+void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* texture);
 
 /**
  * @brief Resets the texture bindings for the current state
@@ -425,7 +425,7 @@ void pg_reset_textures(pg_ctx_t* ctx);
  * @param slot The binding slot
  * @param sampler The sampler to bind
  */
-void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler);
+void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sampler);
 
 /**
  * @brief Resets the sampler bindings for the current state
@@ -479,24 +479,6 @@ void pg_reset_state(pg_ctx_t* ctx);
  * @brief Destroys a shader
  */
 void pg_destroy_shader(pg_shader_t* shader);
-
-/**
- * @brief Returns the slot of the attribute with the specified name, or -1 if
- * the attribute does not exist.
- */
-int pg_get_attribute_slot(const pg_shader_t* shader, const char* name);
-
-/**
- * @brief Returns the slot of the image with the specified name, or -1 if
- * the iamge slot does not exist.
- */
-int pg_get_image_slot(const pg_shader_t* shader, const char* name);
-
-/**
- * @brief Returns the slot of the sampler with the specified name, or -1 if
- * the sampler does not exist.
- */
-int pg_get_sampler_slot(const pg_shader_t* shader, const char* name);
 
 /**
  * @brief Returns a shader ID
@@ -1231,10 +1213,14 @@ void pg_reset_pipeline(pg_ctx_t* ctx)
     pg_set_pipeline(ctx, ctx->default_pipeline);
 }
 
-void pg_bind_texture(pg_ctx_t* ctx, int slot, pg_texture_t* texture)
+void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* texture)
 {
+    int slot = shader->internal.get_img_slot(SG_SHADERSTAGE_FS, name);
+
+    PICO_GFX_ASSERT(slot >= 0);
     PICO_GFX_ASSERT(slot < PICO_GFX_MAX_TEXTURE_SLOTS);
-    ctx->state.textures[slot] = texture;
+
+    shader->ctx->state.textures[slot] = texture;
 }
 
 void pg_reset_textures(pg_ctx_t* ctx)
@@ -1242,9 +1228,14 @@ void pg_reset_textures(pg_ctx_t* ctx)
     memset(&ctx->state.textures, 0, sizeof(ctx->state.textures));
 }
 
-void pg_bind_sampler(pg_ctx_t* ctx, int slot, pg_sampler_t* sampler)
+void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sampler)
 {
-    ctx->state.samplers[slot] = sampler;
+    int slot = shader->internal.get_smp_slot(SG_SHADERSTAGE_FS, name);
+
+    PICO_GFX_ASSERT(slot >= 0);
+    PICO_GFX_ASSERT(slot < PICO_GFX_MAX_TEXTURE_SLOTS);
+
+    shader->ctx->state.samplers[slot] = sampler;
 }
 
 void pg_reset_samplers(pg_ctx_t* ctx)
@@ -1315,7 +1306,7 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
 
     sg_pipeline_desc desc = { 0 };
 
-    int slot = pg_get_attribute_slot(shader, "a_pos");
+    int slot = shader->internal.get_attr_slot("a_pos");
 
     if (slot >= 0)
     {
@@ -1326,7 +1317,7 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
         };
     }
 
-    slot = pg_get_attribute_slot(shader, "a_color");
+    slot = shader->internal.get_attr_slot("a_color");
 
     if (slot >= 0)
     {
@@ -1337,7 +1328,7 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
         };
     }
 
-    slot = pg_get_attribute_slot(shader, "a_uv");
+    slot = shader->internal.get_attr_slot("a_uv");
 
     if (slot >= 0)
     {
@@ -1430,21 +1421,6 @@ void pg_destroy_shader(pg_shader_t* shader)
     pg_hashtable_free(shader->uniform_blocks);
     pg_arena_free(shader->arena);
     PICO_GFX_FREE(shader, shader->ctx->mem_ctx);
-}
-
-int pg_get_attribute_slot(const pg_shader_t* shader, const char* name)
-{
-    return shader->internal.get_attr_slot(name);
-}
-
-int pg_get_image_slot(const pg_shader_t* shader, const char* name)
-{
-    return shader->internal.get_img_slot(SG_SHADERSTAGE_FS, name);
-}
-
-int pg_get_sampler_slot(const pg_shader_t* shader, const char* name)
-{
-    return shader->internal.get_smp_slot(SG_SHADERSTAGE_FS, name);
 }
 
 uint32_t pg_get_shader_id(const pg_shader_t* shader)

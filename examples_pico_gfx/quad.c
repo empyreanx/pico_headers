@@ -145,13 +145,13 @@ int main(int argc, char *argv[])
 
 
         // Bind sampler
-        pg_bind_sampler(ctx, 0, sampler);
+        pg_bind_sampler(default_shader, "u_smp", sampler);
 
         // Save current state
         pg_push_state(ctx);
 
         // Bind texture
-        pg_bind_texture(ctx, 0, tex);
+        pg_bind_texture(default_shader, "u_tex", tex);
 
         // First pass: draw to render target
         pg_begin_pass(ctx, target, true);
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 
         // Second pass: draw render target to the screen
         pg_push_state(ctx);
-        pg_bind_texture(ctx, 0, target);
+        pg_bind_texture(default_shader, "u_tex", target);
 
         pg_begin_pass(ctx, NULL, true);
         pg_draw_array(ctx, vertices, 6);
