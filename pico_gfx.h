@@ -65,23 +65,13 @@
     `pg_reset_projection` and `pg_reset_transform` respectively. Note,
     these functions only work with the default shader.
 
-    Default shader
-    --------
-
-    The default shader now lives in it's own separate header file. This was done
-    to make it easier to update the shader and to reduce clutter in the header.
-    A single change was introduced after compilation; the once pragma was
-    replaced with an ifdef style include guard. In general, when using custom
-    shaders, this is probably not a neccessary step.
+    Please see the examples for more details.
 
     C++
     --------
 
-    In this iteration, considerations for C++ have been removed for convenience,
-    elegance. and because the author is not a C++ developer. Proper C++
-    compatibility will probably be introduced in the future.
-
-    Please see the examples for more details.
+    In this iteration, pico_gfx is a C only library. Proper C++ compatibility
+    may be introduced in the future.
 
     Build:
     --------
@@ -112,8 +102,8 @@
 
     - PICO_GFX_STACK_MAX_SIZE (default: 16)
     - PICO_GFX_BUFFER_SIZE (default: 1024)
-    - PG_GFX_HT_MIN_CAPACITY (default: 8)
-    - PG_GFX_HT_KEY_SIZE (default: 16)
+    - PICO_GFX_HT_MIN_CAPACITY (default: 8)
+    - PICO_GFX_HT_KEY_SIZE (default: 16)
     - PICO_GFX_MIN_ARENA_CAPACITY (default: 1024)
     - PICO_GFX_MAX_TEXTURE_SLOTS (default: 16)
     - PICO_GFX_MAX_SAMPLER_SLOTS (default: 16)
@@ -724,12 +714,12 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 #define PICO_GFX_BUFFER_SIZE 16384
 #endif
 
-#ifndef PG_GFX_HT_MIN_CAPACITY
-#define PG_GFX_HT_MIN_CAPACITY 16
+#ifndef PICO_GFX_HT_MIN_CAPACITY
+#define PICO_GFX_HT_MIN_CAPACITY 16
 #endif
 
-#ifndef PG_GFX_HT_KEY_SIZE
-#define PG_GFX_HT_KEY_SIZE 16
+#ifndef PICO_GFX_HT_KEY_SIZE
+#define PICO_GFX_HT_KEY_SIZE 16
 #endif
 
 #ifndef PICO_GFX_MIN_ARENA_CAPACITY
@@ -1426,8 +1416,8 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 
     shader->handle = sg_make_shader(shader->desc);
 
-    shader->uniform_blocks = pg_hashtable_new(PG_GFX_HT_MIN_CAPACITY,
-                                              PG_GFX_HT_KEY_SIZE,
+    shader->uniform_blocks = pg_hashtable_new(PICO_GFX_HT_MIN_CAPACITY,
+                                              PICO_GFX_HT_KEY_SIZE,
                                               sizeof(pg_uniform_block_t),
                                               ctx->mem_ctx);
 
