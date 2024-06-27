@@ -595,6 +595,20 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
                                 pgl_size_t count);
 
 /**
+ * @brief Substitutes the data in a buffer with new data
+ *
+ * @param ctx      The relevant context
+ * @param buffer   The buffer to write to
+ * @param vertices A vertex array
+ * @param count    The number of vertices to substitute.
+ */
+void pgl_sub_buffer_data(pgl_ctx_t *ctx,
+                         pgl_buffer_t* buffer,
+                         const pgl_vertex_t* vertices,
+                         pgl_size_t count,
+                         pgl_size_t offset);
+
+/**
  * @brief Destroys a previously created buffer
  */
 void pgl_destroy_buffer(pgl_buffer_t* buffer);
@@ -2123,7 +2137,7 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
     PGL_CHECK(glBindVertexArray(buffer->vao));
 
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
-    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
+    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_DYNAMIC_DRAW));
 
     pgl_bind_attributes();
     PGL_CHECK(glBindVertexArray(0));
@@ -2132,6 +2146,22 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
     buffer->count = count;
 
     return buffer;
+}
+
+void pgl_sub_buffer_data(pgl_ctx_t* ctx,
+                         pgl_buffer_t* buffer,
+                         const pgl_vertex_t* vertices,
+                         pgl_size_t count,
+                         pgl_size_t offset)
+{
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(vertices);
+    PGL_ASSERT(count + offset <= buffer->count);
+
+    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
+    PGL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, count * sizeof(pgl_vertex_t), vertices));
+
+    buffer->count = count;
 }
 
 void pgl_destroy_buffer(pgl_buffer_t* buffer)
