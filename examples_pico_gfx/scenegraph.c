@@ -52,7 +52,6 @@ static struct
     SDL_GLContext context;
     int screen_w;
     int screen_h;
-    vs_block_t vs_block;
 } app;
 
 typedef struct
@@ -195,9 +194,10 @@ void node_render(node_t* node, double alpha)
         });
 
         // Draw vertices
-        pg_bind_texture(pg_get_default_shader(ctx), "u_tex", sprite->tex);
+        pg_shader_t* default_shader = pg_get_default_shader(ctx);
+        pg_bind_texture(default_shader, "u_tex", sprite->tex);
         pg_draw_vbuffer(ctx, sprite->buf, 0, 6);
-        pg_bind_texture(pg_get_default_shader(ctx), "u_tex", NULL);
+        pg_bind_texture(default_shader, "u_tex", NULL);
     }
 }
 
@@ -211,6 +211,8 @@ pg_texture_t* load_texture(const char* file)
 
     size_t size = w * h * c;
     pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, &(pg_texture_opts_t){0});
+
+    free(bitmap);
 
     return tex;
 }

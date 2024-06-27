@@ -53,7 +53,7 @@
     stack to restore the original state.
 
     Shaders expose uniforms in blocks. These blocks must be registered with the
-    shader by calling `pg_register_uniform_block`. They may then be set at will
+    shader by calling `pg_init_uniform_block`. They may then be set at will
     by calling `pg_set_uniform_block`. These functions typically operate on
     structs supplied by a custom shader,
 
@@ -677,8 +677,7 @@ typedef struct
 	int (*get_uniformblock_slot)(sg_shader_stage stage, const char* ub_name);
 } pg_shader_internal_t;
 
-pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx,
-                                       pg_shader_internal_t internal);
+pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal);
 
 #endif // PICO_GFX_H
 
@@ -818,13 +817,6 @@ static void* pg_arena_alloc(pg_arena_t* arena, size_t size);
 static void pg_arena_free(pg_arena_t* arena);
 
 /*=============================================================================
- * Default Shader Reflection Function Declarations
- *============================================================================*/
-
-const sg_shader_desc* pg_default_shader_desc(sg_backend backend);
-int pg_default_uniformblock_slot(sg_shader_stage stage, const char* ub_name);
-
-/*=============================================================================
  * GFX Public API Implementation
  *============================================================================*/
 
@@ -852,9 +844,9 @@ typedef struct pg_state_t
     pg_rect_t      viewport;
     pg_rect_t      scissor;
     pg_shader_t*   shader;
-    vs_block_t  vs_block;
     pg_texture_t*  textures[PICO_GFX_MAX_TEXTURE_SLOTS];
     pg_sampler_t*  samplers[PICO_GFX_MAX_SAMPLER_SLOTS];
+    vs_block_t     vs_block;
 } pg_state_t;
 
 struct pg_ctx_t
@@ -1556,8 +1548,6 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
 
 void pg_destroy_texture(pg_texture_t* texture)
 {
-
-
     if (texture->target)
     {
         sg_destroy_image(texture->depth_handle);
@@ -1594,8 +1584,6 @@ void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height)
 
 pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts)
 {
-
-
     if (opts == NULL)
         opts = &(pg_sampler_opts_t){ 0 };
 
@@ -1617,8 +1605,6 @@ pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts)
 
 void pg_destroy_sampler(pg_sampler_t* sampler)
 {
-
-
     sg_destroy_sampler(sampler->handle);
     PICO_GFX_FREE(sampler, sampler->ctx->mem_ctx);
 }
