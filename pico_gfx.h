@@ -542,6 +542,11 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
 void pg_destroy_pipeline(pg_pipeline_t* pipeline);
 
 /**
+ * @brief Returns the shader associated with the pipeline
+ */
+pg_shader_t* pg_get_pipeline_shader(const pg_pipeline_t* pipeline);
+
+/**
  * @brief Texture creation options
  */
 typedef struct pg_texture_opts_t
@@ -1366,10 +1371,13 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
 
 void pg_destroy_pipeline(pg_pipeline_t* pipeline)
 {
-
-
     sg_destroy_pipeline(pipeline->handle);
     PICO_GFX_FREE(pipeline, pipeline->ctx->mem_ctx);
+}
+
+pg_shader_t* pg_get_pipeline_shader(const pg_pipeline_t* pipeline)
+{
+    return pipeline->shader;
 }
 
 pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal)
