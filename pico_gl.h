@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 27/06/2024 22:37:23.
+/// WARNING: This file was automatically generated on 27/06/2024 15:49:38.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -4778,7 +4778,7 @@ void pgl_sub_buffer_data(pgl_ctx_t* ctx,
 {
     PGL_ASSERT(ctx);
     PGL_ASSERT(vertices);
-    PGL_ASSERT(count + offset <= buffer->count);
+    PGL_ASSERT(count + offset <= (pgl_size_t)buffer->count);
 
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
     PGL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, count * sizeof(pgl_vertex_t), vertices));

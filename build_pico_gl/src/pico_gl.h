@@ -2156,7 +2156,7 @@ void pgl_sub_buffer_data(pgl_ctx_t* ctx,
 {
     PGL_ASSERT(ctx);
     PGL_ASSERT(vertices);
-    PGL_ASSERT(count + offset <= buffer->count);
+    PGL_ASSERT(count + offset <= (pgl_size_t)buffer->count);
 
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
     PGL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, count * sizeof(pgl_vertex_t), vertices));
