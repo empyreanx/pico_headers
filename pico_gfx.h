@@ -592,8 +592,9 @@ void pg_update_texture(pg_texture_t* texture, char* data, int width, int height)
  */
 typedef struct
 {
-    bool smooth; //!< Linear filtering if true, nearest otherwise
-    bool repeat; //!< Repeat if true, clamp-to-edge otherwise
+    bool smooth;   //!< Linear filtering if true, nearest otherwise
+    bool repeat_u; //!< Repeat if true, clamp-to-edge otherwise
+    bool repeat_v; //!< Repeat if true, clamp-to-edge otherwise
 } pg_sampler_opts_t;
 
 /**
@@ -1615,8 +1616,8 @@ pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts)
     desc.min_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
     desc.mag_filter = (opts->smooth) ? SG_FILTER_LINEAR : SG_FILTER_NEAREST;
 
-    desc.wrap_u = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
-    desc.wrap_v = (opts->repeat) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
+    desc.wrap_u = (opts->repeat_u) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
+    desc.wrap_v = (opts->repeat_v) ? SG_WRAP_REPEAT : SG_WRAP_CLAMP_TO_EDGE;
 
     sampler->ctx = ctx;
     sampler->handle = sg_make_sampler(&desc);
