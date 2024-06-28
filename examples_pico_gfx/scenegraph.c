@@ -387,9 +387,9 @@ int main(int argc, char *argv[])
 
     pg_set_projection(ctx, (pg_mat4_t)
     {
-        2.0f / w,  0.0f,     0.0f, 0.0f,
-        0.0f,      -2.0f / h, 0.0f, 0.0f,
-        0.0f,      0.0f,     0.0f, 0.0f,
+         2.0f / w, 0.0f,     0.0f, 0.0f,
+         0.0f,    -2.0f / h, 0.0f, 0.0f,
+         0.0f,     0.0f,     0.0f, 0.0f,
         -1.0f,     1.0f,     0.0f, 1.0f
     });
 
