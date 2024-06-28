@@ -83,6 +83,8 @@
 
     to a source file.
 
+    IMPORTANT: sokol_gfx.h must be in the include path!
+
     You must also define one of
 
     #define PICO_GFX_GL
@@ -92,8 +94,6 @@
     #define PICO_GFX_WEBGPU
 
     before including pico_gfx.h
-
-    IMPORTANT: sokol_gfx.h must be in the include path!
 
     See the examples for build details.
 
@@ -140,7 +140,6 @@
 #define PICO_GFX_H
 
 #include "sokol_gfx.h"
-//#include "pico_gfx_shader.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -302,7 +301,7 @@ void pg_destroy_context(pg_ctx_t* ctx);
 /**
  * @brief Returns the backend in use at runtime
 */
-pg_backend_t pg_backend();
+pg_backend_t pg_backend(void);
 
 /**
  * @brief Sets the window dimensions
@@ -1023,7 +1022,7 @@ void pg_destroy_context(pg_ctx_t* ctx)
     PICO_GFX_FREE(ctx, ctx->mem_ctx);
 }
 
-pg_backend_t pg_backend()
+pg_backend_t pg_backend(void)
 {
     #if defined (PICO_GFX_GL)
         return PG_BACKEND_GL;
