@@ -117,6 +117,8 @@ int main(int argc, char *argv[])
         .target = true
     });
 
+    pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
+
     bool done = false;
 
     while (!done)
@@ -141,22 +143,33 @@ int main(int argc, char *argv[])
             }
         }
 
+
+        // Bind sampler
+        pg_bind_sampler(default_shader, "u_smp", sampler);
+
         // Save current state
         pg_push_state(ctx);
+
+        // Bind texture
+        pg_bind_texture(default_shader, "u_tex", tex);
 
         // First pass: draw to render target
         pg_begin_pass(ctx, target, true);
         pg_set_pipeline(ctx, pip);
-        pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6, tex);
+        pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6);
         pg_end_pass(ctx);
 
         // Restore previous state
         pg_pop_state(ctx);
 
         // Second pass: draw render target to the screen
+        pg_push_state(ctx);
+        pg_bind_texture(default_shader, "u_tex", target);
+
         pg_begin_pass(ctx, NULL, true);
-        pg_draw_array(ctx, vertices, 6, target);
+        pg_draw_array(ctx, vertices, 6);
         pg_end_pass(ctx);
+        pg_pop_state(ctx);
 
         // Flush draw commands
         pg_flush(ctx);
@@ -164,10 +177,11 @@ int main(int argc, char *argv[])
         SDL_GL_SwapWindow(window);
     }
 
-    pg_destroy_texture(ctx, target);
-    pg_destroy_texture(ctx, tex);
+    pg_destroy_texture(target);
+    pg_destroy_texture(tex);
+    pg_destroy_sampler(sampler);
 
-    pg_destroy_pipeline(ctx, pip);
+    pg_destroy_pipeline(pip);
     pg_destroy_context(ctx);
 
     pg_shutdown();

@@ -52,7 +52,6 @@ static struct
     SDL_GLContext context;
     int screen_w;
     int screen_h;
-    pg_vs_block_t vs_block;
 } app;
 
 typedef struct
@@ -98,8 +97,8 @@ sprite_t* sprite_new(int w, int h, pg_texture_t* tex)
 
 void sprite_free(sprite_t* sprite)
 {
-    pg_destroy_vbuffer(ctx, sprite->buf);
-    pg_destroy_texture(ctx, sprite->tex);
+    pg_destroy_vbuffer(sprite->buf);
+    pg_destroy_texture(sprite->tex);
     free(sprite);
 }
 
@@ -195,7 +194,10 @@ void node_render(node_t* node, double alpha)
         });
 
         // Draw vertices
-        pg_draw_vbuffer(ctx, sprite->buf, 0, 6, sprite->tex);
+        pg_shader_t* default_shader = pg_get_default_shader(ctx);
+        pg_bind_texture(default_shader, "u_tex", sprite->tex);
+        pg_draw_vbuffer(ctx, sprite->buf, 0, 6);
+        pg_bind_texture(default_shader, "u_tex", NULL);
     }
 }
 
@@ -209,6 +211,8 @@ pg_texture_t* load_texture(const char* file)
 
     size_t size = w * h * c;
     pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, &(pg_texture_opts_t){0});
+
+    free(bitmap);
 
     return tex;
 }
@@ -383,10 +387,10 @@ int main(int argc, char *argv[])
 
     pg_set_projection(ctx, (pg_mat4_t)
     {
-        2.0f / w,  0.0f,     0.0f, 0.0f,
-        0.0f,      2.0f / h, 0.0f, 0.0f,
-        0.0f,      0.0f,     0.0f, 0.0f,
-       -1.0f,     -1.0f,     0.0f, 1.0f
+         2.0f / w, 0.0f,     0.0f, 0.0f,
+         0.0f,    -2.0f / h, 0.0f, 0.0f,
+         0.0f,     0.0f,     0.0f, 0.0f,
+        -1.0f,     1.0f,     0.0f, 1.0f
     });
 
     pg_pipeline_t* pip = pg_create_pipeline(ctx, default_shader, &(pg_pipeline_opts_t)
@@ -400,6 +404,9 @@ int main(int argc, char *argv[])
     });
 
     pg_set_pipeline(ctx, pip);
+
+    pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
+    pg_bind_sampler(default_shader, "u_smp", sampler);
 
     // Build scene graph
     scenegraph_t* sg = sg_build(app.screen_w, app.screen_h);
@@ -477,7 +484,8 @@ int main(int argc, char *argv[])
 
     sg_free(sg);
 
-    pg_destroy_pipeline(ctx, pip);
+    pg_destroy_pipeline(pip);
+    pg_destroy_sampler(sampler);
 
     pg_destroy_context(ctx);
 
