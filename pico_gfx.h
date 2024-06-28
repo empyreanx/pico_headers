@@ -93,7 +93,7 @@
 
     before including pico_gfx.h
 
-    IMPORTANT: sokol_gfx.h and pico_gfx_shader.h must be in the include path!
+    IMPORTANT: sokol_gfx.h must be in the include path!
 
     See the examples for build details.
 
@@ -101,7 +101,7 @@
     --------
 
     - PICO_GFX_STACK_MAX_SIZE (default: 16)
-    - PICO_GFX_BUFFER_SIZE (default: 1024)
+    - PICO_GFX_BUFFER_SIZE (default: 16384)
     - PICO_GFX_HT_MIN_CAPACITY (default: 8)
     - PICO_GFX_HT_KEY_SIZE (default: 16)
     - PICO_GFX_MIN_ARENA_CAPACITY (default: 1024)
@@ -1380,13 +1380,13 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
     desc.shader = shader->handle;
 
     pg_pipeline_t* pipeline = PICO_GFX_MALLOC(sizeof(pg_pipeline_t), ctx->mem_ctx);
+
     pipeline->ctx = ctx;
     pipeline->handle = sg_make_pipeline(&desc);
-
-    PICO_GFX_ASSERT(sg_query_pipeline_state(pipeline->handle) == SG_RESOURCESTATE_VALID);
-
     pipeline->indexed = opts->indexed;
     pipeline->shader = shader;
+
+    PICO_GFX_ASSERT(sg_query_pipeline_state(pipeline->handle) == SG_RESOURCESTATE_VALID);
 
     return pipeline;
 }
@@ -1404,8 +1404,6 @@ pg_shader_t* pg_get_pipeline_shader(const pg_pipeline_t* pipeline)
 
 pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal)
 {
-
-
     pg_shader_t* shader = PICO_GFX_MALLOC(sizeof(pg_shader_t), ctx->mem_ctx);
 
     shader->ctx = ctx;
@@ -1495,8 +1493,6 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
                                 const uint8_t* data, size_t size,
                                 const pg_texture_opts_t* opts)
 {
-
-
     PICO_GFX_ASSERT(width > 0);
     PICO_GFX_ASSERT(height > 0);
     PICO_GFX_ASSERT(data);
@@ -1532,8 +1528,6 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
                                        int width, int height,
                                        const pg_texture_opts_t* opts)
 {
-
-
     PICO_GFX_ASSERT(width > 0);
     PICO_GFX_ASSERT(height > 0);
 
