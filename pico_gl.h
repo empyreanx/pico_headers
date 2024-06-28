@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 27/06/2024 22:37:23.
+/// WARNING: This file was automatically generated on 28/06/2024 15:07:59.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -200,6 +200,15 @@ typedef enum
     PGL_TRIANGLES,      //!< Each adjacent triple forms an individual triangle
     PGL_TRIANGLE_STRIP, //!< Array of points where every triple forms a triangle
 } pgl_primitive_t;
+
+/**
+ * @brief Step functions for vertex buffers
+ */
+typedef enum
+{
+    PGL_VERTEX_STEP_PER_VERTEX,   //!< Step through vertices per vertex
+    PGL_VERTEX_STEP_PER_INSTANCE, //!< Step through vertices per instance
+} pgl_vertex_step_function_t;
 
 /**
  * @brief A vertex describes a point and the data associated with it (color and
@@ -3813,7 +3822,7 @@ static void pgl_after_draw(pgl_ctx_t* ctx);
 static int pgl_load_uniforms(pgl_shader_t* shader);
 static const pgl_uniform_t* pgl_find_uniform(const pgl_shader_t* shader, const char* name);
 
-static void pgl_bind_attributes();
+static void pgl_bind_attributes(pgl_vertex_step_function_t vertex_step_function);
 
 static void pgl_log(const char* fmt, ...);
 static void pgl_log_error(const char* file, unsigned line, const char* expr);
@@ -4083,7 +4092,7 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
     PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW));
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW));
-    pgl_bind_attributes();
+    pgl_bind_attributes(PGL_VERTEX_STEP_PER_VERTEX);
     PGL_CHECK(glBindVertexArray(0));
 
     if (samples > 0)
@@ -4761,7 +4770,7 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_DYNAMIC_DRAW));
 
-    pgl_bind_attributes();
+    pgl_bind_attributes(PGL_VERTEX_STEP_PER_VERTEX);
     PGL_CHECK(glBindVertexArray(0));
 
     buffer->primitive = pgl_primitive_map[primitive];
@@ -5641,13 +5650,15 @@ static const pgl_uniform_t* pgl_find_uniform(const pgl_shader_t* shader, const c
     return NULL;
 }
 
-static void pgl_bind_attributes()
+static void pgl_bind_attributes(pgl_vertex_step_function_t vertex_step_function)
 {
+    pgl_int32_t divisor = vertex_step_function == PGL_VERTEX_STEP_PER_INSTANCE;
     // Position
     PGL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                                     sizeof(pgl_vertex_t),
                                     (GLvoid*)offsetof(pgl_vertex_t, pos)));
 
+    PGL_CHECK(glVertexAttribDivisor(0, divisor));
     PGL_CHECK(glEnableVertexAttribArray(0));
 
     // Color
@@ -5655,6 +5666,7 @@ static void pgl_bind_attributes()
                                     sizeof(pgl_vertex_t),
                                     (GLvoid*)offsetof(pgl_vertex_t, color)));
 
+    PGL_CHECK(glVertexAttribDivisor(1, divisor));
     PGL_CHECK(glEnableVertexAttribArray(1));
 
     // UV
@@ -5662,6 +5674,7 @@ static void pgl_bind_attributes()
                                     sizeof(pgl_vertex_t),
                                     (GLvoid*)offsetof(pgl_vertex_t, uv)));
 
+    PGL_CHECK(glVertexAttribDivisor(2, divisor));
     PGL_CHECK(glEnableVertexAttribArray(2));
 
 }
