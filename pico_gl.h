@@ -1022,7 +1022,7 @@ void pgl_set_s2d(pgl_shader_t* shader, const char* name, int32_t value);
     APIs: gl=3.3, gles2=3.1
     Profile: core
     Extensions:
-        
+
     Loader: True
     Local files: True
     Omit khrplatform: False
@@ -4787,7 +4787,7 @@ void pgl_sub_buffer_data(pgl_ctx_t* ctx,
 {
     PGL_ASSERT(ctx);
     PGL_ASSERT(vertices);
-    PGL_ASSERT(count + offset <= buffer->count);
+    PGL_ASSERT(count + offset <= (pgl_size_t)buffer->count);
 
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
     PGL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, count * sizeof(pgl_vertex_t), vertices));
@@ -5760,7 +5760,7 @@ static pgl_hash_t pgl_hash_str(const char* str)
     APIs: gl=3.3, gles2=3.1
     Profile: core
     Extensions:
-        
+
     Loader: True
     Local files: True
     Omit khrplatform: False
