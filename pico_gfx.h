@@ -121,6 +121,9 @@
     The above (constants/macros) must be defined before PICO_GFX_IMPLEMENTATION
 */
 
+#ifndef PICO_GFX_H
+#define PICO_GFX_H
+
 // Backend conversion macros
 #if defined (PICO_GFX_GL)
     #define SOKOL_GLCORE
@@ -135,9 +138,6 @@
 #else
     #error "GFX backend must be specified"
 #endif
-
-#ifndef PICO_GFX_H
-#define PICO_GFX_H
 
 #include "sokol_gfx.h"
 
