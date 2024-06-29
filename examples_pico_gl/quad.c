@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
 
-    pgl_buffer_t* buffer = pgl_create_buffer(ctx, PGL_TRIANGLES, vertices, 6);
+    pgl_buffer_t* buffer = pgl_create_buffer(ctx, PGL_TRIANGLES, PGL_VERTEX_STEP_PER_VERTEX, vertices, 6);
 
     bool done = false;
 

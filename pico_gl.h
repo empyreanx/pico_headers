@@ -1,5 +1,5 @@
 ///=============================================================================
-/// WARNING: This file was automatically generated on 27/06/2024 15:49:38.
+/// WARNING: This file was automatically generated on 29/06/2024 16:04:58.
 /// DO NOT EDIT!
 ///============================================================================
 
@@ -200,6 +200,15 @@ typedef enum
     PGL_TRIANGLES,      //!< Each adjacent triple forms an individual triangle
     PGL_TRIANGLE_STRIP, //!< Array of points where every triple forms a triangle
 } pgl_primitive_t;
+
+/**
+ * @brief Step functions for vertex buffers
+ */
+typedef enum
+{
+    PGL_VERTEX_STEP_PER_VERTEX,   //!< Step through vertices per vertex
+    PGL_VERTEX_STEP_PER_INSTANCE, //!< Step through vertices per instance
+} pgl_vertex_step_function_t;
 
 /**
  * @brief A vertex describes a point and the data associated with it (color and
@@ -548,7 +557,7 @@ int pgl_set_render_target(pgl_ctx_t* ctx, pgl_texture_t* texture);
 void pgl_clear(float r, float g, float b, float a);
 
 /**
- * Draws primitives according to a vertex array
+ * @brief Draws primitives according to a vertex array
  *
  * @param ctx       The relevant context
  * @param primitive The type of geometry to draw
@@ -565,14 +574,33 @@ void pgl_draw_array(pgl_ctx_t* ctx,
                     pgl_shader_t* shader);
 
 /**
- * Draws primvities according to vertex and index arrays
+ * @brief Draws instances of primitives according to a vertex array
+ *
+ * @param ctx       The relevant context
+ * @param primitive The type of geometry to draw
+ * @param vertices  A vertex array
+ * @param count     The number of vertices
+ * @param instances The numver of intances to draw
+ * @param texture   The texture to draw from (can be `NULL`)
+ * @param shader    The shader used to draw the array (cannot be `NULL`)
+ */
+void pgl_draw_instanced_array(pgl_ctx_t* ctx,
+                              pgl_primitive_t primitive,
+                              const pgl_vertex_t* vertices,
+                              pgl_size_t count,
+                              pgl_size_t instances,
+                              pgl_texture_t* texture,
+                              pgl_shader_t* shader);
+
+/**
+ * @brief Draws primitives according to vertex and index arrays
  *
  * @param ctx          The relevant context
  * @param primitive    The type of geometry to draw
  * @param vertices     An array of vertices
  * @param vertex_count The number of vertices
  * @param indices      An array of indices
- * @param index_ count The number of indicies
+ * @param index_count The number of indicies
  * @param texture      The texture to draw from (can be `NULL`)
  * @param shader       The shader used to draw the array (cannot be `NULL`)
  */
@@ -584,18 +612,41 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
                             pgl_shader_t* shader);
 
 /**
+ * @brief Draws instances of primitives according to vertex and index arrays
+ *
+ * @param ctx          The relevant context
+ * @param primitive    The type of geometry to draw
+ * @param vertices     An array of vertices
+ * @param vertex_count The number of vertices
+ * @param indices      An array of indices
+ * @param index_count  The number of indicies
+ * @param instances    The number of instances to draw
+ * @param texture      The texture to draw from (can be `NULL`)
+ * @param shader       The shader used to draw the array (cannot be `NULL`)
+ */
+void pgl_draw_indexed_instanced_array(pgl_ctx_t* ctx,
+                                      pgl_primitive_t primitive,
+                                      const pgl_vertex_t* vertices, pgl_size_t vertex_count,
+                                      const uint32_t* indices, pgl_size_t index_count,
+                                      pgl_size_t instances,
+                                      pgl_texture_t* texture,
+                                      pgl_shader_t* shader);
+
+/**
  * @brief Creates a buffer in VRAM to store an array of vertices that can then
  * be rendered without having upload the vertices every time they are drawn
  *
- * @param ctx       The relevant context
- * @param primitive The type of geometry to draw
- * @param vertices  A vertex array
- * @param count     The number of vertices to store in the buffer
+ * @param ctx                  The relevant context
+ * @param primitive            The type of geometry to draw
+ * @param vertex_step_function Describes to the GPU how to step through the buffers data when drawing
+ * @param vertices             A vertex array
+ * @param count                The number of vertices to store in the buffer
  *
  * @returns A pointer to the buffer or `NULL` on error
  */
 pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
                                 pgl_primitive_t primitive,
+                                pgl_vertex_step_function_t vertex_step_function,
                                 const pgl_vertex_t* vertices,
                                 pgl_size_t count);
 
@@ -633,6 +684,25 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
                      pgl_size_t start, pgl_size_t count,
                      pgl_texture_t* texture,
                      pgl_shader_t* shader);
+
+/**
+ * @brief Draw a previously created buffer as instances
+ *
+ * @param ctx       The relevant context
+ * @param buffer    The buffer to draw
+ * @param start     The base vertex index
+ * @param count     The number of vertices to draw from `start`
+ * @param instances The amount of instances to draw
+ * @param texture   The texture to draw from (can be `NULL`)
+ * @param shader    The shader used to draw the array (cannot be `NULL`)
+ */
+void pgl_draw_instanced_buffer(pgl_ctx_t* ctx,
+                               const pgl_buffer_t* buffer,
+                               pgl_size_t start,
+                               pgl_size_t count,
+                               pgl_size_t instances,
+                               pgl_texture_t* texture,
+                               pgl_shader_t* shader);
 
 /**
  * @brief Turns matrix transposition on/off
@@ -880,7 +950,6 @@ void pgl_set_3f(pgl_shader_t* shader, const char* name, float x, float y, float 
  */
 void pgl_set_4f(pgl_shader_t* shader, const char* name, float x, float y,
                                                         float z, float w);
-
 /**
  * @brief Sets a 2D floating point uniform by vector
  *
@@ -3813,7 +3882,7 @@ static void pgl_after_draw(pgl_ctx_t* ctx);
 static int pgl_load_uniforms(pgl_shader_t* shader);
 static const pgl_uniform_t* pgl_find_uniform(const pgl_shader_t* shader, const char* name);
 
-static void pgl_bind_attributes();
+static void pgl_bind_attributes(pgl_vertex_step_function_t vertex_step_function);
 
 static void pgl_log(const char* fmt, ...);
 static void pgl_log_error(const char* file, unsigned line, const char* expr);
@@ -3948,6 +4017,7 @@ struct pgl_buffer_t
     GLuint  vao;
     GLuint  vbo;
     GLsizei count;
+    pgl_vertex_step_function_t vertex_step_function;
 };
 
 pgl_error_t pgl_get_error(pgl_ctx_t* ctx)
@@ -4083,7 +4153,7 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
     PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW));
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW));
-    pgl_bind_attributes();
+    pgl_bind_attributes(PGL_VERTEX_STEP_PER_VERTEX);
     PGL_CHECK(glBindVertexArray(0));
 
     if (samples > 0)
@@ -4229,7 +4299,6 @@ pgl_shader_t* pgl_create_shader(pgl_ctx_t* ctx, const char* vert_src,
 }
 
 void pgl_destroy_shader(pgl_shader_t* shader)
-
 {
     PGL_ASSERT(shader);
 
@@ -4709,6 +4778,31 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     pgl_after_draw(ctx);
 }
 
+void pgl_draw_instanced_array(pgl_ctx_t* ctx,
+                              pgl_primitive_t primitive,
+                              const pgl_vertex_t* vertices,
+                              pgl_size_t count,
+                              pgl_size_t instances,
+                              pgl_texture_t* texture,
+                              pgl_shader_t* shader)
+{
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(vertices);
+    PGL_ASSERT(shader);
+
+    pgl_before_draw(ctx, texture, shader);
+
+    PGL_CHECK(glBindVertexArray(ctx->vao));
+
+    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
+    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
+
+    PGL_CHECK(glDrawArraysInstanced(pgl_primitive_map[primitive], 0, count, instances));
+    PGL_CHECK(glBindVertexArray(0));
+
+    pgl_after_draw(ctx);
+}
+
 void pgl_draw_indexed_array(pgl_ctx_t* ctx,
                             pgl_primitive_t primitive,
                             const pgl_vertex_t* vertices, pgl_size_t vertex_count,
@@ -4737,8 +4831,38 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
     pgl_after_draw(ctx);
 }
 
+void pgl_draw_indexed_instanced_array(pgl_ctx_t* ctx,
+                                      pgl_primitive_t primitive,
+                                      const pgl_vertex_t* vertices, pgl_size_t vertex_count,
+                                      const uint32_t* indices, pgl_size_t index_count,
+                                      pgl_size_t instances,
+                                      pgl_texture_t* texture,
+                                      pgl_shader_t* shader)
+{
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(vertices);
+    PGL_ASSERT(indices);
+    PGL_ASSERT(shader);
+
+    pgl_before_draw(ctx, texture, shader);
+
+    PGL_CHECK(glBindVertexArray(ctx->vao));
+
+    PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
+    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
+
+    PGL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo));
+    PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), indices, GL_STATIC_DRAW));
+
+    PGL_CHECK(glDrawElementsInstanced(pgl_primitive_map[primitive], index_count, GL_UNSIGNED_INT, 0, instances));
+    PGL_CHECK(glBindVertexArray(0));
+
+    pgl_after_draw(ctx);
+}
+
 pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
                                 pgl_primitive_t primitive,
+                                pgl_vertex_step_function_t vertex_step_function,
                                 const pgl_vertex_t* vertices,
                                 pgl_size_t count)
 {
@@ -4761,11 +4885,12 @@ pgl_buffer_t* pgl_create_buffer(pgl_ctx_t* ctx,
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, buffer->vbo));
     PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_DYNAMIC_DRAW));
 
-    pgl_bind_attributes();
+    pgl_bind_attributes(vertex_step_function);
     PGL_CHECK(glBindVertexArray(0));
 
     buffer->primitive = pgl_primitive_map[primitive];
     buffer->count = count;
+    buffer->vertex_step_function = vertex_step_function;
 
     return buffer;
 }
@@ -4812,6 +4937,29 @@ void pgl_draw_buffer(pgl_ctx_t* ctx,
 
     PGL_CHECK(glBindVertexArray(buffer->vao));
     PGL_CHECK(glDrawArrays(buffer->primitive, start, count));
+    PGL_CHECK(glBindVertexArray(0));
+
+    pgl_after_draw(ctx);
+}
+
+void pgl_draw_instanced_buffer(pgl_ctx_t* ctx,
+                               const pgl_buffer_t* buffer,
+                               pgl_size_t start,
+                               pgl_size_t count,
+                               pgl_size_t instances,
+                               pgl_texture_t* texture,
+                               pgl_shader_t* shader)
+{
+    PGL_ASSERT(ctx);
+    PGL_ASSERT(buffer);
+    PGL_ASSERT(shader);
+
+    PGL_ASSERT(instances <= (pgl_size_t)buffer->count || buffer->vertex_step_function == PGL_VERTEX_STEP_PER_INSTANCE);
+
+    pgl_before_draw(ctx, texture, shader);
+
+    PGL_CHECK(glBindVertexArray(buffer->vao));
+    PGL_CHECK(glDrawArraysInstanced(buffer->primitive, start, count, instances));
     PGL_CHECK(glBindVertexArray(0));
 
     pgl_after_draw(ctx);
@@ -5641,13 +5789,15 @@ static const pgl_uniform_t* pgl_find_uniform(const pgl_shader_t* shader, const c
     return NULL;
 }
 
-static void pgl_bind_attributes()
+static void pgl_bind_attributes(pgl_vertex_step_function_t vertex_step_function)
 {
+    pgl_int32_t divisor = vertex_step_function == PGL_VERTEX_STEP_PER_INSTANCE;
     // Position
     PGL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                                     sizeof(pgl_vertex_t),
                                     (GLvoid*)offsetof(pgl_vertex_t, pos)));
 
+    PGL_CHECK(glVertexAttribDivisor(0, divisor));
     PGL_CHECK(glEnableVertexAttribArray(0));
 
     // Color
@@ -5655,6 +5805,7 @@ static void pgl_bind_attributes()
                                     sizeof(pgl_vertex_t),
                                     (GLvoid*)offsetof(pgl_vertex_t, color)));
 
+    PGL_CHECK(glVertexAttribDivisor(1, divisor));
     PGL_CHECK(glEnableVertexAttribArray(1));
 
     // UV
@@ -5662,6 +5813,7 @@ static void pgl_bind_attributes()
                                     sizeof(pgl_vertex_t),
                                     (GLvoid*)offsetof(pgl_vertex_t, uv)));
 
+    PGL_CHECK(glVertexAttribDivisor(2, divisor));
     PGL_CHECK(glEnableVertexAttribArray(2));
 
 }
