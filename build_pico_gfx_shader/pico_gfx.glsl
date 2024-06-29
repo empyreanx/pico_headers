@@ -1,11 +1,10 @@
 @vs vs
-@glsl_options flip_vert_y
 
 layout(location = 0) in vec3 a_pos;
 layout(location = 1) in vec4 a_color;
 layout(location = 2) in vec2 a_uv;
 
-layout(binding = 0) uniform pg_vs_block {
+layout(binding = 0) uniform vs_block {
     mat4 u_proj;
     mat4 u_tr;
 };
@@ -26,12 +25,13 @@ void main() {
 layout (location = 0) in vec4 color;
 layout (location = 1) in vec2 uv;
 
-layout (binding = 0) uniform sampler2D u_tex;
+layout (binding = 0) uniform texture2D u_tex;
+layout (binding = 1) uniform sampler   u_smp;
 
 out vec4 frag_color;
 
 void main() {
-    frag_color = texture(u_tex, uv) * color;
+    frag_color = texture(sampler2D(u_tex, u_smp), uv) * color;
 }
 
 @end
