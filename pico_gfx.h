@@ -501,16 +501,41 @@ void pg_init_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* na
  */
 void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
 
+
+typedef enum
+{
+    PG_VFORMAT_INVALID,
+    PG_VFORMAT_FLOAT,
+    PG_VFORMAT_FLOAT2,
+    PG_VFORMAT_FLOAT3,
+    PG_VFORMAT_FLOAT4,
+
+} pg_vertex_format_t;
+
+typedef struct
+{
+    pg_vertex_format_t format;
+    int offset;
+} pg_vertex_attr_t;
+
+/*typedef struct
+{
+    size_t size;
+    pg_vertex_attr_t attrs[32];
+} pg_pipeline_layout_t;
+*/
 /**
  * @brief Pipeline creation options
  */
 typedef struct pg_pipeline_opts_t
 {
-    pg_primitive_t primitive; //!< Rendering primitive
-    bool target;              //!< Drawing to render target
-    bool indexed;             //!< Indexed drawing
-    bool blend_enabled;       //!< Enables blending
-    pg_blend_mode_t blend;    //!< Blend mode
+    pg_primitive_t primitive;   //!< Rendering primitive
+    pg_vertex_attr_t attrs[32]; //!< Attribute information
+    size_t size;                //
+    bool target;                //!< Drawing to render target
+    bool indexed;               //!< Indexed drawing
+    bool blend_enabled;         //!< Enables blending
+    pg_blend_mode_t blend;      //!< Blend mode
 } pg_pipeline_opts_t;
 
 /**
@@ -642,7 +667,7 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
  * @param count The number of vertices
  * @param texture The texture to draw from
  */
-void pg_draw_array(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count);
+void pg_draw_array(pg_ctx_t* ctx, const void* data, size_t count);
 
 /**
  * @brief Draws an indexed array of vertices
@@ -654,7 +679,7 @@ void pg_draw_array(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count);
  * @param texture The texture to draw from
  */
 void pg_draw_indexed_array(pg_ctx_t* ctx,
-                           const pg_vertex_t* vertices, size_t vertex_count,
+                           const void* data, size_t data_count,
                            const uint32_t* indices, size_t index_count);
 
 /*=============================================================================
@@ -899,6 +924,7 @@ struct pg_pipeline_t
 {
     pg_ctx_t* ctx;
     sg_pipeline handle;
+    size_t size;
     bool indexed;
     pg_shader_t* shader;
 };
@@ -1304,24 +1330,13 @@ void pg_reset_state(pg_ctx_t* ctx)
     pg_reset_samplers(ctx);
 }
 
-pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
-                                  pg_shader_t* shader,
-                                  const pg_pipeline_opts_t* opts)
+static void pg_set_default_attributes(const pg_shader_t* shader, sg_pipeline_desc* desc)
 {
-
-
-    PICO_GFX_ASSERT(shader);
-
-    if (opts == NULL)
-        opts = &(pg_pipeline_opts_t){ 0 };
-
-    sg_pipeline_desc desc = { 0 };
-
     int slot = shader->internal.get_attr_slot("a_pos");
 
     if (slot >= 0)
     {
-        desc.layout.attrs[slot] = (sg_vertex_attr_state)
+        desc->layout.attrs[slot] = (sg_vertex_attr_state)
         {
             .format = SG_VERTEXFORMAT_FLOAT3,
             .offset = offsetof(pg_vertex_t, pos)
@@ -1332,7 +1347,7 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
 
     if (slot >= 0)
     {
-        desc.layout.attrs[slot] = (sg_vertex_attr_state)
+        desc->layout.attrs[slot] = (sg_vertex_attr_state)
         {
             .format = SG_VERTEXFORMAT_FLOAT4,
             .offset = offsetof(pg_vertex_t, color)
@@ -1343,11 +1358,65 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
 
     if (slot >= 0)
     {
-        desc.layout.attrs[slot] = (sg_vertex_attr_state)
+        desc->layout.attrs[slot] = (sg_vertex_attr_state)
         {
             .format = SG_VERTEXFORMAT_FLOAT2,
             .offset = offsetof(pg_vertex_t, uv)
         };
+    }
+}
+
+static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
+{
+    switch (format)
+    {
+        case PG_VFORMAT_INVALID: return SG_VERTEXFORMAT_INVALID;
+        case PG_VFORMAT_FLOAT:   return SG_VERTEXFORMAT_FLOAT;
+        case PG_VFORMAT_FLOAT2:  return SG_VERTEXFORMAT_FLOAT2;
+        case PG_VFORMAT_FLOAT3:  return SG_VERTEXFORMAT_FLOAT3;
+        case PG_VFORMAT_FLOAT4:  return SG_VERTEXFORMAT_FLOAT4;
+        default: PICO_GFX_ASSERT(false);
+    }
+}
+
+static void pg_set_attributes(pg_shader_t* shader,
+                              const pg_vertex_attr_t* attrs,
+                              sg_pipeline_desc* desc)
+{
+    (void)shader;
+
+    for (int slot = 0; attrs[slot].format != PG_VFORMAT_INVALID; slot++)
+    {
+        desc->layout.attrs[slot] = (sg_vertex_attr_state)
+        {
+            .format = pg_map_vertex_format(attrs[slot].format),
+            .offset = attrs[slot].offset
+        };
+    }
+}
+
+pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
+                                  pg_shader_t* shader,
+                                  const pg_pipeline_opts_t* opts)
+{
+    PICO_GFX_ASSERT(shader);
+
+    if (opts == NULL)
+        opts = &(pg_pipeline_opts_t){ 0 };
+
+    pg_pipeline_t* pipeline = PICO_GFX_MALLOC(sizeof(pg_pipeline_t), ctx->mem_ctx);
+
+    sg_pipeline_desc desc = { 0 };
+
+    if (opts->size > 0)
+    {
+        pg_set_attributes(shader, opts->attrs, &desc);
+        pipeline->size = opts->size;
+    }
+    else
+    {
+        pg_set_default_attributes(shader, &desc);
+        pipeline->size = sizeof(pg_vertex_t);
     }
 
     desc.primitive_type = pg_map_primitive(opts->primitive);
@@ -1378,8 +1447,6 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
     }
 
     desc.shader = shader->handle;
-
-    pg_pipeline_t* pipeline = PICO_GFX_MALLOC(sizeof(pg_pipeline_t), ctx->mem_ctx);
 
     pipeline->ctx = ctx;
     pipeline->handle = sg_make_pipeline(&desc);
@@ -1747,18 +1814,20 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
     sg_draw(start, count, 1);
 }
 
-void pg_draw_array(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count)
+void pg_draw_array(pg_ctx_t* ctx, const void* data, size_t count)
 {
     PICO_GFX_ASSERT(ctx);
-    PICO_GFX_ASSERT(vertices);
+    PICO_GFX_ASSERT(data);
     PICO_GFX_ASSERT(count > 0);
     PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
 
+    pg_pipeline_t* pipeline = ctx->state.pipeline;
+
     int offset = sg_append_buffer(ctx->buffer, &(sg_range)
     {
-        .ptr = vertices,
-        .size = count * sizeof(pg_vertex_t)
+        .ptr = data,
+        .size = count * pipeline->size
     });
 
     sg_bindings bindings = { 0 };
@@ -1771,8 +1840,6 @@ void pg_draw_array(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count)
 
     pg_apply_view_state(ctx);
 
-    pg_pipeline_t* pipeline = ctx->state.pipeline;
-
     sg_apply_pipeline(pipeline->handle);
     sg_apply_bindings(&bindings);
     pg_apply_uniforms(pipeline->shader);
@@ -1781,21 +1848,23 @@ void pg_draw_array(pg_ctx_t* ctx, const pg_vertex_t* vertices, size_t count)
 }
 
 void pg_draw_indexed_array(pg_ctx_t* ctx,
-                           const pg_vertex_t* vertices, size_t vertex_count,
+                           const void* data, size_t data_count,
                            const uint32_t* indices, size_t index_count)
 {
     PICO_GFX_ASSERT(ctx);
-    PICO_GFX_ASSERT(vertices);
-    PICO_GFX_ASSERT(vertex_count > 0);
+    PICO_GFX_ASSERT(data);
+    PICO_GFX_ASSERT(data_count > 0);
     PICO_GFX_ASSERT(indices);
     PICO_GFX_ASSERT(index_count > 0);
     PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(ctx->state.pipeline->indexed);
 
+    pg_pipeline_t* pipeline = ctx->state.pipeline;
+
     int vertex_offset = sg_append_buffer(ctx->buffer, &(sg_range)
     {
-        .ptr = vertices,
-        .size = vertex_count * sizeof(pg_vertex_t)
+        .ptr = data,
+        .size = data_count * pipeline->size
     });
 
     int index_offset = sg_append_buffer(ctx->index_buffer, &(sg_range)
@@ -1815,8 +1884,6 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
     bindings.index_buffer = ctx->index_buffer;
 
     pg_apply_view_state(ctx);
-
-    pg_pipeline_t* pipeline = ctx->state.pipeline;
 
     sg_apply_pipeline(pipeline->handle);
     sg_apply_bindings(&bindings);
