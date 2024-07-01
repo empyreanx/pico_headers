@@ -126,10 +126,11 @@ int main(int argc, char *argv[])
         {
             .attrs =
             {
-                [0] = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
-                [1] = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
-                [2] = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, color) },
-            }
+                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
+                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4, .offset = offsetof(vertex_t, color) },
+                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
+            },
+            .size = sizeof(vertex_t)
         }
     });
 
@@ -139,10 +140,11 @@ int main(int argc, char *argv[])
         {
             .attrs =
             {
-                [0] = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
-                [1] = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
-                [2] = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, color) },
-            }
+                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
+                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4, .offset = offsetof(vertex_t, color) },
+                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
+            },
+            .size = sizeof(vertex_t)
         },
         .indexed = true,
         .target = true
@@ -180,7 +182,7 @@ int main(int argc, char *argv[])
         pg_set_pipeline(ctx, pipeline);
 
         // Save current state
-        pg_push_state(ctx);
+        /*pg_push_state(ctx);
 
         // Bind texture
         pg_bind_texture(shader, "u_tex", tex);
@@ -192,11 +194,11 @@ int main(int argc, char *argv[])
         pg_end_pass(ctx);
 
         // Restore previous state
-        pg_pop_state(ctx);
+        pg_pop_state(ctx);*/
 
         // Second pass: draw render target to the screen
         pg_push_state(ctx);
-        pg_bind_texture(shader, "u_tex", target);
+        pg_bind_texture(shader, "u_tex", tex);
 
         pg_begin_pass(ctx, NULL, true);
         pg_draw_array(ctx, vertices, 6);
