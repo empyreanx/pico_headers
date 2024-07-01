@@ -21,7 +21,18 @@
 #include "stb_image.h"
 
 #define PICO_GFX_GL
+#define PICO_GFX_IMPLEMENTATION
 #include "../pico_gfx.h"
+
+#define SOKOL_SHDC_IMPL
+#include "example_shader.h"
+
+typedef struct
+{
+    float pos[3];
+    float color[4];
+    float uv[2];
+} vertex_t;
 
 int main(int argc, char *argv[])
 {
@@ -67,9 +78,7 @@ int main(int argc, char *argv[])
 
     // Initialize context
     pg_ctx_t* ctx = pg_create_context(pixel_w, pixel_h, NULL);
-
-    // Register/set uniform
-    pg_shader_t* default_shader = pg_get_default_shader(ctx);
+    pg_shader_t* shader = pg_create_shader(ctx, example);
 
     // Load image
 
@@ -89,7 +98,7 @@ int main(int argc, char *argv[])
 
     // Specify vertices
 
-    pg_vertex_t vertices[6] =
+    vertex_t vertices[6] =
     {
         { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
         { {-1.0f, -1.0f }, { 1, 1, 1, 1 }, { 0, 0} },
@@ -100,7 +109,7 @@ int main(int argc, char *argv[])
         { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
     };
 
-    pg_vertex_t indexed_vertices[4] =
+    vertex_t indexed_vertices[4] =
     {
         { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
         { {-1.0f, -1.0f }, { 1, 1, 1, 1 }, { 0, 0} },
@@ -111,8 +120,30 @@ int main(int argc, char *argv[])
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
 
     pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
-    pg_pipeline_t* pip = pg_create_pipeline(ctx, default_shader, &(pg_pipeline_opts_t)
+    pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
     {
+        .layout =
+        {
+            .attrs =
+            {
+                [0] = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
+                [1] = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
+                [2] = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, color) },
+            }
+        }
+    });
+
+    pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
+    {
+        .layout =
+        {
+            .attrs =
+            {
+                [0] = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
+                [1] = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
+                [2] = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, color) },
+            }
+        },
         .indexed = true,
         .target = true
     });
@@ -145,17 +176,18 @@ int main(int argc, char *argv[])
 
 
         // Bind sampler
-        pg_bind_sampler(default_shader, "u_smp", sampler);
+        pg_bind_sampler(shader, "u_smp", sampler);
+        pg_set_pipeline(ctx, pipeline);
 
         // Save current state
         pg_push_state(ctx);
 
         // Bind texture
-        pg_bind_texture(default_shader, "u_tex", tex);
+        pg_bind_texture(shader, "u_tex", tex);
 
         // First pass: draw to render target
         pg_begin_pass(ctx, target, true);
-        pg_set_pipeline(ctx, pip);
+        pg_set_pipeline(ctx, target_pipeline);
         pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6);
         pg_end_pass(ctx);
 
@@ -164,7 +196,7 @@ int main(int argc, char *argv[])
 
         // Second pass: draw render target to the screen
         pg_push_state(ctx);
-        pg_bind_texture(default_shader, "u_tex", target);
+        pg_bind_texture(shader, "u_tex", target);
 
         pg_begin_pass(ctx, NULL, true);
         pg_draw_array(ctx, vertices, 6);
@@ -181,7 +213,9 @@ int main(int argc, char *argv[])
     pg_destroy_texture(tex);
     pg_destroy_sampler(sampler);
 
-    pg_destroy_pipeline(pip);
+    pg_destroy_pipeline(pipeline);
+    pg_destroy_pipeline(target_pipeline);
+    pg_destroy_shader(shader);
     pg_destroy_context(ctx);
 
     pg_shutdown();
@@ -193,7 +227,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
-#define PICO_GFX_IMPLEMENTATION
-#include "../pico_gfx.h"
 

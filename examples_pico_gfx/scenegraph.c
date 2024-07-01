@@ -34,6 +34,9 @@
 #define PICO_GFX_IMPLEMENTATION
 #include "../pico_gfx.h"
 
+#define SOKOL_SHDC_IMPL
+#include "example_shader.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
