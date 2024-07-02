@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
 
     pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
-    pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts)
+    pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
     {
         .layout =
         {
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
         }
     });
 
-    pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts)
+    pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
     {
         .layout =
         {
