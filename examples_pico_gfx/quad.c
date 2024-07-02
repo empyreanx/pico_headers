@@ -34,6 +34,8 @@ typedef struct
     float uv[2];
 } vertex_t;
 
+typedef float mat4_t[16];
+
 int main(int argc, char *argv[])
 {
     (void)argc;
@@ -150,6 +152,20 @@ int main(int argc, char *argv[])
         .target = true
     });
 
+    vs_block_t block =
+    {
+        .u_mvp =
+        {
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+        }
+    };
+
+    pg_init_uniform_block(shader, PG_VS_STAGE, "vs_block");
+    pg_set_uniform_block(shader, "vs_block", &block);
+
     pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
 
     bool done = false;
@@ -182,7 +198,7 @@ int main(int argc, char *argv[])
         pg_set_pipeline(ctx, pipeline);
 
         // Save current state
-        /*pg_push_state(ctx);
+        pg_push_state(ctx);
 
         // Bind texture
         pg_bind_texture(shader, "u_tex", tex);
@@ -194,7 +210,7 @@ int main(int argc, char *argv[])
         pg_end_pass(ctx);
 
         // Restore previous state
-        pg_pop_state(ctx);*/
+        pg_pop_state(ctx);
 
         // Second pass: draw render target to the screen
         pg_push_state(ctx);
