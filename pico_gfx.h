@@ -257,7 +257,7 @@ typedef struct pg_sampler_t pg_sampler_t;
 /**
  * @brief A vertex array buffer
  */
-typedef struct pg_vbuffer_t pg_vbuffer_t;
+typedef struct pg_buffer_t pg_buffer_t;
 
 /**
  * @brief Loads pico_gfx and sokol_gfx
@@ -632,17 +632,28 @@ pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts);
  */
 void pg_destroy_sampler(pg_sampler_t* sampler);
 
+typedef enum
+{
+    PG_USAGE_IMMUTABLE,
+    PG_USAGE_DYNAMIC,
+    PG_USAGE_STREAM
+} pg_usage_t;
+
 /**
  * @brief Creates a vertex buffer
  * @param vertices An array of vertices (position, color, uv)
  * @param count The number of vertices
  */
-pg_vbuffer_t* pg_create_vbuffer(pg_ctx_t* ctx, const void* data, size_t count);
+pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
+                              pg_usage_t usage,
+                              const void* data,
+                              size_t count,
+                              size_t element_size);
 
 /**
  * @brief Destroys a vertex buffer
  */
-void pg_destroy_vbuffer(pg_vbuffer_t* buffer);
+void pg_destroy_buffer(pg_buffer_t* buffer);
 
 /**
  * @brief Draws a vertex buffer
@@ -652,9 +663,10 @@ void pg_destroy_vbuffer(pg_vbuffer_t* buffer);
  * @param count The number of vertices to draw
  * @param texture The texture to draw from
  */
-void pg_draw_vbuffer(const pg_ctx_t* ctx,
-                     const pg_vbuffer_t* buffer,
-                     size_t start, size_t count);
+void pg_draw_buffers(const pg_ctx_t* ctx,
+                     int count,
+                     int instances,
+                     const pg_buffer_t* buffers[]);
 
 /**
  * @brief Draws an array of vertices
@@ -925,11 +937,13 @@ struct pg_sampler_t
     sg_sampler handle;
 };
 
-struct pg_vbuffer_t
+struct pg_buffer_t
 {
     pg_ctx_t* ctx;
     sg_buffer handle;
     size_t count;
+    size_t element_size;
+    size_t offset;
 };
 
 void pg_init(void)
@@ -1597,12 +1611,23 @@ static void pg_apply_uniforms(pg_shader_t* shader)
     }
 }
 
-pg_vbuffer_t* pg_create_vbuffer(pg_ctx_t* ctx, const void* data, size_t count)
+static sg_usage pg_map_usage(pg_usage_t format)
+{
+    switch (format)
+    {
+        case PG_USAGE_IMMUTABLE: return SG_USAGE_IMMUTABLE;
+        case PG_USAGE_DYNAMIC:   return SG_USAGE_DYNAMIC;
+        case PG_USAGE_STREAM:    return SG_USAGE_STREAM;
+        default: PICO_GFX_ASSERT(false);
+    }
+}
+
+pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx, pg_usage_t usage, const void* data, size_t count, size_t element_size)
 {
     PICO_GFX_ASSERT(data);
     PICO_GFX_ASSERT(count > 0);
 
-    pg_vbuffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_vbuffer_t), ctx->mem_ctx);
+    pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
@@ -1619,7 +1644,7 @@ pg_vbuffer_t* pg_create_vbuffer(pg_ctx_t* ctx, const void* data, size_t count)
     return buffer;
 }
 
-void pg_destroy_vbuffer(pg_vbuffer_t* buffer)
+void pg_destroy_buffer(pg_buffer_t* buffer)
 {
     PICO_GFX_ASSERT(buffer);
     sg_destroy_buffer(buffer->handle);
@@ -1657,7 +1682,7 @@ static void pg_apply_samplers(const pg_ctx_t* ctx, sg_bindings* bindings)
     }
 }
 
-void pg_draw_vbuffer(const pg_ctx_t* ctx,
+/*void pg_draw_vbuffer(const pg_ctx_t* ctx,
                      const pg_vbuffer_t* buffer,
                      size_t start, size_t count)
 {
@@ -1684,7 +1709,7 @@ void pg_draw_vbuffer(const pg_ctx_t* ctx,
     PICO_GFX_ASSERT(start + count <= buffer->count);
 
     sg_draw(start, count, 1);
-}
+}*/
 
 void pg_draw_array(pg_ctx_t* ctx, const void* data, size_t count)
 {
