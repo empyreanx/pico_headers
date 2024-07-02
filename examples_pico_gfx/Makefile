@@ -10,7 +10,7 @@ else
     ifeq ($(UNAME_S),Linux)
         CC     = gcc
         CFLAGS += -g -std=c11 -Wall -Wextra -Wpedantic -I . -pg
-        CLIBS  += -lSDL2 -ldl -lm -lGL -pg
+        CLIBS  += -lSDL2 -ldl -lm -lGL# -pg
     endif
     ifeq ($(UNAME_S),Darwin)
         CC     = clang

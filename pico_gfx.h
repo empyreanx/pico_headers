@@ -502,28 +502,35 @@ typedef enum
 
 typedef struct
 {
+    size_t element_size;
+} pg_vertex_buf_opts;
+
+typedef struct
+{
+    int buffer_index;
     pg_vertex_format_t format;
     int offset;
-} pg_vertex_attr_t;
+} pg_vertex_attr_opts;
 
 typedef struct
 {
     size_t size;
-    pg_vertex_attr_t attrs[32];
-} pg_layout_t;
+    pg_vertex_buf_opts  bufs[32];
+    pg_vertex_attr_opts attrs[32];
+} pg_layout_opts;
 
 /**
  * @brief Pipeline creation options
  */
-typedef struct pg_pipeline_opts_t
+typedef struct pg_pipeline_opts
 {
     pg_primitive_t primitive; //!< Rendering primitive
-    pg_layout_t layout;       //!< Attribute information
+    pg_layout_opts layout;    //!< Attribute information
     bool target;              //!< Drawing to render target
     bool indexed;             //!< Indexed drawing
     bool blend_enabled;       //!< Enables blending
     pg_blend_mode_t blend;    //!< Blend mode
-} pg_pipeline_opts_t;
+} pg_pipeline_opts;
 
 /**
  * @brief Creates a rendering pipeline (encapsulates render state)
@@ -533,7 +540,7 @@ typedef struct pg_pipeline_opts_t
  */
 pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
                                   pg_shader_t* shader,
-                                  const pg_pipeline_opts_t* opts);
+                                  const pg_pipeline_opts* opts);
 
 /**
  * @brief Destroys a render pipeline
@@ -548,10 +555,10 @@ pg_shader_t* pg_get_pipeline_shader(const pg_pipeline_t* pipeline);
 /**
  * @brief Texture creation options
  */
-typedef struct pg_texture_opts_t
+typedef struct pg_texture_opts
 {
     int mipmaps; //!< Mipmap level
-} pg_texture_opts_t;
+} pg_texture_opts;
 
 /**
  * @brief Creates a texture from an RGBA8 image
@@ -565,7 +572,7 @@ typedef struct pg_texture_opts_t
 pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
                                 int width, int height,
                                 const uint8_t* data, size_t size,
-                                const pg_texture_opts_t* opts);
+                                const pg_texture_opts* opts);
 
 /**
  * @brief Creates a render target
@@ -576,7 +583,7 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
  */
 pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
                                        int width, int height,
-                                       const pg_texture_opts_t* opts);
+                                       const pg_texture_opts* opts);
 
 /**
  * @brief Destroys a texture
@@ -607,14 +614,14 @@ typedef struct
     bool smooth;   //!< Linear filtering if true, nearest otherwise
     bool repeat_u; //!< Repeat if true, clamp-to-edge otherwise
     bool repeat_v; //!< Repeat if true, clamp-to-edge otherwise
-} pg_sampler_opts_t;
+} pg_sampler_opts;
 
 /**
  * @brief Creates a sampler represents an object that can control how shaders
  * transform and filter texture resource data.
  * @param opts Sampler options
  */
-pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts);
+pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts* opts);
 
 /**
  * @brief Destroys a sampler object
@@ -874,7 +881,7 @@ struct pg_pipeline_t
 {
     pg_ctx_t* ctx;
     sg_pipeline handle;
-    size_t element_size;
+    size_t element_sizes[32];
     bool indexed;
     pg_shader_t* shader;
 };
@@ -1246,12 +1253,8 @@ static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
     }
 }
 
-static void pg_set_attributes(pg_shader_t* shader,
-                              const pg_layout_t* layout,
-                              sg_pipeline_desc* desc)
+static void pg_set_attributes(const pg_layout_opts* layout, sg_pipeline_desc* desc)
 {
-    (void)shader;
-
     for (int slot = 0; layout->attrs[slot].format != PG_VFORMAT_INVALID; slot++)
     {
         desc->layout.attrs[slot] = (sg_vertex_attr_state)
@@ -1262,21 +1265,27 @@ static void pg_set_attributes(pg_shader_t* shader,
     }
 }
 
+static void pg_set_element_sizes(const pg_layout_opts* layout, pg_pipeline_t* pipeline)
+{
+    for (int slot = 0; layout->bufs[slot].element_size > 0; slot++)
+    {
+        pipeline->element_sizes[slot] = layout->bufs[slot].element_size;
+    }
+}
+
 pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
                                   pg_shader_t* shader,
-                                  const pg_pipeline_opts_t* opts)
+                                  const pg_pipeline_opts* opts)
 {
     PICO_GFX_ASSERT(shader);
-
-    if (opts == NULL)
-        opts = &(pg_pipeline_opts_t){ 0 };
+    PICO_GFX_ASSERT(opts);
 
     pg_pipeline_t* pipeline = PICO_GFX_MALLOC(sizeof(pg_pipeline_t), ctx->mem_ctx);
 
     sg_pipeline_desc desc = { 0 };
 
-    pg_set_attributes(shader, &opts->layout, &desc);
-    pipeline->element_size = opts->layout.size;
+    pg_set_attributes(&opts->layout, &desc);
+    pg_set_element_sizes(&opts->layout, pipeline);
 
     desc.primitive_type = pg_map_primitive(opts->primitive);
 
@@ -1405,7 +1414,7 @@ void pg_set_uniform_block(pg_shader_t* shader,
 pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
                                 int width, int height,
                                 const uint8_t* data, size_t size,
-                                const pg_texture_opts_t* opts)
+                                const pg_texture_opts* opts)
 {
     PICO_GFX_ASSERT(width > 0);
     PICO_GFX_ASSERT(height > 0);
@@ -1413,7 +1422,7 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
     PICO_GFX_ASSERT(size > 0);
 
     if (opts == NULL)
-        opts = &(pg_texture_opts_t){ 0 };
+        opts = &(pg_texture_opts){ 0 };
 
     PICO_GFX_ASSERT(opts->mipmaps >= 0);
 
@@ -1440,13 +1449,13 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
 
 pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
                                        int width, int height,
-                                       const pg_texture_opts_t* opts)
+                                       const pg_texture_opts* opts)
 {
     PICO_GFX_ASSERT(width > 0);
     PICO_GFX_ASSERT(height > 0);
 
     if (opts == NULL)
-        opts = &(pg_texture_opts_t){ 0 };
+        opts = &(pg_texture_opts){ 0 };
 
     PICO_GFX_ASSERT(opts->mipmaps >= 0);
 
@@ -1518,10 +1527,10 @@ void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height)
         *height = texture->height;
 }
 
-pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts)
+pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts* opts)
 {
     if (opts == NULL)
-        opts = &(pg_sampler_opts_t){ 0 };
+        opts = &(pg_sampler_opts){ 0 };
 
     pg_sampler_t* sampler = PICO_GFX_MALLOC(sizeof(pg_sampler_t), ctx->mem_ctx);
 
@@ -1674,7 +1683,7 @@ void pg_draw_array(pg_ctx_t* ctx, const void* data, size_t count)
     int offset = sg_append_buffer(ctx->buffer, &(sg_range)
     {
         .ptr = data,
-        .size = count * pipeline->element_size
+        .size = count * pipeline->element_sizes[0]
     });
 
     sg_bindings bindings = { 0 };
@@ -1711,7 +1720,7 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
     int vertex_offset = sg_append_buffer(ctx->buffer, &(sg_range)
     {
         .ptr = data,
-        .size = data_count * pipeline->element_size
+        .size = data_count * pipeline->element_sizes[0]
     });
 
     int index_offset = sg_append_buffer(ctx->index_buffer, &(sg_range)

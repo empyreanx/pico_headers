@@ -122,31 +122,37 @@ int main(int argc, char *argv[])
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
 
     pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
-    pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
+    pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts)
     {
         .layout =
         {
+            .bufs =
+            {
+                [0] = { .element_size = sizeof(vertex_t) }
+            },
             .attrs =
             {
                 [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
                 [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4, .offset = offsetof(vertex_t, color) },
                 [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
             },
-            .size = sizeof(vertex_t)
         }
     });
 
-    pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
+    pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts)
     {
         .layout =
         {
+            .bufs =
+            {
+                [0] = { .element_size = sizeof(vertex_t) }
+            },
             .attrs =
             {
                 [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
                 [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4, .offset = offsetof(vertex_t, color) },
                 [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
             },
-            .size = sizeof(vertex_t)
         },
         .indexed = true,
         .target = true
