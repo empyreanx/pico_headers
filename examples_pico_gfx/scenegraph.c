@@ -47,21 +47,23 @@
 #define MAX_CHILDREN 5
 #define FIXED_STEP (1.0 / 50.0)
 
-pg_ctx_t* ctx = NULL;
-
 static struct
 {
     SDL_Window* window;
     SDL_GLContext context;
     int screen_w;
     int screen_h;
+    pg_ctx_t* ctx;
+    pg_shader_t* shader;
+    pt2 proj;
+    vs_block_t block;
 } app;
 
 typedef struct
 {
     int w, h;
     pg_texture_t* tex;
-    pg_vbuffer_t* buf;
+    pg_buffer_t*  buf;
 } sprite_t;
 
 typedef struct node_s
@@ -75,6 +77,13 @@ typedef struct node_s
     sprite_t* sprite;
 } node_t;
 
+typedef struct
+{
+    float pos[3];
+    float color[4];
+    float uv[2];
+} vertex_t;
+
 sprite_t* sprite_new(int w, int h, pg_texture_t* tex)
 {
     sprite_t* sprite = malloc(sizeof(sprite_t));
@@ -82,7 +91,7 @@ sprite_t* sprite_new(int w, int h, pg_texture_t* tex)
     sprite->h = h;
     sprite->tex = tex;
 
-    pg_vertex_t vertices[6] =
+    vertex_t vertices[6] =
     {
         { { 0, 0, 0 }, { 1, 1, 1, 1 }, { 0, 1 } },
         { { 0, h, 0 }, { 1, 1, 1, 1 }, { 0, 0 } },
@@ -93,14 +102,15 @@ sprite_t* sprite_new(int w, int h, pg_texture_t* tex)
         { { w, 0, 0 }, { 1, 1, 1, 1 }, { 1, 1 } }
     };
 
-    sprite->buf = pg_create_vbuffer(ctx, vertices, 6);
+    sprite->buf = pg_create_buffer(app.ctx, PG_USAGE_STATIC, vertices,
+                                   6, 6, sizeof(vertex_t));
 
     return sprite;
 }
 
 void sprite_free(sprite_t* sprite)
 {
-    pg_destroy_vbuffer(sprite->buf);
+    pg_destroy_buffer(sprite->buf);
     pg_destroy_texture(sprite->tex);
     free(sprite);
 }
@@ -186,21 +196,23 @@ void node_render(node_t* node, double alpha)
         // Linearly interpolate between the last and current world transforms
         // by the amount alpha in [0,1]
         pt2 render = pt2_lerp(&last, &world, alpha);
+        pt2 mvp = pt2_mult(&app.proj, &render);
 
-        // Model-view
-        pg_set_transform(ctx, (pg_mat4_t)
+        float mat[16] =
         {
-            render.t00, render.t10, 0.0f, 0.0f,
-            render.t01, render.t11, 0.0f, 0.0f,
-            0.0f,       0.0f,       0.0f, 0.0f,
-            render.tx,  render.ty,  0.0f, 1.0f,
-        });
+            mvp.t00, mvp.t10, 0.0f, 0.0f,
+            mvp.t01, mvp.t11, 0.0f, 0.0f,
+            0.0f,    0.0f,    0.0f, 0.0f,
+            mvp.tx,  mvp.ty,  0.0f, 1.0f,
+        };
+
+        memcpy(&app.block.u_mvp, mat, sizeof(mat));
+        pg_set_uniform_block(app.shader, "vs_block", &app.block);
 
         // Draw vertices
-        pg_shader_t* default_shader = pg_get_default_shader(ctx);
-        pg_bind_texture(default_shader, "u_tex", sprite->tex);
-        pg_draw_vbuffer(ctx, sprite->buf, 0, 6);
-        pg_bind_texture(default_shader, "u_tex", NULL);
+        pg_bind_texture(app.shader, "u_tex", sprite->tex);
+        pg_draw_buffers(app.ctx, 6, 1, (const pg_buffer_t*[]){ sprite->buf , NULL });
+        pg_bind_texture(app.shader, "u_tex", NULL);
     }
 }
 
@@ -213,7 +225,7 @@ pg_texture_t* load_texture(const char* file)
     assert(bitmap && c == 4);
 
     size_t size = w * h * c;
-    pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, &(pg_texture_opts_t){0});
+    pg_texture_t* tex = pg_create_texture(app.ctx, w, h, bitmap, size, NULL);
 
     free(bitmap);
 
@@ -385,31 +397,41 @@ int main(int argc, char *argv[])
     int w = app.screen_w;
     int h = app.screen_h;
 
-    ctx = pg_create_context(w, h, NULL);
-    pg_shader_t* default_shader = pg_get_default_shader(ctx);
+    app.ctx = pg_create_context(w, h, NULL);
+    app.shader = pg_create_shader(app.ctx, example);
 
-    pg_set_projection(ctx, (pg_mat4_t)
-    {
-         2.0f / w, 0.0f,     0.0f, 0.0f,
-         0.0f,    -2.0f / h, 0.0f, 0.0f,
-         0.0f,     0.0f,     0.0f, 0.0f,
-        -1.0f,     1.0f,     0.0f, 1.0f
-    });
+    pg_init_uniform_block(app.shader, PG_STAGE_VS, "vs_block");
 
-    pg_pipeline_t* pip = pg_create_pipeline(ctx, default_shader, &(pg_pipeline_opts_t)
+    app.proj = (pt2)
     {
-        .blend_enabled = true,
-        .blend =
+        2.0f / w, 0.0f,     0.0f,
+        0.0f,    -2.0f / h, 0.0f
+    };
+
+    pg_pipeline_t* pipeline = pg_create_pipeline(app.ctx, app.shader,
+                                               &(pg_pipeline_opts_t)
+    {
+        .layout =
         {
-            .color_src = PG_SRC_ALPHA,
-            .color_dst = PG_ONE_MINUS_SRC_ALPHA
-        }
+            .attrs =
+            {
+                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3,
+                                      .offset = offsetof(vertex_t, pos) },
+
+                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4,
+                                      .offset = offsetof(vertex_t, color) },
+
+                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2,
+                                      .offset = offsetof(vertex_t, uv) },
+            },
+        },
+        .element_size = sizeof(vertex_t)
     });
 
-    pg_set_pipeline(ctx, pip);
+    pg_set_pipeline(app.ctx, pipeline);
 
-    pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
-    pg_bind_sampler(default_shader, "u_smp", sampler);
+    pg_sampler_t* sampler = pg_create_sampler(app.ctx, NULL);
+    pg_bind_sampler(app.shader, "u_smp", sampler);
 
     // Build scene graph
     scenegraph_t* sg = sg_build(app.screen_w, app.screen_h);
@@ -477,20 +499,20 @@ int main(int argc, char *argv[])
 
         // Render the scene. Pass in amount left over in the accumulator scaled
         // into [0, 1]
-        pg_begin_pass(ctx, NULL, true);
+        pg_begin_pass(app.ctx, NULL, true);
         node_render(sg->root_node, accumulator / FIXED_STEP);
-        pg_end_pass(ctx);
-        pg_flush(ctx);
+        pg_end_pass(app.ctx);
+        pg_flush(app.ctx);
 
         SDL_GL_SwapWindow(app.window);
     }
 
     sg_free(sg);
 
-    pg_destroy_pipeline(pip);
+    pg_destroy_pipeline(pipeline);
     pg_destroy_sampler(sampler);
 
-    pg_destroy_context(ctx);
+    pg_destroy_context(app.ctx);
 
     pg_shutdown();
 

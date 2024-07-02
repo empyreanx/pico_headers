@@ -220,8 +220,8 @@ typedef struct
 */
 typedef enum
 {
-    PG_VS_STAGE, //!< Vertex shader stage
-    PG_FS_STAGE  //!< Fragment shader stage
+    PG_STAGE_VS, //!< Vertex shader stage
+    PG_STAGE_FS  //!< Fragment shader stage
 } pg_stage_t;
 
 /**
@@ -634,7 +634,7 @@ void pg_destroy_sampler(pg_sampler_t* sampler);
 
 typedef enum
 {
-    PG_USAGE_IMMUTABLE,
+    PG_USAGE_STATIC,
     PG_USAGE_DYNAMIC,
     PG_USAGE_STREAM
 } pg_usage_t;
@@ -648,6 +648,7 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
                               pg_usage_t usage,
                               const void* data,
                               size_t count,
+                              size_t buffer_size,
                               size_t element_size);
 
 /**
@@ -664,8 +665,8 @@ void pg_destroy_buffer(pg_buffer_t* buffer);
  * @param texture The texture to draw from
  */
 void pg_draw_buffers(const pg_ctx_t* ctx,
-                     int count,
-                     int instances,
+                     size_t count,
+                     size_t instances,
                      const pg_buffer_t* buffers[]);
 
 /**
@@ -1615,14 +1616,19 @@ static sg_usage pg_map_usage(pg_usage_t format)
 {
     switch (format)
     {
-        case PG_USAGE_IMMUTABLE: return SG_USAGE_IMMUTABLE;
-        case PG_USAGE_DYNAMIC:   return SG_USAGE_DYNAMIC;
-        case PG_USAGE_STREAM:    return SG_USAGE_STREAM;
+        case PG_USAGE_STATIC:  return SG_USAGE_IMMUTABLE;
+        case PG_USAGE_DYNAMIC: return SG_USAGE_DYNAMIC;
+        case PG_USAGE_STREAM:  return SG_USAGE_STREAM;
         default: PICO_GFX_ASSERT(false);
     }
 }
 
-pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx, pg_usage_t usage, const void* data, size_t count, size_t element_size)
+pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
+                              pg_usage_t usage,
+                              const void* data,
+                              size_t count,
+                              size_t buffer_size,
+                              size_t element_size)
 {
     PICO_GFX_ASSERT(data);
     PICO_GFX_ASSERT(count > 0);
@@ -1633,13 +1639,16 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx, pg_usage_t usage, const void* data,
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
         .type  = SG_BUFFERTYPE_VERTEXBUFFER,
-        .usage = SG_USAGE_IMMUTABLE,
-//FIXME        .data  = { .ptr = data, .size = count * sizeof(pg_vertex_t) }
+        .usage = pg_map_usage(usage),
+        .data  = { .ptr = data, .size = count * element_size },
+        .size  = buffer_size * element_size
     });
 
     PICO_GFX_ASSERT(sg_query_buffer_state(buffer->handle) == SG_RESOURCESTATE_VALID);
 
     buffer->count = count;
+    buffer->element_size = element_size;
+    buffer->offset = 0;
 
     return buffer;
 }
@@ -1682,12 +1691,22 @@ static void pg_apply_samplers(const pg_ctx_t* ctx, sg_bindings* bindings)
     }
 }
 
-/*void pg_draw_vbuffer(const pg_ctx_t* ctx,
-                     const pg_vbuffer_t* buffer,
-                     size_t start, size_t count)
+static void pg_apply_buffers(const pg_buffer_t* buffers[], sg_bindings* bindings)
+{
+    for (int slot = 0; buffers[slot] != NULL; slot++)
+    {
+        bindings->vertex_buffer_offsets[slot] = buffers[slot]->offset;
+        bindings->vertex_buffers[slot] = buffers[slot]->handle;
+    }
+}
+
+void pg_draw_buffers(const pg_ctx_t* ctx,
+                     size_t count,
+                     size_t instances,
+                     const pg_buffer_t* buffers[])
 {
     PICO_GFX_ASSERT(ctx);
-    PICO_GFX_ASSERT(buffer);
+    PICO_GFX_ASSERT(buffers);
     PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
 
@@ -1695,10 +1714,8 @@ static void pg_apply_samplers(const pg_ctx_t* ctx, sg_bindings* bindings)
 
     pg_apply_textures(ctx, &bindings);
     pg_apply_samplers(ctx, &bindings);
-
-    bindings.vertex_buffers[0] = buffer->handle;
-
     pg_apply_view_state(ctx);
+    pg_apply_buffers(buffers, &bindings);
 
     pg_pipeline_t* pipeline = ctx->state.pipeline;
 
@@ -1706,10 +1723,8 @@ static void pg_apply_samplers(const pg_ctx_t* ctx, sg_bindings* bindings)
     sg_apply_bindings(&bindings);
     pg_apply_uniforms(pipeline->shader);
 
-    PICO_GFX_ASSERT(start + count <= buffer->count);
-
-    sg_draw(start, count, 1);
-}*/
+    sg_draw(0, count, instances);
+}
 
 void pg_draw_array(pg_ctx_t* ctx, const void* data, size_t count)
 {
@@ -1848,8 +1863,8 @@ static sg_shader_stage pg_map_stage(pg_stage_t stage)
 {
     switch (stage)
     {
-        case PG_VS_STAGE: return SG_SHADERSTAGE_VS;
-        case PG_FS_STAGE: return SG_SHADERSTAGE_FS;
+        case PG_STAGE_VS: return SG_SHADERSTAGE_VS;
+        case PG_STAGE_FS: return SG_SHADERSTAGE_FS;
         default: PICO_GFX_ASSERT(false);
     }
 }
