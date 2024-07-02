@@ -504,21 +504,21 @@ typedef struct
 {
     bool instanced;
     size_t element_size;
-} pg_vertex_buf_opts_t;
+} pg_vertex_buf_t;
 
 typedef struct
 {
     int buffer_index;
     pg_vertex_format_t format;
     int offset;
-} pg_vertex_attr_opts_t;
+} pg_vertex_attr_t;
 
 typedef struct
 {
     size_t size;
-    pg_vertex_buf_opts_t  bufs[32];
-    pg_vertex_attr_opts_t attrs[32];
-} pg_layout_opts_t;
+    pg_vertex_buf_t  bufs[32];
+    pg_vertex_attr_t attrs[32];
+} pg_layout_t;
 
 /**
  * @brief Pipeline creation options
@@ -526,7 +526,7 @@ typedef struct
 typedef struct pg_pipeline_opts_t
 {
     pg_primitive_t primitive; //!< Rendering primitive
-    pg_layout_opts_t layout;    //!< Attribute information
+    pg_layout_t layout;       //!< Attribute information
     bool target;              //!< Drawing to render target
     bool indexed;             //!< Indexed drawing
     bool blend_enabled;       //!< Enables blending
@@ -1254,7 +1254,7 @@ static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
     }
 }
 
-static void pg_set_attributes(const pg_layout_opts_t* layout, sg_pipeline_desc* desc)
+static void pg_set_attributes(const pg_layout_t* layout, sg_pipeline_desc* desc)
 {
     for (int slot = 0; layout->attrs[slot].format != PG_VFORMAT_INVALID; slot++)
     {
@@ -1266,7 +1266,7 @@ static void pg_set_attributes(const pg_layout_opts_t* layout, sg_pipeline_desc* 
     }
 }
 
-static void pg_set_element_sizes(const pg_layout_opts_t* layout, pg_pipeline_t* pipeline)
+static void pg_set_element_sizes(const pg_layout_t* layout, pg_pipeline_t* pipeline)
 {
     for (int slot = 0; layout->bufs[slot].element_size > 0; slot++)
     {
