@@ -143,6 +143,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#define PG_MAX_VERTEX_ATTRIBUTES SG_MAX_VERTEX_ATTRIBUTES
+#define PG_MAX_VERTEX_BUFFERS    SG_MAX_VERTEX_BUFFERS
+
 /**
  * @brief Graphics backends
 */
@@ -515,8 +518,8 @@ typedef struct
 typedef struct
 {
     size_t size;
-    pg_vertex_buf_t  bufs[32]; //FIXME: max attibutes define
-    pg_vertex_attr_t attrs[32]; //FIXME: max buffers define
+    pg_vertex_buf_t  bufs[PG_MAX_VERTEX_BUFFERS];
+    pg_vertex_attr_t attrs[PG_MAX_VERTEX_ATTRIBUTES];
 } pg_layout_t;
 
 /**
@@ -1256,19 +1259,22 @@ static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
 
 static void pg_set_attributes(const pg_layout_t* layout, sg_pipeline_desc* desc)
 {
-    for (int slot = 0; layout->attrs[slot].format != PG_VFORMAT_INVALID; slot++)
+    for (int slot = 0; slot < PG_MAX_VERTEX_ATTRIBUTES; slot++)
     {
-        desc->layout.attrs[slot] = (sg_vertex_attr_state)
+        if (layout->attrs[slot].format != PG_VFORMAT_INVALID)
         {
-            .format = pg_map_vertex_format(layout->attrs[slot].format),
-            .offset = layout->attrs[slot].offset
-        };
+            desc->layout.attrs[slot] = (sg_vertex_attr_state)
+            {
+                .format = pg_map_vertex_format(layout->attrs[slot].format),
+                .offset = layout->attrs[slot].offset
+            };
+        }
     }
 }
 
 static void pg_set_buffers(const pg_layout_t* layout, sg_pipeline_desc* desc)
 {
-    for (int slot = 0; slot < 32; slot++) //FIXME: constant
+    for (int slot = 0; slot < PG_MAX_VERTEX_BUFFERS; slot++)
     {
         if (layout->bufs[slot].instanced)
         {
