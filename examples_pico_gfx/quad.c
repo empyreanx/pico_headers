@@ -126,27 +126,6 @@ int main(int argc, char *argv[])
     {
         .layout =
         {
-            .bufs =
-            {
-                [0] = { .element_size = sizeof(vertex_t) }
-            },
-            .attrs =
-            {
-                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
-                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4, .offset = offsetof(vertex_t, color) },
-                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
-            },
-        }
-    });
-
-    pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
-    {
-        .layout =
-        {
-            .bufs =
-            {
-                [0] = { .element_size = sizeof(vertex_t) }
-            },
             .attrs =
             {
                 [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
@@ -154,6 +133,21 @@ int main(int argc, char *argv[])
                 [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
             },
         },
+        .element_size = sizeof(vertex_t)
+    });
+
+    pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
+    {
+        .layout =
+        {
+            .attrs =
+            {
+                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
+                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4, .offset = offsetof(vertex_t, color) },
+                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
+            },
+        },
+        .element_size = sizeof(vertex_t),
         .indexed = true,
         .target = true
     });

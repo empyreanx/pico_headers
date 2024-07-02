@@ -503,7 +503,6 @@ typedef enum
 typedef struct
 {
     bool instanced;
-    size_t element_size;
 } pg_vertex_buf_t;
 
 typedef struct
@@ -516,8 +515,8 @@ typedef struct
 typedef struct
 {
     size_t size;
-    pg_vertex_buf_t  bufs[32];
-    pg_vertex_attr_t attrs[32];
+    pg_vertex_buf_t  bufs[32]; //FIXME: max attibutes define
+    pg_vertex_attr_t attrs[32]; //FIXME: max buffers define
 } pg_layout_t;
 
 /**
@@ -527,6 +526,7 @@ typedef struct pg_pipeline_opts_t
 {
     pg_primitive_t primitive; //!< Rendering primitive
     pg_layout_t layout;       //!< Attribute information
+    size_t element_size;
     bool target;              //!< Drawing to render target
     bool indexed;             //!< Indexed drawing
     bool blend_enabled;       //!< Enables blending
@@ -882,7 +882,7 @@ struct pg_pipeline_t
 {
     pg_ctx_t* ctx;
     sg_pipeline handle;
-    size_t element_sizes[32];
+    size_t element_size;
     bool indexed;
     pg_shader_t* shader;
 };
@@ -1266,11 +1266,18 @@ static void pg_set_attributes(const pg_layout_t* layout, sg_pipeline_desc* desc)
     }
 }
 
-static void pg_set_element_sizes(const pg_layout_t* layout, pg_pipeline_t* pipeline)
+static void pg_set_buffers(const pg_layout_t* layout, sg_pipeline_desc* desc)
 {
-    for (int slot = 0; layout->bufs[slot].element_size > 0; slot++)
+    for (int slot = 0; slot < 32; slot++) //FIXME: constant
     {
-        pipeline->element_sizes[slot] = layout->bufs[slot].element_size;
+        if (layout->bufs[slot].instanced)
+        {
+            desc->layout.buffers[slot] = (sg_vertex_buffer_layout_state)
+            {
+                .step_func = SG_VERTEXSTEP_PER_INSTANCE,
+                .step_rate = 1,
+            };
+        }
     }
 }
 
@@ -1286,9 +1293,11 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
     sg_pipeline_desc desc = { 0 };
 
     pg_set_attributes(&opts->layout, &desc);
-    pg_set_element_sizes(&opts->layout, pipeline);
+    pg_set_buffers (&opts->layout, &desc);
 
     desc.primitive_type = pg_map_primitive(opts->primitive);
+
+    pipeline->element_size = opts->element_size;
 
     if (opts->blend_enabled)
     {
@@ -1684,7 +1693,7 @@ void pg_draw_array(pg_ctx_t* ctx, const void* data, size_t count)
     int offset = sg_append_buffer(ctx->buffer, &(sg_range)
     {
         .ptr = data,
-        .size = count * pipeline->element_sizes[0]
+        .size = count * pipeline->element_size
     });
 
     sg_bindings bindings = { 0 };
@@ -1721,7 +1730,7 @@ void pg_draw_indexed_array(pg_ctx_t* ctx,
     int vertex_offset = sg_append_buffer(ctx->buffer, &(sg_range)
     {
         .ptr = data,
-        .size = data_count * pipeline->element_sizes[0]
+        .size = data_count * pipeline->element_size
     });
 
     int index_offset = sg_append_buffer(ctx->index_buffer, &(sg_range)
