@@ -1714,8 +1714,8 @@ void pg_draw_buffers(const pg_ctx_t* ctx,
 
     pg_apply_textures(ctx, &bindings);
     pg_apply_samplers(ctx, &bindings);
-    pg_apply_view_state(ctx);
     pg_apply_buffers(buffers, &bindings);
+    pg_apply_view_state(ctx);
 
     pg_pipeline_t* pipeline = ctx->state.pipeline;
 

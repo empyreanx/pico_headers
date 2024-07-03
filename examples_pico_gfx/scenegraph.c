@@ -55,6 +55,7 @@ static struct
     int screen_h;
     pg_ctx_t* ctx;
     pg_shader_t* shader;
+    pg_sampler_t* sampler;
     pt2 proj;
     vs_block_t block;
 } app;
@@ -196,20 +197,31 @@ void node_render(node_t* node, double alpha)
         // Linearly interpolate between the last and current world transforms
         // by the amount alpha in [0,1]
         pt2 render = pt2_lerp(&last, &world, alpha);
-        pt2 mvp = pt2_mult(&app.proj, &render);
+        //pt2 mvp = pt2_mult(&app.proj, &render);
 
-        float mat[16] =
+        pt2 mvp = app.proj;
+
+        /*float mat[16] =
         {
             mvp.t00, mvp.t10, 0.0f, 0.0f,
             mvp.t01, mvp.t11, 0.0f, 0.0f,
             0.0f,    0.0f,    0.0f, 0.0f,
             mvp.tx,  mvp.ty,  0.0f, 1.0f,
+        };*/
+
+        float mat[16] =
+        {
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
         };
 
         memcpy(&app.block.u_mvp, mat, sizeof(mat));
         pg_set_uniform_block(app.shader, "vs_block", &app.block);
 
         // Draw vertices
+        pg_bind_sampler(app.shader, "u_smp", app.sampler);
         pg_bind_texture(app.shader, "u_tex", sprite->tex);
         pg_draw_buffers(app.ctx, 6, 1, (const pg_buffer_t*[]){ sprite->buf , NULL });
         pg_bind_texture(app.shader, "u_tex", NULL);
@@ -430,8 +442,8 @@ int main(int argc, char *argv[])
 
     pg_set_pipeline(app.ctx, pipeline);
 
-    pg_sampler_t* sampler = pg_create_sampler(app.ctx, NULL);
-    pg_bind_sampler(app.shader, "u_smp", sampler);
+    app.sampler = pg_create_sampler(app.ctx, NULL);
+    pg_bind_sampler(app.shader, "u_smp", app.sampler);
 
     // Build scene graph
     scenegraph_t* sg = sg_build(app.screen_w, app.screen_h);
@@ -510,8 +522,8 @@ int main(int argc, char *argv[])
     sg_free(sg);
 
     pg_destroy_pipeline(pipeline);
-    pg_destroy_sampler(sampler);
-
+    pg_destroy_shader(app.shader);
+    pg_destroy_sampler(app.sampler);
     pg_destroy_context(app.ctx);
 
     pg_shutdown();

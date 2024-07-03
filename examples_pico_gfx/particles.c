@@ -128,28 +128,17 @@ int main(int argc, char *argv[])
         {
             .attrs =
             {
-                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
-                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4, .offset = offsetof(vertex_t, color) },
-                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
+                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3,
+                                      .offset = offsetof(vertex_t, pos) },
+
+                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4,
+                                      .offset = offsetof(vertex_t, color) },
+
+                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2,
+                                      .offset = offsetof(vertex_t, uv) },
             },
         },
         .element_size = sizeof(vertex_t)
-    });
-
-    pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
-    {
-        .layout =
-        {
-            .attrs =
-            {
-                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3, .offset = offsetof(vertex_t, pos) },
-                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4, .offset = offsetof(vertex_t, color) },
-                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
-            },
-        },
-        .element_size = sizeof(vertex_t),
-        .indexed = true,
-        .target = true
     });
 
     vs_block_t block =
@@ -193,31 +182,18 @@ int main(int argc, char *argv[])
         }
 
 
+        pg_buffer_t* buffer = pg_create_buffer(ctx, PG_USAGE_STATIC, vertices,
+                                               6, 6, sizeof(vertex_t));
+
         // Bind sampler
         pg_bind_sampler(shader, "u_smp", sampler);
+        pg_bind_texture(shader, "u_tex", tex);
         pg_set_pipeline(ctx, pipeline);
 
         // Save current state
         pg_push_state(ctx);
-
-        // Bind texture
-        pg_bind_texture(shader, "u_tex", tex);
-
-        // First pass: draw to render target
-        pg_begin_pass(ctx, target, true);
-        pg_set_pipeline(ctx, target_pipeline);
-        pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6);
-        pg_end_pass(ctx);
-
-        // Restore previous state
-        pg_pop_state(ctx);
-
-        // Second pass: draw render target to the screen
-        pg_push_state(ctx);
-        pg_bind_texture(shader, "u_tex", tex);
-
         pg_begin_pass(ctx, NULL, true);
-        pg_draw_array(ctx, vertices, 6);
+        pg_draw_buffers(ctx, 6, 1, (const pg_buffer_t*[]){ buffer, NULL });
         pg_end_pass(ctx);
         pg_pop_state(ctx);
 
@@ -232,7 +208,6 @@ int main(int argc, char *argv[])
     pg_destroy_sampler(sampler);
 
     pg_destroy_pipeline(pipeline);
-    pg_destroy_pipeline(target_pipeline);
     pg_destroy_shader(shader);
     pg_destroy_context(ctx);
 

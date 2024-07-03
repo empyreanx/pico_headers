@@ -9,7 +9,7 @@ else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
         CC     = gcc
-        CFLAGS += -g -std=c11 -Wall -Wextra -Wpedantic -I . -pg
+        CFLAGS += -g -std=c11 -Wall -Wextra -Wpedantic -I . #-pg
         CLIBS  += -lSDL2 -ldl -lm -lGL# -pg
     endif
     ifeq ($(UNAME_S),Darwin)
@@ -21,7 +21,7 @@ endif
 
 DEPS   = ../pico_gfx.h
 
-all: quad scenegraph
+all: quad scenegraph particles
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -32,7 +32,10 @@ quad: quad.o $(DEPS)
 scenegraph: scenegraph.o $(DEPS)
 	$(CC) -o scenegraph scenegraph.o $(CLIBS)
 
+particles: particles.o $(DEPS)
+	$(CC) -o particles particles.o $(CLIBS)
+
 .PHONY: clean
 
 clean:
-	rm -f quad scenegraph *.o
+	rm -f quad scenegraph particles *.o
