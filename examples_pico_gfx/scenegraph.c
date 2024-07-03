@@ -199,9 +199,6 @@ void node_render(node_t* node, double alpha)
         pt2 render = pt2_lerp(&last, &world, alpha);
         pt2 mvp = pt2_mult(&app.proj, &render);
 
-        int w = app.screen_w;
-        int h = app.screen_h;
-
         vs_block_t block =
         {
             .u_mvp =
