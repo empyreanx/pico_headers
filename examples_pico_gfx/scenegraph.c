@@ -199,7 +199,7 @@ void node_render(node_t* node, double alpha)
         pt2 render = pt2_lerp(&last, &world, alpha);
         //pt2 mvp = pt2_mult(&app.proj, &render);
 
-        pt2 mvp = app.proj;
+        /*pt2 mvp = app.proj;
 
         float mat[16] =
         {
@@ -209,8 +209,23 @@ void node_render(node_t* node, double alpha)
             mvp.tx,  mvp.ty,  0.0f, 1.0f,
         };
 
-        memcpy(&app.block.u_mvp, mat, sizeof(mat));
-        pg_set_uniform_block(app.shader, "vs_block", &app.block);
+        memcpy(&app.block.u_mvp, mat, sizeof(mat));*/
+
+        int w = app.screen_w;
+        int h = app.screen_h;
+
+        vs_block_t block =
+        {
+            .u_mvp =
+            {
+                2.0f / w, 0.0f,         0.0f,       0.0f,
+                0.0f,        -2.0/ h,   0.0f,       0.0f,
+                0.0f,         0.0f,         0.0f,       0.0f,
+               -1.0f,         1.0f,         0.0f,       1.0f,
+            }
+        };
+
+        pg_set_uniform_block(app.shader, "vs_block", &block);
 
         // Draw vertices
         pg_bind_texture(app.shader, "u_tex", sprite->tex);
@@ -405,11 +420,27 @@ int main(int argc, char *argv[])
 
     pg_init_uniform_block(app.shader, PG_STAGE_VS, "vs_block");
 
-    app.proj = (pt2)
+    /*app.proj = (pt2)
     {
         2.0f / w, 0.0f,    -1.0f,
         0.0f,    -2.0f / h, 1.0f
     };
+
+
+
+    vs_block_t block =
+    {
+        .u_mvp =
+        {
+            2.0f / w, 0.0f,         0.0f,       0.0f,
+            0.0f,        -2.0/ h,   0.0f,       0.0f,
+            0.0f,         0.0f,         0.0f,       0.0f,
+           -1.0f,         1.0f,         0.0f,       1.0f,
+        }
+    };
+
+    pg_init_uniform_block(app.shader, PG_STAGE_VS, "vs_block");
+    pg_set_uniform_block(app.shader, "vs_block", &block);*/
 
     pg_pipeline_t* pipeline = pg_create_pipeline(app.ctx, app.shader,
                                                &(pg_pipeline_opts_t)
@@ -447,7 +478,7 @@ int main(int argc, char *argv[])
 
     while (!done)
     {
-        // Calculate delta
+        /*// Calculate delta
         now = pt_now();
         delta = pt_to_sec(now - last);
         last = now;
@@ -476,7 +507,7 @@ int main(int argc, char *argv[])
             pt2_translate(&sg->pivot_node->local, pv2_scale(scene_center, -1.0f));
             pt2_rotate(&sg->pivot_node->local, -(PM_PI / 8.0f) * FIXED_STEP);
             pt2_translate(&sg->pivot_node->local, scene_center);
-        }
+        }*/
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -505,6 +536,8 @@ int main(int argc, char *argv[])
 
         pg_begin_pass(app.ctx, NULL, true);
         node_render(sg->root_node, accumulator / FIXED_STEP);
+        //pg_bind_texture(app.shader, "u_tex", sg->ship_sprite->tex);
+        //pg_draw_buffers(app.ctx, 6, 1, (const pg_buffer_t*[]){ sg->ship_sprite->buf , NULL });
         pg_end_pass(app.ctx);
         pg_flush(app.ctx);
 
