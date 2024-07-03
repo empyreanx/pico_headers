@@ -201,27 +201,18 @@ void node_render(node_t* node, double alpha)
 
         pt2 mvp = app.proj;
 
-        /*float mat[16] =
+        float mat[16] =
         {
             mvp.t00, mvp.t10, 0.0f, 0.0f,
             mvp.t01, mvp.t11, 0.0f, 0.0f,
             0.0f,    0.0f,    0.0f, 0.0f,
             mvp.tx,  mvp.ty,  0.0f, 1.0f,
-        };*/
-
-        float mat[16] =
-        {
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f,
         };
 
         memcpy(&app.block.u_mvp, mat, sizeof(mat));
         pg_set_uniform_block(app.shader, "vs_block", &app.block);
 
         // Draw vertices
-        pg_bind_sampler(app.shader, "u_smp", app.sampler);
         pg_bind_texture(app.shader, "u_tex", sprite->tex);
         pg_draw_buffers(app.ctx, 6, 1, (const pg_buffer_t*[]){ sprite->buf , NULL });
         pg_bind_texture(app.shader, "u_tex", NULL);
@@ -416,8 +407,8 @@ int main(int argc, char *argv[])
 
     app.proj = (pt2)
     {
-        2.0f / w, 0.0f,     0.0f,
-        0.0f,    -2.0f / h, 0.0f
+        2.0f / w, 0.0f,    -1.0f,
+        0.0f,    -2.0f / h, 1.0f
     };
 
     pg_pipeline_t* pipeline = pg_create_pipeline(app.ctx, app.shader,
@@ -511,6 +502,7 @@ int main(int argc, char *argv[])
 
         // Render the scene. Pass in amount left over in the accumulator scaled
         // into [0, 1]
+
         pg_begin_pass(app.ctx, NULL, true);
         node_render(sg->root_node, accumulator / FIXED_STEP);
         pg_end_pass(app.ctx);

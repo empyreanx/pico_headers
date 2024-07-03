@@ -1345,6 +1345,7 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
         desc.depth.write_enabled = true;
     }
 
+    desc.face_winding = SG_FACEWINDING_CCW;
     desc.shader = shader->handle;
 
     pipeline->ctx = ctx;

@@ -64,10 +64,13 @@ int main(int argc, char *argv[])
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
     SDL_GL_CONTEXT_PROFILE_CORE);
 
+    int win_w = 1024;
+    int win_h = 768;
+
     SDL_Window* window = SDL_CreateWindow("Quad Example",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
-                                          1024, 768,
+                                          win_w, win_h,
                                           SDL_WINDOW_OPENGL);
 
     int pixel_w, pixel_h;
@@ -100,7 +103,7 @@ int main(int argc, char *argv[])
 
     // Specify vertices
 
-    vertex_t vertices[6] =
+    /*vertex_t vertices[6] =
     {
         { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
         { {-1.0f, -1.0f }, { 1, 1, 1, 1 }, { 0, 0} },
@@ -119,7 +122,18 @@ int main(int argc, char *argv[])
         { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
     };
 
-    uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
+    uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };*/
+
+    vertex_t vertices[6] =
+    {
+        { { 0, 0, 0 }, { 1, 1, 1, 1 }, { 0, 1 } },
+        { { 0, h, 0 }, { 1, 1, 1, 1 }, { 0, 0 } },
+        { { w, 0, 0 }, { 1, 1, 1, 1 }, { 1, 1 } },
+
+        { { 0, h, 0 }, { 1, 1, 1, 1 }, { 0, 0 } },
+        { { w, h, 0 }, { 1, 1, 1, 1 }, { 1, 0 } },
+        { { w, 0, 0 }, { 1, 1, 1, 1 }, { 1, 1 } }
+    };
 
     pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
     pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
@@ -145,15 +159,18 @@ int main(int argc, char *argv[])
     {
         .u_mvp =
         {
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f,
+            2.0f / win_w, 0.0f,         0.0f,       0.0f,
+            0.0f,        -2.0/ win_h,   0.0f,       0.0f,
+            0.0f,         0.0f,         0.0f,       0.0f,
+           -1.0f,         1.0f,         0.0f,       1.0f,
         }
     };
 
     pg_init_uniform_block(shader, PG_STAGE_VS, "vs_block");
     pg_set_uniform_block(shader, "vs_block", &block);
+
+    pg_buffer_t* buffer = pg_create_buffer(ctx, PG_USAGE_STATIC, vertices,
+                                           6, 6, sizeof(vertex_t));
 
     pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
 
@@ -180,10 +197,6 @@ int main(int argc, char *argv[])
                     break;
             }
         }
-
-
-        pg_buffer_t* buffer = pg_create_buffer(ctx, PG_USAGE_STATIC, vertices,
-                                               6, 6, sizeof(vertex_t));
 
         // Bind sampler
         pg_bind_sampler(shader, "u_smp", sampler);
