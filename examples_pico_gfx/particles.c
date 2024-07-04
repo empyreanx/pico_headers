@@ -251,17 +251,9 @@ int main(int argc, char *argv[])
             {
                 .pos = { win_w / 2.f, win_h / 2.f },
                 .color = { 0.f, 0.f, 0.f, 1.f },
-                //.vel = { 0, 50 }
             };
 
-            if (i % 3 == 0)
-                particle.color[0] = 1.f;
-
-            if (i % 3 == 1)
-                particle.color[1] = 1.f;
-
-            if (i % 3 == 2)
-                particle.color[2] = 1.f;
+            particle.color[i % 3] = 1.f;
 
             state.particles[state.particle_count] = particle;
             state.vel[state.particle_count] = (vel_t){ cosf(angle) * 10, -sinf(angle) * 50 };
@@ -271,17 +263,9 @@ int main(int argc, char *argv[])
         // Update particle positions
         for (int i = 0; i < state.particle_count; i++)
         {
-            //state.particles[i].pos[1] += state.particles[i].vel[1] * delta;*/
             state.particles[i].pos[0] += state.vel[i].x * delta;
             state.particles[i].pos[1] += state.vel[i].y * delta;
-
-            // Bounce back from 'ground'
-            /*if (state.pos[i].Y < -2.0f) {
-                state.pos[i].Y = -1.8f;
-                state.vel[i].Y = -state.vel[i].Y;
-                state.vel[i].X *= 0.8f; state.vel[i].Y *= 0.8f; state.vel[i].Z *= 0.8f;
-            }*/
-        }//*/
+        }
 
         pg_update_buffer(instance_buffer, state.particles, state.particle_count);
 
