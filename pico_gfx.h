@@ -656,6 +656,9 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
  */
 void pg_destroy_buffer(pg_buffer_t* buffer);
 
+void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count);
+void pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count);
+
 /**
  * @brief Draws a vertex buffer
  * @param ctx The graphics context
@@ -1394,8 +1397,6 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 
 void pg_destroy_shader(pg_shader_t* shader)
 {
-
-
     PICO_GFX_ASSERT(shader);
     sg_destroy_shader(shader->handle);
     pg_hashtable_free(shader->uniform_blocks);
@@ -1635,6 +1636,19 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;
+
+/*    sg_buffer_desc desc = { 0 };
+
+    desc.type = SG_BUFFERTYPE_VERTEXBUFFER;
+    desc.usage = pg_map_usage(usage);
+
+    if (data)
+    {
+        desc.data = (sg_range){ .ptr = data, .size = count * element_size };
+    }
+
+    desc.size = buffer_size * element_size;*/
+
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
         .type  = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -1643,6 +1657,8 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
         .size  = buffer_size * element_size
     });
 
+    //buffer->handle = sg_make_buffer(&desc);
+
     PICO_GFX_ASSERT(sg_query_buffer_state(buffer->handle) == SG_RESOURCESTATE_VALID);
 
     buffer->count = count;
@@ -1650,6 +1666,30 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
     buffer->offset = 0;
 
     return buffer;
+}
+
+void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count)
+{
+    sg_update_buffer(buffer->handle, &(sg_range)
+    {
+        .ptr = data,
+        .size = count * buffer->element_size
+    });
+
+    buffer->count = count;
+    buffer->offset = 0;
+}
+
+void pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count)
+{
+    int offset = sg_append_buffer(buffer->handle, &(sg_range)
+    {
+        .ptr = data,
+        .size = count * buffer->element_size
+    });
+
+    buffer->count = count;
+    buffer->offset = offset;
 }
 
 void pg_destroy_buffer(pg_buffer_t* buffer)

@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <math.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -33,6 +34,8 @@
 
 #define MAX_PARTICLES (512 * 1024)
 #define NUM_PARTICLES_EMITTED_PER_FRAME (10)
+
+#define PI_F 3.1415927f
 
 typedef struct
 {
@@ -50,8 +53,13 @@ typedef struct
 static struct
 {
     particle_t particles[MAX_PARTICLES];
-    int current;
+    int particle_count;
 } state;
+
+float random(float min, float max)
+{
+    return ((float)rand() / RAND_MAX) * (max - min) + min;
+}
 
 typedef float vec2_t[2];
 
@@ -222,27 +230,26 @@ int main(int argc, char *argv[])
         // New particles
         for (int i = 0; i < NUM_PARTICLES_EMITTED_PER_FRAME; i++)
         {
-            if (state.current < MAX_PARTICLES)
-            {
-                particle_t particle =
-                {
-                    .pos = { 0.f, 0.f },
-                    .color = { 1.f, 0.f, 0.f, 1.f },
-                    .vel = { ((float)(rand() & 0x7FFF) / 0x7FFF) - 0.5f,
-                             ((float)(rand() & 0x7FFF) / 0x7FFF) * 0.5f + 2.0f }
-                };
-
-                state.particles[i] = particle;
-
-                state.current++;
-            } else {
+            if (state.particle_count >= MAX_PARTICLES)
                 break;
-            }
+
+            float angle = random(PI_F / 4.f, 3.f * PI_F / 4.f);
+
+            particle_t particle =
+            {
+                .pos = { win_w / 2.f, win_h / 2.f },
+                .color = { 1.f, 1.f, 1.f, 1.f },
+                //.vel = { cosf(angle) * 100, sinf(angle) * 50 }
+                .vel = { 0, 50 }
+            };
+
+            state.particles[state.particle_count] = particle;
+            state.particle_count++;
         }
 
         // Update particle positions
-        for (int i = 0; i < state.current; i++) {
-            state.particles[i].vel[1] -= 1.0f * delta;
+        for (int i = 0; i < state.particle_count; i++) {
+            //state.particles[i].vel[1] -= 1.0f * delta;
             state.particles[i].pos[0] += state.particles[i].vel[0] * delta;
             state.particles[i].pos[1] += state.particles[i].vel[1] * delta;
             // Bounce back from 'ground'
@@ -253,10 +260,9 @@ int main(int argc, char *argv[])
             }*/
         }
 
-/*    sg_update_buffer(state.bind.vertex_buffers[1], &(sg_range){
-        .ptr = state.pos,
-        .size = (size_t)state.cur_num_particles * sizeof(hmm_vec3)
-    });        */
+        //printf("particle_count: %d\n", state.particle_count);
+
+        pg_update_buffer(instance_buffer, state.particles, state.particle_count);
 
         // Bind sampler
         pg_bind_sampler(shader, "u_smp", sampler);
@@ -267,7 +273,7 @@ int main(int argc, char *argv[])
         pg_push_state(ctx);
         pg_begin_pass(ctx, NULL, true);
 
-        pg_draw_buffers(ctx, 6, state.current, (const pg_buffer_t*[]){
+        pg_draw_buffers(ctx, 6, state.particle_count, (const pg_buffer_t*[]){
             vertex_buffer,
             instance_buffer,
             NULL
