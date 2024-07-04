@@ -1631,9 +1631,6 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
                               size_t buffer_size,
                               size_t element_size)
 {
-    PICO_GFX_ASSERT(data);
-    PICO_GFX_ASSERT(count > 0);
-
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;

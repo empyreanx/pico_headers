@@ -35,7 +35,7 @@
 #include "../pico_gfx.h"
 
 #define SOKOL_SHDC_IMPL
-#include "example_shader.h"
+#include "sprite_shader.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
     int h = app.screen_h;
 
     app.ctx = pg_create_context(w, h, NULL);
-    app.shader = pg_create_shader(app.ctx, example);
+    app.shader = pg_create_shader(app.ctx, sprite);
 
     pg_init_uniform_block(app.shader, PG_STAGE_VS, "vs_block");
 

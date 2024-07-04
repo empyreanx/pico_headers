@@ -25,7 +25,7 @@
 #include "../pico_gfx.h"
 
 #define SOKOL_SHDC_IMPL
-#include "example_shader.h"
+#include "sprite_shader.h"
 
 typedef struct
 {
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 
     // Initialize context
     pg_ctx_t* ctx = pg_create_context(pixel_w, pixel_h, NULL);
-    pg_shader_t* shader = pg_create_shader(ctx, example);
+    pg_shader_t* shader = pg_create_shader(ctx, sprite);
 
     // Load image
 

@@ -11,8 +11,12 @@
      * Defining vertices
      * Drawing the vertices
 */
+#define _POSIX_C_SOURCE 199309L
 
 #include <SDL.h>
+
+#define PICO_TIME_IMPLEMENTATION
+#include "../pico_time.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -25,21 +29,38 @@
 #include "../pico_gfx.h"
 
 #define SOKOL_SHDC_IMPL
-#include "example_shader.h"
+#include "particle_shader.h"
+
+#define MAX_PARTICLES (512 * 1024)
+#define NUM_PARTICLES_EMITTED_PER_FRAME (10)
 
 typedef struct
 {
-    float pos[3];
-    float color[4];
+    float pos[2];
     float uv[2];
 } vertex_t;
 
-typedef float mat4_t[16];
+typedef struct
+{
+    float pos[2];
+    float color[4];
+    float vel[2];
+} particle_t;
+
+static struct
+{
+    particle_t particles[MAX_PARTICLES];
+    int current;
+} state;
+
+typedef float vec2_t[2];
 
 int main(int argc, char *argv[])
 {
     (void)argc;
     (void)argv;
+
+    memset(&state, 0, sizeof(state));
 
     assert(pg_backend() == PG_BACKEND_GL);
 
@@ -83,12 +104,12 @@ int main(int argc, char *argv[])
 
     // Initialize context
     pg_ctx_t* ctx = pg_create_context(pixel_w, pixel_h, NULL);
-    pg_shader_t* shader = pg_create_shader(ctx, example);
+    pg_shader_t* shader = pg_create_shader(ctx, particle);
 
     // Load image
 
     int w, h, c;
-    unsigned char* bitmap = stbi_load("./boomer.png", &w, &h, &c, 0);
+    unsigned char* bitmap = stbi_load("./circle.png", &w, &h, &c, 0);
 
     assert(bitmap);
 
@@ -103,36 +124,15 @@ int main(int argc, char *argv[])
 
     // Specify vertices
 
-    /*vertex_t vertices[6] =
-    {
-        { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
-        { {-1.0f, -1.0f }, { 1, 1, 1, 1 }, { 0, 0} },
-        { { 1.0f, -1.0f }, { 1, 1, 1, 1 }, { 1, 0} },
-
-        { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
-        { { 1.0f, -1.0f }, { 1, 1, 1, 1 }, { 1, 0} },
-        { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
-    };
-
-    vertex_t indexed_vertices[4] =
-    {
-        { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
-        { {-1.0f, -1.0f }, { 1, 1, 1, 1 }, { 0, 0} },
-        { { 1.0f, -1.0f }, { 1, 1, 1, 1 }, { 1, 0} },
-        { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
-    };
-
-    uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };*/
-
     vertex_t vertices[6] =
     {
-        { { 0, 0, 0 }, { 1, 1, 1, 1 }, { 0, 1 } },
-        { { 0, h, 0 }, { 1, 1, 1, 1 }, { 0, 0 } },
-        { { w, 0, 0 }, { 1, 1, 1, 1 }, { 1, 1 } },
+        { { 0, 0, }, { 0, 1 } },
+        { { 0, h, }, { 0, 0 } },
+        { { w, 0, }, { 1, 1 } },
 
-        { { 0, h, 0 }, { 1, 1, 1, 1 }, { 0, 0 } },
-        { { w, h, 0 }, { 1, 1, 1, 1 }, { 1, 0 } },
-        { { w, 0, 0 }, { 1, 1, 1, 1 }, { 1, 1 } }
+        { { 0, h, }, { 0, 0 } },
+        { { w, h, }, { 1, 0 } },
+        { { w, 0, }, { 1, 1 } }
     };
 
     pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
@@ -140,22 +140,30 @@ int main(int argc, char *argv[])
     {
         .layout =
         {
+            .bufs =
+            {
+                [1] = { .instanced = true }
+            },
             .attrs =
             {
-                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3,
-                                      .offset = offsetof(vertex_t, pos) },
+                [ATTR_vs_a_pos] = { .format = PG_VFORMAT_FLOAT2,
+                                    .offset = offsetof(vertex_t, pos) },
 
-                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4,
-                                      .offset = offsetof(vertex_t, color) },
+                [ATTR_vs_a_uv] = { .format = PG_VFORMAT_FLOAT2,
+                                   .offset = offsetof(vertex_t, uv) },
 
-                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2,
-                                      .offset = offsetof(vertex_t, uv) },
+                [ATTR_vs_a_inst_pos] = { .format = PG_VFORMAT_FLOAT2,
+                                         .offset = offsetof(particle_t, pos),
+                                         .buffer_index = 1 },
+
+                [ATTR_vs_a_inst_color] = { .format = PG_VFORMAT_FLOAT4,
+                                           .offset = offsetof(particle_t, color),
+                                           .buffer_index = 1 },
             },
         },
-        .element_size = sizeof(vertex_t)
     });
 
-    vs_block_t block =
+    vs_params_t block =
     {
         .u_mvp =
         {
@@ -166,18 +174,31 @@ int main(int argc, char *argv[])
         }
     };
 
-    pg_init_uniform_block(shader, PG_STAGE_VS, "vs_block");
-    pg_set_uniform_block(shader, "vs_block", &block);
+    pg_init_uniform_block(shader, PG_STAGE_VS, "vs_params");
+    pg_set_uniform_block(shader, "vs_params", &block);
 
-    pg_buffer_t* buffer = pg_create_buffer(ctx, PG_USAGE_STATIC, vertices,
-                                           6, 6, sizeof(vertex_t));
+    pg_buffer_t* vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,
+                                                       vertices, 6, 6,
+                                                       sizeof(vertex_t));
+
+    pg_buffer_t* instance_buffer = pg_create_buffer(ctx, PG_USAGE_STREAM,
+                                                         NULL, 0, MAX_PARTICLES,
+                                                         sizeof(particle_t));
 
     pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
+
+    double delta = 0.0;
+    ptime_t now, last = pt_now();
 
     bool done = false;
 
     while (!done)
     {
+        // Calculate delta
+        now = pt_now();
+        delta = pt_to_sec(now - last);
+        last = now;
+
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -198,6 +219,45 @@ int main(int argc, char *argv[])
             }
         }
 
+        // New particles
+        for (int i = 0; i < NUM_PARTICLES_EMITTED_PER_FRAME; i++)
+        {
+            if (state.current < MAX_PARTICLES)
+            {
+                particle_t particle =
+                {
+                    .pos = { 0.f, 0.f },
+                    .color = { 1.f, 0.f, 0.f, 1.f },
+                    .vel = { ((float)(rand() & 0x7FFF) / 0x7FFF) - 0.5f,
+                             ((float)(rand() & 0x7FFF) / 0x7FFF) * 0.5f + 2.0f }
+                };
+
+                state.particles[i] = particle;
+
+                state.current++;
+            } else {
+                break;
+            }
+        }
+
+        // Update particle positions
+        for (int i = 0; i < state.current; i++) {
+            state.particles[i].vel[1] -= 1.0f * delta;
+            state.particles[i].pos[0] += state.particles[i].vel[0] * delta;
+            state.particles[i].pos[1] += state.particles[i].vel[1] * delta;
+            // Bounce back from 'ground'
+/*&            if (state.pos[i].Y < -2.0f) {
+                state.pos[i].Y = -1.8f;
+                state.vel[i].Y = -state.vel[i].Y;
+                state.vel[i].X *= 0.8f; state.vel[i].Y *= 0.8f; state.vel[i].Z *= 0.8f;
+            }*/
+        }
+
+/*    sg_update_buffer(state.bind.vertex_buffers[1], &(sg_range){
+        .ptr = state.pos,
+        .size = (size_t)state.cur_num_particles * sizeof(hmm_vec3)
+    });        */
+
         // Bind sampler
         pg_bind_sampler(shader, "u_smp", sampler);
         pg_bind_texture(shader, "u_tex", tex);
@@ -206,7 +266,13 @@ int main(int argc, char *argv[])
         // Save current state
         pg_push_state(ctx);
         pg_begin_pass(ctx, NULL, true);
-        pg_draw_buffers(ctx, 6, 1, (const pg_buffer_t*[]){ buffer, NULL });
+
+        pg_draw_buffers(ctx, 6, state.current, (const pg_buffer_t*[]){
+            vertex_buffer,
+            instance_buffer,
+            NULL
+        });
+
         pg_end_pass(ctx);
         pg_pop_state(ctx);
 
