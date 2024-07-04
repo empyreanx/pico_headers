@@ -1281,7 +1281,8 @@ static void pg_set_attributes(const pg_layout_t* layout, sg_pipeline_desc* desc)
             desc->layout.attrs[slot] = (sg_vertex_attr_state)
             {
                 .format = pg_map_vertex_format(layout->attrs[slot].format),
-                .offset = layout->attrs[slot].offset
+                .offset = layout->attrs[slot].offset,
+                .buffer_index = layout->attrs[slot].buffer_index,
             };
         }
     }
