@@ -47,13 +47,19 @@ typedef struct
 {
     float pos[2];
     float color[4];
-    float vel[2];
+//    float vel[2];
 } particle_t;
+
+typedef struct
+{
+    float x, y;
+} vel_t;
 
 static struct
 {
     particle_t particles[MAX_PARTICLES];
     int particle_count;
+    vel_t vel[MAX_PARTICLES];
 } state;
 
 float random(float min, float max)
@@ -169,6 +175,12 @@ int main(int argc, char *argv[])
                                            .buffer_index = 1 },
             },
         },
+        .blend_enabled = true,
+        .blend =
+        {
+            .color_src = PG_SRC_ALPHA,
+            .color_dst = PG_ONE_MINUS_SRC_ALPHA
+        }
     });
 
     vs_params_t block =
@@ -238,27 +250,44 @@ int main(int argc, char *argv[])
             particle_t particle =
             {
                 .pos = { win_w / 2.f, win_h / 2.f },
-                .color = { 1.f, 1.f, 1.f, 1.f },
-                .vel = { cosf(angle) * 10, -sinf(angle) * 50 }
+                .color = { 0.f, 0.f, 0.f, 1.f },
                 //.vel = { 0, 50 }
             };
 
+            if (i % 3 == 0)
+                particle.color[0] = 1.f;
+
+            if (i % 3 == 1)
+                particle.color[1] = 1.f;
+
+            if (i % 3 == 2)
+                particle.color[2] = 1.f;
+
+            //printf("pos: %f %f\n", particle.pos[0], particle.pos[1]);
+
             state.particles[state.particle_count] = particle;
+            state.vel[state.particle_count] = (vel_t){ cosf(angle) * 10, -sinf(angle) * 50 };
             state.particle_count++;
         }
 
         // Update particle positions
-        for (int i = 0; i < state.particle_count; i++) {
+        for (int i = 0; i < state.particle_count; i++)
+        {
+//            printf("pos: %f %f\n", state.particles[i].pos[0], state.particles[i].pos[1]);
+
             //state.particles[i].vel[1] -= 1.0f * delta;
-            state.particles[i].pos[0] += state.particles[i].vel[0] * delta;
-            state.particles[i].pos[1] += state.particles[i].vel[1] * delta;
+/*            state.particles[i].pos[0] += state.particles[i].vel[0] * delta;
+            state.particles[i].pos[1] += state.particles[i].vel[1] * delta;*/
+            state.particles[i].pos[0] += state.vel[i].x * delta;
+            state.particles[i].pos[1] += state.vel[i].y * delta;
+
             // Bounce back from 'ground'
-/*&            if (state.pos[i].Y < -2.0f) {
+            /*if (state.pos[i].Y < -2.0f) {
                 state.pos[i].Y = -1.8f;
                 state.vel[i].Y = -state.vel[i].Y;
                 state.vel[i].X *= 0.8f; state.vel[i].Y *= 0.8f; state.vel[i].Z *= 0.8f;
             }*/
-        }
+        }//*/
 
         //printf("particle_count: %d\n", state.particle_count);
 

@@ -1637,18 +1637,6 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
 
     buffer->ctx = ctx;
 
-/*    sg_buffer_desc desc = { 0 };
-
-    desc.type = SG_BUFFERTYPE_VERTEXBUFFER;
-    desc.usage = pg_map_usage(usage);
-
-    if (data)
-    {
-        desc.data = (sg_range){ .ptr = data, .size = count * element_size };
-    }
-
-    desc.size = buffer_size * element_size;*/
-
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
         .type  = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -1656,8 +1644,6 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
         .data  = { .ptr = data, .size = count * element_size },
         .size  = buffer_size * element_size
     });
-
-    //buffer->handle = sg_make_buffer(&desc);
 
     PICO_GFX_ASSERT(sg_query_buffer_state(buffer->handle) == SG_RESOURCESTATE_VALID);
 
