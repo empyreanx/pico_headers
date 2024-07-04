@@ -157,12 +157,12 @@ int main(int argc, char *argv[])
                 [ATTR_vs_a_pos] = { .format = PG_VFORMAT_FLOAT2,
                                     .offset = offsetof(vertex_t, pos) },
 
-                [ATTR_vs_a_uv] = { .format = PG_VFORMAT_FLOAT2,
-                                   .offset = offsetof(vertex_t, uv) },
+                [ATTR_vs_a_uv]  = { .format = PG_VFORMAT_FLOAT2,
+                                    .offset = offsetof(vertex_t, uv) },
 
-                [ATTR_vs_a_inst_pos] = { .format = PG_VFORMAT_FLOAT2,
-                                         .offset = offsetof(particle_t, pos),
-                                         .buffer_index = 1 },
+                [ATTR_vs_a_inst_pos]  = { .format = PG_VFORMAT_FLOAT2,
+                                          .offset = offsetof(particle_t, pos),
+                                          .buffer_index = 1 },
 
                 [ATTR_vs_a_inst_color] = { .format = PG_VFORMAT_FLOAT4,
                                            .offset = offsetof(particle_t, color),
@@ -239,8 +239,8 @@ int main(int argc, char *argv[])
             {
                 .pos = { win_w / 2.f, win_h / 2.f },
                 .color = { 1.f, 1.f, 1.f, 1.f },
-                //.vel = { cosf(angle) * 100, sinf(angle) * 50 }
-                .vel = { 0, 50 }
+                .vel = { cosf(angle) * 10, -sinf(angle) * 50 }
+                //.vel = { 0, 50 }
             };
 
             state.particles[state.particle_count] = particle;
