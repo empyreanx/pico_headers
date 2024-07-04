@@ -637,7 +637,7 @@ typedef enum
     PG_USAGE_STATIC,
     PG_USAGE_DYNAMIC,
     PG_USAGE_STREAM
-} pg_usage_t;
+} pg_buffer_usage_t;
 
 /**
  * @brief Creates a vertex buffer
@@ -645,7 +645,7 @@ typedef enum
  * @param count The number of vertices
  */
 pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
-                              pg_usage_t usage,
+                              pg_buffer_usage_t usage,
                               const void* data,
                               size_t count,
                               size_t buffer_size,
@@ -658,6 +658,7 @@ void pg_destroy_buffer(pg_buffer_t* buffer);
 
 void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count);
 void pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count);
+void pg_reset_buffer(pg_buffer_t* buffer);
 
 /**
  * @brief Draws a vertex buffer
@@ -941,12 +942,21 @@ struct pg_sampler_t
     sg_sampler handle;
 };
 
+typedef enum
+{
+    PG_BUFFER_TYPE_VERTEX,
+    PG_BUFFER_TYPE_INDEX,
+} pg_buffer_type_t;
+
 struct pg_buffer_t
 {
     pg_ctx_t* ctx;
     sg_buffer handle;
+    pg_buffer_type_t type;
+    pg_buffer_usage_t usage;
     size_t count;
     size_t element_size;
+    size_t size;
     size_t offset;
 };
 
@@ -1615,7 +1625,7 @@ static void pg_apply_uniforms(pg_shader_t* shader)
     }
 }
 
-static sg_usage pg_map_usage(pg_usage_t format)
+static sg_usage pg_map_usage(pg_buffer_usage_t format)
 {
     switch (format)
     {
@@ -1627,7 +1637,7 @@ static sg_usage pg_map_usage(pg_usage_t format)
 }
 
 pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
-                              pg_usage_t usage,
+                              pg_buffer_usage_t usage,
                               const void* data,
                               size_t count,
                               size_t buffer_size,
@@ -1636,20 +1646,22 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;
+    buffer->type = PG_BUFFER_TYPE_VERTEX;
+    buffer->usage = usage;
+    buffer->count = count;
+    buffer->element_size = element_size;
+    buffer->size = buffer_size * element_size;
+    buffer->offset = 0;
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
         .type  = SG_BUFFERTYPE_VERTEXBUFFER,
         .usage = pg_map_usage(usage),
         .data  = { .ptr = data, .size = count * element_size },
-        .size  = buffer_size * element_size
+        .size  = buffer->size
     });
 
     PICO_GFX_ASSERT(sg_query_buffer_state(buffer->handle) == SG_RESOURCESTATE_VALID);
-
-    buffer->count = count;
-    buffer->element_size = element_size;
-    buffer->offset = 0;
 
     return buffer;
 }
@@ -1676,6 +1688,33 @@ void pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count)
 
     buffer->count = count;
     buffer->offset = offset;
+}
+
+static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type)
+{
+    switch (type)
+    {
+        case PG_BUFFER_TYPE_VERTEX: return SG_BUFFERTYPE_VERTEXBUFFER;
+        case PG_BUFFER_TYPE_INDEX:  return SG_BUFFERTYPE_INDEXBUFFER;
+        default: PICO_GFX_ASSERT(false);
+    }
+}
+
+void pg_reset_buffer(pg_buffer_t* buffer)
+{
+    sg_destroy_buffer(buffer->handle);
+
+    sg_buffer_type type = pg_map_buffer_type(buffer->type);
+
+    buffer->handle = sg_make_buffer(&(sg_buffer_desc)
+    {
+        .type  = type,
+        .usage = pg_map_usage(buffer->usage),
+        .data  = { .ptr = NULL, .size = 0 },
+        .size  = buffer->size
+    });
+
+    PICO_GFX_ASSERT(sg_query_buffer_state(buffer->handle) == SG_RESOURCESTATE_VALID);
 }
 
 void pg_destroy_buffer(pg_buffer_t* buffer)
