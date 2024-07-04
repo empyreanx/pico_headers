@@ -62,7 +62,7 @@ static struct
     vel_t vel[MAX_PARTICLES];
 } state;
 
-float random(float min, float max)
+static float random_float(float min, float max)
 {
     return ((float)rand() / RAND_MAX) * (max - min) + min;
 }
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
             if (state.particle_count >= MAX_PARTICLES)
                 break;
 
-            float angle = random(PI_F / 4.f, 3.f * PI_F / 4.f);
+            float angle = random_float(PI_F / 4.f, 3.f * PI_F / 4.f);
 
             particle_t particle =
             {
@@ -263,8 +263,6 @@ int main(int argc, char *argv[])
             if (i % 3 == 2)
                 particle.color[2] = 1.f;
 
-            //printf("pos: %f %f\n", particle.pos[0], particle.pos[1]);
-
             state.particles[state.particle_count] = particle;
             state.vel[state.particle_count] = (vel_t){ cosf(angle) * 10, -sinf(angle) * 50 };
             state.particle_count++;
@@ -273,11 +271,7 @@ int main(int argc, char *argv[])
         // Update particle positions
         for (int i = 0; i < state.particle_count; i++)
         {
-//            printf("pos: %f %f\n", state.particles[i].pos[0], state.particles[i].pos[1]);
-
-            //state.particles[i].vel[1] -= 1.0f * delta;
-/*            state.particles[i].pos[0] += state.particles[i].vel[0] * delta;
-            state.particles[i].pos[1] += state.particles[i].vel[1] * delta;*/
+            //state.particles[i].pos[1] += state.particles[i].vel[1] * delta;*/
             state.particles[i].pos[0] += state.vel[i].x * delta;
             state.particles[i].pos[1] += state.vel[i].y * delta;
 
@@ -288,8 +282,6 @@ int main(int argc, char *argv[])
                 state.vel[i].X *= 0.8f; state.vel[i].Y *= 0.8f; state.vel[i].Z *= 0.8f;
             }*/
         }//*/
-
-        //printf("particle_count: %d\n", state.particle_count);
 
         pg_update_buffer(instance_buffer, state.particles, state.particle_count);
 
