@@ -121,6 +121,17 @@ int main(int argc, char *argv[])
 
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
 
+    pg_buffer_t* vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,
+                                                  vertices, 6, 6,
+                                                  sizeof(vertex_t));
+
+    pg_buffer_t* indexed_vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,
+                                                          indexed_vertices, 4, 4,
+                                                          sizeof(vertex_t));
+
+    pg_buffer_t* index_buffer = pg_create_index_buffer(ctx, PG_USAGE_STATIC,
+                                                            indices, 6, 6);
+
     pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
     pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
     {
@@ -196,17 +207,17 @@ int main(int argc, char *argv[])
         // Bind sampler
         pg_bind_sampler(shader, "u_smp", sampler);
         pg_set_pipeline(ctx, pipeline);
+        pg_bind_texture(shader, "u_tex", tex);
 
         // Save current state
         pg_push_state(ctx);
 
-        // Bind texture
-        pg_bind_texture(shader, "u_tex", tex);
-
         // First pass: draw to render target
         pg_begin_pass(ctx, target, true);
         pg_set_pipeline(ctx, target_pipeline);
-        pg_draw_indexed_array(ctx, indexed_vertices, 4, indices, 6);
+        pg_bind_buffer(ctx, 0, indexed_vertex_buffer);
+        pg_set_index_buffer(ctx, index_buffer);
+        pg_draw(ctx, 0, 6, 1);
         pg_end_pass(ctx);
 
         // Restore previous state
@@ -214,10 +225,9 @@ int main(int argc, char *argv[])
 
         // Second pass: draw render target to the screen
         pg_push_state(ctx);
-        pg_bind_texture(shader, "u_tex", tex);
-
         pg_begin_pass(ctx, NULL, true);
-        pg_draw_array(ctx, vertices, 6);
+        pg_bind_buffer(ctx, 0, vertex_buffer);
+        pg_draw(ctx, 0, 6, 1);
         pg_end_pass(ctx);
         pg_pop_state(ctx);
 
