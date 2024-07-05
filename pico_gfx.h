@@ -684,6 +684,8 @@ void pg_reset_buffer(pg_buffer_t* buffer);
  */
 void pg_draw_buffers(const pg_ctx_t* ctx, size_t count, size_t instances);
 
+void pg_draw_indexed_buffers(const pg_ctx_t* ctx, size_t count, size_t instances);
+
 /**
  * @brief Draws an array of vertices
  * @param ctx The graphics context
@@ -1845,6 +1847,32 @@ void pg_draw_buffers(const pg_ctx_t* ctx, size_t count, size_t instances)
     pg_apply_samplers(ctx, &bindings);
     pg_apply_buffers(ctx, &bindings);
     pg_apply_view_state(ctx);
+
+    pg_pipeline_t* pipeline = ctx->state.pipeline;
+
+    sg_apply_pipeline(pipeline->handle);
+    sg_apply_bindings(&bindings);
+    pg_apply_uniforms(pipeline->shader);
+
+    sg_draw(0, count, instances);
+}
+
+void pg_draw_indexed_buffers(const pg_ctx_t* ctx, size_t count, size_t instances)
+{
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(ctx->pass_active);
+    PICO_GFX_ASSERT(ctx->state.pipeline->indexed);
+    PICO_GFX_ASSERT(ctx->state.index_buffer);
+
+    sg_bindings bindings = { 0 };
+
+    pg_apply_textures(ctx, &bindings);
+    pg_apply_samplers(ctx, &bindings);
+    pg_apply_buffers(ctx, &bindings);
+    pg_apply_view_state(ctx);
+
+    bindings.index_buffer_offset = ctx->state.index_buffer->offset;
+    bindings.index_buffer = ctx->state.index_buffer->handle;
 
     pg_pipeline_t* pipeline = ctx->state.pipeline;
 
