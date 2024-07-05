@@ -215,7 +215,7 @@ void node_render(node_t* node, double alpha)
         // Draw vertices
         pg_bind_buffer(app.ctx, 0, sprite->buf);
         pg_bind_texture(app.shader, "u_tex", sprite->tex);
-        pg_draw_buffers(app.ctx, 6, 1);
+        pg_draw(app.ctx, 0, 6, 1);
     }
 }
 

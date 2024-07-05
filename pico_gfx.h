@@ -671,7 +671,11 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
 void pg_destroy_buffer(pg_buffer_t* buffer);
 
 void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count);
-void pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count);
+int pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count);
+
+int pg_get_buffer_offset(pg_buffer_t* buffer);
+void pg_set_buffer_offset(pg_buffer_t* buffer, int offset);
+
 void pg_reset_buffer(pg_buffer_t* buffer);
 
 /**
@@ -682,9 +686,7 @@ void pg_reset_buffer(pg_buffer_t* buffer);
  * @param count The number of vertices to draw
  * @param texture The texture to draw from
  */
-void pg_draw_buffers(const pg_ctx_t* ctx, size_t count, size_t instances);
-
-void pg_draw_indexed_buffers(const pg_ctx_t* ctx, size_t count, size_t instances);
+void pg_draw(const pg_ctx_t* ctx, size_t start, size_t count, size_t instances);
 
 /**
  * @brief Draws an array of vertices
@@ -1749,7 +1751,7 @@ void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count)
     buffer->offset = 0;
 }
 
-void pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count)
+int pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count)
 {
     int offset = sg_append_buffer(buffer->handle, &(sg_range)
     {
@@ -1758,6 +1760,18 @@ void pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count)
     });
 
     buffer->count = count;
+    buffer->offset = offset;
+
+    return offset;
+}
+
+int pg_get_buffer_offset(pg_buffer_t* buffer)
+{
+    return buffer->offset;
+}
+
+void pg_set_buffer_offset(pg_buffer_t* buffer, int offset)
+{
     buffer->offset = offset;
 }
 
@@ -1835,7 +1849,7 @@ static void pg_apply_buffers(const pg_ctx_t* ctx, sg_bindings* bindings)
     }
 }
 
-void pg_draw_buffers(const pg_ctx_t* ctx, size_t count, size_t instances)
+void pg_draw(const pg_ctx_t* ctx, size_t start, size_t count, size_t instances)
 {
     PICO_GFX_ASSERT(ctx);
     PICO_GFX_ASSERT(ctx->pass_active);
@@ -1848,31 +1862,11 @@ void pg_draw_buffers(const pg_ctx_t* ctx, size_t count, size_t instances)
     pg_apply_buffers(ctx, &bindings);
     pg_apply_view_state(ctx);
 
-    pg_pipeline_t* pipeline = ctx->state.pipeline;
-
-    sg_apply_pipeline(pipeline->handle);
-    sg_apply_bindings(&bindings);
-    pg_apply_uniforms(pipeline->shader);
-
-    sg_draw(0, count, instances);
-}
-
-void pg_draw_indexed_buffers(const pg_ctx_t* ctx, size_t count, size_t instances)
-{
-    PICO_GFX_ASSERT(ctx);
-    PICO_GFX_ASSERT(ctx->pass_active);
-    PICO_GFX_ASSERT(ctx->state.pipeline->indexed);
-    PICO_GFX_ASSERT(ctx->state.index_buffer);
-
-    sg_bindings bindings = { 0 };
-
-    pg_apply_textures(ctx, &bindings);
-    pg_apply_samplers(ctx, &bindings);
-    pg_apply_buffers(ctx, &bindings);
-    pg_apply_view_state(ctx);
-
-    bindings.index_buffer_offset = ctx->state.index_buffer->offset;
-    bindings.index_buffer = ctx->state.index_buffer->handle;
+    if (ctx->state.index_buffer)
+    {
+        bindings.index_buffer_offset = ctx->state.index_buffer->offset;
+        bindings.index_buffer = ctx->state.index_buffer->handle;
+    }
 
     pg_pipeline_t* pipeline = ctx->state.pipeline;
 
@@ -1880,7 +1874,7 @@ void pg_draw_indexed_buffers(const pg_ctx_t* ctx, size_t count, size_t instances
     sg_apply_bindings(&bindings);
     pg_apply_uniforms(pipeline->shader);
 
-    sg_draw(0, count, instances);
+    sg_draw(start, count, instances);
 }
 
 void pg_draw_array(pg_ctx_t* ctx, const void* data, size_t count)

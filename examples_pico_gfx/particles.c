@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
 
         pg_bind_buffer(ctx, 0, vertex_buffer);
         pg_bind_buffer(ctx, 1, instance_buffer);
-        pg_draw_buffers(ctx, 6, state.particle_count);
+        pg_draw(ctx, 0, 6, state.particle_count);
 
         pg_end_pass(ctx);
         pg_pop_state(ctx);
