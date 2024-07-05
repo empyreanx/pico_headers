@@ -145,6 +145,8 @@
 
 #define PG_MAX_VERTEX_ATTRIBUTES SG_MAX_VERTEX_ATTRIBUTES
 #define PG_MAX_VERTEX_BUFFERS    SG_MAX_VERTEX_BUFFERS
+#define PG_MAX_TEXTURE_SLOTS     SG_MAX_SHADERSTAGE_IMAGES
+#define PG_MAX_SAMPLER_SLOTS     SG_MAX_SHADERSTAGE_SAMPLERS
 
 /**
  * @brief Graphics backends
@@ -385,6 +387,12 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
  * Resets the pipeline
  */
 void pg_reset_pipeline(pg_ctx_t* ctx);
+
+void pg_bind_buffer(pg_ctx_t* ctx, int slot, pg_buffer_t* buffer);
+void pg_reset_buffers(pg_ctx_t* ctx);
+
+void pg_set_index_buffer(pg_ctx_t* ctx, pg_buffer_t* buffer);
+void pg_reset_index_buffer(pg_ctx_t* ctx);
 
 /**
  * @brief Binds a texture to a slot in the current state
@@ -651,6 +659,12 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
                               size_t buffer_size,
                               size_t element_size);
 
+pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
+                                    pg_buffer_usage_t usage,
+                                    const void* data,
+                                    size_t count,
+                                    size_t buffer_size);
+
 /**
  * @brief Destroys a vertex buffer
  */
@@ -668,10 +682,7 @@ void pg_reset_buffer(pg_buffer_t* buffer);
  * @param count The number of vertices to draw
  * @param texture The texture to draw from
  */
-void pg_draw_buffers(const pg_ctx_t* ctx,
-                     size_t count,
-                     size_t instances,
-                     const pg_buffer_t* buffers[]);
+void pg_draw_buffers(const pg_ctx_t* ctx, size_t count, size_t instances);
 
 /**
  * @brief Draws an array of vertices
@@ -746,13 +757,14 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 #define PICO_GFX_MIN_ARENA_CAPACITY 512
 #endif
 
+/*
 #ifndef PICO_GFX_MAX_TEXTURE_SLOTS
 #define PICO_GFX_MAX_TEXTURE_SLOTS 16
 #endif
 
 #ifndef PICO_GFX_MAX_SAMPLER_SLOTS
 #define PICO_GFX_MAX_SAMPLER_SLOTS 16
-#endif
+#endif*/
 
 /*=============================================================================
  * Macros
@@ -877,8 +889,10 @@ typedef struct pg_state_t
     pg_rect_t      viewport;
     pg_rect_t      scissor;
     pg_shader_t*   shader;
-    pg_texture_t*  textures[PICO_GFX_MAX_TEXTURE_SLOTS];
-    pg_sampler_t*  samplers[PICO_GFX_MAX_SAMPLER_SLOTS];
+    pg_buffer_t*   index_buffer;
+    pg_buffer_t*   buffers[PG_MAX_VERTEX_BUFFERS];
+    pg_texture_t*  textures[PG_MAX_TEXTURE_SLOTS];
+    pg_sampler_t*  samplers[PG_MAX_SAMPLER_SLOTS];
 } pg_state_t;
 
 struct pg_ctx_t
@@ -1228,12 +1242,37 @@ void pg_reset_pipeline(pg_ctx_t* ctx)
     pg_set_pipeline(ctx, NULL);
 }
 
+void pg_bind_buffer(pg_ctx_t* ctx, int slot, pg_buffer_t* buffer)
+{
+    PICO_GFX_ASSERT(ctx);
+
+    PICO_GFX_ASSERT(slot >= 0);
+    PICO_GFX_ASSERT(slot < PG_MAX_VERTEX_BUFFERS);
+
+    ctx->state.buffers[slot] = buffer;
+}
+
+void pg_reset_buffers(pg_ctx_t* ctx)
+{
+    memset(&ctx->state.buffers, 0, sizeof(ctx->state.textures));
+}
+
+void pg_set_index_buffer(pg_ctx_t* ctx, pg_buffer_t* buffer)
+{
+    ctx->state.index_buffer = buffer;
+}
+
+void pg_reset_index_buffer(pg_ctx_t* ctx)
+{
+    ctx->state.index_buffer = NULL;
+}
+
 void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* texture)
 {
     int slot = shader->internal.get_img_slot(SG_SHADERSTAGE_FS, name);
 
     PICO_GFX_ASSERT(slot >= 0);
-    PICO_GFX_ASSERT(slot < PICO_GFX_MAX_TEXTURE_SLOTS);
+    PICO_GFX_ASSERT(slot < PG_MAX_TEXTURE_SLOTS);
 
     shader->ctx->state.textures[slot] = texture;
 }
@@ -1248,7 +1287,7 @@ void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sample
     int slot = shader->internal.get_smp_slot(SG_SHADERSTAGE_FS, name);
 
     PICO_GFX_ASSERT(slot >= 0);
-    PICO_GFX_ASSERT(slot < PICO_GFX_MAX_TEXTURE_SLOTS);
+    PICO_GFX_ASSERT(slot < PG_MAX_TEXTURE_SLOTS);
 
     shader->ctx->state.samplers[slot] = sampler;
 }
@@ -1268,6 +1307,8 @@ void pg_reset_state(pg_ctx_t* ctx)
     pg_reset_pipeline(ctx);
     pg_reset_viewport(ctx);
     pg_reset_scissor(ctx);
+    pg_reset_buffers(ctx);
+    pg_reset_index_buffer(ctx);
     pg_reset_textures(ctx);
     pg_reset_samplers(ctx);
 }
@@ -1666,6 +1707,34 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
     return buffer;
 }
 
+pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
+                                    pg_buffer_usage_t usage,
+                                    const void* data,
+                                    size_t count,
+                                    size_t buffer_size)
+{
+    pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
+
+    buffer->ctx = ctx;
+    buffer->type = PG_BUFFER_TYPE_INDEX;
+    buffer->usage = usage;
+    buffer->count = count;
+    buffer->size = buffer_size * sizeof(uint16_t);
+    buffer->offset = 0;
+
+    buffer->handle = sg_make_buffer(&(sg_buffer_desc)
+    {
+        .type  = SG_BUFFERTYPE_INDEXBUFFER,
+        .usage = pg_map_usage(usage),
+        .data  = { .ptr = data, .size = count * sizeof(uint16_t) },
+        .size  = buffer->size
+    });
+
+    PICO_GFX_ASSERT(sg_query_buffer_state(buffer->handle) == SG_RESOURCESTATE_VALID);
+
+    return buffer;
+}
+
 void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count)
 {
     sg_update_buffer(buffer->handle, &(sg_range)
@@ -1704,11 +1773,9 @@ void pg_reset_buffer(pg_buffer_t* buffer)
 {
     sg_destroy_buffer(buffer->handle);
 
-    sg_buffer_type type = pg_map_buffer_type(buffer->type);
-
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
-        .type  = type,
+        .type  = pg_map_buffer_type(buffer->type),
         .usage = pg_map_usage(buffer->usage),
         .data  = { .ptr = NULL, .size = 0 },
         .size  = buffer->size
@@ -1735,7 +1802,7 @@ static void pg_apply_view_state(const pg_ctx_t* ctx)
 
 static void pg_apply_textures(const pg_ctx_t* ctx, sg_bindings* bindings)
 {
-    for (int i = 0; i < PICO_GFX_MAX_TEXTURE_SLOTS; i++)
+    for (int i = 0; i < PG_MAX_TEXTURE_SLOTS; i++)
     {
         if (!ctx->state.textures[i])
             continue;
@@ -1746,7 +1813,7 @@ static void pg_apply_textures(const pg_ctx_t* ctx, sg_bindings* bindings)
 
 static void pg_apply_samplers(const pg_ctx_t* ctx, sg_bindings* bindings)
 {
-    for (int i = 0; i < PICO_GFX_MAX_SAMPLER_SLOTS; i++)
+    for (int i = 0; i < PG_MAX_SAMPLER_SLOTS; i++)
     {
         if (!ctx->state.samplers[i])
             continue;
@@ -1755,8 +1822,10 @@ static void pg_apply_samplers(const pg_ctx_t* ctx, sg_bindings* bindings)
     }
 }
 
-static void pg_apply_buffers(const pg_buffer_t* buffers[], sg_bindings* bindings)
+static void pg_apply_buffers(const pg_ctx_t* ctx, sg_bindings* bindings)
 {
+    pg_buffer_t* const* buffers = ctx->state.buffers;
+
     for (int slot = 0; buffers[slot] != NULL; slot++)
     {
         bindings->vertex_buffer_offsets[slot] = buffers[slot]->offset;
@@ -1764,13 +1833,9 @@ static void pg_apply_buffers(const pg_buffer_t* buffers[], sg_bindings* bindings
     }
 }
 
-void pg_draw_buffers(const pg_ctx_t* ctx,
-                     size_t count,
-                     size_t instances,
-                     const pg_buffer_t* buffers[])
+void pg_draw_buffers(const pg_ctx_t* ctx, size_t count, size_t instances)
 {
     PICO_GFX_ASSERT(ctx);
-    PICO_GFX_ASSERT(buffers);
     PICO_GFX_ASSERT(ctx->pass_active);
     PICO_GFX_ASSERT(!ctx->state.pipeline->indexed);
 
@@ -1778,7 +1843,7 @@ void pg_draw_buffers(const pg_ctx_t* ctx,
 
     pg_apply_textures(ctx, &bindings);
     pg_apply_samplers(ctx, &bindings);
-    pg_apply_buffers(buffers, &bindings);
+    pg_apply_buffers(ctx, &bindings);
     pg_apply_view_state(ctx);
 
     pg_pipeline_t* pipeline = ctx->state.pipeline;

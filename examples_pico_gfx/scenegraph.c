@@ -213,9 +213,9 @@ void node_render(node_t* node, double alpha)
         pg_set_uniform_block(app.shader, "vs_block", &block);
 
         // Draw vertices
+        pg_bind_buffer(app.ctx, 0, sprite->buf);
         pg_bind_texture(app.shader, "u_tex", sprite->tex);
-        pg_draw_buffers(app.ctx, 6, 1, (const pg_buffer_t*[]){ sprite->buf , NULL });
-        pg_bind_texture(app.shader, "u_tex", NULL);
+        pg_draw_buffers(app.ctx, 6, 1);
     }
 }
 

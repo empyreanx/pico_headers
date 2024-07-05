@@ -278,11 +278,9 @@ int main(int argc, char *argv[])
         pg_push_state(ctx);
         pg_begin_pass(ctx, NULL, true);
 
-        pg_draw_buffers(ctx, 6, state.particle_count, (const pg_buffer_t*[]){
-            vertex_buffer,
-            instance_buffer,
-            NULL
-        });
+        pg_bind_buffer(ctx, 0, vertex_buffer);
+        pg_bind_buffer(ctx, 1, instance_buffer);
+        pg_draw_buffers(ctx, 6, state.particle_count);
 
         pg_end_pass(ctx);
         pg_pop_state(ctx);
