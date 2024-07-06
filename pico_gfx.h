@@ -528,6 +528,7 @@ typedef enum
 typedef struct
 {
     bool instanced; //!< True if the buffer will be used for instanced rendering
+    int step;       //!< The step rate (default is 1)
 } pg_vertex_buf_t;
 
 /**
@@ -801,6 +802,12 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
  * GFX Static Funtions
  *============================================================================*/
 
+typedef enum
+{
+    PG_BUFFER_TYPE_VERTEX,
+    PG_BUFFER_TYPE_INDEX,
+} pg_buffer_type_t;
+
 static sg_primitive_type pg_map_primitive(pg_primitive_t primitive);
 static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor);
 static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq);
@@ -962,12 +969,6 @@ struct pg_sampler_t
     pg_ctx_t* ctx;
     sg_sampler handle;
 };
-
-typedef enum
-{
-    PG_BUFFER_TYPE_VERTEX,
-    PG_BUFFER_TYPE_INDEX,
-} pg_buffer_type_t;
 
 struct pg_buffer_t
 {
@@ -1235,7 +1236,7 @@ void pg_reset_index_buffer(pg_ctx_t* ctx)
 
 void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* texture)
 {
-    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
 
     int slot = shader->internal.get_img_slot(SG_SHADERSTAGE_FS, name);
@@ -1254,7 +1255,7 @@ void pg_reset_textures(pg_ctx_t* ctx)
 
 void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sampler)
 {
-    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
 
     int slot = shader->internal.get_smp_slot(SG_SHADERSTAGE_FS, name);
@@ -1307,14 +1308,17 @@ static void pg_set_buffers(const pg_pipeline_layout_t* layout, sg_pipeline_desc*
 {
     for (int slot = 0; slot < PG_MAX_VERTEX_BUFFERS; slot++)
     {
+        int step = layout->bufs[slot].step;
+
         if (layout->bufs[slot].instanced)
         {
             desc->layout.buffers[slot] = (sg_vertex_buffer_layout_state)
             {
                 .step_func = SG_VERTEXSTEP_PER_INSTANCE,
-                .step_rate = 1,
             };
         }
+
+        desc->layout.buffers[slot].step_rate = (step >= 1) ? step : 1;
     }
 }
 
