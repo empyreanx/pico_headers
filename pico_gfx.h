@@ -34,13 +34,17 @@
     regaring how to use the API.
 
     In constrast with earlier versions, pico_gfx no longer includes a default
-    shader or pipeline. This decision was mde to make the header less cluttered,
-    and more generic. Piplelines layouts must now be specified explicitly. Shaders
-    must be compiled with the sokol compiler (`sokol-shdc`). Binary versions of
-    which can be found [here](https://github.com/floooh/sokol-tools-bin), the
-    source code can be found [here](https://github.com/floooh/sokol-tools). An
-    example of how to use the compiler can be found in the `build_pico_gfx_shader`
-    folder. There are also two compiled shaders included with the examples.
+    shader or pipeline. This decision was made to make the header less cluttered,
+    and more generic. It is also hard to define what default really means.
+    Pipeline layouts must now be specified explicitly. The examples have several
+    examples of how to do this.
+
+    Shaders must be compiled with the sokol compiler (`sokol-shdc`). Binary
+    versions of which can be found [here](https://github.com/floooh/sokol-tools-bin).
+    The source code for the compiler can be found [here](https://github.com/floooh/sokol-tools).
+    An example of how to use the compiler can be found in the `build_pico_gfx_shader`
+    directory. There are also two compiled shaders included with the examples
+    that are more or less generic for rendering sprites and particles.
 
     One thing pico_gfx does not support (and neither does sokol_gfx) is window
     and graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
@@ -52,11 +56,21 @@
     backends is [sokol_app](https://github.com/floooh/sokol/blob/master/sokol_app.h),
     but it has yet to be tested with pico_gfx.
 
-    State (pipeline/shader, the default uniform block, the viewport, scissor,
-    clear color, buffers, texture and sampler bindings) can be managed via
-    the state stack. The stack enables changes to be isolated. Simply push the
-    current state, make some local changes, and then pop the stack to restore the
-    original state.
+    The state that pico_gfx manages includes:
+
+        - The current shader and pipeline
+        - Uniform blocks
+        - Vertex buffers
+        - Index buffers
+        - Textures
+        - Samplers
+        - Clear color
+        - Viewport
+        - Scissor
+
+    Changes to the state can be isolated using the state stack (`pg_push_state/
+    pg_pop_state`). Simply push the current state onto the stack, make some
+    local changes, and then pop the stack to restore the original state.
 
     Shaders expose uniforms in blocks. These blocks must be registered with the
     shader by calling `pg_init_uniform_block`. They may then be set at will
@@ -98,6 +112,7 @@
     Constants:
     --------
 
+    - PICO_GFX_HASHTABLE_KEY_SIZE (default: 15
     - PICO_GFX_STACK_MAX_SIZE (default: 16)
 
     Customization:
@@ -519,7 +534,19 @@ typedef enum
     PG_VERTEX_FORMAT_FLOAT2,
     PG_VERTEX_FORMAT_FLOAT3,
     PG_VERTEX_FORMAT_FLOAT4,
-//FIXME: Expand this list
+    PG_VERTEX_FORMAT_BYTE4,
+    PG_VERTEX_FORMAT_BYTE4N,
+    PG_VERTEX_FORMAT_UBYTE4,
+    PG_VERTEX_FORMAT_UBYTE4N,
+    PG_VERTEX_FORMAT_SHORT2,
+    PG_VERTEX_FORMAT_SHORT2N,
+    PG_VERTEX_FORMAT_USHORT2N,
+    PG_VERTEX_FORMAT_SHORT4,
+    PG_VERTEX_FORMAT_SHORT4N,
+    PG_VERTEX_FORMAT_USHORT4N,
+    PG_VERTEX_FORMAT_UINT10_N2,
+    PG_VERTEX_FORMAT_HALF2,
+    PG_VERTEX_FORMAT_HALF4,
 } pg_vertex_format_t;
 
 /**
@@ -771,6 +798,10 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 
 #ifndef PICO_GFX_STACK_MAX_SIZE
 #define PICO_GFX_STACK_MAX_SIZE 16
+#endif
+
+#ifndef PICO_GFX_HASHTABLE_KEY_SIZE
+#define PICO_GFX_HASHTABLE_KEY_SIZE 16
 #endif
 
 /*=============================================================================
@@ -1401,7 +1432,10 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 
     shader->handle = sg_make_shader(shader->desc);
 
-    shader->uniform_blocks = pg_hashtable_new(16, 16, sizeof(pg_uniform_block_t), ctx->mem_ctx);
+    shader->uniform_blocks = pg_hashtable_new(16, PICO_GFX_HASHTABLE_KEY_SIZE,
+                                              sizeof(pg_uniform_block_t),
+                                              ctx->mem_ctx);
+
     shader->arena = pg_arena_new(512, ctx->mem_ctx);
 
     return shader;
@@ -1899,6 +1933,19 @@ static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
         case PG_VERTEX_FORMAT_FLOAT2:    return SG_VERTEXFORMAT_FLOAT2;
         case PG_VERTEX_FORMAT_FLOAT3:    return SG_VERTEXFORMAT_FLOAT3;
         case PG_VERTEX_FORMAT_FLOAT4:    return SG_VERTEXFORMAT_FLOAT4;
+        case PG_VERTEX_FORMAT_BYTE4:     return SG_VERTEXFORMAT_BYTE4;
+        case PG_VERTEX_FORMAT_BYTE4N:    return SG_VERTEXFORMAT_BYTE4N;
+        case PG_VERTEX_FORMAT_UBYTE4:    return SG_VERTEXFORMAT_UBYTE4;
+        case PG_VERTEX_FORMAT_UBYTE4N:   return SG_VERTEXFORMAT_UBYTE4N;
+        case PG_VERTEX_FORMAT_SHORT2:    return SG_VERTEXFORMAT_SHORT2;
+        case PG_VERTEX_FORMAT_SHORT2N:   return SG_VERTEXFORMAT_SHORT2N;
+        case PG_VERTEX_FORMAT_USHORT2N:  return SG_VERTEXFORMAT_USHORT2N;
+        case PG_VERTEX_FORMAT_SHORT4:    return SG_VERTEXFORMAT_USHORT2N;
+        case PG_VERTEX_FORMAT_SHORT4N:   return SG_VERTEXFORMAT_SHORT4;
+        case PG_VERTEX_FORMAT_USHORT4N:  return SG_VERTEXFORMAT_SHORT4N;
+        case PG_VERTEX_FORMAT_UINT10_N2: return SG_VERTEXFORMAT_USHORT4N;
+        case PG_VERTEX_FORMAT_HALF2:     return SG_VERTEXFORMAT_HALF2;
+        case PG_VERTEX_FORMAT_HALF4:     return SG_VERTEXFORMAT_HALF4;
         default: PICO_GFX_ASSERT(false); return SG_VERTEXFORMAT_INVALID;
     }
 }
