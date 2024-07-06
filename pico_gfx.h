@@ -100,12 +100,6 @@
     --------
 
     - PICO_GFX_STACK_MAX_SIZE (default: 16)
-    - PICO_GFX_BUFFER_SIZE (default: 16384)
-    - PICO_GFX_HT_MIN_CAPACITY (default: 8)
-    - PICO_GFX_HT_KEY_SIZE (default: 16)
-    - PICO_GFX_MIN_ARENA_CAPACITY (default: 1024)
-    - PICO_GFX_MAX_TEXTURE_SLOTS (default: 16)
-    - PICO_GFX_MAX_SAMPLER_SLOTS (default: 16)
 
     Customization:
     --------
@@ -534,7 +528,7 @@ typedef enum
  */
 typedef struct
 {
-    bool instanced;
+    bool instanced; //!< True if the buffer will be used for instanced rendering
 } pg_vertex_buf_t;
 
 /**
@@ -542,9 +536,9 @@ typedef struct
  */
 typedef struct
 {
-    int buffer_index;
-    pg_vertex_format_t format;
-    int offset;
+    int buffer_index;          //!< The vertex buffer bind slot
+    pg_vertex_format_t format; //!< Vertex pixel format (see above)
+    int offset;                //!< Attribute offset into the vertex buffer
 } pg_vertex_attr_t;
 
 /**
@@ -552,8 +546,8 @@ typedef struct
  */
 typedef struct
 {
-    pg_vertex_buf_t  bufs[PG_MAX_VERTEX_BUFFERS];
-    pg_vertex_attr_t attrs[PG_MAX_VERTEX_ATTRIBUTES];
+    pg_vertex_buf_t  bufs[PG_MAX_VERTEX_BUFFERS];     //!< Vertex buffer descriptions
+    pg_vertex_attr_t attrs[PG_MAX_VERTEX_ATTRIBUTES]; //!< Vertex buffer attriburtes
 } pg_pipeline_layout_t;
 
 /**
