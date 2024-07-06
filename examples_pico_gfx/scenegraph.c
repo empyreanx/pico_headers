@@ -425,7 +425,6 @@ int main(int argc, char *argv[])
                                       .offset = offsetof(vertex_t, uv) },
             },
         },
-        .element_size = sizeof(vertex_t),
         .blend_enabled = true,
         .blend =
         {

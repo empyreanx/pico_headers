@@ -121,16 +121,9 @@ int main(int argc, char *argv[])
 
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
 
-    pg_buffer_t* vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,
-                                                  vertices, 6, 6,
-                                                  sizeof(vertex_t));
-
-    pg_buffer_t* indexed_vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,
-                                                          indexed_vertices, 4, 4,
-                                                          sizeof(vertex_t));
-
-    pg_buffer_t* index_buffer = pg_create_index_buffer(ctx, PG_USAGE_STATIC,
-                                                            indices, 6, 6);
+    pg_buffer_t* vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC, vertices, 6, 6, sizeof(vertex_t));
+    pg_buffer_t* indexed_vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,indexed_vertices, 4, 4, sizeof(vertex_t));
+    pg_buffer_t* index_buffer = pg_create_index_buffer(ctx, PG_USAGE_STATIC, indices, 6, 6);
 
     pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
     pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
@@ -144,7 +137,6 @@ int main(int argc, char *argv[])
                 [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
             },
         },
-        .element_size = sizeof(vertex_t)
     });
 
     pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
@@ -158,7 +150,6 @@ int main(int argc, char *argv[])
                 [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2, .offset = offsetof(vertex_t, uv) },
             },
         },
-        .element_size = sizeof(vertex_t),
         .indexed = true,
         .target = true
     });

@@ -257,7 +257,7 @@ typedef struct pg_texture_t pg_texture_t;
 typedef struct pg_sampler_t pg_sampler_t;
 
 /**
- * @brief A vertex array buffer
+ * @brief A vertex or index array buffer
  */
 typedef struct pg_buffer_t pg_buffer_t;
 
@@ -388,10 +388,26 @@ void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
  */
 void pg_reset_pipeline(pg_ctx_t* ctx);
 
+/**
+ * @brief Binds a buffer to the specified slot
+ */
 void pg_bind_buffer(pg_ctx_t* ctx, int slot, pg_buffer_t* buffer);
+
+/**
+ * @brief Clears buffer bindings
+ */
 void pg_reset_buffers(pg_ctx_t* ctx);
 
+/**
+ * @brief Sets the active index buffer
+ *
+ * If an index buffer is set, pg_draw will use indexing.
+ */
 void pg_set_index_buffer(pg_ctx_t* ctx, pg_buffer_t* buffer);
+
+/**
+ *  @brief Deactivates indexing
+ */
 void pg_reset_index_buffer(pg_ctx_t* ctx);
 
 /**
@@ -500,7 +516,9 @@ void pg_init_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* na
  */
 void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
 
-
+/**
+ * @brief Vertex pixel format
+ */
 typedef enum
 {
     PG_VFORMAT_INVALID,
@@ -508,14 +526,20 @@ typedef enum
     PG_VFORMAT_FLOAT2,
     PG_VFORMAT_FLOAT3,
     PG_VFORMAT_FLOAT4,
-
+//FIXME: Expand this list
 } pg_vertex_format_t;
 
+/**
+ * @brief Vertex buffer description
+ */
 typedef struct
 {
     bool instanced;
 } pg_vertex_buf_t;
 
+/**
+ * @brief Vertex attribute description
+ */
 typedef struct
 {
     int buffer_index;
@@ -523,25 +547,26 @@ typedef struct
     int offset;
 } pg_vertex_attr_t;
 
+/**
+ * @brief Pipeline layout
+ */
 typedef struct
 {
-    size_t size;
     pg_vertex_buf_t  bufs[PG_MAX_VERTEX_BUFFERS];
     pg_vertex_attr_t attrs[PG_MAX_VERTEX_ATTRIBUTES];
-} pg_layout_t;
+} pg_pipeline_layout_t;
 
 /**
  * @brief Pipeline creation options
  */
 typedef struct pg_pipeline_opts_t
 {
-    pg_primitive_t primitive; //!< Rendering primitive
-    pg_layout_t layout;       //!< Attribute information
-    size_t element_size;
-    bool target;              //!< Drawing to render target
-    bool indexed;             //!< Indexed drawing
-    bool blend_enabled;       //!< Enables blending
-    pg_blend_mode_t blend;    //!< Blend mode
+    pg_primitive_t primitive;    //!< Rendering primitive
+    pg_pipeline_layout_t layout; //!< Attribute information
+    bool target;                 //!< Drawing to render target
+    bool indexed;                //!< Indexed drawing
+    bool blend_enabled;          //!< Enables blending
+    pg_blend_mode_t blend;       //!< Blend mode
 } pg_pipeline_opts_t;
 
 /**
@@ -640,42 +665,74 @@ pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts);
  */
 void pg_destroy_sampler(pg_sampler_t* sampler);
 
+/**
+ *  @brief Buffer update criteria
+ */
 typedef enum
 {
-    PG_USAGE_STATIC,
-    PG_USAGE_DYNAMIC,
-    PG_USAGE_STREAM
+    PG_USAGE_STATIC,  //!< Buffer is immutable (cannot be updated)
+    PG_USAGE_DYNAMIC, //!< Buffer is updated on average less than once per frame
+    PG_USAGE_STREAM   //!< Buffer is updated possibly more than once per frame
 } pg_buffer_usage_t;
 
 /**
  * @brief Creates a vertex buffer
- * @param vertices An array of vertices (position, color, uv)
- * @param count The number of vertices
+ * @param usage Determines whether the buffer is static, dynamic, or streaming
+ * @param data Vertex data elements
+ * @param count The number of elements
+ * @param max_elements The maximum number of elements in the buffer
+ * @param element_size The size (in bytes) of each individual element
  */
 pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
                               pg_buffer_usage_t usage,
                               const void* data,
                               size_t count,
-                              size_t buffer_size,
+                              size_t max_elements,
                               size_t element_size);
 
+/**
+ * @brief Creates a vertex buffer
+ * @param usage Determines whether the buffer is static, dynamic, or streaming
+ * @param data Index data
+ * @param count The number of indices
+ * @param max_elements The maximum number of indices in the buffer
+ */
 pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
                                     pg_buffer_usage_t usage,
                                     const void* data,
                                     size_t count,
-                                    size_t buffer_size);
+                                    size_t max_elements);
 
 /**
  * @brief Destroys a vertex buffer
  */
 void pg_destroy_buffer(pg_buffer_t* buffer);
 
+/**
+ * Replaces the data in a buffer. This may only happen once per frame and cannot
+ * happen after appending data
+ */
 void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count);
+
+/**
+ * @brief Appends data to a buffer. This can happen more than once per frame,
+ * but cannot happen after an update.
+ */
 int pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count);
 
+/**
+ * @brief Returns the buffer offset
+ */
 int pg_get_buffer_offset(pg_buffer_t* buffer);
+
+/**
+ * @brief Sets the buffer offset
+ */
 void pg_set_buffer_offset(pg_buffer_t* buffer, int offset);
 
+/**
+ * @brief Destroys and recreates buffer
+ */
 void pg_reset_buffer(pg_buffer_t* buffer);
 
 /**
@@ -721,31 +778,6 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 #ifndef PICO_GFX_STACK_MAX_SIZE
 #define PICO_GFX_STACK_MAX_SIZE 16
 #endif
-
-#ifndef PICO_GFX_BUFFER_SIZE
-#define PICO_GFX_BUFFER_SIZE 16384
-#endif
-
-#ifndef PICO_GFX_HT_MIN_CAPACITY
-#define PICO_GFX_HT_MIN_CAPACITY 16
-#endif
-
-#ifndef PICO_GFX_HT_KEY_SIZE
-#define PICO_GFX_HT_KEY_SIZE 16
-#endif
-
-#ifndef PICO_GFX_MIN_ARENA_CAPACITY
-#define PICO_GFX_MIN_ARENA_CAPACITY 512
-#endif
-
-/*
-#ifndef PICO_GFX_MAX_TEXTURE_SLOTS
-#define PICO_GFX_MAX_TEXTURE_SLOTS 16
-#endif
-
-#ifndef PICO_GFX_MAX_SAMPLER_SLOTS
-#define PICO_GFX_MAX_SAMPLER_SLOTS 16
-#endif*/
 
 /*=============================================================================
  * Macros
@@ -1193,6 +1225,7 @@ void pg_reset_buffers(pg_ctx_t* ctx)
 
 void pg_set_index_buffer(pg_ctx_t* ctx, pg_buffer_t* buffer)
 {
+    PICO_GFX_ASSERT(buffer->type == PG_BUFFER_TYPE_INDEX);
     ctx->state.index_buffer = buffer;
 }
 
@@ -1260,7 +1293,7 @@ static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
     }
 }
 
-static void pg_set_attributes(const pg_layout_t* layout, sg_pipeline_desc* desc)
+static void pg_set_attributes(const pg_pipeline_layout_t* layout, sg_pipeline_desc* desc)
 {
     for (int slot = 0; slot < PG_MAX_VERTEX_ATTRIBUTES; slot++)
     {
@@ -1276,7 +1309,7 @@ static void pg_set_attributes(const pg_layout_t* layout, sg_pipeline_desc* desc)
     }
 }
 
-static void pg_set_buffers(const pg_layout_t* layout, sg_pipeline_desc* desc)
+static void pg_set_buffers(const pg_pipeline_layout_t* layout, sg_pipeline_desc* desc)
 {
     for (int slot = 0; slot < PG_MAX_VERTEX_BUFFERS; slot++)
     {
@@ -1306,8 +1339,6 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
     pg_set_buffers (&opts->layout, &desc);
 
     desc.primitive_type = pg_map_primitive(opts->primitive);
-
-    pipeline->element_size = opts->element_size;
 
     if (opts->blend_enabled)
     {
@@ -1370,12 +1401,8 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 
     shader->handle = sg_make_shader(shader->desc);
 
-    shader->uniform_blocks = pg_hashtable_new(PICO_GFX_HT_MIN_CAPACITY,
-                                              PICO_GFX_HT_KEY_SIZE,
-                                              sizeof(pg_uniform_block_t),
-                                              ctx->mem_ctx);
-
-    shader->arena = pg_arena_new(PICO_GFX_MIN_ARENA_CAPACITY, ctx->mem_ctx);
+    shader->uniform_blocks = pg_hashtable_new(16, 16, sizeof(pg_uniform_block_t), ctx->mem_ctx);
+    shader->arena = pg_arena_new(512, ctx->mem_ctx);
 
     return shader;
 }
@@ -1615,7 +1642,7 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
                               pg_buffer_usage_t usage,
                               const void* data,
                               size_t count,
-                              size_t buffer_size,
+                              size_t max_elements,
                               size_t element_size)
 {
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
@@ -1625,7 +1652,7 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
     buffer->usage = usage;
     buffer->count = count;
     buffer->element_size = element_size;
-    buffer->size = buffer_size * element_size;
+    buffer->size = max_elements * element_size;
     buffer->offset = 0;
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
@@ -1645,7 +1672,7 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
                                     pg_buffer_usage_t usage,
                                     const void* data,
                                     size_t count,
-                                    size_t buffer_size)
+                                    size_t max_elements)
 {
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
@@ -1653,7 +1680,7 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
     buffer->type = PG_BUFFER_TYPE_INDEX;
     buffer->usage = usage;
     buffer->count = count;
-    buffer->size = buffer_size * sizeof(uint32_t);
+    buffer->size = max_elements * sizeof(uint32_t);
     buffer->offset = 0;
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
@@ -2126,7 +2153,7 @@ static void pg_hashtable_put(pg_hashtable_t* ht,
         {
             entry->hash = hash;
 
-            memcpy(entry->key, key, ht->key_size); //FIXME: use string copy function
+            strncpy(entry->key, key, ht->key_size);
             pg_hashtable_copy_value(ht, entry, value);
 
             ht->size++;

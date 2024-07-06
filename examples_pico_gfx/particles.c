@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 
             particle_t particle =
             {
-                .pos = { win_w / 2.f, win_h / 2.f },
+                .pos   = { win_w / 2.f, win_h / 2.f },
                 .color = { 0.f, 0.f, 0.f, 1.f },
             };
 
