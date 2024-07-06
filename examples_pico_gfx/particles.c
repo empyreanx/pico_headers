@@ -37,24 +37,27 @@
 
 #define PI_F 3.1415927f
 
+// Vertex attributes
 typedef struct
 {
     float pos[2];
     float uv[2];
 } vertex_t;
 
+// Particle attributes
 typedef struct
 {
     float pos[2];
     float color[4];
-//    float vel[2];
 } particle_t;
 
+// Particle velocity
 typedef struct
 {
     float x, y;
 } vel_t;
 
+// Simulation staTe
 static struct
 {
     particle_t particles[MAX_PARTICLES];
@@ -62,12 +65,11 @@ static struct
     vel_t vel[MAX_PARTICLES];
 } state;
 
+// Generate a random number between min and max
 static float random_float(float min, float max)
 {
     return ((float)rand() / RAND_MAX) * (max - min) + min;
 }
-
-typedef float vec2_t[2];
 
 int main(int argc, char *argv[])
 {
@@ -120,14 +122,15 @@ int main(int argc, char *argv[])
     pg_ctx_t* ctx = pg_create_context(pixel_w, pixel_h, NULL);
     pg_shader_t* shader = pg_create_shader(ctx, particle);
 
-    // Load image
+    // Load particle image
 
     int w, h, c;
     unsigned char* bitmap = stbi_load("./circle.png", &w, &h, &c, 0);
 
     assert(bitmap);
+    assert(c == 4);
 
-    // Load texture
+    // Create particle texture
 
     size_t size = w * h * c;
     pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, NULL);
@@ -149,23 +152,24 @@ int main(int argc, char *argv[])
         { { w, 0, }, { 1, 1 } }
     };
 
-    pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
     pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
     {
         .layout =
         {
             .bufs =
             {
-                [1] = { .instanced = true }
+                [1] = { .instanced = true } // Buffer in slot 1 is instanced
             },
             .attrs =
             {
+                // Attributes for the vertex buffer
                 [ATTR_vs_a_pos] = { .format = PG_VERTEX_FORMAT_FLOAT2,
                                     .offset = offsetof(vertex_t, pos) },
 
                 [ATTR_vs_a_uv]  = { .format = PG_VERTEX_FORMAT_FLOAT2,
                                     .offset = offsetof(vertex_t, uv) },
 
+                // Attributes for the instanced buffer
                 [ATTR_vs_a_inst_pos]  = { .format = PG_VERTEX_FORMAT_FLOAT2,
                                           .offset = offsetof(particle_t, pos),
                                           .buffer_index = 1 },
@@ -183,6 +187,7 @@ int main(int argc, char *argv[])
         }
     });
 
+    // Sets the vertex uniform block mvp to project world to NDC coordinates
     vs_params_t block =
     {
         .u_mvp =
@@ -194,19 +199,25 @@ int main(int argc, char *argv[])
         }
     };
 
+    // Initializes and sets the uniform
     pg_init_uniform_block(shader, PG_STAGE_VS, "vs_params");
     pg_set_uniform_block(shader, "vs_params", &block);
 
+    // Create the vertex buffer
     pg_buffer_t* vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,
                                                        vertices, 6, 6,
                                                        sizeof(vertex_t));
 
+    // Create the instance buffer
     pg_buffer_t* instance_buffer = pg_create_buffer(ctx, PG_USAGE_STREAM,
                                                          NULL, 0, MAX_PARTICLES,
                                                          sizeof(particle_t));
 
+    // Create a default sampler
     pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
 
+
+    // The main loop
     double delta = 0.0;
     ptime_t now, last = pt_now();
 
@@ -245,16 +256,20 @@ int main(int argc, char *argv[])
             if (state.particle_count >= MAX_PARTICLES)
                 break;
 
+            // Calculate a random angle for the particles trajectory
             float angle = random_float(PI_F / 4.f, 3.f * PI_F / 4.f);
 
+            // Set new particle to the center of the screen
             particle_t particle =
             {
                 .pos   = { win_w / 2.f, win_h / 2.f },
                 .color = { 0.f, 0.f, 0.f, 1.f },
             };
 
+            // Vary the color of the particles
             particle.color[i % 3] = 1.f;
 
+            // Update global state
             state.particles[state.particle_count] = particle;
             state.vel[state.particle_count] = (vel_t){ cosf(angle) * 10, -sinf(angle) * 50 };
             state.particle_count++;
@@ -278,23 +293,24 @@ int main(int argc, char *argv[])
         pg_push_state(ctx);
         pg_begin_pass(ctx, NULL, true);
 
+        // Bind buffers and issue a draw command
         pg_bind_buffer(ctx, 0, vertex_buffer);
         pg_bind_buffer(ctx, 1, instance_buffer);
         pg_draw(ctx, 0, 6, state.particle_count);
 
+        // Clean up
         pg_end_pass(ctx);
         pg_pop_state(ctx);
 
         // Flush draw commands
         pg_flush(ctx);
 
+        // Swap buffers
         SDL_GL_SwapWindow(window);
     }
 
-    pg_destroy_texture(target);
     pg_destroy_texture(tex);
     pg_destroy_sampler(sampler);
-
     pg_destroy_pipeline(pipeline);
     pg_destroy_shader(shader);
     pg_destroy_context(ctx);

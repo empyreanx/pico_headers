@@ -199,6 +199,7 @@ void node_render(node_t* node, double alpha)
         pt2 render = pt2_lerp(&last, &world, alpha);
         pt2 mvp = pt2_mult(&app.proj, &render);
 
+        // Set the model-view-projection matrix
         vs_block_t block =
         {
             .u_mvp =
@@ -213,15 +214,16 @@ void node_render(node_t* node, double alpha)
         pg_set_uniform_block(app.shader, "vs_block", &block);
 
         // Draw vertices
+        pg_push_state(app.ctx);
         pg_bind_buffer(app.ctx, 0, sprite->buf);
         pg_bind_texture(app.shader, "u_tex", sprite->tex);
         pg_draw(app.ctx, 0, 6, 1);
+        pg_pop_state(app.ctx);
     }
 }
 
 pg_texture_t* load_texture(const char* file)
 {
-    //TODO: clean this up
     int w, h, c;
     unsigned char* bitmap = stbi_load(file, &w, &h, &c, 0);
 
@@ -403,11 +405,14 @@ int main(int argc, char *argv[])
     app.ctx = pg_create_context(w, h, NULL);
     app.shader = pg_create_shader(app.ctx, sprite);
 
+    // Initialize the vertex shader uniform block
     pg_init_uniform_block(app.shader, PG_STAGE_VS, "vs_block");
 
+    // Specify the projection matrix
     app.proj = pt2_make(2.0f / w, 0.0f,    -1.0f,
                         0.0f,    -2.0f / h, 1.0f);
 
+    // Create the rendering pipeline with alpha blending enabled
     pg_pipeline_t* pipeline = pg_create_pipeline(app.ctx, app.shader,
                                                &(pg_pipeline_opts_t)
     {
@@ -435,6 +440,7 @@ int main(int argc, char *argv[])
 
     pg_set_pipeline(app.ctx, pipeline);
 
+    // Create a default sampler
     app.sampler = pg_create_sampler(app.ctx, NULL);
     pg_bind_sampler(app.shader, "u_smp", app.sampler);
 
