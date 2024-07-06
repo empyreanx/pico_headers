@@ -11,10 +11,9 @@
 
     - Written in C99
     - Two header library for easy build system integration
-    - Easy to use Low-level constructs (render passes, pipelines, and samplers)
+    - Easy to use Low-level constructs (buffers, render passes, pipelines, and samplers)
     - Simple texture, shader, and sampler creation
     - Render to texture
-    - Rendering of dynamic vertex arrays, indexed vertex arrays
     - Rendering of static vertex buffers
     - Simple API for managing uniform blocks
     - Straight foward state management (state stack)
@@ -24,16 +23,24 @@
     Summary:
     --------
 
-    pico_gfx is a 2D, high-level wrapper for [sokol_gfx](https://github.com/floooh/sokol/blob/master/sokol_gfx.h),
-    a low-level wrapper for OpenGL, Metal, D3D, and WebGPU written in C.
+    pico_gfx is a thin wrapper for [sokol_gfx](https://github.com/floooh/sokol/blob/master/sokol_gfx.h),
+    a low-level graphics library for OpenGL, Metal, D3D, and WebGPU written in C.
     pico_gfx is designed make the common case intuitive and convenient. It
-    provides access to low-level constructs, such as render passes and pipelines,
-    in a way that is easy to use and understand.
+    provides access to low-level constructs, such as buffers, render passes and
+    pipelines, in a way that is easy to use and understand.
 
-    pico_gfx includes a default shader (and pipeline), but can be extended using
-    the sokol shader compiler (`sokol-shdc`) which allows for a shader to be
-    written in a single language (e.g. GLSL) which is then transformed into
-    shader sources for all suppported backends.
+    pico_gfx comes with three examples; basic quad rendering, a scene graph
+    demo, and a particle system demo. These are the best source of information
+    regaring how to use the API.
+
+    In constrast with earlier versions, pico_gfx no longer includes a default
+    shader or pipeline. This decision was mde to make the header less cluttered,
+    and more generic. Piplelines layouts must now be specified explicitly. Shaders
+    must be compiled with the sokol compiler (`sokol-shdc`). Binary versions of
+    which can be found [here](https://github.com/floooh/sokol-tools-bin), the
+    source code can be found [here](https://github.com/floooh/sokol-tools). An
+    example of how to use the compiler can be found in the `build_pico_gfx_shader`
+    folder. There are also two compiled shaders included with the examples.
 
     One thing pico_gfx does not support (and neither does sokol_gfx) is window
     and graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
@@ -46,23 +53,15 @@
     but it has yet to be tested with pico_gfx.
 
     State (pipeline/shader, the default uniform block, the viewport, scissor,
-    and clear color, texture and sampler bindings) can be managed via the state
-    stack. The stack enables changes to be isolated. Simply push the current
-    state to the top of the stack, make some local changes, and then pop the
-    stack to restore the original state.
+    clear color, buffers, texture and sampler bindings) can be managed via
+    the state stack. The stack enables changes to be isolated. Simply push the
+    current state, make some local changes, and then pop the stack to restore the
+    original state.
 
     Shaders expose uniforms in blocks. These blocks must be registered with the
     shader by calling `pg_init_uniform_block`. They may then be set at will
     by calling `pg_set_uniform_block`. These functions typically operate on
-    structs supplied by a custom shader,
-
-    The default shader provides a uniform block containing a projection and
-    transformation matrix that are used to map vertices to normalized device
-    coordinates. This projection matrix can be set using `pg_set_projection`
-    and the (model-view) transformation matrix can be set using
-    `pg_set_transform`. They can be reset to the identity by calling
-    `pg_reset_projection` and `pg_reset_transform` respectively. Note,
-    these functions only work with the default shader.
+    structs supplied by a compiled shader,
 
     Please see the examples for more details.
 
@@ -400,7 +399,7 @@ void pg_reset_buffers(pg_ctx_t* ctx);
 void pg_set_index_buffer(pg_ctx_t* ctx, pg_buffer_t* buffer);
 
 /**
- *  @brief Deactivates indexing
+ *  @brief Disables indexed rednering
  */
 void pg_reset_index_buffer(pg_ctx_t* ctx);
 
@@ -698,7 +697,7 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
                                     size_t max_elements);
 
 /**
- * @brief Destroys a vertex buffer
+ * @brief Destroys a vertex or index buffer
  */
 void pg_destroy_buffer(pg_buffer_t* buffer);
 
@@ -710,7 +709,7 @@ void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count);
 
 /**
  * @brief Appends data to a buffer. This can happen more than once per frame,
- * but cannot happen after an update.
+ * and  cannot happen after an update.
  */
 int pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count);
 
@@ -806,6 +805,9 @@ static sg_primitive_type pg_map_primitive(pg_primitive_t primitive);
 static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor);
 static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq);
 static sg_shader_stage pg_map_stage(pg_stage_t stage);
+static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format);
+static sg_usage pg_map_usage(pg_buffer_usage_t format);
+static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type);
 
 static void pg_log_sg(const char* tag,              // e.g. 'sg'
                       uint32_t log_level,           // 0=panic, 1=error, 2=warn, 3=info
@@ -1214,22 +1216,28 @@ void pg_bind_buffer(pg_ctx_t* ctx, int slot, pg_buffer_t* buffer)
 
 void pg_reset_buffers(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
     memset(&ctx->state.buffers, 0, sizeof(ctx->state.textures));
 }
 
 void pg_set_index_buffer(pg_ctx_t* ctx, pg_buffer_t* buffer)
 {
-    PICO_GFX_ASSERT(buffer->type == PG_BUFFER_TYPE_INDEX);
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(!buffer || buffer->type == PG_BUFFER_TYPE_INDEX);
     ctx->state.index_buffer = buffer;
 }
 
 void pg_reset_index_buffer(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
     ctx->state.index_buffer = NULL;
 }
 
 void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* texture)
 {
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(name);
+
     int slot = shader->internal.get_img_slot(SG_SHADERSTAGE_FS, name);
 
     PICO_GFX_ASSERT(slot >= 0);
@@ -1240,11 +1248,15 @@ void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* textur
 
 void pg_reset_textures(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
     memset(&ctx->state.textures, 0, sizeof(ctx->state.textures));
 }
 
 void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sampler)
 {
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(name);
+
     int slot = shader->internal.get_smp_slot(SG_SHADERSTAGE_FS, name);
 
     PICO_GFX_ASSERT(slot >= 0);
@@ -1255,6 +1267,7 @@ void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sample
 
 void pg_reset_samplers(pg_ctx_t* ctx)
 {
+    PICO_GFX_ASSERT(ctx);
     memset(&ctx->state.samplers, 0, sizeof(ctx->state.samplers));
 }
 
@@ -1272,19 +1285,6 @@ void pg_reset_state(pg_ctx_t* ctx)
     pg_reset_index_buffer(ctx);
     pg_reset_textures(ctx);
     pg_reset_samplers(ctx);
-}
-
-static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
-{
-    switch (format)
-    {
-        case PG_VERTEX_FORMAT_INVALID: return SG_VERTEXFORMAT_INVALID;
-        case PG_VERTEX_FORMAT_FLOAT:   return SG_VERTEXFORMAT_FLOAT;
-        case PG_VERTEX_FORMAT_FLOAT2:  return SG_VERTEXFORMAT_FLOAT2;
-        case PG_VERTEX_FORMAT_FLOAT3:  return SG_VERTEXFORMAT_FLOAT3;
-        case PG_VERTEX_FORMAT_FLOAT4:  return SG_VERTEXFORMAT_FLOAT4;
-        default: PICO_GFX_ASSERT(false);
-    }
 }
 
 static void pg_set_attributes(const pg_pipeline_layout_t* layout, sg_pipeline_desc* desc)
@@ -1330,7 +1330,7 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
     sg_pipeline_desc desc = { 0 };
 
     pg_set_attributes(&opts->layout, &desc);
-    pg_set_buffers (&opts->layout, &desc);
+    pg_set_buffers(&opts->layout, &desc);
 
     desc.primitive_type = pg_map_primitive(opts->primitive);
 
@@ -1374,12 +1374,14 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
 
 void pg_destroy_pipeline(pg_pipeline_t* pipeline)
 {
+    PICO_GFX_ASSERT(pipeline);
     sg_destroy_pipeline(pipeline->handle);
     PICO_GFX_FREE(pipeline, pipeline->ctx->mem_ctx);
 }
 
 pg_shader_t* pg_get_pipeline_shader(const pg_pipeline_t* pipeline)
 {
+    PICO_GFX_ASSERT(pipeline);
     return pipeline->shader;
 }
 
@@ -1608,27 +1610,13 @@ static void pg_apply_uniforms(pg_shader_t* shader)
     {
         pg_uniform_block_t* block = (pg_uniform_block_t*)value;
 
-        //if (block->dirty)
-        //{
-            sg_range range = { .ptr = block->data, .size = block->size };
+        sg_range range = { .ptr = block->data, .size = block->size };
 
-            sg_shader_stage stage = pg_map_stage(block->stage);
+        sg_shader_stage stage = pg_map_stage(block->stage);
 
-            sg_apply_uniforms(stage, block->slot, &range);
+        sg_apply_uniforms(stage, block->slot, &range);
 
-            block->dirty = false;
-        //}
-    }
-}
-
-static sg_usage pg_map_usage(pg_buffer_usage_t format)
-{
-    switch (format)
-    {
-        case PG_USAGE_STATIC:  return SG_USAGE_IMMUTABLE;
-        case PG_USAGE_DYNAMIC: return SG_USAGE_DYNAMIC;
-        case PG_USAGE_STREAM:  return SG_USAGE_STREAM;
-        default: PICO_GFX_ASSERT(false);
+        block->dirty = false;
     }
 }
 
@@ -1639,6 +1627,8 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
                               size_t max_elements,
                               size_t element_size)
 {
+    PICO_GFX_ASSERT(ctx);
+
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;
@@ -1668,6 +1658,8 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
                                     size_t count,
                                     size_t max_elements)
 {
+    PICO_GFX_ASSERT(ctx);
+
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;
@@ -1692,6 +1684,10 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
 
 void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count)
 {
+    PICO_GFX_ASSERT(buffer);
+    PICO_GFX_ASSERT(data);
+    PICO_GFX_ASSERT(count > 0);
+
     sg_update_buffer(buffer->handle, &(sg_range)
     {
         .ptr = data,
@@ -1704,6 +1700,10 @@ void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count)
 
 int pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count)
 {
+    PICO_GFX_ASSERT(buffer);
+    PICO_GFX_ASSERT(data);
+    PICO_GFX_ASSERT(count > 0);
+
     int offset = sg_append_buffer(buffer->handle, &(sg_range)
     {
         .ptr = data,
@@ -1718,26 +1718,20 @@ int pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count)
 
 int pg_get_buffer_offset(pg_buffer_t* buffer)
 {
+    PICO_GFX_ASSERT(buffer);
     return buffer->offset;
 }
 
 void pg_set_buffer_offset(pg_buffer_t* buffer, int offset)
 {
+    PICO_GFX_ASSERT(buffer);
     buffer->offset = offset;
-}
-
-static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type)
-{
-    switch (type)
-    {
-        case PG_BUFFER_TYPE_VERTEX: return SG_BUFFERTYPE_VERTEXBUFFER;
-        case PG_BUFFER_TYPE_INDEX:  return SG_BUFFERTYPE_INDEXBUFFER;
-        default: PICO_GFX_ASSERT(false);
-    }
 }
 
 void pg_reset_buffer(pg_buffer_t* buffer)
 {
+    PICO_GFX_ASSERT(buffer);
+
     sg_destroy_buffer(buffer->handle);
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
@@ -1888,6 +1882,40 @@ static sg_shader_stage pg_map_stage(pg_stage_t stage)
     {
         case PG_STAGE_VS: return SG_SHADERSTAGE_VS;
         case PG_STAGE_FS: return SG_SHADERSTAGE_FS;
+        default: PICO_GFX_ASSERT(false);
+    }
+}
+
+static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
+{
+    switch (format)
+    {
+        case PG_VERTEX_FORMAT_INVALID: return SG_VERTEXFORMAT_INVALID;
+        case PG_VERTEX_FORMAT_FLOAT:   return SG_VERTEXFORMAT_FLOAT;
+        case PG_VERTEX_FORMAT_FLOAT2:  return SG_VERTEXFORMAT_FLOAT2;
+        case PG_VERTEX_FORMAT_FLOAT3:  return SG_VERTEXFORMAT_FLOAT3;
+        case PG_VERTEX_FORMAT_FLOAT4:  return SG_VERTEXFORMAT_FLOAT4;
+        default: PICO_GFX_ASSERT(false);
+    }
+}
+
+static sg_usage pg_map_usage(pg_buffer_usage_t format)
+{
+    switch (format)
+    {
+        case PG_USAGE_STATIC:  return SG_USAGE_IMMUTABLE;
+        case PG_USAGE_DYNAMIC: return SG_USAGE_DYNAMIC;
+        case PG_USAGE_STREAM:  return SG_USAGE_STREAM;
+        default: PICO_GFX_ASSERT(false);
+    }
+}
+
+static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type)
+{
+    switch (type)
+    {
+        case PG_BUFFER_TYPE_VERTEX: return SG_BUFFERTYPE_VERTEXBUFFER;
+        case PG_BUFFER_TYPE_INDEX:  return SG_BUFFERTYPE_INDEXBUFFER;
         default: PICO_GFX_ASSERT(false);
     }
 }
