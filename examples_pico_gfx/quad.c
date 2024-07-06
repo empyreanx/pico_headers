@@ -7,9 +7,12 @@
      * Setting up and SDL window and GL context
      * Initializing pico_gfx
      * Loading an image
-     * Creating a texture from the image
-     * Defining vertices
-     * Drawing the vertices
+     - Creating rendering pipelines
+     - Drawing the image (texture) to a render target (another texture)
+     - Drawing the render target to the screen
+     * Defining vertices, and indices
+     - Creating a vertex and index buffers
+     * Managing state using the state stack
 */
 
 #include <SDL.h>
@@ -89,7 +92,7 @@ int main(int argc, char *argv[])
 
     assert(bitmap);
 
-    // Load texture
+    // Create texture from bitmap
 
     size_t size = w * h * c;
     pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, NULL);
@@ -111,6 +114,8 @@ int main(int argc, char *argv[])
         { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
     };
 
+    // Specify vertices for indexed drawing
+
     vertex_t indexed_vertices[4] =
     {
         { {-1.0f,  1.0f }, { 1, 1, 1, 1 }, { 0, 1} },
@@ -119,13 +124,20 @@ int main(int argc, char *argv[])
         { { 1.0f,  1.0f }, { 1, 1, 1, 1 }, { 1, 1} }
     };
 
+    // Specify indices
+
     uint32_t indices[6] = { 0, 1, 2, 0, 2, 3 };
+
+    // Create buffers
 
     pg_buffer_t* vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC, vertices, 6, 6, sizeof(vertex_t));
     pg_buffer_t* indexed_vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,indexed_vertices, 4, 4, sizeof(vertex_t));
     pg_buffer_t* index_buffer = pg_create_index_buffer(ctx, PG_USAGE_STATIC, indices, 6, 6);
 
+    // Create render target (another texture)
     pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
+
+    // Default pipeline
     pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
     {
         .layout =
@@ -144,6 +156,7 @@ int main(int argc, char *argv[])
         },
     });
 
+    // Pipeline for indexed rendering to a render target
     pg_pipeline_t* target_pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
     {
         .layout =
@@ -164,6 +177,8 @@ int main(int argc, char *argv[])
         .target = true
     });
 
+    // Set uniform model-view-projection matrix to the indentity since we don't
+    // need it
     vs_block_t block =
     {
         .u_mvp =
@@ -175,11 +190,14 @@ int main(int argc, char *argv[])
         }
     };
 
+    // Initialize and set uniform block
     pg_init_uniform_block(shader, PG_STAGE_VS, "vs_block");
     pg_set_uniform_block(shader, "vs_block", &block);
 
+    // Create default sampler
     pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
 
+    // The main loop
     bool done = false;
 
     while (!done)
@@ -206,35 +224,64 @@ int main(int argc, char *argv[])
 
 
         // Bind sampler
+        // Set global state:
+        // The global sampler
         pg_bind_sampler(shader, "u_smp", sampler);
+
+        // The global pipeline
         pg_set_pipeline(ctx, pipeline);
+
+        // The global texture
         pg_bind_texture(shader, "u_tex", tex);
 
         // Save current state
         pg_push_state(ctx);
 
-        // First pass: draw to render target
+        // Note: Drawing to a render target is not neccessary and is only
+        // present here to test if it works
         pg_begin_pass(ctx, target, true);
+
+        // Set pipe line configured to draw to render targets
         pg_set_pipeline(ctx, target_pipeline);
+
+        // Bind the vertex buffer
         pg_bind_buffer(ctx, 0, indexed_vertex_buffer);
+
+        // Activte the index buffer
         pg_set_index_buffer(ctx, index_buffer);
+
+        // Issue the commnd to draw the vertex buffer according to the indexing
         pg_draw(ctx, 0, 6, 1);
+
+        // End first pass
         pg_end_pass(ctx);
 
         // Restore previous state
         pg_pop_state(ctx);
 
         // Second pass: draw render target to the screen
+        // Save the curent state
         pg_push_state(ctx);
+
+        // Start a new pass
         pg_begin_pass(ctx, NULL, true);
+
+        // Bind a vertex buffer
         pg_bind_buffer(ctx, 0, vertex_buffer);
+
+        // Issue the draw command (no indexing)
         pg_draw(ctx, 0, 6, 1);
+
+        // End the second pass
         pg_end_pass(ctx);
+
+        // Restore original state
         pg_pop_state(ctx);
 
         // Flush draw commands
         pg_flush(ctx);
 
+        // Finally swap buffers
         SDL_GL_SwapWindow(window);
     }
 
