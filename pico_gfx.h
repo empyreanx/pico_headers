@@ -521,11 +521,11 @@ void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* dat
  */
 typedef enum
 {
-    PG_VFORMAT_INVALID,
-    PG_VFORMAT_FLOAT,
-    PG_VFORMAT_FLOAT2,
-    PG_VFORMAT_FLOAT3,
-    PG_VFORMAT_FLOAT4,
+    PG_VERTEX_FORMAT_INVALID,
+    PG_VERTEX_FORMAT_FLOAT,
+    PG_VERTEX_FORMAT_FLOAT2,
+    PG_VERTEX_FORMAT_FLOAT3,
+    PG_VERTEX_FORMAT_FLOAT4,
 //FIXME: Expand this list
 } pg_vertex_format_t;
 
@@ -1284,11 +1284,11 @@ static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
 {
     switch (format)
     {
-        case PG_VFORMAT_INVALID: return SG_VERTEXFORMAT_INVALID;
-        case PG_VFORMAT_FLOAT:   return SG_VERTEXFORMAT_FLOAT;
-        case PG_VFORMAT_FLOAT2:  return SG_VERTEXFORMAT_FLOAT2;
-        case PG_VFORMAT_FLOAT3:  return SG_VERTEXFORMAT_FLOAT3;
-        case PG_VFORMAT_FLOAT4:  return SG_VERTEXFORMAT_FLOAT4;
+        case PG_VERTEX_FORMAT_INVALID: return SG_VERTEXFORMAT_INVALID;
+        case PG_VERTEX_FORMAT_FLOAT:   return SG_VERTEXFORMAT_FLOAT;
+        case PG_VERTEX_FORMAT_FLOAT2:  return SG_VERTEXFORMAT_FLOAT2;
+        case PG_VERTEX_FORMAT_FLOAT3:  return SG_VERTEXFORMAT_FLOAT3;
+        case PG_VERTEX_FORMAT_FLOAT4:  return SG_VERTEXFORMAT_FLOAT4;
         default: PICO_GFX_ASSERT(false);
     }
 }
@@ -1297,7 +1297,7 @@ static void pg_set_attributes(const pg_pipeline_layout_t* layout, sg_pipeline_de
 {
     for (int slot = 0; slot < PG_MAX_VERTEX_ATTRIBUTES; slot++)
     {
-        if (layout->attrs[slot].format != PG_VFORMAT_INVALID)
+        if (layout->attrs[slot].format != PG_VERTEX_FORMAT_INVALID)
         {
             desc->layout.attrs[slot] = (sg_vertex_attr_state)
             {

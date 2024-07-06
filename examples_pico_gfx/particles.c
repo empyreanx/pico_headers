@@ -160,17 +160,17 @@ int main(int argc, char *argv[])
             },
             .attrs =
             {
-                [ATTR_vs_a_pos] = { .format = PG_VFORMAT_FLOAT2,
+                [ATTR_vs_a_pos] = { .format = PG_VERTEX_FORMAT_FLOAT2,
                                     .offset = offsetof(vertex_t, pos) },
 
-                [ATTR_vs_a_uv]  = { .format = PG_VFORMAT_FLOAT2,
+                [ATTR_vs_a_uv]  = { .format = PG_VERTEX_FORMAT_FLOAT2,
                                     .offset = offsetof(vertex_t, uv) },
 
-                [ATTR_vs_a_inst_pos]  = { .format = PG_VFORMAT_FLOAT2,
+                [ATTR_vs_a_inst_pos]  = { .format = PG_VERTEX_FORMAT_FLOAT2,
                                           .offset = offsetof(particle_t, pos),
                                           .buffer_index = 1 },
 
-                [ATTR_vs_a_inst_color] = { .format = PG_VFORMAT_FLOAT4,
+                [ATTR_vs_a_inst_color] = { .format = PG_VERTEX_FORMAT_FLOAT4,
                                            .offset = offsetof(particle_t, color),
                                            .buffer_index = 1 },
             },

@@ -415,13 +415,13 @@ int main(int argc, char *argv[])
         {
             .attrs =
             {
-                [ATTR_vs_a_pos]   = { .format = PG_VFORMAT_FLOAT3,
+                [ATTR_vs_a_pos]   = { .format = PG_VERTEX_FORMAT_FLOAT3,
                                       .offset = offsetof(vertex_t, pos) },
 
-                [ATTR_vs_a_color] = { .format = PG_VFORMAT_FLOAT4,
+                [ATTR_vs_a_color] = { .format = PG_VERTEX_FORMAT_FLOAT4,
                                       .offset = offsetof(vertex_t, color) },
 
-                [ATTR_vs_a_uv]    = { .format = PG_VFORMAT_FLOAT2,
+                [ATTR_vs_a_uv]    = { .format = PG_VERTEX_FORMAT_FLOAT2,
                                       .offset = offsetof(vertex_t, uv) },
             },
         },
