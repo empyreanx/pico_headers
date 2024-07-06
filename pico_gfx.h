@@ -1841,7 +1841,7 @@ static sg_primitive_type pg_map_primitive(pg_primitive_t primitive)
         case PG_LINE_STRIP:     return SG_PRIMITIVETYPE_LINE_STRIP;
         case PG_TRIANGLES:      return SG_PRIMITIVETYPE_TRIANGLES;
         case PG_TRIANGLE_STRIP: return SG_PRIMITIVETYPE_TRIANGLE_STRIP;
-        default: PICO_GFX_ASSERT(false);
+        default: PICO_GFX_ASSERT(false); return SG_PRIMITIVETYPE_TRIANGLES;
     }
 }
 
@@ -1862,7 +1862,7 @@ static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor)
         case PG_ONE_MINUS_SRC_ALPHA: return SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
         case PG_DST_ALPHA:           return SG_BLENDFACTOR_DST_ALPHA;
         case PG_ONE_MINUS_DST_ALPHA: return SG_BLENDFACTOR_ONE_MINUS_DST_ALPHA;
-        default: PICO_GFX_ASSERT(false);
+        default: PICO_GFX_ASSERT(false); return SG_BLENDFACTOR_ONE;
     }
 }
 
@@ -1876,7 +1876,7 @@ static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq)
         case PG_ADD:              return SG_BLENDOP_ADD;
         case PG_SUBTRACT:         return SG_BLENDOP_SUBTRACT;
         case PG_REVERSE_SUBTRACT: return SG_BLENDOP_REVERSE_SUBTRACT;
-        default: PICO_GFX_ASSERT(false);
+        default: PICO_GFX_ASSERT(false); return SG_BLENDOP_ADD;
     }
 }
 
@@ -1894,12 +1894,12 @@ static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
 {
     switch (format)
     {
-        case PG_VERTEX_FORMAT_INVALID: return SG_VERTEXFORMAT_INVALID;
-        case PG_VERTEX_FORMAT_FLOAT:   return SG_VERTEXFORMAT_FLOAT;
-        case PG_VERTEX_FORMAT_FLOAT2:  return SG_VERTEXFORMAT_FLOAT2;
-        case PG_VERTEX_FORMAT_FLOAT3:  return SG_VERTEXFORMAT_FLOAT3;
-        case PG_VERTEX_FORMAT_FLOAT4:  return SG_VERTEXFORMAT_FLOAT4;
-        default: PICO_GFX_ASSERT(false);
+        case PG_VERTEX_FORMAT_INVALID:   return SG_VERTEXFORMAT_INVALID;
+        case PG_VERTEX_FORMAT_FLOAT:     return SG_VERTEXFORMAT_FLOAT;
+        case PG_VERTEX_FORMAT_FLOAT2:    return SG_VERTEXFORMAT_FLOAT2;
+        case PG_VERTEX_FORMAT_FLOAT3:    return SG_VERTEXFORMAT_FLOAT3;
+        case PG_VERTEX_FORMAT_FLOAT4:    return SG_VERTEXFORMAT_FLOAT4;
+        default: PICO_GFX_ASSERT(false); return SG_VERTEXFORMAT_INVALID;
     }
 }
 
@@ -1910,7 +1910,7 @@ static sg_usage pg_map_usage(pg_buffer_usage_t format)
         case PG_USAGE_STATIC:  return SG_USAGE_IMMUTABLE;
         case PG_USAGE_DYNAMIC: return SG_USAGE_DYNAMIC;
         case PG_USAGE_STREAM:  return SG_USAGE_STREAM;
-        default: PICO_GFX_ASSERT(false);
+        default: PICO_GFX_ASSERT(false); return SG_USAGE_IMMUTABLE;
     }
 }
 
@@ -1920,7 +1920,7 @@ static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type)
     {
         case PG_BUFFER_TYPE_VERTEX: return SG_BUFFERTYPE_VERTEXBUFFER;
         case PG_BUFFER_TYPE_INDEX:  return SG_BUFFERTYPE_INDEXBUFFER;
-        default: PICO_GFX_ASSERT(false);
+        default: PICO_GFX_ASSERT(false); return SG_BUFFERTYPE_VERTEXBUFFER;
     }
 }
 
