@@ -30,7 +30,7 @@
     pipelines, in a way that is easy to use and understand.
 
     pico_gfx comes with three examples; basic quad rendering (to a render
-    ]exture and the screen), a scene graph demo, and a particle system demo.
+    texture and the screen), a scene graph demo, and a particle system demo.
     These are the best source of information regaring how to use the API.
 
     In constrast with earlier versions, pico_gfx no longer includes a default
@@ -68,9 +68,10 @@
         - Viewport
         - Scissor
 
-    Changes to the state can be isolated using the state stack (`pg_push_state/
-    pg_pop_state`). Simply push the current state onto the stack, make some
-    local changes, and then pop the stack to restore the original state.
+    Changes to the state can be isolated by using the state stack
+    (`pg_push_state/pg_pop_state`). Simply push the current state onto the
+    stack, make some local changes, and then pop the stack to restore the
+    original state.
 
     Shaders expose uniforms in blocks. These blocks must be registered with the
     shader by calling `pg_init_uniform_block`. They may then be set at will
@@ -112,7 +113,7 @@
     Constants:
     --------
 
-    - PICO_GFX_HASHTABLE_KEY_SIZE (default: 15
+    - PICO_GFX_HASHTABLE_KEY_SIZE (default: 16)
     - PICO_GFX_STACK_MAX_SIZE (default: 16)
 
     Customization:
@@ -1204,6 +1205,7 @@ void pg_reset_pipeline(pg_ctx_t* ctx)
 void pg_bind_buffer(pg_ctx_t* ctx, int slot, pg_buffer_t* buffer)
 {
     PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(!buffer || buffer->type == PG_BUFFER_TYPE_VERTEX);
 
     PICO_GFX_ASSERT(slot >= 0);
     PICO_GFX_ASSERT(slot < PG_MAX_VERTEX_BUFFERS);
