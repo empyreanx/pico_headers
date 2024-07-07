@@ -479,14 +479,14 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader);
  * @brief Registers a uniform block (UB)
  * @param shader The shader owning the UB
  * @param stage The stage (VS or FS) associated with the UB
- * @param name The name of the UB as supplied by `sokol_shdc` (no quotes)
+ * @param name The name of the UB as supplied by `sokol_shdc`
  */
 void pg_init_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* name);
 
 /**
  * @brief Sets a uniform block (UB)
  * @param shader The shader owning the UB
- * @param name The name of the UB as supplied by `sokol_shdc` (no quotes)
+ * @param name The name of the UB as supplied by `sokol_shdc`
  * @param data The data to set (must be the whole UB)
  */
 void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
@@ -541,7 +541,7 @@ typedef struct
 typedef struct
 {
     pg_vertex_buf_t  bufs[PG_MAX_VERTEX_BUFFERS];     //!< Vertex buffer descriptions
-    pg_vertex_attr_t attrs[PG_MAX_VERTEX_ATTRIBUTES]; //!< Vertex buffer attributes
+    pg_vertex_attr_t attrs[PG_MAX_VERTEX_ATTRIBUTES]; //!< Vertex buffer attribute definitions
 } pg_pipeline_layout_t;
 
 /**
@@ -560,7 +560,7 @@ typedef struct pg_pipeline_opts_t
 /**
  * @brief Creates a rendering pipeline (encapsulates render state)
  * @param shader The shader used by this pipeline
- * @param opts Pipeline creation options
+ * @param opts Pipeline creation options (required!)
  * @returns A render pipeline object
  */
 pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
@@ -704,7 +704,7 @@ void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count);
 
 /**
  * @brief Appends data to a buffer. This can happen more than once per frame,
- * and  cannot happen after an update.
+ * and cannot happen after an update.
  */
 int pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count);
 
