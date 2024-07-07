@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     };
 
     // Initialize and set uniform block
-    pg_init_uniform_block(shader, PG_STAGE_VS, "vs_block");
+    pg_alloc_uniform_block(shader, PG_STAGE_VS, "vs_block");
     pg_set_uniform_block(shader, "vs_block", &block);
 
     // Create default sampler
@@ -292,6 +292,10 @@ int main(int argc, char *argv[])
     pg_destroy_texture(target);
     pg_destroy_texture(tex);
     pg_destroy_sampler(sampler);
+
+    pg_destroy_buffer(vertex_buffer);
+    pg_destroy_buffer(indexed_vertex_buffer);
+    pg_destroy_buffer(index_buffer);
 
     pg_destroy_pipeline(pipeline);
     pg_destroy_pipeline(target_pipeline);

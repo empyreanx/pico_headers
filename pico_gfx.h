@@ -23,7 +23,7 @@
     --------
 
     pico_gfx is a thin wrapper for [sokol_gfx](https://github.com/floooh/sokol/blob/master/sokol_gfx.h),
-    a low-level graphics library for OpenGL, Metal, D3D, and WebGPU written in C.
+    a low-level graphics library that supports OpenGL, Metal, D3D, and WebGPU.
     pico_gfx is designed make the common case intuitive and convenient. It
     provides access to low-level constructs, such as buffers, render passes and
     pipelines, in a way that is easy to use and understand.
@@ -58,23 +58,24 @@
 
     The state that pico_gfx manages includes:
 
-        - Shaders and pipelines
+        - Pipelines/shaders
         - Uniform blocks
         - Vertex buffers
         - Index buffers
-        - Textures
-        - Samplers
         - Clear color
         - Viewport
         - Scissor
+        - Textures
+        - Samplers
 
-    Changes to the state can be isolated by using the state stack
+    Most changes to the state can be isolated by using the state stack
     (`pg_push_state/pg_pop_state`). Simply push the current state onto the
     stack, make some local changes, and then pop the stack to restore the
-    original state.
+    original state. The exceptions are textures and samplers that are shader
+    state and not global state.
 
     Shaders expose uniforms in blocks. These blocks must be registered with the
-    shader by calling `pg_init_uniform_block`. They may then be set at will
+    shader by calling `pg_alloc_uniform_block`. They may then be set at will
     by calling `pg_set_uniform_block`. These functions operate on structs
     supplied by a compiled shader,
 
@@ -383,7 +384,7 @@ void pg_reset_scissor(pg_ctx_t* ctx);
 /**
  * @brief Sets the pipeline state
  * @param ctx The graphics context
- * @param pipeline The pipeline to be placed on the top of the state stack
+ * @param pipeline The pipeline to be activated
  */
 void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 
@@ -416,7 +417,7 @@ void pg_reset_index_buffer(pg_ctx_t* ctx);
 
 /**
  * @brief Binds a texture to a slot in the current state
- * @param ctx The graphics context
+ * @param shader The shader associated with the texture
  * @param slot The binding slot
  * @param texture The texture to bind
  */
@@ -429,7 +430,7 @@ void pg_reset_textures(pg_shader_t* shader);
 
 /**
  * @brief Binds a sampler to a slot in the current state
- * @param ctx The graphics context
+ * @param shader The shader associated with the sampler
  * @param slot The binding slot
  * @param sampler The sampler to bind
  */
@@ -481,7 +482,7 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader);
  * @param stage The stage (VS or FS) associated with the UB
  * @param name The name of the UB as supplied by `sokol_shdc`
  */
-void pg_init_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* name);
+void pg_alloc_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* name);
 
 /**
  * @brief Sets a uniform block (UB)
@@ -724,12 +725,11 @@ void pg_set_buffer_offset(pg_buffer_t* buffer, int offset);
 void pg_reset_buffer(pg_buffer_t* buffer);
 
 /**
- * @brief Draws a vertex buffer
+ * @brief Draws from the buffers that are bound to the current state
  * @param ctx The graphics context
- * @param buffer The vertex buffer
- * @param start The first vertex to draw
- * @param count The number of vertices to draw
- * @param texture The texture to draw from
+ * @param start The position of the first element
+ * @param count The number of elements to draw
+ * @param instances The number of instances
  */
 void pg_draw(const pg_ctx_t* ctx, size_t start, size_t count, size_t instances);
 
@@ -1248,7 +1248,7 @@ void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* textur
 void pg_reset_textures(pg_shader_t* shader)
 {
     PICO_GFX_ASSERT(shader);
-    memset(&shader->textures, 0, sizeof(shader->textures));
+    memset(shader->textures, 0, sizeof(shader->textures));
 }
 
 void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sampler)
@@ -1267,7 +1267,7 @@ void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sample
 void pg_reset_samplers(pg_shader_t* shader)
 {
     PICO_GFX_ASSERT(shader);
-    memset(&shader->samplers, 0, sizeof(shader->samplers));
+    memset(shader->samplers, 0, sizeof(shader->samplers));
 }
 
 void pg_reset_state(pg_ctx_t* ctx)
@@ -1282,8 +1282,6 @@ void pg_reset_state(pg_ctx_t* ctx)
     pg_reset_scissor(ctx);
     pg_reset_buffers(ctx);
     pg_reset_index_buffer(ctx);
-    //pg_reset_textures(ctx);
-    //pg_reset_samplers(ctx);
 }
 
 static void pg_set_attributes(const pg_pipeline_layout_t* layout, sg_pipeline_desc* desc)
@@ -1428,7 +1426,7 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader)
     return shader->handle.id;
 }
 
-void pg_init_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* name)
+void pg_alloc_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* name)
 {
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);

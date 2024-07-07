@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 
     assert(pg_backend() == PG_BACKEND_GL);
 
-    printf("Quad rendering demo\n");
+    printf("Particle rendering demo\n");
 
     stbi_set_flip_vertically_on_load(true);
 
@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
     };
 
     // Initializes and sets the uniform
-    pg_init_uniform_block(shader, PG_STAGE_VS, "vs_params");
+    pg_alloc_uniform_block(shader, PG_STAGE_VS, "vs_params");
     pg_set_uniform_block(shader, "vs_params", &block);
 
     // Create the vertex buffer
@@ -315,6 +315,8 @@ int main(int argc, char *argv[])
     pg_destroy_sampler(sampler);
     pg_destroy_pipeline(pipeline);
     pg_destroy_shader(shader);
+    pg_destroy_buffer(vertex_buffer);
+    pg_destroy_buffer(instance_buffer);
     pg_destroy_context(ctx);
 
     pg_shutdown();
