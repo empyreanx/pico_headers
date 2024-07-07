@@ -229,15 +229,13 @@ int main(int argc, char *argv[])
         }
 
 
-        // Bind sampler
-        // Set global state:
-        // The global sampler
+        // Bind the global sampler
         pg_bind_sampler(shader, "u_smp", sampler);
 
-        // The global pipeline
+        // Set the global pipeline
         pg_set_pipeline(ctx, pipeline);
 
-        // The global texture
+        // Bind the global texture
         pg_bind_texture(shader, "u_tex", tex);
 
         // Save current state
@@ -256,7 +254,7 @@ int main(int argc, char *argv[])
         // Activte the index buffer
         pg_set_index_buffer(ctx, index_buffer);
 
-        // Issue the commnd to draw the vertex buffer according to the indexing
+        // Issue the commnd to draw the vertex buffer according to the index
         pg_draw(ctx, 0, 6, 1);
 
         // End first pass
@@ -269,7 +267,7 @@ int main(int argc, char *argv[])
         // Save the curent state
         pg_push_state(ctx);
 
-        // Start a new pass
+        // Start a new pass (drawing to the screen)
         pg_begin_pass(ctx, NULL, true);
 
         // Bind a vertex buffer

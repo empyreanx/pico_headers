@@ -11,12 +11,11 @@
 
     - Written in C99
     - Two header library for easy build system integration
-    - Easy to use Low-level constructs (buffers, render passes, pipelines, and samplers)
-    - Simple texture, shader, and sampler creation
+    - Easy to use low-level constructs (buffers, render passes, pipelines, and samplers)
+    - Flexible pipeline configuration
+    - Simple state management system (state stack)
     - Render to texture
-    - Rendering of static vertex buffers
-    - Simple API for managing uniform blocks
-    - Straight foward state management (state stack)
+    - Custom shaders via the sokol shader compiler
     - Simple and concise API
     - Permissive license (zlib or public domain)
 
@@ -426,7 +425,7 @@ void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* textur
 /**
  * @brief Resets the texture bindings for the current state
  */
-void pg_reset_textures(pg_ctx_t* ctx);
+void pg_reset_textures(pg_shader_t* shader);
 
 /**
  * @brief Binds a sampler to a slot in the current state
@@ -439,7 +438,7 @@ void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sample
 /**
  * @brief Resets the sampler bindings for the current state
  */
-void pg_reset_samplers(pg_ctx_t* ctx);
+void pg_reset_samplers(pg_shader_t* shader);
 
 /**
  * @brief Resets the active state to defaults
@@ -906,8 +905,6 @@ typedef struct pg_state_t
     pg_shader_t*   shader;
     pg_buffer_t*   index_buffer;
     pg_buffer_t*   buffers[PG_MAX_VERTEX_BUFFERS];
-    pg_texture_t*  textures[PG_MAX_TEXTURE_SLOTS];
-    pg_sampler_t*  samplers[PG_MAX_SAMPLER_SLOTS];
 } pg_state_t;
 
 struct pg_ctx_t
@@ -940,6 +937,8 @@ struct pg_shader_t
     const sg_shader_desc* desc;
     sg_shader handle;
     pg_shader_internal_t internal;
+    pg_texture_t* textures[PG_MAX_TEXTURE_SLOTS];
+    pg_sampler_t* samplers[PG_MAX_SAMPLER_SLOTS];
     pg_hashtable_t* uniform_blocks;
     pg_arena_t* arena;
 };
@@ -1243,13 +1242,13 @@ void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* textur
     PICO_GFX_ASSERT(slot >= 0);
     PICO_GFX_ASSERT(slot < PG_MAX_TEXTURE_SLOTS);
 
-    shader->ctx->state.textures[slot] = texture;
+    shader->textures[slot] = texture;
 }
 
-void pg_reset_textures(pg_ctx_t* ctx)
+void pg_reset_textures(pg_shader_t* shader)
 {
-    PICO_GFX_ASSERT(ctx);
-    memset(&ctx->state.textures, 0, sizeof(ctx->state.textures));
+    PICO_GFX_ASSERT(shader);
+    memset(&shader->textures, 0, sizeof(shader->textures));
 }
 
 void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sampler)
@@ -1262,13 +1261,13 @@ void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sample
     PICO_GFX_ASSERT(slot >= 0);
     PICO_GFX_ASSERT(slot < PG_MAX_TEXTURE_SLOTS);
 
-    shader->ctx->state.samplers[slot] = sampler;
+    shader->samplers[slot] = sampler;
 }
 
-void pg_reset_samplers(pg_ctx_t* ctx)
+void pg_reset_samplers(pg_shader_t* shader)
 {
-    PICO_GFX_ASSERT(ctx);
-    memset(&ctx->state.samplers, 0, sizeof(ctx->state.samplers));
+    PICO_GFX_ASSERT(shader);
+    memset(&shader->samplers, 0, sizeof(shader->samplers));
 }
 
 void pg_reset_state(pg_ctx_t* ctx)
@@ -1283,8 +1282,8 @@ void pg_reset_state(pg_ctx_t* ctx)
     pg_reset_scissor(ctx);
     pg_reset_buffers(ctx);
     pg_reset_index_buffer(ctx);
-    pg_reset_textures(ctx);
-    pg_reset_samplers(ctx);
+    //pg_reset_textures(ctx);
+    //pg_reset_samplers(ctx);
 }
 
 static void pg_set_attributes(const pg_pipeline_layout_t* layout, sg_pipeline_desc* desc)
@@ -1393,6 +1392,9 @@ pg_shader_t* pg_get_pipeline_shader(const pg_pipeline_t* pipeline)
 pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal)
 {
     pg_shader_t* shader = PICO_GFX_MALLOC(sizeof(pg_shader_t), ctx->mem_ctx);
+
+    pg_reset_textures(shader);
+    pg_reset_samplers(shader);
 
     shader->ctx = ctx;
     shader->internal = internal;
@@ -1767,25 +1769,25 @@ static void pg_apply_view_state(const pg_ctx_t* ctx)
     sg_apply_scissor_rect(s_rect->x, s_rect->y, s_rect->width, s_rect->height, true);
 }
 
-static void pg_apply_textures(const pg_ctx_t* ctx, sg_bindings* bindings)
+static void pg_apply_textures(const pg_shader_t* shader, sg_bindings* bindings)
 {
     for (int i = 0; i < PG_MAX_TEXTURE_SLOTS; i++)
     {
-        if (!ctx->state.textures[i])
+        if (!shader->textures[i])
             continue;
 
-        bindings->fs.images[i] = ctx->state.textures[i]->handle;
+        bindings->fs.images[i] = shader->textures[i]->handle;
     }
 }
 
-static void pg_apply_samplers(const pg_ctx_t* ctx, sg_bindings* bindings)
+static void pg_apply_samplers(const pg_shader_t* shader, sg_bindings* bindings)
 {
     for (int i = 0; i < PG_MAX_SAMPLER_SLOTS; i++)
     {
-        if (!ctx->state.samplers[i])
+        if (!shader->samplers[i])
             continue;
 
-        bindings->fs.samplers[i] = ctx->state.samplers[i]->handle;
+        bindings->fs.samplers[i] = shader->samplers[i]->handle;
     }
 }
 
@@ -1807,8 +1809,11 @@ void pg_draw(const pg_ctx_t* ctx, size_t start, size_t count, size_t instances)
 
     sg_bindings bindings = { 0 };
 
-    pg_apply_textures(ctx, &bindings);
-    pg_apply_samplers(ctx, &bindings);
+    pg_pipeline_t* pipeline = ctx->state.pipeline;
+
+    pg_apply_textures(pipeline->shader, &bindings);
+    pg_apply_samplers(pipeline->shader, &bindings);
+
     pg_apply_buffers(ctx, &bindings);
     pg_apply_view_state(ctx);
 
@@ -1817,8 +1822,6 @@ void pg_draw(const pg_ctx_t* ctx, size_t start, size_t count, size_t instances)
         bindings.index_buffer_offset = ctx->state.index_buffer->offset;
         bindings.index_buffer = ctx->state.index_buffer->handle;
     }
-
-    pg_pipeline_t* pipeline = ctx->state.pipeline;
 
     sg_apply_pipeline(pipeline->handle);
     sg_apply_bindings(&bindings);

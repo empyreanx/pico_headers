@@ -296,6 +296,8 @@ int main(int argc, char *argv[])
         // Bind buffers and issue a draw command
         pg_bind_buffer(ctx, 0, vertex_buffer);
         pg_bind_buffer(ctx, 1, instance_buffer);
+
+        // Draw using instancing
         pg_draw(ctx, 0, 6, state.particle_count);
 
         // Clean up
