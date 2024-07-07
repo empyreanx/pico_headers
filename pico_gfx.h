@@ -29,15 +29,15 @@
     provides access to low-level constructs, such as buffers, render passes and
     pipelines, in a way that is easy to use and understand.
 
-    pico_gfx comes with three examples; basic quad rendering, a scene graph
-    demo, and a particle system demo. These are the best source of information
-    regaring how to use the API.
+    pico_gfx comes with three examples; basic quad rendering (to a render
+    ]exture and the screen), a scene graph demo, and a particle system demo.
+    These are the best source of information regaring how to use the API.
 
     In constrast with earlier versions, pico_gfx no longer includes a default
-    shader or pipeline. This decision was made to make the header less cluttered,
-    and more generic. It is also hard to define what default really means.
-    Pipeline layouts must now be specified explicitly. The examples have several
-    examples of how to do this.
+    shader or pipeline. This was a hard decision and was made to make the header
+    less cluttered, and more generic. It is also hard to define what default
+    really means. Pipeline layouts must now be specified explicitly. The
+    examples demonstrate several ways of how to do this.
 
     Shaders must be compiled with the sokol compiler (`sokol-shdc`). Binary
     versions of which can be found [here](https://github.com/floooh/sokol-tools-bin).
@@ -58,7 +58,7 @@
 
     The state that pico_gfx manages includes:
 
-        - The current shader and pipeline
+        - Shaders and pipelines
         - Uniform blocks
         - Vertex buffers
         - Index buffers
@@ -74,8 +74,8 @@
 
     Shaders expose uniforms in blocks. These blocks must be registered with the
     shader by calling `pg_init_uniform_block`. They may then be set at will
-    by calling `pg_set_uniform_block`. These functions typically operate on
-    structs supplied by a compiled shader,
+    by calling `pg_set_uniform_block`. These functions operate on structs
+    supplied by a compiled shader,
 
     Please see the examples for more details.
 
@@ -235,11 +235,6 @@ typedef enum
 } pg_stage_t;
 
 /**
- * @brief A 4x4 matrix
- */
-typedef float pg_mat4_t[16];
-
-/**
  * @brief Contains core data/state for an instance of the graphics library
  */
 typedef struct pg_ctx_t pg_ctx_t;
@@ -345,7 +340,7 @@ void pg_flush(pg_ctx_t* ctx);
  * @brief Pushes the active state onto the stack.
  *
  * State consists of the pipeline, draw color, scissor, viewport, and default
- * MVP transform.
+ * MVP transform, buffers, textures, and samplers
  */
 void pg_push_state(pg_ctx_t* ctx);
 
@@ -445,26 +440,6 @@ void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sample
 void pg_reset_samplers(pg_ctx_t* ctx);
 
 /**
- * @brief Sets the projection matrix
- */
-void pg_set_projection(pg_ctx_t* ctx, pg_mat4_t matrix);
-
-/**
- * @brief Resets the projection matrix to the identity
- */
-void pg_reset_projection(pg_ctx_t* ctx);
-
-/**
- * @brief Sets the (modelview) transform matrix
- */
-void pg_set_transform(pg_ctx_t* ctx, pg_mat4_t matrix);
-
-/**
- * @brief Resets the (modelview) transform matrix to the identity
- */
-void pg_reset_transform(pg_ctx_t* ctx);
-
-/**
  * @brief Resets the active state to defaults
  */
 void pg_reset_state(pg_ctx_t* ctx);
@@ -472,7 +447,8 @@ void pg_reset_state(pg_ctx_t* ctx);
 /**
  * @brief Creates the shader with the given prefix
  * The prefix should refer to the shader program name in a shader compiled by
- * `sokol-shdc`
+ * `sokol-shdc`. For example the sprite shader in the examples would have the
+ * prefix 'shader' (without quotation marks)
  */
 #define pg_create_shader(ctx, prefix)   \
     pg_create_shader_internal(          \
@@ -499,16 +475,6 @@ void pg_destroy_shader(pg_shader_t* shader);
 uint32_t pg_get_shader_id(const pg_shader_t* shader);
 
 /**
- * @brief Returns the default shader
- */
-pg_shader_t* pg_get_default_shader(const pg_ctx_t* ctx);
-
-/**
- * @brief Returns the default pipeline
- */
-pg_pipeline_t* pg_get_default_pipeline(const pg_ctx_t* ctx);
-
-/**
  * @brief Registers a uniform block (UB)
  * @param shader The shader owning the UB
  * @param stage The stage (VS or FS) associated with the UB
@@ -525,7 +491,7 @@ void pg_init_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* na
 void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
 
 /**
- * @brief Vertex pixel format
+ * @brief Vertex attribute pixel formats
  */
 typedef enum
 {
@@ -574,7 +540,7 @@ typedef struct
 typedef struct
 {
     pg_vertex_buf_t  bufs[PG_MAX_VERTEX_BUFFERS];     //!< Vertex buffer descriptions
-    pg_vertex_attr_t attrs[PG_MAX_VERTEX_ATTRIBUTES]; //!< Vertex buffer attriburtes
+    pg_vertex_attr_t attrs[PG_MAX_VERTEX_ATTRIBUTES]; //!< Vertex buffer attributes
 } pg_pipeline_layout_t;
 
 /**
@@ -699,8 +665,8 @@ typedef enum
 /**
  * @brief Creates a vertex buffer
  * @param usage Determines whether the buffer is static, dynamic, or streaming
- * @param data Vertex data elements
- * @param count The number of elements
+ * @param data Vertex data elements (can be NULL)
+ * @param count The number of elements (can be zero)
  * @param max_elements The maximum number of elements in the buffer
  * @param element_size The size (in bytes) of each individual element
  */
@@ -714,8 +680,8 @@ pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
 /**
  * @brief Creates a vertex buffer
  * @param usage Determines whether the buffer is static, dynamic, or streaming
- * @param data Index data
- * @param count The number of indices
+ * @param data Index data (can be NULL)
+ * @param count The number of indices (can be zero)
  * @param max_elements The maximum number of indices in the buffer
  */
 pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
@@ -982,7 +948,6 @@ typedef struct
     pg_stage_t stage;
     void*      data;
     size_t     size;
-    bool       dirty;
 } pg_uniform_block_t;
 
 struct pg_texture_t
@@ -1127,6 +1092,7 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_texture_t* target, bool clear)
     }
     else
     {
+        //TODO: Do more research on swapchains
         pass.swapchain = ctx->swapchain;
     }
 
@@ -1147,7 +1113,7 @@ void pg_end_pass(pg_ctx_t* ctx)
 
 void pg_flush(pg_ctx_t* ctx)
 {
-    PICO_GFX_ASSERT(ctx);
+    (void)ctx;
     sg_commit();
 }
 
@@ -1226,7 +1192,6 @@ void pg_reset_scissor(pg_ctx_t* ctx)
 void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline)
 {
     PICO_GFX_ASSERT(ctx);
-    //PICO_GFX_ASSERT(pipeline);
     ctx->state.pipeline = pipeline;
 }
 
@@ -1249,7 +1214,7 @@ void pg_bind_buffer(pg_ctx_t* ctx, int slot, pg_buffer_t* buffer)
 void pg_reset_buffers(pg_ctx_t* ctx)
 {
     PICO_GFX_ASSERT(ctx);
-    memset(&ctx->state.buffers, 0, sizeof(ctx->state.textures));
+    memset(&ctx->state.buffers, 0, sizeof(ctx->state.buffers));
 }
 
 void pg_set_index_buffer(pg_ctx_t* ctx, pg_buffer_t* buffer)
@@ -1394,6 +1359,8 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
         desc.depth.write_enabled = true;
     }
 
+    //TODO: Culling
+
     desc.face_winding = SG_FACEWINDING_CCW;
     desc.shader = shader->handle;
 
@@ -1469,7 +1436,6 @@ void pg_init_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* na
         .stage = stage,
         .data  = pg_arena_alloc(shader->arena, size),
         .size  = size,
-        .dirty = false
     };
 
     pg_hashtable_put(shader->uniform_blocks, name, &block);
@@ -1488,7 +1454,6 @@ void pg_set_uniform_block(pg_shader_t* shader,
     PICO_GFX_ASSERT(block);
 
     memcpy(block->data, data, block->size);
-    block->dirty = true;
 }
 
 pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
@@ -1562,6 +1527,7 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
 
     PICO_GFX_ASSERT(sg_query_image_state(texture->depth_handle) == SG_RESOURCESTATE_VALID);
 
+    //TODO: Research multiple color attachments
     texture->attachments = sg_make_attachments(&(sg_attachments_desc)
     {
         .colors[0].image = texture->handle,
@@ -1584,6 +1550,7 @@ void pg_destroy_texture(pg_texture_t* texture)
 
 void pg_update_texture(pg_texture_t* texture, char* data, int width, int height)
 {
+    // NOTE: Replaces all existing data
     sg_image_data img_data = { 0 };
     img_data.subimage[0][0].ptr = data;
     img_data.subimage[0][0].size = (size_t)(width * height);
@@ -1653,8 +1620,6 @@ static void pg_apply_uniforms(pg_shader_t* shader)
         sg_shader_stage stage = pg_map_stage(block->stage);
 
         sg_apply_uniforms(stage, block->slot, &range);
-
-        block->dirty = false;
     }
 }
 
@@ -1920,7 +1885,7 @@ static sg_shader_stage pg_map_stage(pg_stage_t stage)
     {
         case PG_STAGE_VS: return SG_SHADERSTAGE_VS;
         case PG_STAGE_FS: return SG_SHADERSTAGE_FS;
-        default: PICO_GFX_ASSERT(false);
+        default: PICO_GFX_ASSERT(false); return 0;
     }
 }
 
