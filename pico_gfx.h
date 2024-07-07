@@ -31,20 +31,21 @@
 
     pico_gfx comes with three examples; basic quad rendering (to a render
     texture and the screen), a scene graph demo, and a particle system demo.
-    These are the best source of information regaring how to use the API.
+    These are the best source of information regadring how to use the API.
 
     In constrast with earlier versions, pico_gfx no longer includes a default
-    shader or pipeline. This was a hard decision and was made to make the header
-    less cluttered, and more generic. It is also hard to define what default
-    really means. Pipeline layouts must now be specified explicitly. The
-    examples demonstrate several ways of how to do this.
+    shader or pipeline. This was a hard decision to make, but the header is less
+    cluttered, and more generic. It is also hard to define what default really
+    means. Pipeline layouts must now be specified explicitly. The examples
+    demonstrate several ways of doing this.
 
     Shaders must be compiled with the sokol compiler (`sokol-shdc`). Binary
     versions of which can be found [here](https://github.com/floooh/sokol-tools-bin).
     The source code for the compiler can be found [here](https://github.com/floooh/sokol-tools).
-    An example of how to use the compiler can be found in the `build_pico_gfx_shader`
-    directory. There are also two compiled shaders included with the examples
-    that are more or less generic for rendering sprites and particles.
+    An example of how to use the compiler can be found in the
+    `build_pico_gfx_shader` directory. There are also two compiled shaders
+    included with the examples that are more or less generic for rendering
+    sprites and particles.
 
     One thing pico_gfx does not support (and neither does sokol_gfx) is window
     and graphics context creation. See [here](https://github.com/RandyGaul/cute_framework/tree/master/src/internal)
