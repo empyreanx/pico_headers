@@ -204,14 +204,14 @@ int main(int argc, char *argv[])
     pg_set_uniform_block(shader, "vs_params", &block);
 
     // Create the vertex buffer
-    pg_buffer_t* vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,
-                                                       vertices, 6, 6,
-                                                       sizeof(vertex_t));
+    pg_buffer_t* vertex_buffer = pg_create_vertex_buffer(ctx, PG_USAGE_STATIC,
+                                                         vertices, 6, 6,
+                                                         sizeof(vertex_t));
 
     // Create the instance buffer
-    pg_buffer_t* instance_buffer = pg_create_buffer(ctx, PG_USAGE_STREAM,
-                                                         NULL, 0, MAX_PARTICLES,
-                                                         sizeof(particle_t));
+    pg_buffer_t* instance_buffer = pg_create_vertex_buffer(ctx, PG_USAGE_STREAM,
+                                                           NULL, 0, MAX_PARTICLES,
+                                                           sizeof(particle_t));
 
     // Create a default sampler
     pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);

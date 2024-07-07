@@ -671,12 +671,12 @@ typedef enum
  * @param max_elements The maximum number of elements in the buffer
  * @param element_size The size (in bytes) of each individual element
  */
-pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
-                              pg_buffer_usage_t usage,
-                              const void* data,
-                              size_t count,
-                              size_t max_elements,
-                              size_t element_size);
+pg_buffer_t* pg_create_vertex_buffer(pg_ctx_t* ctx,
+                                     pg_buffer_usage_t usage,
+                                     const void* data,
+                                     size_t count,
+                                     size_t max_elements,
+                                     size_t element_size);
 
 /**
  * @brief Creates a vertex buffer
@@ -1625,12 +1625,12 @@ static void pg_apply_uniforms(pg_shader_t* shader)
     }
 }
 
-pg_buffer_t* pg_create_buffer(pg_ctx_t* ctx,
-                              pg_buffer_usage_t usage,
-                              const void* data,
-                              size_t count,
-                              size_t max_elements,
-                              size_t element_size)
+pg_buffer_t* pg_create_vertex_buffer(pg_ctx_t* ctx,
+                                     pg_buffer_usage_t usage,
+                                     const void* data,
+                                     size_t count,
+                                     size_t max_elements,
+                                     size_t element_size)
 {
     PICO_GFX_ASSERT(ctx);
 

@@ -103,8 +103,8 @@ sprite_t* sprite_new(int w, int h, pg_texture_t* tex)
         { { w, 0, 0 }, { 1, 1, 1, 1 }, { 1, 1 } }
     };
 
-    sprite->buf = pg_create_buffer(app.ctx, PG_USAGE_STATIC, vertices,
-                                   6, 6, sizeof(vertex_t));
+    sprite->buf = pg_create_vertex_buffer(app.ctx, PG_USAGE_STATIC, vertices,
+                                          6, 6, sizeof(vertex_t));
 
     return sprite;
 }

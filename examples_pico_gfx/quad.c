@@ -130,8 +130,14 @@ int main(int argc, char *argv[])
 
     // Create buffers
 
-    pg_buffer_t* vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC, vertices, 6, 6, sizeof(vertex_t));
-    pg_buffer_t* indexed_vertex_buffer = pg_create_buffer(ctx, PG_USAGE_STATIC,indexed_vertices, 4, 4, sizeof(vertex_t));
+    pg_buffer_t* vertex_buffer = pg_create_vertex_buffer(ctx, PG_USAGE_STATIC,
+                                                         vertices, 6, 6,
+                                                         sizeof(vertex_t));
+
+    pg_buffer_t* indexed_vertex_buffer = pg_create_vertex_buffer(ctx, PG_USAGE_STATIC,
+                                                                 indexed_vertices,
+                                                                 4, 4, sizeof(vertex_t));
+
     pg_buffer_t* index_buffer = pg_create_index_buffer(ctx, PG_USAGE_STATIC, indices, 6, 6);
 
     // Create render target (another texture)
