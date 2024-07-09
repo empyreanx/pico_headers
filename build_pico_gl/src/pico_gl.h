@@ -1458,9 +1458,9 @@ pgl_ctx_t* pgl_create_context(uint32_t w, uint32_t h, bool depth,
     PGL_CHECK(glGenBuffers(1, &ctx->vbo));
     PGL_CHECK(glGenBuffers(1, &ctx->ebo));
     PGL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo));
-    PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW));
+    PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, NULL, GL_STREAM_DRAW));
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
-    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW));
+    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_STREAM_DRAW));
     pgl_bind_attributes();
     PGL_CHECK(glBindVertexArray(0));
 
@@ -2079,7 +2079,7 @@ void pgl_draw_array(pgl_ctx_t* ctx,
     PGL_CHECK(glBindVertexArray(ctx->vao));
 
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
-    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
+    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, count * sizeof(pgl_vertex_t), vertices, GL_STREAM_DRAW));
 
     PGL_CHECK(glDrawArrays(pgl_primitive_map[primitive], 0, count));
     PGL_CHECK(glBindVertexArray(0));
@@ -2104,10 +2104,10 @@ void pgl_draw_indexed_array(pgl_ctx_t* ctx,
     PGL_CHECK(glBindVertexArray(ctx->vao));
 
     PGL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo));
-    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(pgl_vertex_t), vertices, GL_STATIC_DRAW));
+    PGL_CHECK(glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(pgl_vertex_t), vertices, GL_STREAM_DRAW));
 
     PGL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ctx->ebo));
-    PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), indices, GL_STATIC_DRAW));
+    PGL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), indices, GL_STREAM_DRAW));
 
     PGL_CHECK(glDrawElements(pgl_primitive_map[primitive], index_count, GL_UNSIGNED_INT, 0));
     PGL_CHECK(glBindVertexArray(0));
