@@ -1,5 +1,0 @@
-example
-*.o
-*.trace
-gmon.out
-*.exe
