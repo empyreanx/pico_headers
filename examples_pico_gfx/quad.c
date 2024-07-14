@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
     printf("Quad rendering demo\n");
 
-    stbi_set_flip_vertically_on_load(true);
+    //stbi_set_flip_vertically_on_load(true);
 
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -203,6 +203,15 @@ int main(int argc, char *argv[])
     // Create default sampler
     pg_sampler_t* sampler = pg_create_sampler(ctx, NULL);
 
+    // Bind the global sampler
+    pg_bind_sampler(shader, "u_smp", sampler);
+
+    // Set the global pipeline
+    pg_set_pipeline(ctx, pipeline);
+
+    // Bind the global texture
+    pg_bind_texture(shader, "u_tex", tex);
+
     // The main loop
     bool done = false;
 
@@ -228,16 +237,6 @@ int main(int argc, char *argv[])
             }
         }
 
-
-        // Bind the global sampler
-        pg_bind_sampler(shader, "u_smp", sampler);
-
-        // Set the global pipeline
-        pg_set_pipeline(ctx, pipeline);
-
-        // Bind the global texture
-        pg_bind_texture(shader, "u_tex", tex);
-
         // Save current state
         pg_push_state(ctx);
 
@@ -251,7 +250,7 @@ int main(int argc, char *argv[])
         // Bind the vertex buffer
         pg_bind_buffer(ctx, 0, indexed_vertex_buffer);
 
-        // Activte the index buffer
+        // Activate the index buffer
         pg_set_index_buffer(ctx, index_buffer);
 
         // Issue the commnd to draw the vertex buffer according to the index

@@ -1,4 +1,5 @@
 @vs vs
+@glsl_options flip_vert_y
 
 layout(location = 0) in vec3 a_pos;
 layout(location = 1) in vec4 a_color;
