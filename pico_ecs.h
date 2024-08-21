@@ -888,6 +888,21 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args)
     // Load entity
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
+    // Remove entity from systems
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    {
+        ecs_sys_t* sys = &ecs->systems[sys_id];
+
+        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &entity->comp_bits))
+        {
+            if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+            {
+                if (sys->remove_cb)
+                    sys->remove_cb(ecs, entity_id, sys->udata);
+            }
+        }
+    }
+
     // Load component
     ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
     ecs_comp_t* comp = &ecs->comps[comp_id];
@@ -963,6 +978,21 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 
     // Reset the relevant component mask bit
     ecs_bitset_flip(&entity->comp_bits, comp_id, false);
+
+    // Add entity to systems
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    {
+        ecs_sys_t* sys = &ecs->systems[sys_id];
+
+        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &entity->comp_bits))
+        {
+            if (ecs_sparse_set_add(ecs, &sys->entity_ids, entity_id))
+            {
+                if (sys->add_cb)
+                    sys->add_cb(ecs, entity_id, sys->udata);
+            }
+        }
+    }
 }
 
 void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
