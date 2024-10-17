@@ -223,6 +223,48 @@ TEST_CASE(test_add_remove)
     return true;
 }
 
+static struct
+{
+    ecs_id_t eid;
+    size_t count;
+} remove_sys_state;
+
+static ecs_ret_t remove_comp_system(ecs_t* ecs,
+                                   ecs_id_t* entities,
+                                   int entity_count,
+                                   ecs_dt_t dt,
+                                   void* udata)
+{
+    (void)ecs;
+    (void)entity_count;
+    (void)dt;
+    (void)udata;
+
+    remove_sys_state.count = entity_count;
+
+    return 0;
+}
+
+TEST_CASE(test_remove_comp_system)
+{
+    ecs_id_t system_id = ecs_register_system(ecs, remove_comp_system, NULL, NULL, NULL);
+
+    ecs_require_component(ecs, system_id, comp2_id);
+    ecs_require_component(ecs, system_id, comp1_id);
+
+    ecs_id_t eid1 = ecs_create(ecs);
+    ecs_add(ecs, eid1, comp1_id, NULL);
+    ecs_add(ecs, eid1, comp2_id, NULL);
+
+    ecs_remove(ecs, eid1, comp1_id);
+
+    ecs_update_system(ecs, system_id, 0.0);
+
+    REQUIRE(remove_sys_state.count == 1);
+
+    return true;
+}
+
 // Turns on the `used` flag on the components of matching entities
 static ecs_ret_t comp_system(ecs_t* ecs,
                              ecs_id_t* entities,
@@ -671,6 +713,7 @@ static TEST_SUITE(suite_ecs)
     RUN_TEST_CASE(test_add_remove);
     RUN_TEST_CASE(test_add_systems);
     RUN_TEST_CASE(test_remove);
+    RUN_TEST_CASE(test_remove_comp_system);
     RUN_TEST_CASE(test_destroy);
     RUN_TEST_CASE(test_destroy_system);
     RUN_TEST_CASE(test_remove_system);
