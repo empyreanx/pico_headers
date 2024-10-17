@@ -236,6 +236,7 @@ static ecs_ret_t remove_comp_system(ecs_t* ecs,
                                    void* udata)
 {
     (void)ecs;
+    (void)entities;
     (void)entity_count;
     (void)dt;
     (void)udata;
@@ -291,11 +292,6 @@ static ecs_ret_t comp_system(ecs_t* ecs,
             comp->used = true;
         }
 
-        /*if (ecs_has(ecs, id, Comp3))
-        {
-            comp_t* comp = ecs_get(ecs, id, Comp3);
-            comp->used = true;
-        }*/
     }
 
     return 0;
@@ -377,7 +373,7 @@ TEST_CASE(test_remove)
     ecs_update_system(ecs, system1_id, 0.0);
 
     // Verify that the entity was remove by the system
-    REQUIRE(!comp1->used);
+    REQUIRE(comp1->used);
     REQUIRE(!comp2->used);
 
     return true;

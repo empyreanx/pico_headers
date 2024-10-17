@@ -938,12 +938,17 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     // Load entity
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
-    // Remove entity from systems
+    // Create bit mask with comp bit flipped on
+    ecs_bitset_t comp_bit;
+
+    memset(&comp_bit, 0, sizeof(ecs_bitset_t));
+    ecs_bitset_flip(&comp_bit, comp_id, true);
+
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_sys_t* sys = &ecs->systems[sys_id];
 
-        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &entity->comp_bits))
+        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &comp_bit))
         {
             if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
             {
