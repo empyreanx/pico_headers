@@ -319,6 +319,9 @@ void log_display_function(log_appender_t id, bool enabled);
  * WARNING: It is inadvisable to call this function directly. Use the macros
  * instead.
  */
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((format(printf, 5, 6)))
+#endif
 void log_write(log_level_t level,
                const char* file,
                unsigned line,
