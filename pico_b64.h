@@ -99,10 +99,20 @@ size_t b64_decode(unsigned char* dst, const char* src, size_t len);
 
 #ifdef PICO_B64_IMPLEMENTATION
 
+#ifndef PICO_B64_ISALNUM
 #include <ctype.h>
+#define PICO_B64_ISALNUM isalnum
+#endif // PICO_B64_ISALNUM
+
+#ifndef PICO_B64_FLOOR
 #include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#define PICO_B64_FLOOR floor
+#endif // PICO_B64_FLOOR
+
+#ifndef PICO_B64_CEIL
+#include <math.h>
+#define PICO_B64_CEIL ceil
+#endif // PICO_B64_CEIL
 
 /*=============================================================================
  * Look-up table
@@ -126,7 +136,7 @@ static const char b64_table[] =
 
 size_t b64_encoded_size(size_t len)
 {
-    return 4 * ceil(len / 3.0);
+    return 4 * PICO_B64_CEIL(len / 3.0);
 }
 
 size_t b64_decoded_size(const char* src, size_t len)
@@ -145,7 +155,7 @@ size_t b64_decoded_size(const char* src, size_t len)
     else if ('=' == src[len - 1])
         padding = 1;
 
-    return floor(3.0 * (len - padding) / 4.0);
+    return PICO_B64_FLOOR(3.0 * (len - padding) / 4.0);
 }
 
 /*=============================================================================
@@ -260,7 +270,7 @@ size_t b64_decode(unsigned char* dst, const char * src, size_t len)
             break;
 
         // Break if char is not base64
-        if (!isalnum((int)src[j]) && '+' != src[j] && '/' != src[j])
+        if (!PICO_B64_ISALNUM((int)src[j]) && '+' != src[j] && '/' != src[j])
             break;
 
         // Read up to 4 bytes at a time into 'tmp'
