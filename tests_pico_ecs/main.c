@@ -97,6 +97,21 @@ TEST_CASE(test_exclude)
     REQUIRE(exclude_sys_state.count == 1);
     REQUIRE(exclude_sys_state.eid == eid2);
 
+    // Removing comp1 from entity1 causes it to be added to the system
+    ecs_remove(ecs, eid1, comp1_id);
+    ecs_update_system(ecs, system_id, 0.0);
+
+    REQUIRE(exclude_sys_state.count == 2);
+    REQUIRE(exclude_sys_state.eid == eid2);
+
+    // Adding comp1 to entity2 causes it to be removed from the system
+    ecs_add(ecs, eid2, comp1_id, NULL);
+
+    ecs_update_system(ecs, system_id, 0.0);
+
+    REQUIRE(exclude_sys_state.count == 1);
+    REQUIRE(exclude_sys_state.eid == eid1);
+
     return true;
 }
 

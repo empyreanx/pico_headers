@@ -909,7 +909,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args)
     // belongs to
     ecs_bitset_flip(&entity->comp_bits, comp_id, true);
 
-    // Add entity to systems
+    // Add or remove entity from systems
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_sys_t* sys = &ecs->systems[sys_id];
@@ -920,6 +920,14 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args)
             {
                 if (sys->add_cb)
                     sys->add_cb(ecs, entity_id, sys->udata);
+            }
+        }
+        else // Just remove the entity if its components no longer match for whatever reason.
+        {
+            if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+            {
+                if (sys->remove_cb)
+                    sys->remove_cb(ecs, entity_id, sys->udata);
             }
         }
     }
@@ -954,6 +962,14 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
             {
                 if (sys->remove_cb)
                     sys->remove_cb(ecs, entity_id, sys->udata);
+            }
+        }
+        else
+        {
+            if (ecs_sparse_set_add(ecs, &sys->entity_ids, entity_id))
+            {
+                if (sys->add_cb)
+                    sys->add_cb(ecs, entity_id, sys->udata);
             }
         }
     }
