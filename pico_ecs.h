@@ -821,7 +821,8 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
 
         // Just attempting to remove the entity from the sparse set is faster
         // than calling ecs_entity_system_test
-        if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+        if (ecs_bitset_is_zero(&sys->exclude_bits) &&
+            ecs_sparse_set_remove(&sys->entity_ids, entity_id))
         {
             if (sys->remove_cb)
                 sys->remove_cb(ecs, entity_id, sys->udata);

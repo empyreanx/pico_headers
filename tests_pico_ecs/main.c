@@ -51,11 +51,13 @@ TEST_CASE(test_reset)
     return true;
 }
 
-static struct
+typedef struct
 {
     ecs_id_t eid;
     size_t count;
-} exclude_sys_state;
+    size_t add_count;
+    size_t remove_count;
+} exclude_sys_state_t;
 
 static ecs_ret_t exclude_system(ecs_t* ecs,
                                 ecs_id_t* entities,
@@ -66,24 +68,67 @@ static ecs_ret_t exclude_system(ecs_t* ecs,
     (void)ecs;
     (void)entity_count;
     (void)dt;
-    (void)udata;
 
-    exclude_sys_state.count = entity_count;
+    exclude_sys_state_t* state = (exclude_sys_state_t*)udata;
+
+    state->count = entity_count;
 
     if (entity_count > 0)
     {
-        exclude_sys_state.eid = entities[0];
+        state->eid = entities[0];
     }
 
     return 0;
 }
 
+static void exclude_add_cb(ecs_t* ecs,
+                           ecs_id_t entity_id,
+                           void* udata)
+{
+    (void)ecs;
+    (void)entity_id;
+
+    exclude_sys_state_t* state = (exclude_sys_state_t*)udata;
+
+    state->add_count++;
+}
+
+static void exclude_remove_cb(ecs_t* ecs,
+                              ecs_id_t entity_id,
+                              void* udata)
+{
+    (void)ecs;
+    (void)entity_id;
+
+    exclude_sys_state_t* state = (exclude_sys_state_t*)udata;
+
+    state->remove_count++;
+}
+
 TEST_CASE(test_exclude)
 {
-    ecs_id_t system_id = ecs_register_system(ecs, exclude_system, NULL, NULL, NULL);
+    exclude_sys_state_t state1;
+    exclude_sys_state_t state2;
 
-    ecs_require_component(ecs, system_id, comp2_id);
-    ecs_exclude_component(ecs, system_id, comp1_id);
+    memset(&state1, 0, sizeof state1);
+    memset(&state2, 0, sizeof state2);
+
+    ecs_id_t system1_id = ecs_register_system(ecs,
+                                              exclude_system,
+                                              exclude_add_cb,
+                                              exclude_remove_cb,
+                                              &state1);
+
+    ecs_require_component(ecs, system1_id, comp2_id);
+    ecs_exclude_component(ecs, system1_id, comp1_id);
+
+    ecs_id_t system2_id = ecs_register_system(ecs,
+                                              exclude_system,
+                                              exclude_add_cb,
+                                              exclude_remove_cb,
+                                              &state2);
+
+    ecs_require_component(ecs, system2_id, comp2_id);
 
     ecs_id_t eid1 = ecs_create(ecs);
     ecs_add(ecs, eid1, comp1_id, NULL);
@@ -92,25 +137,49 @@ TEST_CASE(test_exclude)
     ecs_id_t eid2 = ecs_create(ecs);
     ecs_add(ecs, eid2, comp2_id, NULL);
 
-    ecs_update_system(ecs, system_id, 0.0);
+    ecs_update_system(ecs, system1_id, 0.0);
+    ecs_update_system(ecs, system2_id, 0.0);
 
-    REQUIRE(exclude_sys_state.count == 1);
-    REQUIRE(exclude_sys_state.eid == eid2);
+    REQUIRE(state1.count == 1);
+    REQUIRE(state1.eid == eid2);
+    REQUIRE(state1.add_count == 1);
+    REQUIRE(state1.remove_count == 0);
+    REQUIRE(state2.count == 2);
+    REQUIRE(state2.eid == eid1);
+    REQUIRE(state2.add_count == 2);
+    REQUIRE(state2.remove_count == 0);
 
     // Removing comp1 from entity1 causes it to be added to the system
     ecs_remove(ecs, eid1, comp1_id);
-    ecs_update_system(ecs, system_id, 0.0);
 
-    REQUIRE(exclude_sys_state.count == 2);
-    REQUIRE(exclude_sys_state.eid == eid2);
+    ecs_update_system(ecs, system1_id, 0.0);
+    ecs_update_system(ecs, system2_id, 0.0);
+
+    REQUIRE(state1.count == 2);
+    REQUIRE(state1.eid == eid2);
+    REQUIRE(state1.add_count == 2);
+    REQUIRE(state1.remove_count == 0);
+
+    REQUIRE(state2.count == 2);
+    REQUIRE(state2.eid == eid1);
+    REQUIRE(state2.add_count == 2);
+    REQUIRE(state2.remove_count == 0);
 
     // Adding comp1 to entity2 causes it to be removed from the system
     ecs_add(ecs, eid2, comp1_id, NULL);
 
-    ecs_update_system(ecs, system_id, 0.0);
+    ecs_update_system(ecs, system1_id, 0.0);
+    ecs_update_system(ecs, system2_id, 0.0);
 
-    REQUIRE(exclude_sys_state.count == 1);
-    REQUIRE(exclude_sys_state.eid == eid1);
+    REQUIRE(state1.count == 1);
+    REQUIRE(state1.eid == eid1);
+    REQUIRE(state1.add_count == 2);
+    REQUIRE(state1.remove_count == 1);
+
+    REQUIRE(state2.count == 2);
+    REQUIRE(state2.eid == eid1);
+    REQUIRE(state2.add_count == 2);
+    REQUIRE(state2.remove_count == 0);
 
     return true;
 }
@@ -307,6 +376,11 @@ static ecs_ret_t comp_system(ecs_t* ecs,
             comp->used = true;
         }
 
+        /*if (ecs_has(ecs, id, Comp3))
+        {
+            comp_t* comp = ecs_get(ecs, id, Comp3);
+            comp->used = true;
+        }*/
     }
 
     return 0;
