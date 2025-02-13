@@ -25,7 +25,6 @@ typedef struct
 void setup()
 {
     ecs = ecs_new(MIN_ENTITIES, NULL);
-
     comp1_id = ecs_register_component(ecs, sizeof(comp_t), NULL, NULL);
     comp2_id = ecs_register_component(ecs, sizeof(comp_t), NULL, NULL);
 }
@@ -107,11 +106,16 @@ static void exclude_remove_cb(ecs_t* ecs,
 
 TEST_CASE(test_exclude)
 {
+    //FIXME: Using setup/teardown hooks results in a segfault
+    ecs = ecs_new(MIN_ENTITIES, NULL);
+    comp1_id = ecs_register_component(ecs, sizeof(comp_t), NULL, NULL);
+    comp2_id = ecs_register_component(ecs, sizeof(comp_t), NULL, NULL);
+
     exclude_sys_state_t state1;
     exclude_sys_state_t state2;
 
-    memset(&state1, 0, sizeof state1);
-    memset(&state2, 0, sizeof state2);
+    memset(&state2, 0, sizeof(exclude_sys_state_t));
+    memset(&state1, 0, sizeof(exclude_sys_state_t));
 
     ecs_id_t system1_id = ecs_register_system(ecs,
                                               exclude_system,
@@ -180,6 +184,9 @@ TEST_CASE(test_exclude)
     REQUIRE(state2.eid == eid1);
     REQUIRE(state2.add_count == 2);
     REQUIRE(state2.remove_count == 0);
+
+    ecs_free(ecs);
+    ecs = NULL;
 
     return true;
 }
@@ -790,7 +797,9 @@ TEST_CASE(test_add_remove_callbacks)
 static TEST_SUITE(suite_ecs)
 {
     RUN_TEST_CASE(test_reset);
-    RUN_TEST_CASE(test_exclude);
+    pu_setup(NULL, NULL);
+    RUN_TEST_CASE(test_exclude); // FIXME: Using setup/teardown hooks results in a segfault
+    pu_setup(setup, teardown);
     RUN_TEST_CASE(test_constructor);
     RUN_TEST_CASE(test_destructor_remove);
     RUN_TEST_CASE(test_destructor_destroy);
