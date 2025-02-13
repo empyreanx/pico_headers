@@ -924,7 +924,8 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args)
         }
         else // Just remove the entity if its components no longer match for whatever reason.
         {
-            if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+            if (!ecs_bitset_is_zero(&sys->exclude_bits) && 
+                 ecs_sparse_set_remove(&sys->entity_ids, entity_id))
             {
                 if (sys->remove_cb)
                     sys->remove_cb(ecs, entity_id, sys->udata);
@@ -966,7 +967,8 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
         }
         else
         {
-            if (ecs_sparse_set_add(ecs, &sys->entity_ids, entity_id))
+            if (!ecs_bitset_is_zero(&sys->exclude_bits) && 
+                 ecs_sparse_set_add(ecs, &sys->entity_ids, entity_id))
             {
                 if (sys->add_cb)
                     sys->add_cb(ecs, entity_id, sys->udata);
