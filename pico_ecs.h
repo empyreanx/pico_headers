@@ -619,6 +619,12 @@ void ecs_free(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
+    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
+    {
+        if (ecs->entities[entity_id].ready)
+            ecs_destroy(ecs, entity_id);
+    }
+
     ecs_stack_free(ecs, &ecs->entity_pool);
     ecs_stack_free(ecs, &ecs->destroy_queue);
     ecs_stack_free(ecs, &ecs->remove_queue);
@@ -642,6 +648,12 @@ void ecs_free(ecs_t* ecs)
 void ecs_reset(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
+
+    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
+    {
+        if (ecs->entities[entity_id].ready)
+            ecs_destroy(ecs, entity_id);
+    }
 
     ecs->entity_pool.size   = 0;
     ecs->destroy_queue.size = 0;
@@ -815,10 +827,6 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
         }
     }
 
-    // Push entity ID back into pool
-    ecs_stack_t* pool = &ecs->entity_pool;
-    ecs_stack_push(ecs, pool, entity_id);
-
     // Loop through components and call the destructors
     for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
     {
@@ -833,6 +841,10 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
             }
         }
     }
+
+    // Push entity ID back into pool
+    ecs_stack_t* pool = &ecs->entity_pool;
+    ecs_stack_push(ecs, pool, entity_id);
 
     // Reset entity (sets bitset to 0 and ready to false)
     memset(entity, 0, sizeof(ecs_entity_t));
