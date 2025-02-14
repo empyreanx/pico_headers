@@ -619,12 +619,6 @@ void ecs_free(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
-    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
-    {
-        if (ecs->entities[entity_id].ready)
-            ecs_destroy(ecs, entity_id);
-    }
-
     ecs_stack_free(ecs, &ecs->entity_pool);
     ecs_stack_free(ecs, &ecs->destroy_queue);
     ecs_stack_free(ecs, &ecs->remove_queue);
@@ -648,12 +642,6 @@ void ecs_free(ecs_t* ecs)
 void ecs_reset(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-
-    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
-    {
-        if (ecs->entities[entity_id].ready)
-            ecs_destroy(ecs, entity_id);
-    }
 
     ecs->entity_pool.size   = 0;
     ecs->destroy_queue.size = 0;
@@ -819,9 +807,7 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     {
         ecs_sys_t* sys = &ecs->systems[sys_id];
 
-        // Just attempting to remove the entity from the sparse set is faster
-        // than calling ecs_entity_system_test
-        if (ecs_bitset_is_zero(&sys->exclude_bits) &&
+        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &entity->comp_bits) &&
             ecs_sparse_set_remove(&sys->entity_ids, entity_id))
         {
             if (sys->remove_cb)
@@ -925,7 +911,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args)
         }
         else // Just remove the entity if its components no longer match for whatever reason.
         {
-            if (!ecs_bitset_is_zero(&sys->exclude_bits) && 
+            if (!ecs_bitset_is_zero(&sys->exclude_bits) &&
                  ecs_sparse_set_remove(&sys->entity_ids, entity_id))
             {
                 if (sys->remove_cb)
@@ -968,7 +954,7 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
         }
         else
         {
-            if (!ecs_bitset_is_zero(&sys->exclude_bits) && 
+            if (!ecs_bitset_is_zero(&sys->exclude_bits) &&
                  ecs_sparse_set_add(ecs, &sys->entity_ids, entity_id))
             {
                 if (sys->add_cb)
@@ -1329,7 +1315,7 @@ static size_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id)
 {
     ECS_ASSERT(ecs_is_not_null(set));
 
-    if (id < set->capacity && set->sparse[id] < set->size && set->dense[set->sparse[id]] == id)
+    if (set->sparse[id] < set->size && set->dense[set->sparse[id]] == id)
         return set->sparse[id];
     else
         return ECS_NULL;
@@ -1569,4 +1555,3 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
 */
 
 // EoF
-
