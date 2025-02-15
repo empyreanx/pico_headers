@@ -512,7 +512,12 @@ struct ecs_s
 /*=============================================================================
  * Internal realloc wrapper
  *============================================================================*/
-void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size);
+static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size);
+
+/*=============================================================================
+ * Calls destructors on all components of the entity
+ *============================================================================*/
+static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
  * Internal functions to flush destroyed entities and removed component
@@ -622,7 +627,7 @@ void ecs_free(ecs_t* ecs)
     for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
     {
         if (ecs->entities[entity_id].ready)
-            ecs_destroy(ecs, entity_id);
+            ecs_destruct(ecs, entity_id);
     }
 
     ecs_stack_free(ecs, &ecs->entity_pool);
@@ -652,7 +657,7 @@ void ecs_reset(ecs_t* ecs)
     for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
     {
         if (ecs->entities[entity_id].ready)
-            ecs_destroy(ecs, entity_id);
+            ecs_destruct(ecs, entity_id);
     }
 
     ecs->entity_pool.size   = 0;
@@ -827,20 +832,8 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
         }
     }
 
-    // Loop through components and call the destructors
-    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
-    {
-        if (ecs_bitset_test(&entity->comp_bits, comp_id))
-        {
-            ecs_comp_t* comp = &ecs->comps[comp_id];
-
-            if (comp->destructor)
-            {
-                void* ptr = ecs_get(ecs, entity_id, comp_id);
-                comp->destructor(ecs, entity_id, ptr);
-            }
-        }
-    }
+    // Call destructors on entity components
+    ecs_destruct(ecs, entity_id);
 
     // Push entity ID back into pool
     ecs_stack_t* pool = &ecs->entity_pool;
@@ -1048,7 +1041,7 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt)
 /*=============================================================================
  * Internal realloc wrapper
  *============================================================================*/
-void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size)
+static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size)
 {
     (void)ecs;
 
@@ -1061,6 +1054,30 @@ void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size)
     }
 
     return ptr;
+}
+
+/*=============================================================================
+ * Calls destructors on all components of the entity
+ *============================================================================*/
+static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
+{
+    // Load entity
+    ecs_entity_t* entity = &ecs->entities[entity_id];
+
+    // Loop through components and call the destructors
+    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
+    {
+        if (ecs_bitset_test(&entity->comp_bits, comp_id))
+        {
+            ecs_comp_t* comp = &ecs->comps[comp_id];
+
+            if (comp->destructor)
+            {
+                void* ptr = ecs_get(ecs, entity_id, comp_id);
+                comp->destructor(ecs, entity_id, ptr);
+            }
+        }
+    }
 }
 
 /*=============================================================================
