@@ -1341,6 +1341,8 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
 
     desc.primitive_type = pg_map_primitive(opts->primitive);
 
+    pipeline->blend_enabled = false;
+
     if (opts->blend_enabled)
     {
         pipeline->blend_enabled = true;
