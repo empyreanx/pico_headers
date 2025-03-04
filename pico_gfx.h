@@ -6,6 +6,14 @@
     Licensing information at end of header
     ----------------------------------------------------------------------------
 
+    Compatibility
+    ---------
+
+    This library is compatible with the sokol_gfx header file:
+    https://github.com/empyreanx/pico_headers/blob/main/examples_pico_gfx/sokol_gfx.h
+
+    pico_gfx may not reflect current revisions in the https://github.com/floooh/sokol repository.
+
     Features:
     ---------
 
@@ -20,7 +28,7 @@
     - Permissive license (zlib or public domain)
 
     Summary:
-    --------
+    ---------
 
     pico_gfx is a thin wrapper for [sokol_gfx](https://github.com/floooh/sokol/blob/master/sokol_gfx.h),
     a low-level graphics library that supports OpenGL, Metal, D3D, and WebGPU.
