@@ -576,7 +576,12 @@ void pg_destroy_pipeline(pg_pipeline_t* pipeline);
 /**
  * @brief Returns the shader associated with the pipeline
  */
-pg_shader_t* pg_get_pipeline_shader(const pg_pipeline_t* pipeline);
+pg_shader_t* pg_get_shader(const pg_pipeline_t* pipeline);
+
+/**
+ * @brief Returns the blend mode associated with the pipeline
+ */
+const pg_blend_mode_t* pg_get_blend_mode(const pg_pipeline_t* pipeline);
 
 /**
  * @brief Texture creation options
@@ -928,6 +933,8 @@ struct pg_pipeline_t
     sg_pipeline handle;
     size_t element_size;
     bool indexed;
+    bool blend_enabled;
+    pg_blend_mode_t blend_mode;
     pg_shader_t* shader;
 };
 
@@ -1334,8 +1341,13 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
 
     desc.primitive_type = pg_map_primitive(opts->primitive);
 
+    pipeline->blend_enabled = false;
+
     if (opts->blend_enabled)
     {
+        pipeline->blend_enabled = true;
+        pipeline->blend_mode = opts->blend;
+
         const pg_blend_mode_t* blend_mode = &opts->blend;
         desc.colors[0].blend.enabled = true;
         desc.colors[0].blend.src_factor_rgb = pg_map_blend_factor(blend_mode->color_src);
@@ -1381,10 +1393,20 @@ void pg_destroy_pipeline(pg_pipeline_t* pipeline)
     PICO_GFX_FREE(pipeline, pipeline->ctx->mem_ctx);
 }
 
-pg_shader_t* pg_get_pipeline_shader(const pg_pipeline_t* pipeline)
+pg_shader_t* pg_get_shader(const pg_pipeline_t* pipeline)
 {
     PICO_GFX_ASSERT(pipeline);
     return pipeline->shader;
+}
+
+const pg_blend_mode_t* pg_get_blend_mode(const pg_pipeline_t* pipeline)
+{
+    PICO_GFX_ASSERT(pipeline);
+
+    if (pipeline->blend_enabled)
+        return &pipeline->blend_mode;
+    else
+        return NULL;
 }
 
 pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal)
