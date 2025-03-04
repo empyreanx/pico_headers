@@ -141,7 +141,6 @@ void ecs_reset(ecs_t* ecs);
  * @param ecs       The ECS instance
  * @param entity_id The entity being constructed
  * @param ptr       The pointer to the component
- * @param udata     The user data passed to the callback
  */
 typedef void (*ecs_constructor_fn)(ecs_t* ecs,
                                    ecs_id_t entity_id,
@@ -154,7 +153,6 @@ typedef void (*ecs_constructor_fn)(ecs_t* ecs,
  * @param ecs       The ECS instance
  * @param entity_id The entity being destoryed
  * @param ptr       The pointer to the component
- * @param udata     The user data passed to the callback
  */
 typedef void (*ecs_destructor_fn)(ecs_t* ecs,
                                   ecs_id_t entity_id,
