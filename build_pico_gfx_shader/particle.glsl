@@ -1,14 +1,14 @@
 @vs vs
 
-uniform vs_params {
+layout(binding = 0) uniform vs_params {
     mat4 u_mvp;
 };
 
-in vec2 a_pos;
-in vec2 a_uv;
+layout(location = 0) in vec2 a_pos;
+layout(location = 1) in vec2 a_uv;
 
-in vec2 a_inst_pos;
-in vec4 a_inst_color;
+layout(location = 2) in vec2 a_inst_pos;
+layout(location = 3) in vec4 a_inst_color;
 
 out vec4 color;
 out vec2 uv;
@@ -23,11 +23,11 @@ void main() {
 
 @fs fs
 
-in vec4 color;
-in vec2 uv;
+layout(location = 0) in vec4 color;
+layout(location = 1) in vec2 uv;
 
-uniform texture2D u_tex;
-uniform sampler   u_smp;
+layout (binding = 0) uniform texture2D u_tex;
+layout (binding = 1) uniform sampler   u_smp;
 
 out vec4 frag_color;
 
