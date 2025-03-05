@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
     app.shader = pg_create_shader(app.ctx, sprite);
 
     // Initialize the vertex shader uniform block
-    pg_alloc_uniform_block(app.shader, PG_STAGE_VS, "vs_block");
+    pg_alloc_uniform_block(app.shader, "vs_block");
 
     // Specify the projection matrix
     app.proj = pt2_make(2.0f / w, 0.0f,    -1.0f,
