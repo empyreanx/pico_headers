@@ -236,15 +236,6 @@ typedef struct
 } pg_blend_mode_t;
 
 /**
- * @brief Shader stage
-*/
-typedef enum
-{
-    PG_STAGE_VS, //!< Vertex shader stage
-    PG_STAGE_FS  //!< Fragment shader stage
-} pg_stage_t;
-
-/**
  * @brief Contains core data/state for an instance of the graphics library
  */
 typedef struct pg_ctx_t pg_ctx_t;
@@ -490,7 +481,7 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader);
  * @param stage The stage (VS or FS) associated with the UB
  * @param name The name of the UB as supplied by `sokol_shdc`
  */
-void pg_alloc_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* name);
+void pg_alloc_uniform_block(pg_shader_t* shader, const char* name);
 
 /**
  * @brief Sets a uniform block (UB)
@@ -959,10 +950,9 @@ struct pg_shader_t
 
 typedef struct
 {
-    int        slot;
-    pg_stage_t stage;
-    void*      data;
-    size_t     size;
+    int    slot;
+    void*  data;
+    size_t size;
 } pg_uniform_block_t;
 
 struct pg_texture_t
@@ -1455,7 +1445,7 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader)
     return shader->handle.id;
 }
 
-void pg_alloc_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* name)
+void pg_alloc_uniform_block(pg_shader_t* shader, const char* name)
 {
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
@@ -1465,7 +1455,6 @@ void pg_alloc_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* n
     pg_uniform_block_t block =
     {
         .slot  = shader->internal.get_uniformblock_slot(name),
-        .stage = stage,
         .data  = pg_arena_alloc(shader->arena, size),
         .size  = size,
     };
