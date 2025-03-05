@@ -6,6 +6,14 @@
     Licensing information at end of header
     ----------------------------------------------------------------------------
 
+    Compatibility
+    ---------
+
+    This library is compatible with the sokol_gfx header file:
+    https://github.com/empyreanx/pico_headers/blob/main/examples_pico_gfx/sokol_gfx.h
+
+    pico_gfx may not reflect current revisions in the https://github.com/floooh/sokol repository.
+
     Features:
     ---------
 
@@ -20,7 +28,7 @@
     - Permissive license (zlib or public domain)
 
     Summary:
-    --------
+    ---------
 
     pico_gfx is a thin wrapper for [sokol_gfx](https://github.com/floooh/sokol/blob/master/sokol_gfx.h),
     a low-level graphics library that supports OpenGL, Metal, D3D, and WebGPU.
@@ -154,9 +162,9 @@
 #include <stddef.h>
 
 #define PG_MAX_VERTEX_ATTRIBUTES SG_MAX_VERTEX_ATTRIBUTES
-#define PG_MAX_VERTEX_BUFFERS    SG_MAX_VERTEX_BUFFERS
-#define PG_MAX_TEXTURE_SLOTS     SG_MAX_SHADERSTAGE_IMAGES
-#define PG_MAX_SAMPLER_SLOTS     SG_MAX_SHADERSTAGE_SAMPLERS
+#define PG_MAX_VERTEX_BUFFERS    SG_MAX_VERTEXBUFFER_BINDSLOTS
+#define PG_MAX_TEXTURE_SLOTS     SG_MAX_IMAGE_BINDSLOTS
+#define PG_MAX_SAMPLER_SLOTS     SG_MAX_SAMPLER_BINDSLOTS
 
 /**
  * @brief Graphics backends
@@ -746,10 +754,10 @@ typedef struct
 {
 	const sg_shader_desc* (*get_shader_desc)(sg_backend backend);
 	int (*get_attr_slot)(const char* attr_name);
-	int (*get_img_slot)(sg_shader_stage stage, const char* name);
-	int (*get_smp_slot)(sg_shader_stage stage, const char* name);
-	int (*get_uniformblock_slot)(sg_shader_stage stage, const char* ub_name);
-	size_t (*get_uniformblock_size)(sg_shader_stage stage, const char* ub_name);
+	int (*get_img_slot)(const char* name);
+	int (*get_smp_slot)(const char* name);
+	int (*get_uniformblock_slot)(const char* ub_name);
+	size_t (*get_uniformblock_size)(const char* ub_name);
 } pg_shader_internal_t;
 
 pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal);
@@ -814,7 +822,6 @@ typedef enum
 static sg_primitive_type pg_map_primitive(pg_primitive_t primitive);
 static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor);
 static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq);
-static sg_shader_stage pg_map_stage(pg_stage_t stage);
 static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format);
 static sg_usage pg_map_usage(pg_buffer_usage_t format);
 static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type);
@@ -1244,7 +1251,7 @@ void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* textur
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
 
-    int slot = shader->internal.get_img_slot(SG_SHADERSTAGE_FS, name);
+    int slot = shader->internal.get_img_slot(name);
 
     PICO_GFX_ASSERT(slot >= 0);
     PICO_GFX_ASSERT(slot < PG_MAX_TEXTURE_SLOTS);
@@ -1263,7 +1270,7 @@ void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sample
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
 
-    int slot = shader->internal.get_smp_slot(SG_SHADERSTAGE_FS, name);
+    int slot = shader->internal.get_smp_slot(name);
 
     PICO_GFX_ASSERT(slot >= 0);
     PICO_GFX_ASSERT(slot < PG_MAX_TEXTURE_SLOTS);
@@ -1453,11 +1460,11 @@ void pg_alloc_uniform_block(pg_shader_t* shader, pg_stage_t stage, const char* n
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
 
-    size_t size = shader->internal.get_uniformblock_size(pg_map_stage(stage), name);
+    size_t size = shader->internal.get_uniformblock_size(name);
 
     pg_uniform_block_t block =
     {
-        .slot  = shader->internal.get_uniformblock_slot(pg_map_stage(stage), name),
+        .slot  = shader->internal.get_uniformblock_slot(name),
         .stage = stage,
         .data  = pg_arena_alloc(shader->arena, size),
         .size  = size,
@@ -1642,9 +1649,7 @@ static void pg_apply_uniforms(pg_shader_t* shader)
 
         sg_range range = { .ptr = block->data, .size = block->size };
 
-        sg_shader_stage stage = pg_map_stage(block->stage);
-
-        sg_apply_uniforms(stage, block->slot, &range);
+        sg_apply_uniforms(block->slot, &range);
     }
 }
 
@@ -1796,7 +1801,7 @@ static void pg_apply_textures(const pg_shader_t* shader, sg_bindings* bindings)
         if (!shader->textures[i])
             continue;
 
-        bindings->fs.images[i] = shader->textures[i]->handle;
+        bindings->images[i] = shader->textures[i]->handle;
     }
 }
 
@@ -1807,7 +1812,7 @@ static void pg_apply_samplers(const pg_shader_t* shader, sg_bindings* bindings)
         if (!shader->samplers[i])
             continue;
 
-        bindings->fs.samplers[i] = shader->samplers[i]->handle;
+        bindings->samplers[i] = shader->samplers[i]->handle;
     }
 }
 
@@ -1902,16 +1907,6 @@ static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq)
         case PG_SUBTRACT:         return SG_BLENDOP_SUBTRACT;
         case PG_REVERSE_SUBTRACT: return SG_BLENDOP_REVERSE_SUBTRACT;
         default: PICO_GFX_ASSERT(false); return SG_BLENDOP_ADD;
-    }
-}
-
-static sg_shader_stage pg_map_stage(pg_stage_t stage)
-{
-    switch (stage)
-    {
-        case PG_STAGE_VS: return SG_SHADERSTAGE_VS;
-        case PG_STAGE_FS: return SG_SHADERSTAGE_FS;
-        default: PICO_GFX_ASSERT(false); return 0;
     }
 }
 

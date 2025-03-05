@@ -163,20 +163,20 @@ int main(int argc, char *argv[])
             .attrs =
             {
                 // Attributes for the vertex buffer
-                [ATTR_vs_a_pos] = { .format = PG_VERTEX_FORMAT_FLOAT2,
-                                    .offset = offsetof(vertex_t, pos) },
+                [ATTR_particle_a_pos] = { .format = PG_VERTEX_FORMAT_FLOAT2,
+                                          .offset = offsetof(vertex_t, pos) },
 
-                [ATTR_vs_a_uv]  = { .format = PG_VERTEX_FORMAT_FLOAT2,
-                                    .offset = offsetof(vertex_t, uv) },
+                [ATTR_particle_a_uv]  = { .format = PG_VERTEX_FORMAT_FLOAT2,
+                                          .offset = offsetof(vertex_t, uv) },
 
                 // Attributes for the instanced buffer
-                [ATTR_vs_a_inst_pos]  = { .format = PG_VERTEX_FORMAT_FLOAT2,
-                                          .offset = offsetof(particle_t, pos),
-                                          .buffer_index = 1 },
+                [ATTR_particle_a_inst_pos]  = { .format = PG_VERTEX_FORMAT_FLOAT2,
+                                                .offset = offsetof(particle_t, pos),
+                                                .buffer_index = 1 },
 
-                [ATTR_vs_a_inst_color] = { .format = PG_VERTEX_FORMAT_FLOAT4,
-                                           .offset = offsetof(particle_t, color),
-                                           .buffer_index = 1 },
+                [ATTR_particle_a_inst_color] = { .format = PG_VERTEX_FORMAT_FLOAT4,
+                                                 .offset = offsetof(particle_t, color),
+                                                 .buffer_index = 1 },
             },
         },
         .blend_enabled = true,
