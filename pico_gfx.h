@@ -82,10 +82,8 @@
     original state. The exceptions are textures and samplers that are shader
     state and not global state.
 
-    Shaders expose uniforms in blocks. These blocks must be registered with the
-    shader by calling `pg_alloc_uniform_block`. They may then be set at will
-    by calling `pg_set_uniform_block`. These functions operate on structs
-    supplied by a compiled shader,
+    Shaders expose uniforms in blocks.They may then be set by calling `pg_set_uniform_block`. 
+    This functions operate on structs supplied by a compiled shader,
 
     Please see the examples for more details.
 
@@ -476,14 +474,6 @@ void pg_destroy_shader(pg_shader_t* shader);
 uint32_t pg_get_shader_id(const pg_shader_t* shader);
 
 /**
- * @brief Registers a uniform block (UB)
- * @param shader The shader owning the UB
- * @param stage The stage (VS or FS) associated with the UB
- * @param name The name of the UB as supplied by `sokol_shdc`
- */
-void pg_alloc_uniform_block(pg_shader_t* shader, const char* name);
-
-/**
  * @brief Sets a uniform block (UB)
  * @param shader The shader owning the UB
  * @param name The name of the UB as supplied by `sokol_shdc`
@@ -803,6 +793,8 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
 /*=============================================================================
  * GFX Static Funtions
  *============================================================================*/
+
+static void pg_alloc_uniform_block(pg_shader_t* shader, const char* name);
 
 typedef enum
 {
@@ -1445,23 +1437,6 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader)
     return shader->handle.id;
 }
 
-void pg_alloc_uniform_block(pg_shader_t* shader, const char* name)
-{
-    PICO_GFX_ASSERT(shader);
-    PICO_GFX_ASSERT(name);
-
-    size_t size = shader->internal.get_uniformblock_size(name);
-
-    pg_uniform_block_t block =
-    {
-        .slot  = shader->internal.get_uniformblock_slot(name),
-        .data  = pg_arena_alloc(shader->arena, size),
-        .size  = size,
-    };
-
-    pg_hashtable_put(shader->uniform_blocks, name, &block);
-}
-
 void pg_set_uniform_block(pg_shader_t* shader,
                           const char* name,
                           const void* data)
@@ -1471,6 +1446,12 @@ void pg_set_uniform_block(pg_shader_t* shader,
     PICO_GFX_ASSERT(data);
 
     pg_uniform_block_t* block = pg_hashtable_get(shader->uniform_blocks, name);
+
+    if (!block)
+    {
+        pg_alloc_uniform_block(shader, name);
+        block = pg_hashtable_get(shader->uniform_blocks, name);
+    }
 
     PICO_GFX_ASSERT(block);
 
@@ -1847,6 +1828,23 @@ void pg_draw(const pg_ctx_t* ctx, size_t start, size_t count, size_t instances)
 /*==============================================================================
  * GFX Static Functions
  *============================================================================*/
+
+static void pg_alloc_uniform_block(pg_shader_t* shader, const char* name)
+{
+    PICO_GFX_ASSERT(shader);
+    PICO_GFX_ASSERT(name);
+
+    size_t size = shader->internal.get_uniformblock_size(name);
+
+    pg_uniform_block_t block =
+    {
+        .slot  = shader->internal.get_uniformblock_slot(name),
+        .data  = pg_arena_alloc(shader->arena, size),
+        .size  = size,
+    };
+
+    pg_hashtable_put(shader->uniform_blocks, name, &block);
+}
 
 static sg_primitive_type pg_map_primitive(pg_primitive_t primitive)
 {

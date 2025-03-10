@@ -200,7 +200,6 @@ int main(int argc, char *argv[])
     };
 
     // Initializes and sets the uniform
-    pg_alloc_uniform_block(shader, "vs_params");
     pg_set_uniform_block(shader, "vs_params", &block);
 
     // Create the vertex buffer

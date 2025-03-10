@@ -197,7 +197,6 @@ int main(int argc, char *argv[])
     };
 
     // Initialize and set uniform block
-    pg_alloc_uniform_block(shader, "vs_block");
     pg_set_uniform_block(shader, "vs_block", &block);
 
     // Create default sampler
