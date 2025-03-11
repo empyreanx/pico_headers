@@ -61,6 +61,13 @@ TEST_CASE(test_b2_combine)
         REQUIRE(pb2_equal(&res, &exp));
     }
 
+    { // Case 3
+
+        pb2 b1 = pb2_zero();
+        pb2 b2 = pb2_make(0.0f, 0.0f, 1.0f, 1.0f);
+        pb2 b3 = pb2_combine(&b1, &b2);
+        REQUIRE(pb2_equal(&b2, &b3));
+    }
 
     return true;
 }
