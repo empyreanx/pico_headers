@@ -471,6 +471,7 @@ typedef struct
 typedef struct
 {
     ecs_bitset_t comp_bits;
+    bool         active;
     bool         ready;
 } ecs_entity_t;
 
@@ -624,7 +625,7 @@ void ecs_free(ecs_t* ecs)
 
     for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
     {
-        if (ecs->entities[entity_id].ready)
+        if (ecs->entities[entity_id].active)
             ecs_destruct(ecs, entity_id);
     }
 
@@ -654,7 +655,7 @@ void ecs_reset(ecs_t* ecs)
 
     for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
     {
-        if (ecs->entities[entity_id].ready)
+        if (ecs->entities[entity_id].active)
             ecs_destruct(ecs, entity_id);
     }
 
@@ -797,7 +798,8 @@ ecs_id_t ecs_create(ecs_t* ecs)
     }
 
     ecs_id_t entity_id = ecs_stack_pop(pool);
-    ecs->entities[entity_id].ready = true;
+    ecs->entities[entity_id].active = true;
+    ecs->entities[entity_id].ready  = true;
 
     return entity_id;
 }
@@ -809,10 +811,16 @@ bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id)
     return ecs->entities[entity_id].ready;
 }
 
+bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    return ecs->entities[entity_id].active;
+}
+
 void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
+    ECS_ASSERT(ecs_is_active(ecs, entity_id));
 
     // Load entity
     ecs_entity_t* entity = &ecs->entities[entity_id];
@@ -837,7 +845,7 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     ecs_stack_t* pool = &ecs->entity_pool;
     ecs_stack_push(ecs, pool, entity_id);
 
-    // Reset entity (sets bitset to 0 and ready to false)
+    // Reset entity (sets bitset to 0 and, active and ready to false)
     memset(entity, 0, sizeof(ecs_entity_t));
 }
 
@@ -983,6 +991,8 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
+    ecs->entities[entity_id].ready = false;
+
     ecs_stack_push(ecs, &ecs->destroy_queue, entity_id);
 }
 
@@ -1090,7 +1100,7 @@ static void ecs_flush_destroyed(ecs_t* ecs)
     {
         ecs_id_t entity_id = destroy_queue->array[i];
 
-        if (ecs_is_ready(ecs, entity_id))
+        if (ecs_is_active(ecs, entity_id))
             ecs_destroy(ecs, entity_id);
     }
 
@@ -1105,7 +1115,7 @@ static void ecs_flush_removed(ecs_t* ecs)
     {
         ecs_id_t entity_id = remove_queue->array[i];
 
-        if (ecs_is_ready(ecs, entity_id))
+        if (ecs_is_active(ecs, entity_id))
         {
             ecs_id_t comp_id = remove_queue->array[i + 1];
             ecs_remove(ecs, entity_id, comp_id);
