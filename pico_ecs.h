@@ -519,6 +519,11 @@ static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new
 static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
+ * Tests if entity is active (created)
+ *============================================================================*/
+static inline bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id);
+
+/*=============================================================================
  * Internal functions to flush destroyed entities and removed component
  *============================================================================*/
 static void ecs_flush_destroyed(ecs_t* ecs);
@@ -811,12 +816,6 @@ bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id)
     return ecs->entities[entity_id].ready;
 }
 
-bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id)
-{
-    ECS_ASSERT(ecs_is_not_null(ecs));
-    return ecs->entities[entity_id].active;
-}
-
 void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
@@ -1062,6 +1061,15 @@ static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new
     }
 
     return ptr;
+}
+
+/*=============================================================================
+ * Tests if entity is active (created)
+ *============================================================================*/
+static inline bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    return ecs->entities[entity_id].active;
 }
 
 /*=============================================================================
