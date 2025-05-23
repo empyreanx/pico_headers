@@ -514,6 +514,11 @@ struct ecs_s
 static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size);
 
 /*=============================================================================
+ * Removes entity from ALL systems
+ *============================================================================*/
+static void ecs_remove_from_systerms(ecs_t* ecs, ecs_id_t entity_id);
+
+/*=============================================================================
  * Calls destructors on all components of the entity
  *============================================================================*/
 static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id);
@@ -825,16 +830,9 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     ecs_entity_t* entity = &ecs->entities[entity_id];
 
     // Remove entity from systems
-    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    if (ecs_is_ready(ecs, entity_id))
     {
-        ecs_sys_t* sys = &ecs->systems[sys_id];
-
-        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &entity->comp_bits) &&
-            ecs_sparse_set_remove(&sys->entity_ids, entity_id))
-        {
-            if (sys->remove_cb)
-                sys->remove_cb(ecs, entity_id, sys->udata);
-        }
+        ecs_remove_from_systerms(ecs, entity_id);
     }
 
     // Call destructors on entity components
@@ -990,6 +988,8 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
+    ecs_remove_from_systerms(ecs, entity_id);
+
     ecs->entities[entity_id].ready = false;
 
     ecs_stack_push(ecs, &ecs->destroy_queue, entity_id);
@@ -1094,6 +1094,27 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
             }
         }
     }
+}
+
+/*=============================================================================
+ * Removes entity from ALL systems
+ *============================================================================*/
+static void ecs_remove_from_systerms(ecs_t* ecs, ecs_id_t entity_id)
+{
+    // Load entity
+    ecs_entity_t* entity = &ecs->entities[entity_id];
+
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    {
+        ecs_sys_t* sys = &ecs->systems[sys_id];
+
+        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &entity->comp_bits) &&
+            ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+        {
+            if (sys->remove_cb)
+                sys->remove_cb(ecs, entity_id, sys->udata);
+        }
+    } 
 }
 
 /*=============================================================================

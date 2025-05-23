@@ -244,7 +244,7 @@ TEST_CASE(test_destructor_destroy)
 
     REQUIRE(!ecs_is_ready(ecs, entity_id));
 
-    //WARNING: We assume memory has no been reclaimed
+    //WARNING: We assume memory has not been reclaimed
     REQUIRE(!comp->used);
 
     return true;
@@ -374,12 +374,6 @@ static ecs_ret_t comp_system(ecs_t* ecs,
             comp_t* comp = ecs_get(ecs, id, comp2_id);
             comp->used = true;
         }
-
-        /*if (ecs_has(ecs, id, Comp3))
-        {
-            comp_t* comp = ecs_get(ecs, id, Comp3);
-            comp->used = true;
-        }*/
     }
 
     return 0;
@@ -611,14 +605,16 @@ static ecs_ret_t queue_destroy_system(ecs_t* ecs,
                                       ecs_dt_t dt,
                                       void* udata)
 {
-    (void)entities;
-    (void)entity_count;
     (void)dt;
     (void)udata;
 
     for (int i = 0; i < entity_count; i++)
     {
-        ecs_queue_destroy(ecs, entities[i]);
+        ecs_id_t entity_id = entities[i];
+
+        REQUIRE(ecs_is_ready(ecs, entity_id));
+        ecs_queue_destroy(ecs, entity_id);
+        REQUIRE(!ecs_is_ready(ecs, entity_id));
     }
 
     return 0;
@@ -630,11 +626,15 @@ TEST_CASE(test_queue_destroy_system)
     ecs_require_component(ecs, system1_id, comp1_id);
     ecs_require_component(ecs, system1_id, comp2_id);
 
+    ecs_id_t entity_ids[MAX_ENTITIES];
+
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_id_t id = ecs_create(ecs);
         ecs_add(ecs, id, comp1_id, NULL);
         ecs_add(ecs, id, comp2_id, NULL);
+        REQUIRE(ecs_is_ready(ecs, id));
+        entity_ids[i] = id;
     }
 
     // Run system again
@@ -642,7 +642,7 @@ TEST_CASE(test_queue_destroy_system)
 
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
-        REQUIRE(!ecs_is_ready(ecs, i));
+        REQUIRE(!ecs_is_ready(ecs, entity_ids[i]));
     }
 
     return true;
@@ -673,11 +673,15 @@ TEST_CASE(test_queue_remove_system)
     ecs_require_component(ecs, system1_id, comp1_id);
     ecs_require_component(ecs, system1_id, comp2_id);
 
+    ecs_id_t entity_ids[MAX_ENTITIES];
+
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_id_t id = ecs_create(ecs);
         ecs_add(ecs, id, comp1_id, NULL);
         ecs_add(ecs, id, comp2_id, NULL);
+        REQUIRE(ecs_is_ready(ecs, id));
+        entity_ids[i] = id;
     }
 
     // Run system again
@@ -685,8 +689,10 @@ TEST_CASE(test_queue_remove_system)
 
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
-        if (ecs_is_ready(ecs, i))
-            REQUIRE(!ecs_has(ecs, i, comp1_id));
+        ecs_id_t id = entity_ids[i];
+
+        if (ecs_is_ready(ecs, id))
+            REQUIRE(!ecs_has(ecs, id, comp1_id));
     }
 
     return true;
