@@ -275,7 +275,7 @@ void ecs_disable_system(ecs_t* ecs, ecs_id_t sys_id);
 ecs_id_t ecs_create(ecs_t* ecs);
 
 /**
- * @brief Returns true if the entity is currently active
+ * @brief Returns true if the entity is currently active and has not been queued for destruction
  *
  * @param ecs The ECS instance
  * @param entity_id The target entity
