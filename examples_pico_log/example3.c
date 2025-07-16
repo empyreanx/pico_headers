@@ -1,3 +1,4 @@
+#define PICO_LOG_NO_PATHS
 #define PICO_LOG_IMPLEMENTATION
 #include "../pico_log.h"
 
