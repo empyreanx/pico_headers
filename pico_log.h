@@ -772,6 +772,8 @@ log_time_str (const char* time_fmt, char* str, size_t len)
 
     LOG_ASSERT(ret > 0);
 
+    (void)ret;
+
     return str;
 }
 
