@@ -806,8 +806,7 @@ static sg_primitive_type pg_map_primitive(pg_primitive_t primitive);
 static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor);
 static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq);
 static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format);
-static sg_usage pg_map_usage(pg_buffer_usage_t format);
-static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type);
+static sg_buffer_usage pg_map_type_usage(pg_buffer_type_t type, pg_buffer_usage_t format);
 
 static void pg_log_sg(const char* tag,              // e.g. 'sg'
                       uint32_t log_level,           // 0=panic, 1=error, 2=warn, 3=info
@@ -967,7 +966,6 @@ struct pg_buffer_t
 {
     pg_ctx_t* ctx;
     sg_buffer handle;
-    pg_buffer_type_t type;
     pg_buffer_usage_t usage;
     size_t count;
     size_t element_size;
@@ -1510,7 +1508,7 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
 
     sg_image_desc desc = { 0 };
 
-    desc.render_target = true;
+    //desc.render_target = true;
     desc.pixel_format = SG_PIXELFORMAT_RGBA8;
 
     desc.width  = texture->width  = width;
@@ -1635,7 +1633,6 @@ pg_buffer_t* pg_create_vertex_buffer(pg_ctx_t* ctx,
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;
-    buffer->type = PG_BUFFER_TYPE_VERTEX;
     buffer->usage = usage;
     buffer->count = count;
     buffer->element_size = element_size;
@@ -1644,8 +1641,7 @@ pg_buffer_t* pg_create_vertex_buffer(pg_ctx_t* ctx,
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
-        .type  = SG_BUFFERTYPE_VERTEXBUFFER,
-        .usage = pg_map_usage(usage),
+        .usage = pg_map_type_usage(PG_BUFFER_TYPE_VERTEX, usage),
         .data  = { .ptr = data, .size = count * element_size },
         .size  = buffer->size
     });
@@ -1666,7 +1662,6 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;
-    buffer->type = PG_BUFFER_TYPE_INDEX;
     buffer->usage = usage;
     buffer->count = count;
     buffer->size = max_elements * sizeof(uint32_t);
@@ -1674,8 +1669,7 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
-        .type  = SG_BUFFERTYPE_INDEXBUFFER,
-        .usage = pg_map_usage(usage),
+        .usage = pg_map_type_usage(PG_BUFFER_TYPE_INDEX, usage),
         .data  = { .ptr = data, .size = count * sizeof(uint32_t) },
         .size  = buffer->size
     });
@@ -1739,8 +1733,7 @@ void pg_reset_buffer(pg_buffer_t* buffer)
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
-        .type  = pg_map_buffer_type(buffer->type),
-        .usage = pg_map_usage(buffer->usage),
+        .usage = buffer->usage,
         .data  = { .ptr = NULL, .size = 0 },
         .size  = buffer->size
     });
@@ -1923,25 +1916,26 @@ static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
     }
 }
 
-static sg_usage pg_map_usage(pg_buffer_usage_t format)
+static sg_buffer_usage pg_map_type_usage(pg_buffer_type_t type, pg_buffer_usage_t format)
 {
-    switch (format)
-    {
-        case PG_USAGE_STATIC:  return SG_USAGE_IMMUTABLE;
-        case PG_USAGE_DYNAMIC: return SG_USAGE_DYNAMIC;
-        case PG_USAGE_STREAM:  return SG_USAGE_STREAM;
-        default: PICO_GFX_ASSERT(false); return SG_USAGE_IMMUTABLE;
-    }
-}
+    sg_buffer_usage b = {0};
 
-static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type)
-{
     switch (type)
     {
-        case PG_BUFFER_TYPE_VERTEX: return SG_BUFFERTYPE_VERTEXBUFFER;
-        case PG_BUFFER_TYPE_INDEX:  return SG_BUFFERTYPE_INDEXBUFFER;
-        default: PICO_GFX_ASSERT(false); return SG_BUFFERTYPE_VERTEXBUFFER;
+        default: PICO_GFX_ASSERT(false);
+        case PG_BUFFER_TYPE_VERTEX: b.vertex_buffer = 1; break;
+        case PG_BUFFER_TYPE_INDEX:  b.index_buffer = 1; break;
     }
+
+    switch (format)
+    {
+        default: PICO_GFX_ASSERT(false);
+        case PG_USAGE_STATIC:  b.immutable = 1; break;
+        case PG_USAGE_DYNAMIC: b.dynamic_update = 1; break;
+        case PG_USAGE_STREAM:  b.stream_update = 1; break;
+    }
+
+    return b;
 }
 
 static void pg_log(const char* fmt, ...)
