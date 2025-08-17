@@ -966,6 +966,7 @@ struct pg_buffer_t
 {
     pg_ctx_t* ctx;
     sg_buffer handle;
+    pg_buffer_type_t type;
     pg_buffer_usage_t usage;
     size_t count;
     size_t element_size;
@@ -1508,7 +1509,7 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
 
     sg_image_desc desc = { 0 };
 
-    //desc.render_target = true;
+    desc.usage.render_attachment = true;
     desc.pixel_format = SG_PIXELFORMAT_RGBA8;
 
     desc.width  = texture->width  = width;
@@ -1633,6 +1634,7 @@ pg_buffer_t* pg_create_vertex_buffer(pg_ctx_t* ctx,
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;
+    buffer->type = PG_BUFFER_TYPE_VERTEX;
     buffer->usage = usage;
     buffer->count = count;
     buffer->element_size = element_size;
@@ -1662,6 +1664,7 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
     pg_buffer_t* buffer = PICO_GFX_MALLOC(sizeof(pg_buffer_t), ctx->mem_ctx);
 
     buffer->ctx = ctx;
+    buffer->type = PG_BUFFER_TYPE_INDEX;
     buffer->usage = usage;
     buffer->count = count;
     buffer->size = max_elements * sizeof(uint32_t);
