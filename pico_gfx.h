@@ -82,7 +82,7 @@
     original state. The exceptions are textures and samplers that are shader
     state and not global state.
 
-    Shaders expose uniforms in blocks.They may then be set by calling `pg_set_uniform_block`. 
+    Shaders expose uniforms in blocks.They may then be set by calling `pg_set_uniform_block`.
     This functions operate on structs supplied by a compiled shader,
 
     Please see the examples for more details.
@@ -158,6 +158,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define PG_MAX_VERTEX_ATTRIBUTES SG_MAX_VERTEX_ATTRIBUTES
 #define PG_MAX_VERTEX_BUFFERS    SG_MAX_VERTEXBUFFER_BINDSLOTS
@@ -866,9 +867,10 @@ struct pg_hashtable_iterator_t
 
 typedef struct pg_arena_t pg_arena_t;
 
-static pg_arena_t* pg_arena_new(size_t size, void* mem_ctx);
-static void* pg_arena_alloc(pg_arena_t* arena, size_t size);
-static void pg_arena_free(pg_arena_t* arena);
+static pg_arena_t* pg_arena_create(size_t block_size, void* mem_ctx);
+static void* pg_arena_malloc(pg_arena_t* arena, size_t size);
+//static void pg_arena_reset(pg_arena_t* arena); // Not currently used
+static void pg_arena_destroy(pg_arena_t* arena);
 
 /*=============================================================================
  * GFX Public API Implementation
@@ -1417,7 +1419,7 @@ pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t inter
                                               sizeof(pg_uniform_block_t),
                                               ctx->mem_ctx);
 
-    shader->arena = pg_arena_new(512, ctx->mem_ctx);
+    shader->arena = pg_arena_create(512, ctx->mem_ctx);
 
     return shader;
 }
@@ -1427,7 +1429,7 @@ void pg_destroy_shader(pg_shader_t* shader)
     PICO_GFX_ASSERT(shader);
     sg_destroy_shader(shader->handle);
     pg_hashtable_free(shader->uniform_blocks);
-    pg_arena_free(shader->arena);
+    pg_arena_destroy(shader->arena);
     PICO_GFX_FREE(shader, shader->ctx->mem_ctx);
 }
 
@@ -1839,7 +1841,7 @@ static void pg_alloc_uniform_block(pg_shader_t* shader, const char* name)
     pg_uniform_block_t block =
     {
         .slot  = shader->internal.get_uniformblock_slot(name),
-        .data  = pg_arena_alloc(shader->arena, size),
+        .data  = pg_arena_malloc(shader->arena, size),
         .size  = size,
     };
 
@@ -2360,54 +2362,130 @@ static size_t pg_hashtable_compute_hash(const pg_hashtable_t* ht, const char* ke
  * Arena Allocator
  *============================================================================*/
 
+// Arena block structure
+typedef struct pg_block_t
+{
+    struct block_s* next;
+    size_t size;
+    size_t used;
+    unsigned char data[];
+} pg_block_t;
+
+// Arena structure
 struct pg_arena_t
 {
+    pg_block_t* first;
+    pg_block_t* current;
+    size_t block_size;
     void*  mem_ctx;
-    size_t capacity;
-    size_t size;
-    void*  block;
 };
 
-static pg_arena_t* pg_arena_new(size_t size, void* mem_ctx)
+pg_arena_t* pg_arena_create(size_t block_size, void* mem_ctx)
 {
-    PICO_GFX_ASSERT(size > 0);
+    PICO_GFX_ASSERT(block_size > 0);
 
-    pg_arena_t* arena = PICO_GFX_MALLOC(sizeof(pg_arena_t), mem_ctx);
+    pg_arena_t* arena = PICO_GFX_MALLOC(sizeof(*arena), mem_ctx);
 
-    memset(arena, 0, sizeof(pg_arena_t));
+    if (!arena)
+    {
+        return NULL;
+    }
 
+    arena->first = NULL;
+    arena->current = NULL;
+    arena->block_size = block_size;
     arena->mem_ctx = mem_ctx;
-    arena->capacity = size * 2;
-    arena->block = PICO_GFX_MALLOC(arena->capacity, mem_ctx);
-    arena->size = size;
 
     return arena;
 }
 
-static void* pg_arena_alloc(pg_arena_t* arena, size_t size)
-{
-    if (arena->size + size > arena->capacity)
-    {
-        while (arena->size + size >= arena->capacity)
-        {
-            arena->capacity *= 2;
-        }
+void pg_arena_destroy(pg_arena_t* arena) {
+    PICO_GFX_ASSERT(arena);
 
-        arena->block = PICO_GFX_REALLOC(arena->block, arena->capacity, arena->mem_ctx);
+    if (!arena)
+    {
+        return;
     }
 
-    void* mem = (char*)arena->block + arena->size;
+    pg_block_t* block = arena->first;
 
-    arena->size += size;
+    while (block)
+    {
+        pg_block_t* next = block->next;
+        PICO_GFX_FREE(block, arena->mem_ctx);
+        block = next;
+    }
 
-    return mem;
-}
-
-static void pg_arena_free(pg_arena_t* arena)
-{
-    PICO_GFX_FREE(arena->block, arena->mem_ctx);
     PICO_GFX_FREE(arena, arena->mem_ctx);
 }
+
+void* pg_arena_malloc(pg_arena_t* arena, size_t size)
+{
+    if (!arena || size == 0)
+    {
+        return NULL;
+    }
+
+    // Align size to 8 bytes
+    size = (size + 7) & ~7;
+
+    // Check if current block has enough space
+    if (arena->current && arena->current->used + size <= arena->current->size)
+    {
+        void* ptr = arena->current->data + arena->current->used;
+        arena->current->used += size;
+        return ptr;
+    }
+
+    // Allocate new block
+    size_t block_size = size > arena->block_size ? size : arena->block_size;
+    pg_block_t* block = PICO_GFX_MALLOC(sizeof(pg_block_t) + block_size, arena->mem_ctx);
+
+    if (!block)
+    {
+        return NULL;
+    }
+
+    block->next = NULL;
+    block->size = block_size;
+    block->used = size;
+
+    // Link block
+    if (!arena->first)
+    {
+        arena->first = block;
+    }
+    else
+    {
+        arena->current->next = block;
+    }
+
+    arena->current = block;
+
+    return block->data;
+}
+
+#if 0
+
+void pg_arena_reset(pg_arena_t* arena)
+{
+    if (!arena)
+    {
+        return;
+    }
+
+    pg_block_t* block = arena->first;
+
+    while (block)
+    {
+        block->used = 0;
+        block = block->next;
+    }
+
+    arena->current = arena->first;
+}
+
+#endif
 
 #define SOKOL_GFX_IMPL
 #include "sokol_gfx.h"
