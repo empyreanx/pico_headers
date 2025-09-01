@@ -267,7 +267,7 @@ void log_display_function(log_appender_t id, bool enabled);
  * (i.e. log_trace(format, args...))
  */
 
-#ifndef PICO_LOG_NO_FILES
+#ifndef PICO_LOG_NO_FILE_PATHS
 #define log_trace(...) \
         log_write(LOG_LEVEL_TRACE, __FILE__, __LINE__, __func__, __VA_ARGS__)
 #else
@@ -281,7 +281,7 @@ void log_display_function(log_appender_t id, bool enabled);
  * Writes a DEBUG level message to the log. Usage is similar to printf (i.e.
  * (i.e. log_debug(format, args...))
  */
-#ifndef PICO_LOG_NO_FILES
+#ifndef PICO_LOG_NO_FILE_PATHS
 #define log_debug(...) \
         log_write(LOG_LEVEL_DEBUG, __FILE__, __LINE__, __func__, __VA_ARGS__)
 #else
@@ -294,7 +294,7 @@ void log_display_function(log_appender_t id, bool enabled);
  * Writes an INFO level message to the log. Usage is similar to printf
  * (i.e. log_info(format, args...))
  */
-#ifndef PICO_LOG_NO_FILES
+#ifndef PICO_LOG_NO_FILE_PATHS
 #define log_info(...) \
         log_write(LOG_LEVEL_INFO,  __FILE__, __LINE__, __func__, __VA_ARGS__)
 #else
@@ -308,7 +308,7 @@ void log_display_function(log_appender_t id, bool enabled);
  * Writes a WARN level message to the log. Usage is similar to printf (i.e.
  * (i.e. log_warn(format, args...))
  */
-#ifndef PICO_LOG_NO_FILES
+#ifndef PICO_LOG_NO_FILE_PATHS
 #define log_warn(...) \
         log_write(LOG_LEVEL_WARN,  __FILE__, __LINE__, __func__, __VA_ARGS__)
 #else
@@ -322,7 +322,7 @@ void log_display_function(log_appender_t id, bool enabled);
  * Writes a ERROR level message to the log. Usage is similar to printf (i.e.
  * (i.e. log_error(format, args...))
  */
-#ifndef PICO_LOG_NO_FILES
+#ifndef PICO_LOG_NO_FILE_PATHS
 #define log_error(...) \
         log_write(LOG_LEVEL_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__)
 #else
@@ -336,7 +336,7 @@ void log_display_function(log_appender_t id, bool enabled);
  * Writes a FATAL level message to the log.. Usage is similar to printf (i.e.
  * (i.e. log_fatal(format, args...))
  */
-#ifndef PICO_LOG_NO_FILES
+#ifndef PICO_LOG_NO_FILE_PATHS
 #define log_fatal(...) \
         log_write(LOG_LEVEL_FATAL, __FILE__, __LINE__, __func__, __VA_ARGS__)
 #else
