@@ -1,7 +1,6 @@
+#define PICO_LOG_NO_FILE_PATHS
 #define PICO_LOG_IMPLEMENTATION
 #include "../pico_log.h"
-
-#include <stdio.h>
 
 int main(int argc, char** argv)
 {
@@ -13,7 +12,6 @@ int main(int argc, char** argv)
     log_set_time_fmt(id, "%H:%M:%S");
     log_display_colors(id, true);
     log_display_timestamp(id, true);
-    log_display_file(id, true);
 
     // Default log level is INFO
 
