@@ -413,6 +413,17 @@ static void bench_three_systems()
     ecs_update_system(ecs, BoundsSystem, 1.0f);
 }
 
+static void bench_three_systems_with_setup()
+{
+    setup_three_systems();
+    bench_three_systems();
+}
+
+static void null_setup()
+{
+    return;
+}
+
 int main()
 {
     printf("===============================================================\n");
@@ -428,6 +439,7 @@ int main()
     BENCH_RUN(bench_get, setup_get, teardown);
     BENCH_RUN(bench_queue_destroy, setup, teardown);
     BENCH_RUN(bench_three_systems, setup_three_systems, teardown);
+    BENCH_RUN(bench_three_systems_with_setup, null_setup, teardown);
 
     printf("---------------------------------------------------------------\n");
 
