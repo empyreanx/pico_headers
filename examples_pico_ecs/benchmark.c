@@ -43,7 +43,7 @@ int random_int(int min, int max)
     return rand() % (max + 1 - min) + min;
 }
 
-#define MIN_ENTITIES (1000 * 1000)
+#define MIN_ENTITIES (1 * 1000)
 #define MAX_ENTITIES (1000 * 1000)
 
 static clock_t start, end;
@@ -152,9 +152,30 @@ static void setup_destroy_with_two_components()
     }
 }
 
-static void setup_three_systems()
+static void setup_three_systems_min()
 {
     ecs = ecs_new(MIN_ENTITIES, NULL);
+
+    PosComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL);
+    DirComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL);
+    ComflabComponent = ecs_register_component(ecs, sizeof(comflab_t), NULL, NULL);
+    RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
+
+    MovementSystem = ecs_register_system(ecs, movement_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, MovementSystem, PosComponent);
+    ecs_require_component(ecs, MovementSystem, DirComponent);
+
+    ComflabSystem = ecs_register_system(ecs, comflab_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, ComflabSystem, ComflabComponent);
+
+    BoundsSystem = ecs_register_system(ecs, bounds_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, BoundsSystem, RectComponent);
+}
+
+
+static void setup_three_systems_max()
+{
+    ecs = ecs_new(MAX_ENTITIES, NULL);
 
     PosComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL);
     DirComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL);
@@ -413,15 +434,14 @@ static void bench_three_systems()
     ecs_update_system(ecs, BoundsSystem, 1.0f);
 }
 
-static void bench_three_systems_with_setup()
+static void bench_three_systems_min()
 {
-    setup_three_systems();
     bench_three_systems();
 }
 
-static void null_setup()
+static void bench_three_systems_max()
 {
-    return;
+    bench_three_systems();
 }
 
 int main()
@@ -438,8 +458,8 @@ int main()
     BENCH_RUN(bench_add_assign, setup, teardown);
     BENCH_RUN(bench_get, setup_get, teardown);
     BENCH_RUN(bench_queue_destroy, setup, teardown);
-    BENCH_RUN(bench_three_systems, setup_three_systems, teardown);
-    BENCH_RUN(bench_three_systems_with_setup, null_setup, teardown);
+    BENCH_RUN(bench_three_systems_min, setup_three_systems_min, teardown);
+    BENCH_RUN(bench_three_systems_max, setup_three_systems_max, teardown);
 
     printf("---------------------------------------------------------------\n");
 
