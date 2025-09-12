@@ -792,6 +792,85 @@ TEST_CASE(test_add_remove_callbacks)
     return true;
 }
 
+static ecs_ret_t test_system(ecs_t* ecs,
+                            ecs_id_t* entities,
+                            int entity_count,
+                            ecs_dt_t dt,
+                            void* udata)
+{
+    (void)ecs;
+    (void)entities;
+    (void)entity_count;
+    (void)dt;
+    (void)udata;
+    return 42;
+}
+
+static ecs_ret_t alt_system(ecs_t* ecs,
+                           ecs_id_t* entities,
+                           int entity_count,
+                           ecs_dt_t dt,
+                           void* udata)
+{
+    (void)ecs;
+    (void)entities;
+    (void)entity_count;
+    (void)dt;
+    (void)udata;
+    return 24;
+}
+
+TEST_CASE(test_set_system_callbacks)
+{
+    added = false;
+    removed = false;
+
+    system1_id = ecs_register_system(ecs, test_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, system1_id, comp1_id);
+
+    // Test initial system callback works
+    ecs_ret_t ret = ecs_update_system(ecs, system1_id, 0.0);
+    REQUIRE(ret == 42);
+
+    // Change system callback and test
+    ecs_set_system_callbacks(ecs, system1_id, alt_system, on_add, on_remove);
+    ret = ecs_update_system(ecs, system1_id, 0.0);
+    REQUIRE(ret == 24);
+
+    // Create entity to trigger callbacks
+    ecs_id_t entity_id = ecs_create(ecs);
+    ecs_add(ecs, entity_id, comp1_id, NULL);
+    REQUIRE(added);
+
+    ecs_destroy(ecs, entity_id);
+    REQUIRE(removed);
+
+    return true;
+}
+
+TEST_CASE(test_system_udata)
+{
+    int test_value = 42;
+    system1_id = ecs_register_system(ecs, empty_system, NULL, NULL, NULL);
+
+    // Test setting udata
+    ecs_set_system_udata(ecs, system1_id, &test_value);
+
+    // Test getting udata
+    void* retrieved_udata = ecs_get_system_udata(ecs, system1_id);
+    REQUIRE(retrieved_udata == &test_value);
+    REQUIRE(*(int*)retrieved_udata == 42);
+
+    // Test overwriting udata
+    int new_value = 24;
+    ecs_set_system_udata(ecs, system1_id, &new_value);
+    retrieved_udata = ecs_get_system_udata(ecs, system1_id);
+    REQUIRE(retrieved_udata == &new_value);
+    REQUIRE(*(int*)retrieved_udata == 24);
+
+    return true;
+}
+
 static TEST_SUITE(suite_ecs)
 {
     RUN_TEST_CASE(test_reset);
@@ -811,6 +890,8 @@ static TEST_SUITE(suite_ecs)
     RUN_TEST_CASE(test_queue_remove_system);
     RUN_TEST_CASE(test_enable_disable);
     RUN_TEST_CASE(test_add_remove_callbacks);
+    RUN_TEST_CASE(test_set_system_callbacks);
+    RUN_TEST_CASE(test_system_udata);
 }
 
 int main ()

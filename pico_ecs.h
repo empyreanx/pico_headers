@@ -266,6 +266,39 @@ void ecs_enable_system(ecs_t* ecs, ecs_id_t sys_id);
 void ecs_disable_system(ecs_t* ecs, ecs_id_t sys_id);
 
 /**
+ * @brief Updates the callbacks for an existing system
+ *
+ * @param ecs       The ECS instance
+ * @param sys_id    The system ID
+ * @param system_cb Callback that is fired every update
+ * @param add_cb    Called when an entity is added to the system (can be NULL)
+ * @param remove_cb Called when an entity is removed from the system (can be NULL)
+ */
+void ecs_set_system_callbacks(ecs_t* ecs,
+                              ecs_id_t sys_id,
+                              ecs_system_fn system_cb,
+                              ecs_added_fn add_cb,
+                              ecs_removed_fn remove_cb);
+
+/**
+ * @brief Sets the user data for a system
+ *
+ * @param ecs    The ECS instance
+ * @param sys_id The system ID
+ * @param udata  The user data to set
+ */
+void ecs_set_system_udata(ecs_t* ecs, ecs_id_t sys_id, void* udata);
+
+/**
+ * @brief Gets the user data from a system
+ *
+ * @param ecs    The ECS instance
+ * @param sys_id The system ID
+ * @return       The system's user data
+ */
+void* ecs_get_system_udata(ecs_t* ecs, ecs_id_t sys_id);
+
+/**
  * @brief Creates an entity
  *
  * @param ecs The ECS instance
@@ -778,6 +811,42 @@ void ecs_disable_system(ecs_t* ecs, ecs_id_t sys_id)
 
     ecs_sys_t* sys = &ecs->systems[sys_id];
     sys->active = false;
+}
+
+void ecs_set_system_callbacks(ecs_t* ecs,
+                            ecs_id_t sys_id,
+                            ecs_system_fn system_cb,
+                            ecs_added_fn add_cb,
+                            ecs_removed_fn remove_cb)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
+    ECS_ASSERT(NULL != system_cb);
+
+    ecs_sys_t* sys = &ecs->systems[sys_id];
+    sys->system_cb = system_cb;
+    sys->add_cb = add_cb;
+    sys->remove_cb = remove_cb;
+}
+
+void ecs_set_system_udata(ecs_t* ecs, ecs_id_t sys_id, void* udata)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
+
+    ecs_sys_t* sys = &ecs->systems[sys_id];
+    sys->udata = udata;
+}
+
+void* ecs_get_system_udata(ecs_t* ecs, ecs_id_t sys_id)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
+
+    return ecs->systems[sys_id].udata;
 }
 
 ecs_id_t ecs_create(ecs_t* ecs)
