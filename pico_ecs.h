@@ -378,7 +378,7 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
 void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id);
 
 /**
- * @brief Queues a component for removable
+ * @brief Queues a component for removal
  *
  * Queued entity/component pairs that will be deleted after the current system
  * returns
