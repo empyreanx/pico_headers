@@ -549,7 +549,7 @@ static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new
 /*=============================================================================
  * Removes entity from ALL systems
  *============================================================================*/
-static void ecs_remove_from_systerms(ecs_t* ecs, ecs_id_t entity_id);
+static void ecs_remove_from_systems(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
  * Calls destructors on all components of the entity
@@ -901,7 +901,7 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
     // Remove entity from systems
     if (ecs_is_ready(ecs, entity_id))
     {
-        ecs_remove_from_systerms(ecs, entity_id);
+        ecs_remove_from_systems(ecs, entity_id);
     }
 
     // Call destructors on entity components
@@ -1057,7 +1057,7 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
 
-    ecs_remove_from_systerms(ecs, entity_id);
+    ecs_remove_from_systems(ecs, entity_id);
 
     ecs->entities[entity_id].ready = false;
 
@@ -1168,7 +1168,7 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
 /*=============================================================================
  * Removes entity from ALL systems
  *============================================================================*/
-static void ecs_remove_from_systerms(ecs_t* ecs, ecs_id_t entity_id)
+static void ecs_remove_from_systems(ecs_t* ecs, ecs_id_t entity_id)
 {
     // Load entity
     ecs_entity_t* entity = &ecs->entities[entity_id];
