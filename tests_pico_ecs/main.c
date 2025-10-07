@@ -698,6 +698,32 @@ TEST_CASE(test_queue_remove_system)
     return true;
 }
 
+TEST_CASE(test_queue_destroy_system_with_destructor)
+{
+    ecs_id_t comp_id = ecs_register_component(ecs, sizeof(comp_t), constructor, destructor);
+
+    system1_id = ecs_register_system(ecs, queue_destroy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, system1_id, comp_id);
+
+    ecs_id_t entity_id = ecs_create(ecs);
+    comp_t* comp = ecs_add(ecs, entity_id, comp_id, &(test_args_t){ true });
+
+    REQUIRE(comp->used);
+    REQUIRE(ecs_is_ready(ecs, entity_id));
+
+    // Run system to queue destruction
+    ecs_update_system(ecs, system1_id, 0.0);
+
+    // Verify entity is destroyed
+    REQUIRE(!ecs_is_ready(ecs, entity_id));
+
+    // WARNING: We assume memory has not been reclaimed
+    // Verify destructor was called
+    REQUIRE(!comp->used);
+
+    return true;
+}
+
 TEST_CASE(test_enable_disable)
 {
     // Set up system
@@ -888,6 +914,7 @@ static TEST_SUITE(suite_ecs)
     RUN_TEST_CASE(test_remove_system);
     RUN_TEST_CASE(test_queue_destroy_system);
     RUN_TEST_CASE(test_queue_remove_system);
+    RUN_TEST_CASE(test_queue_destroy_system_with_destructor);
     RUN_TEST_CASE(test_enable_disable);
     RUN_TEST_CASE(test_add_remove_callbacks);
     RUN_TEST_CASE(test_set_system_callbacks);
