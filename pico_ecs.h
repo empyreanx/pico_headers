@@ -859,6 +859,7 @@ ecs_id_t ecs_create(ecs_t* ecs)
     if (0 == ecs_stack_size(pool))
     {
         size_t old_count = ecs->entity_count;
+        //size_t new_count = 2 * old_count;
         size_t new_count = old_count + (old_count / 2) + 2;
 
         // Reallocates entities and zeros new ones
@@ -1415,8 +1416,8 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
         // Calculate new capacity
         while (new_capacity <= id)
         {
-            new_capacity *= 2;
-            //new_capacity += (new_capacity / 2) + 2;
+            //new_capacity *= 2;
+            new_capacity += (new_capacity / 2) + 2;
         }
 
         // Grow dense array
@@ -1533,8 +1534,8 @@ inline static void ecs_stack_push(ecs_t* ecs, ecs_stack_t* stack, ecs_id_t id)
 
     if (stack->size == stack->capacity)
     {
-        stack->capacity *= 2;
-        //stack->capacity += (stack->capacity / 2) + 2;
+        //stack->capacity *= 2;
+        stack->capacity += (stack->capacity / 2) + 2;
 
         stack->array = (ecs_id_t*)ECS_REALLOC(stack->array,
                                               stack->capacity * sizeof(ecs_id_t),
@@ -1591,8 +1592,8 @@ static void ecs_array_resize(ecs_t* ecs, ecs_array_t* array, size_t capacity)
     {
         while (array->capacity <= capacity)
         {
-            array->capacity *= 2;
-            //array->capacity += (array->capacity / 2) + 2;
+            //array->capacity *= 2;
+            array->capacity += (array->capacity / 2) + 2;
         }
 
         array->data = ECS_REALLOC(array->data,
