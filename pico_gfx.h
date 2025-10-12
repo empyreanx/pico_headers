@@ -2365,7 +2365,7 @@ static size_t pg_hashtable_compute_hash(const pg_hashtable_t* ht, const char* ke
 // Arena block structure
 typedef struct pg_block_t
 {
-    struct block_s* next;
+    struct pg_block_t* next;
     size_t size;
     size_t used;
     unsigned char data[];
