@@ -90,28 +90,30 @@ extern "C" {
 typedef struct ecs_s ecs_t;
 
 /**
+ * @brief Determine ID type
+ */
+#ifndef ECS_ID_TYPE
+#define ECS_ID_TYPE uint64_t
+#endif
+
+/**
  * @brief ID used for entity and components
  */
-typedef uint32_t ecs_id_t;
+typedef ECS_ID_TYPE ecs_id_t;
 
 /**
  * @brief NULL/invalid/undefined value
  */
-#define ECS_NULL ((ecs_id_t)-1)
+#define ECS_INVALID ((ecs_id_t)-1)
 
 /**
  * @brief Return code for update callback and calling functions
  */
-typedef int8_t ecs_ret_t;
+typedef int16_t ecs_ret_t;
 
-/**
- * @brief Determine delta-time type
- */
-#ifndef ECS_DT_TYPE
-#define ECS_DT_TYPE double
-#endif
-
-typedef ECS_DT_TYPE ecs_dt_t;
+//typedef struct ecs_entity_t { ecs_id_t id; } ecs_entity_t;
+//typedef struct ecs_comp_t   { ecs_id_t id; } ecs_comp_t;
+//typedef struct ecs_sys_t    { ecs_id_t id; } ecs_sys_t;
 
 /**
  * @brief Creates an ECS instance.
@@ -191,7 +193,6 @@ ecs_id_t ecs_register_component(ecs_t* ecs,
 typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
                                    ecs_id_t* entities,
                                    int entity_count,
-                                   ecs_dt_t dt,
                                    void* udata);
 
 /**
@@ -398,7 +399,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
  * @param sys_id The system to update
  * @param dt  The time delta
  */
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt);
+ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id);
 
 /**
  * @brief Updates all systems
@@ -408,7 +409,7 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt);
  * @param ecs The ECS instance
  * @param dt  The time delta
  */
-ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt);
+ecs_ret_t ecs_update_systems(ecs_t* ecs);
 
 #ifdef __cplusplus
 }
@@ -654,7 +655,7 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
     memset(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_t));
 
     // Pre-populate the the ID pool
-    for (ecs_id_t id = 0; id < entity_count; id++)
+    for (ecs_id_t id = 1; id < entity_count; id++)
     {
         ecs_stack_push(ecs, &ecs->entity_pool, id);
     }
@@ -1075,12 +1076,11 @@ void ecs_queue_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
     ecs_stack_push(ecs, &ecs->remove_queue, comp_id);
 }
 
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt)
+ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys_id));
     ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
-    ECS_ASSERT(dt >= 0.0f);
 
     ecs_sys_t* sys = &ecs->systems[sys_id];
 
@@ -1090,7 +1090,6 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt)
     ecs_ret_t code = sys->system_cb(ecs,
                      sys->entity_ids.dense,
                      sys->entity_ids.size,
-                     dt,
                      sys->udata);
 
     ecs_flush_destroyed(ecs);
@@ -1099,14 +1098,13 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id, ecs_dt_t dt)
     return code;
 }
 
-ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_dt_t dt)
+ecs_ret_t ecs_update_systems(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(dt >= 0.0f);
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
-        ecs_ret_t code = ecs_update_system(ecs, sys_id, dt);
+        ecs_ret_t code = ecs_update_system(ecs, sys_id);
 
         if (0 != code)
             return code;
@@ -1439,7 +1437,7 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
     }
 
     // Check if ID exists within the set
-    if (ECS_NULL != ecs_sparse_set_find(set, id))
+    if (ECS_INVALID != ecs_sparse_set_find(set, id))
         return false;
 
     // Add ID to set
@@ -1458,14 +1456,14 @@ static size_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id)
     if (set->sparse[id] < set->size && set->dense[set->sparse[id]] == id)
         return set->sparse[id];
     else
-        return ECS_NULL;
+        return ECS_INVALID;
 }
 
 static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
 {
     ECS_ASSERT(ecs_is_not_null(set));
 
-    if (ECS_NULL == ecs_sparse_set_find(set, id))
+    if (ECS_INVALID == ecs_sparse_set_find(set, id))
         return false;
 
     // Swap and remove (changes order of array)
