@@ -114,11 +114,8 @@ pos_t get_move_offset(move_t dir)
 ecs_ret_t player_sys(ecs_t* ecs,
                      ecs_id_t* entities,
                      int entity_count,
-                     ecs_dt_t dt,
                      void* udata)
 {
-    (void)dt;
-
     game_t* game = udata;
 
     int level = game->level;
@@ -274,11 +271,8 @@ void monster_do_flee(ecs_t* ecs,
 ecs_ret_t monster_sys(ecs_t* ecs,
                       ecs_id_t* entities,
                       int entity_count,
-                      ecs_dt_t dt,
                       void* udata)
 {
-    (void)dt;
-
     game_t* game = udata;
 
     if (0 == entity_count)
@@ -328,12 +322,8 @@ ecs_ret_t monster_sys(ecs_t* ecs,
 ecs_ret_t chest_sys(ecs_t* ecs,
                ecs_id_t* entities,
                int entity_count,
-               ecs_dt_t dt,
                void* udata)
 {
-
-    (void)dt;
-
     game_t* game = udata;
 
     pos_t* player_pos = ecs_get(ecs, game->player_id, POS_COMP);
@@ -365,10 +355,8 @@ ecs_ret_t chest_sys(ecs_t* ecs,
 ecs_ret_t draw_sys(ecs_t* ecs,
               ecs_id_t* entities,
               int entity_count,
-              ecs_dt_t dt,
               void* udata)
 {
-    (void)dt;
     (void)udata;
 
     for (int i = 0; i < entity_count; i++)

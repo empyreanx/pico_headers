@@ -112,18 +112,19 @@ typedef struct
  * Setup / teardown functions
  *============================================================================*/
 
-ecs_ret_t movement_system(ecs_t* ecs, ecs_id_t* entities,
-                          int entity_count, ecs_dt_t dt,
+ecs_ret_t movement_system(ecs_t* ecs,
+                          ecs_id_t* entities,
+                          int entity_count,
                           void* udata);
 
-ecs_ret_t comflab_system(ecs_t* ecs, ecs_id_t* entities,
-                         int entity_count, ecs_dt_t dt,
+ecs_ret_t comflab_system(ecs_t* ecs,
+                         ecs_id_t* entities,
+                         int entity_count,
                          void* udata);
 
 ecs_ret_t bounds_system(ecs_t* ecs,
                         ecs_id_t* entities,
                         int entity_count,
-                        ecs_dt_t dt,
                         void* udata);
 
 static void setup()
@@ -224,7 +225,6 @@ static void setup_get()
 ecs_ret_t movement_system(ecs_t* ecs,
                           ecs_id_t* entities,
                           int entity_count,
-                          ecs_dt_t dt,
                           void* udata)
 {
     (void)udata;
@@ -237,8 +237,8 @@ ecs_ret_t movement_system(ecs_t* ecs,
         v2d_t* pos = ecs_get(ecs, id, PosComponent);
         v2d_t* dir = ecs_get(ecs, id, DirComponent);
 
-        pos->x += pos->x + dir->x * dt;
-        pos->y += pos->y + dir->y * dt;
+        pos->x += pos->x + dir->x * 1.f / 60.f;
+        pos->y += pos->y + dir->y * 1.f / 60.f;
     }
 
     return 0;
@@ -247,10 +247,8 @@ ecs_ret_t movement_system(ecs_t* ecs,
 ecs_ret_t comflab_system(ecs_t* ecs,
                         ecs_id_t* entities,
                         int entity_count,
-                        ecs_dt_t dt,
                         void* udata)
 {
-    (void)dt;
     (void)udata;
 
     for (int i = 0; i < entity_count; i++)
@@ -270,10 +268,8 @@ ecs_ret_t comflab_system(ecs_t* ecs,
 ecs_ret_t bounds_system(ecs_t* ecs,
                         ecs_id_t* entities,
                         int entity_count,
-                        ecs_dt_t dt,
                         void* udata)
 {
-    (void)dt;
     (void)udata;
 
     for (int i = 0; i < entity_count; i++)
@@ -295,10 +291,8 @@ ecs_ret_t bounds_system(ecs_t* ecs,
 ecs_ret_t queue_destroy_system(ecs_t* ecs,
                                ecs_id_t* entities,
                                int entity_count,
-                               ecs_dt_t dt,
                                void* udata)
 {
-    (void)dt;
     (void)udata;
 
     for (int i = 0; i < entity_count; i++)
@@ -400,7 +394,7 @@ static void bench_queue_destroy()
         ecs_create(ecs);
     }
 
-    ecs_update_system(ecs, QueueDestroySystem, 1.0f);
+    ecs_update_system(ecs, QueueDestroySystem);
 }
 
 static void bench_three_systems()
@@ -429,9 +423,9 @@ static void bench_three_systems()
     }
 
     // Run the system
-    ecs_update_system(ecs, MovementSystem, 1.0f);
-    ecs_update_system(ecs, ComflabSystem, 1.0f);
-    ecs_update_system(ecs, BoundsSystem, 1.0f);
+    ecs_update_system(ecs, MovementSystem);
+    ecs_update_system(ecs, ComflabSystem);
+    ecs_update_system(ecs, BoundsSystem);
 }
 
 static void bench_three_systems_min()
