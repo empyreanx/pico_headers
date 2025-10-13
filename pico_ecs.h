@@ -145,7 +145,7 @@ void ecs_reset(ecs_t* ecs);
  * @param ptr       The pointer to the component
  */
 typedef void (*ecs_constructor_fn)(ecs_t* ecs,
-                                   ecs_id_t entity_id,
+                                   ecs_entity_t entity,
                                    void* comp_ptr,
                                    void* args);
 
@@ -157,7 +157,7 @@ typedef void (*ecs_constructor_fn)(ecs_t* ecs,
  * @param ptr       The pointer to the component
  */
 typedef void (*ecs_destructor_fn)(ecs_t* ecs,
-                                  ecs_id_t entity_id,
+                                  ecs_entity_t entity,
                                   void* comp_ptr);
 
 /**
@@ -187,11 +187,10 @@ ecs_id_t ecs_register_component(ecs_t* ecs,
  * @param ecs          The ECS instance
  * @param entities     An array of entity IDs managed by the system
  * @param entity_count The number of entities in the array
- * @param dt           The time delta
  * @param udata        The user data associated with the system
  */
 typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
-                                   ecs_id_t* entities,
+                                   ecs_entity_t* entities,
                                    int entity_count,
                                    void* udata);
 
@@ -202,7 +201,7 @@ typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
  * @param entity_id The enitty being added
  * @param udata     The user data passed to the callback
  */
-typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_id_t entity_id, void* udata);
+typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 
 /**
  * @brief Called when an entity is removed from a system
@@ -211,7 +210,7 @@ typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_id_t entity_id, void* udata);
  * @param entity_id The enitty being removed
  * @param udata     The user data passed to the callback
  */
-typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_id_t entity_id, void* udata);
+typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 
 /**
  * @brief Registers a system
@@ -238,7 +237,7 @@ ecs_id_t ecs_register_system(ecs_t* ecs,
  * @param sys_id  The target system ID
  * @param comp_id The component ID
  */
-void ecs_require_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id);
+void ecs_require_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
 
 /**
  * @brief Excludes entities having the specified component from being added to
@@ -248,7 +247,7 @@ void ecs_require_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id);
  * @param sys_id  The target system ID
  * @param comp_id The component ID tp exclude
  */
-void ecs_exclude_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id);
+void ecs_exclude_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
 
 /**
  * @brief Enables a system
@@ -256,7 +255,7 @@ void ecs_exclude_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id);
  * @param ecs    The ECS instance
  * @param sys_id The specified system ID
  */
-void ecs_enable_system(ecs_t* ecs, ecs_id_t sys_id);
+void ecs_enable_system(ecs_t* ecs, ecs_sys_t sys);
 
 /**
  * @brief Disables a system
@@ -264,7 +263,7 @@ void ecs_enable_system(ecs_t* ecs, ecs_id_t sys_id);
  * @param ecs    The ECS instance
  * @param sys_id The specified system ID
  */
-void ecs_disable_system(ecs_t* ecs, ecs_id_t sys_id);
+void ecs_disable_system(ecs_t* ecs, ecs_sys_t sys);
 
 /**
  * @brief Updates the callbacks for an existing system
@@ -276,7 +275,7 @@ void ecs_disable_system(ecs_t* ecs, ecs_id_t sys_id);
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
  */
 void ecs_set_system_callbacks(ecs_t* ecs,
-                              ecs_id_t sys_id,
+                              ecs_sys_t sys,
                               ecs_system_fn system_cb,
                               ecs_added_fn add_cb,
                               ecs_removed_fn remove_cb);
@@ -288,7 +287,7 @@ void ecs_set_system_callbacks(ecs_t* ecs,
  * @param sys_id The system ID
  * @param udata  The user data to set
  */
-void ecs_set_system_udata(ecs_t* ecs, ecs_id_t sys_id, void* udata);
+void ecs_set_system_udata(ecs_t* ecs, ecs_sys_t sys, void* udata);
 
 /**
  * @brief Gets the user data from a system
@@ -297,7 +296,7 @@ void ecs_set_system_udata(ecs_t* ecs, ecs_id_t sys_id, void* udata);
  * @param sys_id The system ID
  * @return       The system's user data
  */
-void* ecs_get_system_udata(ecs_t* ecs, ecs_id_t sys_id);
+void* ecs_get_system_udata(ecs_t* ecs, ecs_sys_t sys);
 
 /**
  * @brief Creates an entity
@@ -314,7 +313,7 @@ ecs_id_t ecs_create(ecs_t* ecs);
  * @param ecs The ECS instance
  * @param entity_id The target entity
  */
-bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id);
+bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity);
 
 /**
  * @brief Destroys an entity
@@ -324,7 +323,7 @@ bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id);
  * @param ecs       The ECS instance
  * @param entity_id The ID of the entity to destroy
  */
-void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id);
+void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
 
 /**
  * @brief Test if entity has the specified component
@@ -335,7 +334,7 @@ void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id);
  *
  * @returns True if the entity has the component
  */
-bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
+bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Adds a component instance to an entity
@@ -346,7 +345,7 @@ bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
  *
  * @returns The component instance
  */
-void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args);
+void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args);
 
 /**
  * @brief Gets a component instance associated with an entity
@@ -357,7 +356,7 @@ void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args);
  *
  * @returns The component instance
  */
-void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
+void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Removes a component instance from an entity
@@ -366,7 +365,7 @@ void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
  * @param entity_id The entity ID
  * @param comp_id   The component ID
  */
-void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
+void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Queues an entity for destruction at the end of system execution
@@ -376,7 +375,7 @@ void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
  * @param ecs       The ECS instance
  * @param entity_id The ID of the entity to destroy
  */
-void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id);
+void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity);
 
 /**
  * @brief Queues a component for removal
@@ -388,7 +387,7 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id);
  * @param entity_id The ID of the entity that has the component
  * @param comp_id   The component to remove
  */
-void ecs_queue_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
+void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comop_t comp);
 
 /**
  * @brief Update an individual system
@@ -399,7 +398,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
  * @param sys_id The system to update
  * @param dt  The time delta
  */
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id);
+ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_sys_t sys);
 
 /**
  * @brief Updates all systems
