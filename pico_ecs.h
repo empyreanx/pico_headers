@@ -104,8 +104,7 @@ typedef ECS_ID_TYPE ecs_id_t;
 /**
  * @brief NULL/invalid/undefined value
  */
-#define ECS_INVALID ((ecs_id_t)-1)
-//#define ECS_INVALID ((ecs_id_t)0)
+#define ECS_INVALID ((ecs_id_t)0)
 
 /**
  * @brief Return code for update callback and calling functions
@@ -584,11 +583,11 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set);
 /*=============================================================================
  * Internal sparse set functions
  *============================================================================*/
-static void   ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capacity);
-static void   ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set);
-static bool   ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id);
-static size_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id);
-static bool   ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
+static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capacity);
+static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set);
+static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id);
+static bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_t* found);
+static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
 
 /*=============================================================================
  * Internal system entity add/remove functions
@@ -1438,7 +1437,7 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
     }
 
     // Check if ID exists within the set
-    if (ECS_INVALID != ecs_sparse_set_find(set, id))
+    if (ecs_sparse_set_find(set, id, NULL))
         return false;
 
     // Add ID to set
@@ -1450,21 +1449,27 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
     return true;
 }
 
-static size_t ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id)
+static bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_t* found)
 {
     ECS_ASSERT(ecs_is_not_null(set));
 
     if (set->sparse[id] < set->size && set->dense[set->sparse[id]] == id)
-        return set->sparse[id];
+    {
+        if (found) *found = set->sparse[id];
+        return true;
+    }
     else
-        return ECS_INVALID;
+    {
+        if (found) *found = 0;
+        return false;
+    }
 }
 
 static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
 {
     ECS_ASSERT(ecs_is_not_null(set));
 
-    if (ECS_INVALID == ecs_sparse_set_find(set, id))
+    if (!ecs_sparse_set_find(set, id, NULL))
         return false;
 
     // Swap and remove (changes order of array)
