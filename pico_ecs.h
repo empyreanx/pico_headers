@@ -174,9 +174,9 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
  * @returns           The component's ID
  */
 ecs_comp_t ecs_register_component(ecs_t* ecs,
-                                size_t size,
-                                ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor);
+                                  size_t size,
+                                  ecs_constructor_fn constructor,
+                                  ecs_destructor_fn destructor);
 
 /**
  * @brief System update callback
@@ -226,10 +226,10 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @returns         The system's ID
  */
 ecs_sys_t ecs_register_system(ecs_t* ecs,
-                             ecs_system_fn system_cb,
-                             ecs_added_fn add_cb,
-                             ecs_removed_fn remove_cb,
-                             void* udata);
+                              ecs_system_fn system_cb,
+                              ecs_added_fn add_cb,
+                              ecs_removed_fn remove_cb,
+                              void* udata);
 /**
  * @brief Determines which components are available to the specified system.
  *
@@ -1063,8 +1063,8 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 
     if (comp_data->destructor)
     {
-        void* ptr = ecs_get(ecs, entity, comp);
-        comp_data->destructor(ecs, entity, ptr);
+        void* comp_ptr = ecs_get(ecs, entity, comp);
+        comp_data->destructor(ecs, entity, comp_ptr);
     }
 
     // Reset the relevant component mask bit
