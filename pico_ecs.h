@@ -173,7 +173,7 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
  * @param udata       Data passed to callbacks (can be NULL)
  * @returns           The component's ID
  */
-ecs_id_t ecs_register_component(ecs_t* ecs,
+ecs_comp_t ecs_register_component(ecs_t* ecs,
                                 size_t size,
                                 ecs_constructor_fn constructor,
                                 ecs_destructor_fn destructor);
@@ -225,7 +225,7 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @param udata     The user data passed to the callbacks
  * @returns         The system's ID
  */
-ecs_id_t ecs_register_system(ecs_t* ecs,
+ecs_sys_t ecs_register_system(ecs_t* ecs,
                              ecs_system_fn system_cb,
                              ecs_added_fn add_cb,
                              ecs_removed_fn remove_cb,
@@ -305,7 +305,7 @@ void* ecs_get_system_udata(ecs_t* ecs, ecs_sys_t sys);
  *
  * @returns The new entity ID
  */
-ecs_id_t ecs_create(ecs_t* ecs);
+ecs_entity_t ecs_create(ecs_t* ecs);
 
 /**
  * @brief Returns true if the entity is currently active and has not been queued for destruction
@@ -387,7 +387,7 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity);
  * @param entity_id The ID of the entity that has the component
  * @param comp_id   The component to remove
  */
-void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comop_t comp);
+void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Update an individual system
@@ -479,10 +479,10 @@ typedef struct
 // for adding, removing, and accessing entity IDs
 typedef struct
 {
-    size_t    capacity;
-    size_t    size;
-    size_t*   sparse;
-    ecs_id_t* dense;
+    size_t       capacity;
+    size_t        size;
+    size_t*       sparse;
+    ecs_entity_t* dense;
 } ecs_sparse_set_t;
 
 // Data-structure for an ID pool that provides O(1) operations for pooling IDs
@@ -541,6 +541,24 @@ struct ecs_s
     void*              mem_ctx;
 };
 
+static ecs_entity_t ecs_make_entity(ecs_id_t id)
+{
+    ecs_entity_t entity = { id };
+    return entity;
+}
+
+static ecs_comp_t ecs_make_comp(ecs_id_t id)
+{
+    ecs_comp_t comp = { id };
+    return comp;
+}
+
+static ecs_sys_t ecs_make_sys(ecs_id_t id)
+{
+    ecs_sys_t sys = { id };
+    return sys;
+}
+
 /*=============================================================================
  * Internal realloc wrapper
  *============================================================================*/
@@ -549,12 +567,12 @@ static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new
 /*=============================================================================
  * Removes entity from ALL systems
  *============================================================================*/
-static void ecs_remove_from_systems(ecs_t* ecs, ecs_id_t entity_id);
+static void ecs_remove_from_systems(ecs_t* ecs, ecs_entity_t entity);
 
 /*=============================================================================
  * Calls destructors on all components of the entity
  *============================================================================*/
-static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id);
+static void ecs_destruct(ecs_t* ecs, ecs_id_t entity);
 
 /*=============================================================================
  * Tests if entity is active (created)
@@ -719,7 +737,7 @@ void ecs_reset(ecs_t* ecs)
     }
 }
 
-ecs_id_t ecs_register_component(ecs_t* ecs,
+ecs_comp_t ecs_register_component(ecs_t* ecs,
                                 size_t size,
                                 ecs_constructor_fn constructor,
                                 ecs_destructor_fn destructor)
@@ -728,128 +746,128 @@ ecs_id_t ecs_register_component(ecs_t* ecs,
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
     ECS_ASSERT(size > 0);
 
-    ecs_id_t comp_id = ecs->comp_count;
+    ecs_comp_t comp = ecs_make_comp(ecs->comp_count);
 
-    ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
+    ecs_array_t* comp_array = &ecs->comp_arrays[comp.id];
     ecs_array_init(ecs, comp_array, size, ecs->entity_count);
 
-    ecs->comps[comp_id].constructor = constructor;
-    ecs->comps[comp_id].destructor = destructor;
+    ecs->comps[comp.id].constructor = constructor;
+    ecs->comps[comp.id].destructor = destructor;
 
     ecs->comp_count++;
 
-    return comp_id;
+    return comp;
 }
 
-ecs_id_t ecs_register_system(ecs_t* ecs,
-                             ecs_system_fn system_cb,
-                             ecs_added_fn add_cb,
-                             ecs_removed_fn remove_cb,
-                             void* udata)
+ecs_sys_t ecs_register_system(ecs_t* ecs,
+                              ecs_system_fn system_cb,
+                              ecs_added_fn add_cb,
+                              ecs_removed_fn remove_cb,
+                              void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->system_count < ECS_MAX_SYSTEMS);
     ECS_ASSERT(NULL != system_cb);
 
-    ecs_id_t sys_id = ecs->system_count;
-    ecs_sys_data_t* sys = &ecs->systems[sys_id];
+    ecs_sys_t sys = ecs_make_sys(ecs->system_count);
+    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
 
-    ecs_sparse_set_init(ecs, &sys->entity_ids, ecs->entity_count);
+    ecs_sparse_set_init(ecs, &sys_data->entity_ids, ecs->entity_count);
 
-    sys->active = true;
-    sys->system_cb = system_cb;
-    sys->add_cb = add_cb;
-    sys->remove_cb = remove_cb;
-    sys->udata = udata;
+    sys_data->active = true;
+    sys_data->system_cb = system_cb;
+    sys_data->add_cb = add_cb;
+    sys_data->remove_cb = remove_cb;
+    sys_data->udata = udata;
 
     ecs->system_count++;
 
-    return sys_id;
+    return sys;
 }
 
-void ecs_require_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id)
+void ecs_require_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
-    ECS_ASSERT(ecs_is_valid_component_id(comp_id));
-    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
-    ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_valid_component_id(comp.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
+    ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
 
     // Set system component bit for the specified component
-    ecs_sys_data_t* sys = &ecs->systems[sys_id];
-    ecs_bitset_flip(&sys->require_bits, comp_id, true);
+    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
+    ecs_bitset_flip(&sys_data->require_bits, comp.id, true);
 }
 
-void ecs_exclude_component(ecs_t* ecs, ecs_id_t sys_id, ecs_id_t comp_id)
+void ecs_exclude_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
-    ECS_ASSERT(ecs_is_valid_component_id(comp_id));
-    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
-    ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_valid_component_id(comp.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
+    ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
 
     // Set system component bit for the specified component
-    ecs_sys_data_t* sys = &ecs->systems[sys_id];
-    ecs_bitset_flip(&sys->exclude_bits, comp_id, true);
+    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
+    ecs_bitset_flip(&sys_data->exclude_bits, comp.id, true);
 }
 
-void ecs_enable_system(ecs_t* ecs, ecs_id_t sys_id)
+void ecs_enable_system(ecs_t* ecs, ecs_sys_t sys)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
-    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
 
-    ecs_sys_data_t* sys = &ecs->systems[sys_id];
-    sys->active = true;
+    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
+    sys_data->active = true;
 }
 
-void ecs_disable_system(ecs_t* ecs, ecs_id_t sys_id)
+void ecs_disable_system(ecs_t* ecs, ecs_sys_t sys)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
-    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
 
-    ecs_sys_data_t* sys = &ecs->systems[sys_id];
-    sys->active = false;
+    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
+    sys_data->active = false;
 }
 
 void ecs_set_system_callbacks(ecs_t* ecs,
-                            ecs_id_t sys_id,
+                            ecs_sys_t sys,
                             ecs_system_fn system_cb,
                             ecs_added_fn add_cb,
                             ecs_removed_fn remove_cb)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
-    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
     ECS_ASSERT(NULL != system_cb);
 
-    ecs_sys_data_t* sys = &ecs->systems[sys_id];
-    sys->system_cb = system_cb;
-    sys->add_cb = add_cb;
-    sys->remove_cb = remove_cb;
+    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
+    sys_data->system_cb = system_cb;
+    sys_data->add_cb = add_cb;
+    sys_data->remove_cb = remove_cb;
 }
 
-void ecs_set_system_udata(ecs_t* ecs, ecs_id_t sys_id, void* udata)
+void ecs_set_system_udata(ecs_t* ecs, ecs_sys_t sys, void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
-    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
 
-    ecs_sys_data_t* sys = &ecs->systems[sys_id];
-    sys->udata = udata;
+    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
+    sys_data->udata = udata;
 }
 
-void* ecs_get_system_udata(ecs_t* ecs, ecs_id_t sys_id)
+void* ecs_get_system_udata(ecs_t* ecs, ecs_sys_t sys)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
-    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
 
-    return ecs->systems[sys_id].udata;
+    return ecs->systems[sys.id].udata;
 }
 
-ecs_id_t ecs_create(ecs_t* ecs)
+ecs_entity_t ecs_create(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
@@ -881,215 +899,215 @@ ecs_id_t ecs_create(ecs_t* ecs)
     ecs->entities[entity_id].active = true;
     ecs->entities[entity_id].ready  = true;
 
-    return entity_id;
+    return ecs_make_entity(entity_id);
 }
 
-bool ecs_is_ready(ecs_t* ecs, ecs_id_t entity_id)
+bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
-    return ecs->entities[entity_id].ready;
+    return ecs->entities[entity.id].ready;
 }
 
-void ecs_destroy(ecs_t* ecs, ecs_id_t entity_id)
+void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_active(ecs, entity_id));
+    ECS_ASSERT(ecs_is_active(ecs, entity.id));
 
-    // Load entity
-    ecs_entity_data_t* entity = &ecs->entities[entity_id];
+    // Load entity data
+    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
     // Remove entity from systems
-    if (ecs_is_ready(ecs, entity_id))
+    if (ecs_is_ready(ecs, entity))
     {
-        ecs_remove_from_systems(ecs, entity_id);
+        ecs_remove_from_systems(ecs, entity);
     }
 
     // Call destructors on entity components
-    ecs_destruct(ecs, entity_id);
+    ecs_destruct(ecs, entity.id);
 
     // Push entity ID back into pool
     ecs_stack_t* pool = &ecs->entity_pool;
-    ecs_stack_push(ecs, pool, entity_id);
+    ecs_stack_push(ecs, pool, entity.id);
 
     // Reset entity (sets bitset to 0 and, active and ready to false)
-    memset(entity, 0, sizeof(ecs_entity_data_t));
+    memset(entity_data, 0, sizeof(ecs_entity_data_t));
 }
 
-bool ecs_has(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
+bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_component_id(comp_id));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
+    ECS_ASSERT(ecs_is_valid_component_id(comp.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
 
-    // Load  entity
-    ecs_entity_data_t* entity = &ecs->entities[entity_id];
+    // Load entity data
+    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
     // Return true if the component belongs to the entity
-    return ecs_bitset_test(&entity->comp_bits, comp_id);
+    return ecs_bitset_test(&entity_data->comp_bits, comp.id);
 }
 
-void* ecs_get(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
+void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_component_id(comp_id));
-    ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
+    ECS_ASSERT(ecs_is_valid_component_id(comp.id));
+    ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
 
     // Return pointer to component
     //  eid0,  eid1   eid2, ...
     // [comp0, comp1, comp2, ...]
-    ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
-    return (char*)comp_array->data + (comp_array->size * entity_id);
+    ecs_array_t* comp_array = &ecs->comp_arrays[comp.id];
+    return (char*)comp_array->data + (comp_array->size * entity.id);
 }
 
-void* ecs_add(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id, void* args)
+void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_component_id(comp_id));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
-    ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
+    ECS_ASSERT(ecs_is_valid_component_id(comp.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
+    ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
 
-    // Load entity
-    ecs_entity_data_t* entity = &ecs->entities[entity_id];
+    // Load entity data
+    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
     // Load component
-    ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
-    ecs_comp_data_t* comp = &ecs->comps[comp_id];
+    ecs_array_t* comp_array = &ecs->comp_arrays[comp.id];
+    ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
     // Grow the component array
-    ecs_array_resize(ecs, comp_array, entity_id);
+    ecs_array_resize(ecs, comp_array, entity.id);
 
     // Get pointer to component
-    void* ptr = ecs_get(ecs, entity_id, comp_id);
+    void* comp_ptr = ecs_get(ecs, entity, comp);
 
     // Zero component
-    memset(ptr, 0, comp_array->size);
+    memset(comp_ptr, 0, comp_array->size);
 
     // Call constructor
-    if (comp->constructor)
-        comp->constructor(ecs, entity_id, ptr, args);
+    if (comp_data->constructor)
+        comp_data->constructor(ecs, entity, comp_ptr, args);
 
     // Set entity component bit that determines which systems this entity
     // belongs to
-    ecs_bitset_flip(&entity->comp_bits, comp_id, true);
+    ecs_bitset_flip(&entity_data->comp_bits, comp.id, true);
 
     // Add or remove entity from systems
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
-        ecs_sys_data_t* sys = &ecs->systems[sys_id];
+        ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
-        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &entity->comp_bits))
+        if (ecs_entity_system_test(&sys_data->require_bits, &sys_data->exclude_bits, &entity_data->comp_bits))
         {
-            if (ecs_sparse_set_add(ecs, &sys->entity_ids, entity_id))
+            if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity.id))
             {
-                if (sys->add_cb)
-                    sys->add_cb(ecs, entity_id, sys->udata);
+                if (sys_data->add_cb)
+                    sys_data->add_cb(ecs, entity, sys_data->udata);
             }
         }
         else // Just remove the entity if its components no longer match for whatever reason.
         {
-            if (!ecs_bitset_is_zero(&sys->exclude_bits) &&
-                 ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+            if (!ecs_bitset_is_zero(&sys_data->exclude_bits) &&
+                 ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
             {
-                if (sys->remove_cb)
-                    sys->remove_cb(ecs, entity_id, sys->udata);
+                if (sys_data->remove_cb)
+                    sys_data->remove_cb(ecs, entity, sys_data->udata);
             }
         }
     }
 
     // Return component
-    return ptr;
+    return comp_ptr;
 }
 
-void ecs_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
+void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_component_id(comp_id));
-    ECS_ASSERT(ecs_is_component_ready(ecs, comp_id));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
+    ECS_ASSERT(ecs_is_valid_component_id(comp.id));
+    ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
 
-    // Load entity
-    ecs_entity_data_t* entity = &ecs->entities[entity_id];
+    // Load entity data
+    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
     // Create bit mask with comp bit flipped on
     ecs_bitset_t comp_bit;
 
     memset(&comp_bit, 0, sizeof(ecs_bitset_t));
-    ecs_bitset_flip(&comp_bit, comp_id, true);
+    ecs_bitset_flip(&comp_bit, comp.id, true);
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
-        ecs_sys_data_t* sys = &ecs->systems[sys_id];
+        ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
-        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &comp_bit))
+        if (ecs_entity_system_test(&sys_data->require_bits, &sys_data->exclude_bits, &comp_bit))
         {
-            if (ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+            if (ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
             {
-                if (sys->remove_cb)
-                    sys->remove_cb(ecs, entity_id, sys->udata);
+                if (sys_data->remove_cb)
+                    sys_data->remove_cb(ecs, entity, sys_data->udata);
             }
         }
         else
         {
-            if (!ecs_bitset_is_zero(&sys->exclude_bits) &&
-                 ecs_sparse_set_add(ecs, &sys->entity_ids, entity_id))
+            if (!ecs_bitset_is_zero(&sys_data->exclude_bits) &&
+                 ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity.id))
             {
-                if (sys->add_cb)
-                    sys->add_cb(ecs, entity_id, sys->udata);
+                if (sys_data->add_cb)
+                    sys_data->add_cb(ecs, entity, sys_data->udata);
             }
         }
     }
 
-    ecs_comp_data_t* comp = &ecs->comps[comp_id];
+    ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
-    if (comp->destructor)
+    if (comp_data->destructor)
     {
-        void* ptr = ecs_get(ecs, entity_id, comp_id);
-        comp->destructor(ecs, entity_id, ptr);
+        void* ptr = ecs_get(ecs, entity, comp);
+        comp_data->destructor(ecs, entity, ptr);
     }
 
     // Reset the relevant component mask bit
-    ecs_bitset_flip(&entity->comp_bits, comp_id, false);
+    ecs_bitset_flip(&entity_data->comp_bits, comp.id, false);
 }
 
-void ecs_queue_destroy(ecs_t* ecs, ecs_id_t entity_id)
+void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
 
-    ecs_remove_from_systems(ecs, entity_id);
+    ecs_remove_from_systems(ecs, entity);
 
-    ecs->entities[entity_id].ready = false;
+    ecs->entities[entity.id].ready = false;
 
-    ecs_stack_push(ecs, &ecs->destroy_queue, entity_id);
+    ecs_stack_push(ecs, &ecs->destroy_queue, entity.id);
 }
 
-void ecs_queue_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
+void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity_id));
-    ECS_ASSERT(ecs_has(ecs, entity_id, comp_id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
+    ECS_ASSERT(ecs_has(ecs, entity, comp));
 
-    ecs_stack_push(ecs, &ecs->remove_queue, entity_id);
-    ecs_stack_push(ecs, &ecs->remove_queue, comp_id);
+    ecs_stack_push(ecs, &ecs->remove_queue, entity.id);
+    ecs_stack_push(ecs, &ecs->remove_queue, comp.id);
 }
 
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_id_t sys_id)
+ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_sys_t sys)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_valid_system_id(sys_id));
-    ECS_ASSERT(ecs_is_system_ready(ecs, sys_id));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
 
-    ecs_sys_data_t* sys = &ecs->systems[sys_id];
+    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
 
-    if (!sys->active)
+    if (!sys_data->active)
         return 0;
 
-    ecs_ret_t code = sys->system_cb(ecs,
-                     sys->entity_ids.dense,
-                     sys->entity_ids.size,
-                     sys->udata);
+    ecs_ret_t code = sys_data->system_cb(ecs,
+                     sys_data->entity_ids.dense,
+                     sys_data->entity_ids.size,
+                     sys_data->udata);
 
     ecs_flush_destroyed(ecs);
     ecs_flush_removed(ecs);
@@ -1103,7 +1121,8 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs)
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
-        ecs_ret_t code = ecs_update_system(ecs, sys_id);
+        ecs_sys_t sys = { sys_id };
+        ecs_ret_t code = ecs_update_system(ecs, sys);
 
         if (0 != code)
             return code;
@@ -1160,7 +1179,8 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
                 // ready assertion, since entity may be queued for destruction
                 ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
                 void* comp_ptr = (char*)comp_array->data + (comp_array->size * entity_id);
-                comp->destructor(ecs, entity_id, comp_ptr);
+                ecs_entity_t entity = { entity_id };
+                comp->destructor(ecs, entity, comp_ptr);
             }
         }
     }
@@ -1169,20 +1189,22 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
 /*=============================================================================
  * Removes entity from ALL systems
  *============================================================================*/
-static void ecs_remove_from_systems(ecs_t* ecs, ecs_id_t entity_id)
+static void ecs_remove_from_systems(ecs_t* ecs, ecs_entity_t entity)
 {
     // Load entity
-    ecs_entity_data_t* entity = &ecs->entities[entity_id];
+    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
-        ecs_sys_data_t* sys = &ecs->systems[sys_id];
+        ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
-        if (ecs_entity_system_test(&sys->require_bits, &sys->exclude_bits, &entity->comp_bits) &&
-            ecs_sparse_set_remove(&sys->entity_ids, entity_id))
+        if (ecs_entity_system_test(&sys_data->require_bits,
+                                   &sys_data->exclude_bits,
+                                   &entity_data->comp_bits) &&
+            ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
         {
-            if (sys->remove_cb)
-                sys->remove_cb(ecs, entity_id, sys->udata);
+            if (sys_data->remove_cb)
+                sys_data->remove_cb(ecs, entity, sys_data->udata);
         }
     }
 }
@@ -1200,7 +1222,7 @@ static void ecs_flush_destroyed(ecs_t* ecs)
         ecs_id_t entity_id = destroy_queue->array[i];
 
         if (ecs_is_active(ecs, entity_id))
-            ecs_destroy(ecs, entity_id);
+            ecs_destroy(ecs, ecs_make_entity(entity_id));
     }
 
     destroy_queue->size = 0;
@@ -1217,7 +1239,7 @@ static void ecs_flush_removed(ecs_t* ecs)
         if (ecs_is_active(ecs, entity_id))
         {
             ecs_id_t comp_id = remove_queue->array[i + 1];
-            ecs_remove(ecs, entity_id, comp_id);
+            ecs_remove(ecs, ecs_make_entity(entity_id), ecs_make_comp(comp_id));
         }
     }
 
@@ -1383,8 +1405,8 @@ static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capaci
     set->capacity = capacity;
     set->size = 0;
 
-    set->dense  = (ecs_id_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
-    set->sparse = (size_t*)  ECS_MALLOC(capacity * sizeof(size_t),   ecs->mem_ctx);
+    set->dense  = (ecs_entity_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
+    set->sparse = (size_t*)      ECS_MALLOC(capacity * sizeof(size_t),   ecs->mem_ctx);
 
     memset(set->sparse, 0, capacity * sizeof(size_t));
 }
@@ -1421,9 +1443,9 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
         }
 
         // Grow dense array
-        set->dense = (ecs_id_t*)ECS_REALLOC(set->dense,
-                                            new_capacity * sizeof(ecs_id_t),
-                                            ecs->mem_ctx);
+        set->dense = (ecs_entity_t*)ECS_REALLOC(set->dense,
+                                                new_capacity * sizeof(ecs_id_t),
+                                                ecs->mem_ctx);
 
         // Grow sparse array and zero it
         set->sparse = (size_t*)ecs_realloc_zero(ecs,
@@ -1440,7 +1462,7 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
         return false;
 
     // Add ID to set
-    set->dense[set->size] = id;
+    set->dense[set->size].id = id;
     set->sparse[id] = set->size;
 
     set->size++;
@@ -1452,7 +1474,7 @@ static bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_t* foun
 {
     ECS_ASSERT(ecs_is_not_null(set));
 
-    if (set->sparse[id] < set->size && set->dense[set->sparse[id]] == id)
+    if (set->sparse[id] < set->size && set->dense[set->sparse[id]].id == id)
     {
         if (found) *found = set->sparse[id];
         return true;
@@ -1472,8 +1494,8 @@ static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
         return false;
 
     // Swap and remove (changes order of array)
-    ecs_id_t tmp = set->dense[set->size - 1];
-    set->dense[set->sparse[id]] = tmp;
+    ecs_id_t tmp = set->dense[set->size - 1].id;
+    set->dense[set->sparse[id]].id = tmp;
     set->sparse[tmp] = set->sparse[id];
 
     set->size--;
