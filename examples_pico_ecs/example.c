@@ -56,15 +56,15 @@ typedef struct
     int x, y, w, h;
 } rect_t;
 
-// Corresponding component IDs
-ecs_id_t PosComp;
-ecs_id_t VelComp;
-ecs_id_t RectComp;
+// Component types
+ecs_comp_t PosComp;
+ecs_comp_t VelComp;
+ecs_comp_t RectComp;
 
-// System IDs
-ecs_id_t System1;
-ecs_id_t System2;
-ecs_id_t System3;
+// System types
+ecs_sys_t System1;
+ecs_sys_t System2;
+ecs_sys_t System3;
 
 // Register components
 void register_components(ecs_t* ecs)
@@ -76,16 +76,16 @@ void register_components(ecs_t* ecs)
 
 // System that prints the entity IDs of entities associated with this system
 ecs_ret_t system_update(ecs_t* ecs,
-                   ecs_id_t* entities,
-                   int entity_count,
-                   void* udata)
+                       ecs_entity_t* entities,
+                       int entity_count,
+                       void* udata)
 {
     (void)ecs;
     (void)udata;
 
-    for (int id = 0; id < entity_count; id++)
+    for (int i = 0; i < entity_count; i++)
     {
-        printf("%lu ", entities[id]);
+        printf("%lu ", entities[i].id);
     }
 
     printf("\n");
@@ -125,29 +125,29 @@ int main()
     register_systems(ecs);
 
     // Create three entities
-    ecs_id_t e1 = ecs_create(ecs);
-    ecs_id_t e2 = ecs_create(ecs);
-    ecs_id_t e3 = ecs_create(ecs);
+    ecs_entity_t e1 = ecs_create(ecs);
+    ecs_entity_t e2 = ecs_create(ecs);
+    ecs_entity_t e3 = ecs_create(ecs);
 
     // Add components to entities
     printf("---------------------------------------------------------------\n");
-    printf("Created entities: %lu, %lu, %lu\n", e1, e2, e3);
+    printf("Created entities: %lu, %lu, %lu\n", e1.id, e2.id, e3.id);
     printf("---------------------------------------------------------------\n");
 
-    printf("PosComp added to: %lu\n", e1);
+    printf("PosComp added to: %lu\n", e1.id);
     ecs_add(ecs, e1, PosComp, NULL);
 
     printf("---------------------------------------------------------------\n");
-    printf("PosComp added to: %lu\n", e2);
-    printf("VeloComp added to: %lu\n", e2);
+    printf("PosComp added to: %lu\n",  e2.id);
+    printf("VeloComp added to: %lu\n", e2.id);
 
     ecs_add(ecs, e2, PosComp, NULL);
     ecs_add(ecs, e2, VelComp, NULL);
 
     printf("---------------------------------------------------------------\n");
-    printf("PosComp added to: %lu\n", e3);
-    printf("VeloComp added to: %lu\n", e3);
-    printf("RectComp added to: %lu\n", e3);
+    printf("PosComp added to: %lu\n",  e3.id);
+    printf("VeloComp added to: %lu\n", e3.id);
+    printf("RectComp added to: %lu\n", e3.id);
 
     ecs_add(ecs, e3, PosComp, NULL);
     ecs_add(ecs, e3, VelComp, NULL);
