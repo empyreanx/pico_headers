@@ -10,16 +10,16 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-ecs_id_t PLAYER_SYS;
-ecs_id_t MONSTER_SYS;
-ecs_id_t CHEST_SYS;
-ecs_id_t DRAWABLE_SYS;
+ecs_sys_t PLAYER_SYS;
+ecs_sys_t MONSTER_SYS;
+ecs_sys_t CHEST_SYS;
+ecs_sys_t DRAWABLE_SYS;
 
 bool get_entity_at(ecs_t* ecs,
                    pos_t pos,
-                   ecs_id_t entities[],
+                   ecs_entity_t entities[],
                    int entity_count,
-                   ecs_id_t* id)
+                   ecs_entity_t* entity)
 {
     for (int i = 0; i < entity_count; i++)
     {
@@ -27,8 +27,8 @@ bool get_entity_at(ecs_t* ecs,
 
         if (pos_equal(&pos, entity_pos))
         {
-            if (NULL != id)
-                *id = entities[i];
+            if (NULL != entity)
+                *entity = entities[i];
 
             return true;
         }
@@ -37,21 +37,21 @@ bool get_entity_at(ecs_t* ecs,
     return false;
 }
 
-bool perform_attack(game_t* game, ecs_id_t attacker_id, ecs_id_t defender_id)
+bool perform_attack(game_t* game, ecs_entity_t attacker, ecs_entity_t defender)
 {
     ecs_t* ecs = game->ecs;
 
-    bool is_player = ecs_has(ecs, attacker_id, PLAYER_COMP);
+    bool is_player = ecs_has(ecs, attacker, PLAYER_COMP);
 
-    stats_t* attacker = ecs_get(ecs, attacker_id, STATS_COMP);
-    stats_t* defender = ecs_get(ecs, defender_id, STATS_COMP);
+    stats_t* attacker_comp = ecs_get(ecs, attacker, STATS_COMP);
+    stats_t* defender_comp = ecs_get(ecs, defender, STATS_COMP);
 
-    int damage  = random_int(0, attacker->attack);
-    int defense = defender->defense;
+    int damage  = random_int(0, attacker_comp->attack);
+    int defense = defender_comp->defense;
     damage = max(damage - defense, 0);
-    defender->health -= damage;
+    defender_comp->health -= damage;
 
-    if (defender->health <= 0)
+    if (defender_comp->health <= 0)
     {
         if (is_player)
             draw_player_msg(game, "Hero hits for %i damage and kills monster", damage);
@@ -112,7 +112,7 @@ pos_t get_move_offset(move_t dir)
 
 
 ecs_ret_t player_sys(ecs_t* ecs,
-                     ecs_id_t* entities,
+                     ecs_entity_t* entities,
                      int entity_count,
                      void* udata)
 {
@@ -121,21 +121,21 @@ ecs_ret_t player_sys(ecs_t* ecs,
     int level = game->level;
     tilemap_t* map = game->maps[level];
 
-    player_t* player = ecs_get(ecs, game->player_id, PLAYER_COMP);
+    player_t* player = ecs_get(ecs, game->player, PLAYER_COMP);
 
-    pos_t* player_pos = ecs_get(ecs, game->player_id, POS_COMP);
+    pos_t* player_pos = ecs_get(ecs, game->player, POS_COMP);
 
     pos_t offset = get_move_offset(player->cmd);
     pos_t pos = pos_add(player_pos, &offset);
 
-    ecs_id_t target_id;
+    ecs_entity_t target;
 
-    if (get_entity_at(game->ecs, pos, entities, entity_count, &target_id))
+    if (get_entity_at(game->ecs, pos, entities, entity_count, &target))
     {
-        if (ecs_has(ecs, target_id, MONSTER_COMP))
+        if (ecs_has(ecs, target, MONSTER_COMP))
         {
-            if (perform_attack(game, game->player_id, target_id))
-                ecs_queue_destroy(ecs, target_id);
+            if (perform_attack(game, game->player, target))
+                ecs_queue_destroy(ecs, target);
         }
 
         return 0;
@@ -150,12 +150,12 @@ ecs_ret_t player_sys(ecs_t* ecs,
 bool monster_try_move(ecs_t* ecs,
                       game_t* game,
                       tilemap_t* map,
-                      ecs_id_t monster_id,
+                      ecs_entity_t monster,
                       pos_t pos,
-                      ecs_id_t entities[],
+                      ecs_entity_t entities[],
                       int entity_count)
 {
-    pos_t* monster_pos = ecs_get(ecs, monster_id, POS_COMP);
+    pos_t* monster_pos = ecs_get(ecs, monster, POS_COMP);
 
     if (collides_with_tile(map, pos))
         return false;
@@ -163,7 +163,7 @@ bool monster_try_move(ecs_t* ecs,
     if (get_entity_at(ecs, pos, entities, entity_count, NULL))
         return false;
 
-    pos_t* player_pos = ecs_get(ecs, game->player_id, POS_COMP);
+    pos_t* player_pos = ecs_get(ecs, game->player, POS_COMP);
 
     if (pos_equal(&pos, player_pos))
         return false;
@@ -176,23 +176,23 @@ bool monster_try_move(ecs_t* ecs,
 void monster_do_wander(ecs_t* ecs,
                        game_t* game,
                        tilemap_t* map,
-                       ecs_id_t player_id,
-                       ecs_id_t monster_id,
-                       ecs_id_t entities[],
+                       ecs_entity_t player,
+                       ecs_entity_t monster,
+                       ecs_entity_t entities[],
                        int entity_count)
 {
-    pos_t* player_pos = ecs_get(ecs, player_id, POS_COMP);
+    pos_t* player_pos = ecs_get(ecs, player, POS_COMP);
 
-    monster_t* monster = ecs_get(ecs, monster_id, MONSTER_COMP);
-    pos_t* monster_pos = ecs_get(ecs, monster_id, POS_COMP);
+    monster_t* monster_comp = ecs_get(ecs, monster, MONSTER_COMP);
+    pos_t* monster_pos = ecs_get(ecs, monster, POS_COMP);
 
     pos_t  move_pos = random_move(monster_pos);
-    monster_try_move(ecs, game, map, monster_id, move_pos, entities, entity_count);
+    monster_try_move(ecs, game, map, monster, move_pos, entities, entity_count);
 
     if (distance(player_pos, monster_pos) <= 4)
     {
         draw_monster_msg(game, "Monster pursues!\n");
-        monster->state = MONSTER_PURSUE;
+        monster_comp->state = MONSTER_PURSUE;
         return;
     }
 }
@@ -200,47 +200,47 @@ void monster_do_wander(ecs_t* ecs,
 void monster_do_pursue(ecs_t* ecs,
                        game_t* game,
                        tilemap_t* map,
-                       ecs_id_t player_id,
-                       ecs_id_t monster_id,
-                       ecs_id_t entities[],
+                       ecs_entity_t player,
+                       ecs_entity_t monster,
+                       ecs_entity_t entities[],
                        int entity_count)
 {
-    pos_t* player_pos = ecs_get(ecs, player_id, POS_COMP);
-    monster_t* monster = ecs_get(ecs, monster_id, MONSTER_COMP);
-    pos_t* monster_pos = ecs_get(ecs, monster_id, POS_COMP);
+    pos_t* player_pos = ecs_get(ecs, player, POS_COMP);
+    monster_t* monster_comp = ecs_get(ecs, monster, MONSTER_COMP);
+    pos_t* monster_pos = ecs_get(ecs, monster, POS_COMP);
 
     if (distance(player_pos, monster_pos) <= 1)
     {
         draw_monster_msg(game, "Monster attacks!\n");
-        monster->state = MONSTER_ATTACK;
+        monster_comp->state = MONSTER_ATTACK;
         return;
     }
 
     pos_t move_pos = move_toward(map, monster_pos, player_pos);
-    monster_try_move(ecs, game, map, monster_id, move_pos, entities, entity_count);
+    monster_try_move(ecs, game, map, monster, move_pos, entities, entity_count);
 }
 
-void monster_do_attack(game_t* game, ecs_id_t player_id, ecs_id_t monster_id)
+void monster_do_attack(game_t* game, ecs_entity_t player, ecs_entity_t monster)
 {
-    pos_t* player_pos = ecs_get(game->ecs, player_id, POS_COMP);
-    monster_t* monster = ecs_get(game->ecs, monster_id, MONSTER_COMP);
-    pos_t* monster_pos = ecs_get(game->ecs, monster_id, POS_COMP);
-    stats_t* monster_stats = ecs_get(game->ecs, monster_id, STATS_COMP);
+    pos_t* player_pos = ecs_get(game->ecs, player, POS_COMP);
+    monster_t* monster_comp = ecs_get(game->ecs, monster, MONSTER_COMP);
+    pos_t* monster_pos = ecs_get(game->ecs, monster, POS_COMP);
+    stats_t* monster_stats = ecs_get(game->ecs, monster, STATS_COMP);
 
     if (monster_stats->health < 3)
     {
         draw_monster_msg(game, "Monster flees...\n");
-        monster->state = MONSTER_FLEE;
+        monster_comp->state = MONSTER_FLEE;
         return;
     }
 
     if (distance(player_pos, monster_pos) > 1)
     {
-        monster->state = MONSTER_PURSUE;
+        monster_comp->state = MONSTER_PURSUE;
         return;
     }
 
-    if (perform_attack(game, monster_id, player_id))
+    if (perform_attack(game, monster, player))
     {
         game->player_dead = true;
     }
@@ -249,27 +249,27 @@ void monster_do_attack(game_t* game, ecs_id_t player_id, ecs_id_t monster_id)
 void monster_do_flee(ecs_t* ecs,
                      game_t* game,
                      tilemap_t* map,
-                     ecs_id_t player_id,
-                     ecs_id_t monster_id,
-                     ecs_id_t entities[],
+                     ecs_entity_t player,
+                     ecs_entity_t monster,
+                     ecs_entity_t entities[],
                      int entity_count)
 {
-    monster_t* monster = ecs_get(ecs, monster_id, MONSTER_COMP);
-    pos_t* monster_pos = ecs_get(ecs, monster_id, POS_COMP);
-    pos_t* player_pos = ecs_get(ecs, player_id, POS_COMP);
+    monster_t* monster_comp = ecs_get(ecs, monster, MONSTER_COMP);
+    pos_t* monster_pos = ecs_get(ecs, monster, POS_COMP);
+    pos_t* player_pos = ecs_get(ecs, player, POS_COMP);
 
     if (distance(player_pos, monster_pos) > 3)
     {
-        monster->state = MONSTER_WANDER;
+        monster_comp->state = MONSTER_WANDER;
         return;
     }
 
     pos_t move_pos = move_away(map, monster_pos, player_pos);
-    monster_try_move(ecs, game, map, monster_id, move_pos, entities, entity_count);
+    monster_try_move(ecs, game, map, monster, move_pos, entities, entity_count);
 }
 
 ecs_ret_t monster_sys(ecs_t* ecs,
-                      ecs_id_t* entities,
+                      ecs_entity_t* entities,
                       int entity_count,
                       void* udata)
 {
@@ -281,30 +281,30 @@ ecs_ret_t monster_sys(ecs_t* ecs,
     int level = game->level;
     tilemap_t* map = game->maps[level];
 
-    ecs_id_t player_id = game->player_id;
+    ecs_entity_t player = game->player;
 
     for (int i = 0; i < entity_count; i++)
     {
-        ecs_id_t monster_id = entities[i];
+        ecs_entity_t monster = entities[i];
 
-        monster_t* monster = ecs_get(ecs, monster_id, MONSTER_COMP);
+        monster_t* monster_comp = ecs_get(ecs, monster, MONSTER_COMP);
 
-        switch (monster->state)
+        switch (monster_comp->state)
         {
             case MONSTER_WANDER:
-                monster_do_wander(ecs, game, map, player_id, monster_id, entities, entity_count);
+                monster_do_wander(ecs, game, map, player, monster, entities, entity_count);
                 break;
 
             case MONSTER_PURSUE:
-                monster_do_pursue(ecs, game, map, player_id, monster_id, entities, entity_count);
+                monster_do_pursue(ecs, game, map, player, monster, entities, entity_count);
                 break;
 
             case MONSTER_ATTACK:
-                monster_do_attack(game, player_id, monster_id);
+                monster_do_attack(game, player, monster);
                 break;
 
             case MONSTER_FLEE:
-                monster_do_flee(ecs, game, map, player_id, monster_id, entities, entity_count);
+                monster_do_flee(ecs, game, map, player, monster, entities, entity_count);
                 break;
 
             default:
@@ -320,13 +320,13 @@ ecs_ret_t monster_sys(ecs_t* ecs,
 }
 
 ecs_ret_t chest_sys(ecs_t* ecs,
-               ecs_id_t* entities,
+               ecs_entity_t* entities,
                int entity_count,
                void* udata)
 {
     game_t* game = udata;
 
-    pos_t* player_pos = ecs_get(ecs, game->player_id, POS_COMP);
+    pos_t* player_pos = ecs_get(ecs, game->player, POS_COMP);
 
     for (int i = 0; i < entity_count; i++)
     {
@@ -335,7 +335,7 @@ ecs_ret_t chest_sys(ecs_t* ecs,
         if (distance(player_pos, chest_pos) == 0)
         {
             chest_comp_t* chest = ecs_get(ecs, entities[i], CHEST_COMP);
-            stats_t* stats = ecs_get(ecs, game->player_id, STATS_COMP);
+            stats_t* stats = ecs_get(ecs, game->player, STATS_COMP);
             stats->health  += chest->health;
             stats->attack  += chest->attack;
             stats->defense += chest->defense;
@@ -353,7 +353,7 @@ ecs_ret_t chest_sys(ecs_t* ecs,
 }
 
 ecs_ret_t draw_sys(ecs_t* ecs,
-              ecs_id_t* entities,
+              ecs_entity_t* entities,
               int entity_count,
               void* udata)
 {
@@ -361,7 +361,7 @@ ecs_ret_t draw_sys(ecs_t* ecs,
 
     for (int i = 0; i < entity_count; i++)
     {
-        ecs_id_t id = entities[i];
+        ecs_entity_t id = entities[i];
 
         pos_t* pos = ecs_get(ecs, id, POS_COMP);
         drawable_t* drawable = ecs_get(ecs, id, DRAWABLE_COMP);

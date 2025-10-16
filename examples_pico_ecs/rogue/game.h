@@ -19,7 +19,7 @@ typedef struct game_s
     int level;
 
     ecs_t* ecs;
-    ecs_id_t player_id;
+    ecs_entity_t player;
 
     dim_t term_size;
 

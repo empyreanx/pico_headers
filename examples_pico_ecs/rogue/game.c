@@ -48,7 +48,7 @@ void term_refresh()
 
 void load_entities(game_t* game, level_t* level)
 {
-    game->player_id = make_player(game, level->player.x, level->player.y);
+    game->player = make_player(game, level->player.x, level->player.y);
 
     for (int i = 0; i < level->npc_count; i++)
     {
@@ -135,7 +135,7 @@ void setup_level(game_t* game)
 
     game->map = game->maps[level];
 
-    player_t* player = ecs_get(game->ecs, game->player_id, PLAYER_COMP);
+    player_t* player = ecs_get(game->ecs, game->player, PLAYER_COMP);
     player->cmd = MOVE_NONE;
 }
 
@@ -202,7 +202,7 @@ void shutdown_game(game_t* game)
 
 void handle_input(game_t* game)
 {
-    player_t* player = ecs_get(game->ecs, game->player_id, PLAYER_COMP);
+    player_t* player = ecs_get(game->ecs, game->player, PLAYER_COMP);
 
     int ch = getch();
 
