@@ -533,6 +533,7 @@ struct ecs_s
     ecs_stack_t        remove_queue;
     ecs_entity_data_t* entities;
     size_t             entity_count;
+    size_t             next_entity_id;
     ecs_comp_data_t    comps[ECS_MAX_COMPONENTS];
     ecs_array_t        comp_arrays[ECS_MAX_COMPONENTS];
     size_t             comp_count;
@@ -656,8 +657,9 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     memset(ecs, 0, sizeof(ecs_t));
 
-    ecs->entity_count = entity_count;
-    ecs->mem_ctx      = mem_ctx;
+    ecs->entity_count   = entity_count;
+    ecs->next_entity_id = 1;
+    ecs->mem_ctx        = mem_ctx;
 
     // Initialize entity pool and queues
     ecs_stack_init(ecs, &ecs->entity_pool,   entity_count);
@@ -666,16 +668,16 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     // Allocate entity array
     ecs->entities = (ecs_entity_data_t*)ECS_MALLOC(ecs->entity_count * sizeof(ecs_entity_data_t),
-                                                    ecs->mem_ctx);
+                                                   ecs->mem_ctx);
 
     // Zero entity array
     memset(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
 
     // Pre-populate the the ID pool
-    for (ecs_id_t id = 1; id < entity_count; id++)
+    /*for (ecs_id_t id = 1; id < entity_count; id++)
     {
         ecs_stack_push(ecs, &ecs->entity_pool, id);
-    }
+    }*/
 
     return ecs;
 }
@@ -726,10 +728,12 @@ void ecs_reset(ecs_t* ecs)
 
     memset(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
 
-    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
-    {
-        ecs_stack_push(ecs, &ecs->entity_pool, entity_id);
-    }
+    ecs->next_entity_id = 1;
+
+    //for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
+    //{
+    //    ecs_stack_push(ecs, &ecs->entity_pool, entity_id);
+    //}
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
@@ -738,9 +742,9 @@ void ecs_reset(ecs_t* ecs)
 }
 
 ecs_comp_t ecs_register_component(ecs_t* ecs,
-                                size_t size,
-                                ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor)
+                                  size_t size,
+                                  ecs_constructor_fn constructor,
+                                  ecs_destructor_fn destructor)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
@@ -871,31 +875,32 @@ ecs_entity_t ecs_create(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
+    ecs_id_t entity_id = 0;
+
     ecs_stack_t* pool = &ecs->entity_pool;
 
-    // If pool is empty, increase the number of entity IDs
-    if (0 == ecs_stack_size(pool))
+    if (0 != ecs_stack_size(pool))
     {
-        size_t old_count = ecs->entity_count;
-        //size_t new_count = 2 * old_count;
-        size_t new_count = old_count + (old_count / 2) + 2;
+        entity_id = ecs_stack_pop(pool);
+    }
+    else
+    {
+        entity_id = ecs->next_entity_id++;
 
-        // Reallocates entities and zeros new ones
-        ecs->entities = (ecs_entity_data_t*)ecs_realloc_zero(ecs, ecs->entities,
-                                                             old_count * sizeof(ecs_entity_data_t),
-                                                             new_count * sizeof(ecs_entity_data_t));
-
-        // Push new entity IDs into the pool
-        for (ecs_id_t id = old_count; id < new_count; id++)
+        if (entity_id >= ecs->entity_count)
         {
-            ecs_stack_push(ecs, pool, id);
-        }
+            size_t old_count = ecs->entity_count;
+            size_t new_count = 2 * old_count;
 
-        // Update entity count
-        ecs->entity_count = new_count;
+            ecs->entities = (ecs_entity_data_t*)ecs_realloc_zero(ecs, ecs->entities,
+                                                                 old_count * sizeof(ecs_entity_data_t),
+                                                                 new_count * sizeof(ecs_entity_data_t));
+
+            // Update entity count
+            ecs->entity_count = new_count;
+        }
     }
 
-    ecs_id_t entity_id = ecs_stack_pop(pool);
     ecs->entities[entity_id].active = true;
     ecs->entities[entity_id].ready  = true;
 
