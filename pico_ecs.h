@@ -490,16 +490,15 @@ typedef struct
 {
     size_t    capacity;
     size_t    size;
-    ecs_id_t* array;
-} ecs_stack_t;
+    ecs_id_t* data;
+} ecs_id_array_t;
 
 typedef struct
 {
     size_t capacity;
-    size_t count;
     size_t size;
     void*  data;
-} ecs_array_t;
+} ecs_comp_array_t;
 
 typedef struct
 {
@@ -528,14 +527,14 @@ typedef struct
 
 struct ecs_s
 {
-    ecs_stack_t        entity_pool;
-    ecs_stack_t        destroy_queue;
-    ecs_stack_t        remove_queue;
+    ecs_id_array_t        entity_pool;
+    ecs_id_array_t        destroy_queue;
+    ecs_id_array_t        remove_queue;
     ecs_entity_data_t* entities;
     size_t             entity_count;
     size_t             next_entity_id;
     ecs_comp_data_t    comps[ECS_MAX_COMPONENTS];
-    ecs_array_t        comp_arrays[ECS_MAX_COMPONENTS];
+    ecs_comp_array_t        comp_arrays[ECS_MAX_COMPONENTS];
     size_t             comp_count;
     ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
     size_t             system_count;
@@ -617,18 +616,18 @@ static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
 /*=============================================================================
  * Internal ID pool functions
  *============================================================================*/
-static void     ecs_stack_init(ecs_t* ecs, ecs_stack_t* pool, int capacity);
-static void     ecs_stack_free(ecs_t* ecs, ecs_stack_t* pool);
-static void     ecs_stack_push(ecs_t* ecs, ecs_stack_t* pool, ecs_id_t id);
-static ecs_id_t ecs_stack_pop(ecs_stack_t* pool);
-static int      ecs_stack_size(ecs_stack_t* pool);
+static void     ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* pool, int capacity);
+static void     ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* pool);
+static void     ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* pool, ecs_id_t id);
+static ecs_id_t ecs_id_array_pop(ecs_id_array_t* pool);
+static int      ecs_id_array_size(ecs_id_array_t* pool);
 
 /*=============================================================================
  * Internal array functions
  *============================================================================*/
-static void   ecs_array_init(ecs_t* ecs, ecs_array_t* array, size_t size, size_t capacity);
-static void   ecs_array_free(ecs_t* ecs, ecs_array_t* array);
-static void   ecs_array_resize(ecs_t* ecs, ecs_array_t* array, size_t capacity);
+static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size, size_t capacity);
+static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array);
+static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, size_t capacity);
 
 /*=============================================================================
  * Internal validation functions
@@ -662,9 +661,9 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
     ecs->mem_ctx        = mem_ctx;
 
     // Initialize entity pool and queues
-    ecs_stack_init(ecs, &ecs->entity_pool,   entity_count);
-    ecs_stack_init(ecs, &ecs->destroy_queue, entity_count);
-    ecs_stack_init(ecs, &ecs->remove_queue,  entity_count * 2);
+    ecs_id_array_init(ecs, &ecs->entity_pool,   entity_count);
+    ecs_id_array_init(ecs, &ecs->destroy_queue, entity_count);
+    ecs_id_array_init(ecs, &ecs->remove_queue,  entity_count * 2);
 
     // Allocate entity array
     ecs->entities = (ecs_entity_data_t*)ECS_MALLOC(ecs->entity_count * sizeof(ecs_entity_data_t),
@@ -672,12 +671,6 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     // Zero entity array
     memset(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
-
-    // Pre-populate the the ID pool
-    /*for (ecs_id_t id = 1; id < entity_count; id++)
-    {
-        ecs_stack_push(ecs, &ecs->entity_pool, id);
-    }*/
 
     return ecs;
 }
@@ -692,14 +685,14 @@ void ecs_free(ecs_t* ecs)
             ecs_destruct(ecs, entity_id);
     }
 
-    ecs_stack_free(ecs, &ecs->entity_pool);
-    ecs_stack_free(ecs, &ecs->destroy_queue);
-    ecs_stack_free(ecs, &ecs->remove_queue);
+    ecs_id_array_free(ecs, &ecs->entity_pool);
+    ecs_id_array_free(ecs, &ecs->destroy_queue);
+    ecs_id_array_free(ecs, &ecs->remove_queue);
 
     for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
     {
-        ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
-        ecs_array_free(ecs, comp_array);
+        ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp_id];
+        ecs_comp_array_free(ecs, comp_array);
     }
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
@@ -730,11 +723,6 @@ void ecs_reset(ecs_t* ecs)
 
     ecs->next_entity_id = 1;
 
-    //for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
-    //{
-    //    ecs_stack_push(ecs, &ecs->entity_pool, entity_id);
-    //}
-
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs->systems[sys_id].entity_ids.size = 0;
@@ -752,8 +740,8 @@ ecs_comp_t ecs_register_component(ecs_t* ecs,
 
     ecs_comp_t comp = ecs_make_comp(ecs->comp_count);
 
-    ecs_array_t* comp_array = &ecs->comp_arrays[comp.id];
-    ecs_array_init(ecs, comp_array, size, ecs->entity_count);
+    ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp.id];
+    ecs_comp_array_init(ecs, comp_array, size, ecs->entity_count);
 
     ecs->comps[comp.id].constructor = constructor;
     ecs->comps[comp.id].destructor = destructor;
@@ -877,11 +865,11 @@ ecs_entity_t ecs_create(ecs_t* ecs)
 
     ecs_id_t entity_id = 0;
 
-    ecs_stack_t* pool = &ecs->entity_pool;
+    ecs_id_array_t* pool = &ecs->entity_pool;
 
-    if (0 != ecs_stack_size(pool))
+    if (0 != ecs_id_array_size(pool))
     {
-        entity_id = ecs_stack_pop(pool);
+        entity_id = ecs_id_array_pop(pool);
     }
     else
     {
@@ -932,8 +920,8 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     ecs_destruct(ecs, entity.id);
 
     // Push entity ID back into pool
-    ecs_stack_t* pool = &ecs->entity_pool;
-    ecs_stack_push(ecs, pool, entity.id);
+    ecs_id_array_t* pool = &ecs->entity_pool;
+    ecs_id_array_push(ecs, pool, entity.id);
 
     // Reset entity (sets bitset to 0 and, active and ready to false)
     memset(entity_data, 0, sizeof(ecs_entity_data_t));
@@ -962,7 +950,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // Return pointer to component
     //  eid0,  eid1   eid2, ...
     // [comp0, comp1, comp2, ...]
-    ecs_array_t* comp_array = &ecs->comp_arrays[comp.id];
+    ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp.id];
     return (char*)comp_array->data + (comp_array->size * entity.id);
 }
 
@@ -977,11 +965,11 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
     // Load component
-    ecs_array_t* comp_array = &ecs->comp_arrays[comp.id];
+    ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp.id];
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
     // Grow the component array
-    ecs_array_resize(ecs, comp_array, entity.id);
+    ecs_comp_array_resize(ecs, comp_array, entity.id);
 
     // Get pointer to component
     void* comp_ptr = ecs_get(ecs, entity, comp);
@@ -1085,7 +1073,7 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity)
 
     ecs->entities[entity.id].ready = false;
 
-    ecs_stack_push(ecs, &ecs->destroy_queue, entity.id);
+    ecs_id_array_push(ecs, &ecs->destroy_queue, entity.id);
 }
 
 void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
@@ -1094,8 +1082,8 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
     ECS_ASSERT(ecs_has(ecs, entity, comp));
 
-    ecs_stack_push(ecs, &ecs->remove_queue, entity.id);
-    ecs_stack_push(ecs, &ecs->remove_queue, comp.id);
+    ecs_id_array_push(ecs, &ecs->remove_queue, entity.id);
+    ecs_id_array_push(ecs, &ecs->remove_queue, comp.id);
 }
 
 ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_sys_t sys)
@@ -1182,9 +1170,10 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
             {
                 // Get component pointer directly without ecs_get to avoid
                 // ready assertion, since entity may be queued for destruction
-                ecs_array_t* comp_array = &ecs->comp_arrays[comp_id];
+                ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp_id];
                 void* comp_ptr = (char*)comp_array->data + (comp_array->size * entity_id);
-                ecs_entity_t entity = { entity_id };
+                ecs_entity_t entity = ecs_make_entity(entity_id);
+
                 comp->destructor(ecs, entity, comp_ptr);
             }
         }
@@ -1220,11 +1209,11 @@ static void ecs_remove_from_systems(ecs_t* ecs, ecs_entity_t entity)
 
 static void ecs_flush_destroyed(ecs_t* ecs)
 {
-    ecs_stack_t* destroy_queue = &ecs->destroy_queue;
+    ecs_id_array_t* destroy_queue = &ecs->destroy_queue;
 
     for (size_t i = 0; i < destroy_queue->size; i++)
     {
-        ecs_id_t entity_id = destroy_queue->array[i];
+        ecs_id_t entity_id = destroy_queue->data[i];
 
         if (ecs_is_active(ecs, entity_id))
             ecs_destroy(ecs, ecs_make_entity(entity_id));
@@ -1235,15 +1224,15 @@ static void ecs_flush_destroyed(ecs_t* ecs)
 
 static void ecs_flush_removed(ecs_t* ecs)
 {
-    ecs_stack_t* remove_queue = &ecs->remove_queue;
+    ecs_id_array_t* remove_queue = &ecs->remove_queue;
 
     for (size_t i = 0; i < remove_queue->size; i += 2)
     {
-        ecs_id_t entity_id = remove_queue->array[i];
+        ecs_id_t entity_id = remove_queue->data[i];
 
         if (ecs_is_active(ecs, entity_id))
         {
-            ecs_id_t comp_id = remove_queue->array[i + 1];
+            ecs_id_t comp_id = remove_queue->data[i + 1];
             ecs_remove(ecs, ecs_make_entity(entity_id), ecs_make_comp(comp_id));
         }
     }
@@ -1441,11 +1430,7 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
         size_t new_capacity = old_capacity;
 
         // Calculate new capacity
-        while (new_capacity <= id)
-        {
-            new_capacity *= 2;
-            //new_capacity += (new_capacity / 2) + 2;
-        }
+        new_capacity *= 2;
 
         // Grow dense array
         set->dense = (ecs_entity_t*)ECS_REALLOC(set->dense,
@@ -1534,77 +1519,20 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
  * Internal ID pool functions
  *============================================================================*/
 
-inline static void ecs_stack_init(ecs_t* ecs, ecs_stack_t* stack, int capacity)
+inline static void ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* array, int capacity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_not_null(stack));
+    ECS_ASSERT(ecs_is_not_null(array));
     ECS_ASSERT(capacity > 0);
 
     (void)ecs;
 
-    stack->size = 0;
-    stack->capacity = capacity;
-    stack->array = (ecs_id_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
-}
-
-inline static void ecs_stack_free(ecs_t* ecs, ecs_stack_t* stack)
-{
-    ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_not_null(stack));
-
-    (void)ecs;
-
-    ECS_FREE(stack->array, ecs->mem_ctx);
-}
-
-inline static void ecs_stack_push(ecs_t* ecs, ecs_stack_t* stack, ecs_id_t id)
-{
-    ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_not_null(stack));
-    ECS_ASSERT(stack->capacity > 0);
-
-    (void)ecs;
-
-    if (stack->size == stack->capacity)
-    {
-        stack->capacity *= 2;
-        //stack->capacity += (stack->capacity / 2) + 2;
-
-        stack->array = (ecs_id_t*)ECS_REALLOC(stack->array,
-                                              stack->capacity * sizeof(ecs_id_t),
-                                              ecs->mem_ctx);
-    }
-
-    stack->array[stack->size++] = id;
-}
-
-inline static ecs_id_t ecs_stack_pop(ecs_stack_t* stack)
-{
-    ECS_ASSERT(ecs_is_not_null(stack));
-    return stack->array[--stack->size];
-}
-
-inline static int ecs_stack_size(ecs_stack_t* stack)
-{
-    return stack->size;
-}
-
-static void ecs_array_init(ecs_t* ecs, ecs_array_t* array, size_t size, size_t capacity)
-{
-    ECS_ASSERT(ecs_is_not_null(ecs));
-    ECS_ASSERT(ecs_is_not_null(array));
-
-    (void)ecs;
-
-    memset(array, 0, sizeof(ecs_array_t));
-
+    array->size = 0;
     array->capacity = capacity;
-    array->count = 0;
-    array->size = size;
-    array->data = ECS_MALLOC(size * capacity, ecs->mem_ctx);
+    array->data = (ecs_id_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
 }
 
-static void ecs_array_free(ecs_t* ecs, ecs_array_t* array)
+inline static void ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* array)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
@@ -1614,7 +1542,61 @@ static void ecs_array_free(ecs_t* ecs, ecs_array_t* array)
     ECS_FREE(array->data, ecs->mem_ctx);
 }
 
-static void ecs_array_resize(ecs_t* ecs, ecs_array_t* array, size_t capacity)
+inline static void ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* array, ecs_id_t id)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(array));
+    ECS_ASSERT(array->capacity > 0);
+
+    (void)ecs;
+
+    if (array->size == array->capacity)
+    {
+        array->capacity *= 2;
+        array->data = (ecs_id_t*)ECS_REALLOC(array->data,
+                                              array->capacity * sizeof(ecs_id_t),
+                                              ecs->mem_ctx);
+    }
+
+    array->data[array->size++] = id;
+}
+
+inline static ecs_id_t ecs_id_array_pop(ecs_id_array_t* array)
+{
+    ECS_ASSERT(ecs_is_not_null(array));
+    return array->data[--array->size];
+}
+
+inline static int ecs_id_array_size(ecs_id_array_t* array)
+{
+    return array->size;
+}
+
+static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size, size_t capacity)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(array));
+
+    (void)ecs;
+
+    memset(array, 0, sizeof(ecs_comp_array_t));
+
+    array->capacity = capacity;
+    array->size = size;
+    array->data = ECS_MALLOC(size * capacity, ecs->mem_ctx);
+}
+
+static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(array));
+
+    (void)ecs;
+
+    ECS_FREE(array->data, ecs->mem_ctx);
+}
+
+static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, size_t capacity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
@@ -1623,12 +1605,7 @@ static void ecs_array_resize(ecs_t* ecs, ecs_array_t* array, size_t capacity)
 
     if (capacity >= array->capacity)
     {
-        while (array->capacity <= capacity)
-        {
-            array->capacity *= 2;
-            //array->capacity += (array->capacity / 2) + 2;
-        }
-
+        array->capacity *= 2;
         array->data = ECS_REALLOC(array->data,
                                   array->capacity * array->size,
                                   ecs->mem_ctx);
