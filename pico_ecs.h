@@ -42,10 +42,10 @@
     An ECS solves these problems while also granting more flexibility in
     general. In an ECS there is a clear separation between data (components) and
     logic (systems), which makes it possible to build complex simulations with
-    fewer assumptions about how that data will be used. In an ECS it effortless
-    to change functionality, by either adding or removing components from
-    entities, and/or by changing system requirements. Adding new logic is also
-    simple as well, just register a new system!
+    fewer assumptions about how that data will be used. In an ECS it is
+    effortless to change functionality, by either adding or removing components
+    from entities, and/or by changing system requirements. Adding new logic is
+    also simple as well, just register a new system!
 
     Please see the examples and unit tests for more details.
 
@@ -66,11 +66,6 @@
     - PICO_ECS_MAX_SYSTEMS (default: 16)
 
     Must be defined before PICO_ECS_IMPLEMENTATION
-
-    Todo:
-    -----
-    - Better default assertion macro
-    - Port Rogue demo to Windows
 */
 
 #ifndef PICO_ECS_H
@@ -109,17 +104,28 @@ typedef ECS_ID_TYPE ecs_id_t;
 /**
  * @brief Return code for update callback and calling functions
  */
-typedef int16_t ecs_ret_t;
+typedef int32_t ecs_ret_t;
 
+/**
+ * @brief An entity handle
+ */
 typedef struct ecs_entity_t { ecs_id_t id; } ecs_entity_t;
-typedef struct ecs_comp_t   { ecs_id_t id; } ecs_comp_t;
-typedef struct ecs_sys_t    { ecs_id_t id; } ecs_sys_t;
+
+/**
+ * @brief A component handle
+ */
+typedef struct ecs_comp_t { ecs_id_t id; } ecs_comp_t;
+
+/**
+ * @brief A system handle
+ */
+typedef struct ecs_sys_t { ecs_id_t id; } ecs_sys_t;
 
 /**
  * @brief Creates an ECS instance.
  *
- * @param entity_count The inital number of pooled entities
- * @param mem_ctx The  Context for a custom allocator
+ * @param entity_count The inital number of entities to allocated
+ * @param mem_ctx A context for a custom allocator
  *
  * @returns An ECS instance or NULL if out of memory
  */
@@ -140,9 +146,9 @@ void ecs_reset(ecs_t* ecs);
 /**
  * @brief Called when a component is created (via ecs_add)
  *
- * @param ecs       The ECS instance
- * @param entity_id The entity being constructed
- * @param ptr       The pointer to the component
+ * @param ecs    The ECS instance
+ * @param entity The entity being constructed
+ * @param ptr    The pointer to the component
  */
 typedef void (*ecs_constructor_fn)(ecs_t* ecs,
                                    ecs_entity_t entity,
@@ -152,9 +158,9 @@ typedef void (*ecs_constructor_fn)(ecs_t* ecs,
 /**
  * @brief Called when a component is destroyed (via ecs_remove or ecs_destroy)
  *
- * @param ecs       The ECS instance
- * @param entity_id The entity being destoryed
- * @param ptr       The pointer to the component
+ * @param ecs    The ECS instance
+ * @param entity The entity being destoryed
+ * @param ptr    The pointer to the component
  */
 typedef void (*ecs_destructor_fn)(ecs_t* ecs,
                                   ecs_entity_t entity,
@@ -171,7 +177,7 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
  * @param constructor Called when a component is created (disabled if NULL)
  * @param destructor  Called when a component is destroyed (disabled if NULL)
  * @param udata       Data passed to callbacks (can be NULL)
- * @returns           The component's ID
+ * @returns           A component handle
  */
 ecs_comp_t ecs_register_component(ecs_t* ecs,
                                   size_t size,
@@ -185,7 +191,7 @@ ecs_comp_t ecs_register_component(ecs_t* ecs,
  * and components.
  *
  * @param ecs          The ECS instance
- * @param entities     An array of entity IDs managed by the system
+ * @param entities     An array of entities managed by the system
  * @param entity_count The number of entities in the array
  * @param udata        The user data associated with the system
  */
@@ -197,18 +203,18 @@ typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
 /**
  * @brief Called when an entity is added to a system
  *
- * @param ecs       The ECS instance
- * @param entity_id The enitty being added
- * @param udata     The user data passed to the callback
+ * @param ecs    The ECS instance
+ * @param entity The entity being added
+ * @param udata  The user data passed to the callback
  */
 typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 
 /**
  * @brief Called when an entity is removed from a system
  *
- * @param ecs       The ECS instance
- * @param entity_id The enitty being removed
- * @param udata     The user data passed to the callback
+ * @param ecs    The ECS instance
+ * @param entity The enitty being removed
+ * @param udata  The user data passed to the callback
  */
 typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 
@@ -223,7 +229,7 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @param add_cb    Called when an entity is added to the system (can be NULL)
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
  * @param udata     The user data passed to the callbacks
- * @returns         The system's ID
+ * @returns         A system handle
  */
 ecs_sys_t ecs_register_system(ecs_t* ecs,
                               ecs_system_fn system_cb,
@@ -233,9 +239,9 @@ ecs_sys_t ecs_register_system(ecs_t* ecs,
 /**
  * @brief Determines which components are available to the specified system.
  *
- * @param ecs     The ECS instance
- * @param sys_id  The target system ID
- * @param comp_id The component ID
+ * @param ecs  The ECS instance
+ * @param sys  The target system
+ * @param comp A component to require
  */
 void ecs_require_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
 
@@ -243,9 +249,9 @@ void ecs_require_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
  * @brief Excludes entities having the specified component from being added to
  * the target system.
  *
- * @param ecs     The ECS instance
- * @param sys_id  The target system ID
- * @param comp_id The component ID tp exclude
+ * @param ecs  The ECS instance
+ * @param sys  The target system
+ * @param comp A component to exclude
  */
 void ecs_exclude_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
 
@@ -253,15 +259,15 @@ void ecs_exclude_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
  * @brief Enables a system
  *
  * @param ecs    The ECS instance
- * @param sys_id The specified system ID
+ * @param sys_id The specified system
  */
 void ecs_enable_system(ecs_t* ecs, ecs_sys_t sys);
 
 /**
  * @brief Disables a system
  *
- * @param ecs    The ECS instance
- * @param sys_id The specified system ID
+ * @param ecs The ECS instance
+ * @param sys The specified system
  */
 void ecs_disable_system(ecs_t* ecs, ecs_sys_t sys);
 
@@ -269,7 +275,7 @@ void ecs_disable_system(ecs_t* ecs, ecs_sys_t sys);
  * @brief Updates the callbacks for an existing system
  *
  * @param ecs       The ECS instance
- * @param sys_id    The system ID
+ * @param sys       The system
  * @param system_cb Callback that is fired every update
  * @param add_cb    Called when an entity is added to the system (can be NULL)
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
@@ -283,18 +289,18 @@ void ecs_set_system_callbacks(ecs_t* ecs,
 /**
  * @brief Sets the user data for a system
  *
- * @param ecs    The ECS instance
- * @param sys_id The system ID
- * @param udata  The user data to set
+ * @param ecs   The ECS instance
+ * @param sys   The system
+ * @param udata The user data to set
  */
 void ecs_set_system_udata(ecs_t* ecs, ecs_sys_t sys, void* udata);
 
 /**
  * @brief Gets the user data from a system
  *
- * @param ecs    The ECS instance
- * @param sys_id The system ID
- * @return       The system's user data
+ * @param ecs The ECS instance
+ * @param sys The system
+ * @return    The system's user data
  */
 void* ecs_get_system_udata(ecs_t* ecs, ecs_sys_t sys);
 
@@ -303,7 +309,7 @@ void* ecs_get_system_udata(ecs_t* ecs, ecs_sys_t sys);
  *
  * @param ecs The ECS instance
  *
- * @returns The new entity ID
+ * @returns The new entity
  */
 ecs_entity_t ecs_create(ecs_t* ecs);
 
@@ -311,26 +317,16 @@ ecs_entity_t ecs_create(ecs_t* ecs);
  * @brief Returns true if the entity is currently active and has not been queued for destruction
  *
  * @param ecs The ECS instance
- * @param entity_id The target entity
+ * @param entity The target entity
  */
 bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity);
 
 /**
- * @brief Destroys an entity
- *
- * Destroys an entity, releasing resources and returning it to the pool.
- *
- * @param ecs       The ECS instance
- * @param entity_id The ID of the entity to destroy
- */
-void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
-
-/**
  * @brief Test if entity has the specified component
  *
- * @param ecs       The ECS instance
- * @param entity_id The entity ID
- * @param comp_id   The component ID
+ * @param ecs    The ECS instance
+ * @param entity The entity
+ * @param comp   The component
  *
  * @returns True if the entity has the component
  */
@@ -339,74 +335,94 @@ bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 /**
  * @brief Adds a component instance to an entity
  *
- * @param ecs       The ECS instance
- * @param entity_id The entity ID
- * @param comp_id   The component ID
+ * @param ecs    The ECS instance
+ * @param entity The entity
+ * @param comp   The component
  *
- * @returns The component instance
+ * @returns The component data
  */
 void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args);
 
 /**
  * @brief Gets a component instance associated with an entity
  *
- * @param ecs       The ECS instance
- * @param entity_id The entity ID
- * @param comp_id   The component ID
+ * @param ecs    The ECS instance
+ * @param entity The entity
+ * @param comp   The component
  *
- * @returns The component instance
+ * @returns The component data
  */
 void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
+ * @brief Destroys an entity
+ *
+ * Destroys an entity, releasing resources and returning it to the pool.
+ *
+ * WARNING: This function may change the order of a system's entity array. It
+ * should be used with caution. A better option in most circumstances is to use
+ * the {@link ecs_queue_destroy} function, which destroys the entity after the
+ * system has finished executing.
+ *
+ * @param ecs    The ECS instance
+ * @param entity The entity to destroy
+ */
+void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
+
+/**
  * @brief Removes a component instance from an entity
  *
- * @param ecs       The ECS instance
- * @param entity_id The entity ID
- * @param comp_id   The component ID
+ * WARNING: This function may change the order of a system's entity array. It
+ * should be used with caution. A better option in most circumstances is to use
+ * the {@link ecs_queue_remove} function, which removes the component after the
+ * system has finished executing.
+ *
+ * @param ecs    The ECS instance
+ * @param entity The entity
+ * @param comp   The component
  */
 void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
- * @brief Queues an entity for destruction at the end of system execution
+ * @brief Queues an entity for destruction after the current system returns
  *
  * Queued entities are destroyed after the curent iteration.
  *
- * @param ecs       The ECS instance
- * @param entity_id The ID of the entity to destroy
+ * @param ecs    The ECS instance
+ * @param entity The entity to destroy
  */
 void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity);
 
 /**
- * @brief Queues a component for removal
+ * @brief Queues a component for removal from the specified entity
  *
  * Queued entity/component pairs that will be deleted after the current system
- * returns
+ * returns.
  *
- * @param ecs       The ECS instance
- * @param entity_id The ID of the entity that has the component
- * @param comp_id   The component to remove
+ * @param ecs    The ECS instance
+ * @param entity The entity that has the component
+ * @param comp   The component to remove
  */
 void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Update an individual system
  *
- * This function should be called once per frame.
+ * Calls system logic on required components, but not excluded ones.
  *
  * @param ecs The ECS instance
- * @param sys_id The system to update
- * @param dt  The time delta
+ * @param sys The system to update
  */
 ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_sys_t sys);
 
 /**
  * @brief Updates all systems
  *
- * This function should be called once per frame.
+ * Calls {@link ecs_update_system} on all components in order of system
+ * registration. In most cases it is better to call {@link ecs_update_system} as
+ * needed.
  *
  * @param ecs The ECS instance
- * @param dt  The time delta
  */
 ecs_ret_t ecs_update_systems(ecs_t* ecs);
 
@@ -418,7 +434,8 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs);
 
 #ifdef PICO_ECS_IMPLEMENTATION // Define once
 
-#include <stdint.h> // uint32_t
+#include <stddef.h> // size_t
+#include <stdint.h> // uint32_t, uint64_t
 #include <stdlib.h> // malloc, realloc, free
 #include <string.h> // memcpy, memset
 
@@ -447,7 +464,7 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs);
 #endif
 
 /*=============================================================================
- * Internal aliases
+ *  Aliases
  *============================================================================*/
 
 #define ECS_ASSERT          PICO_ECS_ASSERT
@@ -458,7 +475,7 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs);
 #define ECS_FREE            PICO_ECS_FREE
 
 /*=============================================================================
- * Internal data structures
+ *  Data structures
  *============================================================================*/
 
 #if ECS_MAX_COMPONENTS <= 32
@@ -473,6 +490,7 @@ typedef struct
 {
     uint64_t array[ECS_BITSET_SIZE];
 } ecs_bitset_t;
+
 #endif // ECS_MAX_COMPONENTS
 
 // Data-structure for a packed array implementation that provides O(1) functions
@@ -485,18 +503,18 @@ typedef struct
     ecs_entity_t* dense;
 } ecs_sparse_set_t;
 
-// Data-structure for an ID pool that provides O(1) operations for pooling IDs
+// A data-structure for providing O(1) operations for working with IDs
 typedef struct
 {
     size_t    capacity;
-    size_t    size;
+    size_t    size; // array size
     ecs_id_t* data;
 } ecs_id_array_t;
 
 typedef struct
 {
     size_t capacity;
-    size_t size;
+    size_t size; // component size
     void*  data;
 } ecs_comp_array_t;
 
@@ -527,40 +545,29 @@ typedef struct
 
 struct ecs_s
 {
-    ecs_id_array_t        entity_pool;
-    ecs_id_array_t        destroy_queue;
-    ecs_id_array_t        remove_queue;
+    ecs_id_array_t     entity_pool;
+    ecs_id_array_t     destroy_queue;
+    ecs_id_array_t     remove_queue;
     ecs_entity_data_t* entities;
     size_t             entity_count;
     size_t             next_entity_id;
     ecs_comp_data_t    comps[ECS_MAX_COMPONENTS];
-    ecs_comp_array_t        comp_arrays[ECS_MAX_COMPONENTS];
+    ecs_comp_array_t   comp_arrays[ECS_MAX_COMPONENTS];
     size_t             comp_count;
     ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
     size_t             system_count;
     void*              mem_ctx;
 };
 
-static ecs_entity_t ecs_make_entity(ecs_id_t id)
-{
-    ecs_entity_t entity = { id };
-    return entity;
-}
-
-static ecs_comp_t ecs_make_comp(ecs_id_t id)
-{
-    ecs_comp_t comp = { id };
-    return comp;
-}
-
-static ecs_sys_t ecs_make_sys(ecs_id_t id)
-{
-    ecs_sys_t sys = { id };
-    return sys;
-}
+/*=============================================================================
+ * Handle constructors
+ *============================================================================*/
+static inline ecs_entity_t ecs_make_entity(ecs_id_t id);
+static inline ecs_comp_t ecs_make_comp(ecs_id_t id);
+static inline ecs_sys_t ecs_make_sys(ecs_id_t id);
 
 /*=============================================================================
- * Internal realloc wrapper
+ * Realloc wrapper
  *============================================================================*/
 static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size);
 
@@ -580,13 +587,13 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity);
 static inline bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
- * Internal functions to flush destroyed entities and removed component
+ * Functions to flush destroyed entities and removed component
  *============================================================================*/
 static void ecs_flush_destroyed(ecs_t* ecs);
 static void ecs_flush_removed(ecs_t* ecs);
 
 /*=============================================================================
- * Internal bit set functions
+ * Bitset functions
  *============================================================================*/
 static inline void ecs_bitset_flip(ecs_bitset_t* set, int bit, bool on);
 static inline bool ecs_bitset_is_zero(ecs_bitset_t* set);
@@ -598,7 +605,7 @@ static inline bool ecs_bitset_equal(ecs_bitset_t* set1, ecs_bitset_t* set2);
 static inline bool ecs_bitset_true(ecs_bitset_t* set);
 
 /*=============================================================================
- * Internal sparse set functions
+ * Sparse set functions
  *============================================================================*/
 static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capacity);
 static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set);
@@ -607,14 +614,14 @@ static bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_t* foun
 static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
 
 /*=============================================================================
- * Internal system entity add/remove functions
+ * System entity add/remove functions
  *============================================================================*/
 static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
                                    ecs_bitset_t* exclude_bits,
                                    ecs_bitset_t* entity_bits);
 
 /*=============================================================================
- * Internal ID pool functions
+ * ID array functions
  *============================================================================*/
 static void     ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* pool, int capacity);
 static void     ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* pool);
@@ -623,14 +630,14 @@ static ecs_id_t ecs_id_array_pop(ecs_id_array_t* pool);
 static int      ecs_id_array_size(ecs_id_array_t* pool);
 
 /*=============================================================================
- * Internal array functions
+ * Component array functions
  *============================================================================*/
 static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size, size_t capacity);
 static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array);
 static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, size_t capacity);
 
 /*=============================================================================
- * Internal validation functions
+ * Validation functions
  *============================================================================*/
 #ifndef NDEBUG
 static bool ecs_is_not_null(void* ptr);
@@ -640,6 +647,7 @@ static bool ecs_is_entity_ready(ecs_t* ecs, ecs_id_t entity_id);
 static bool ecs_is_component_ready(ecs_t* ecs, ecs_id_t comp_id);
 static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
 #endif // NDEBUG
+
 /*=============================================================================
  * Public API implementation
  *============================================================================*/
@@ -865,6 +873,7 @@ ecs_entity_t ecs_create(ecs_t* ecs)
 
     ecs_id_t entity_id = 0;
 
+    // If there is an ID in the pool, pop it
     ecs_id_array_t* pool = &ecs->entity_pool;
 
     if (0 != ecs_id_array_size(pool))
@@ -873,8 +882,10 @@ ecs_entity_t ecs_create(ecs_t* ecs)
     }
     else
     {
+        // Otherwise, issue a fresh ID
         entity_id = ecs->next_entity_id++;
 
+        // Grow the entities array if necessary
         if (entity_id >= ecs->entity_count)
         {
             size_t old_count = ecs->entity_count;
@@ -884,11 +895,11 @@ ecs_entity_t ecs_create(ecs_t* ecs)
                                                                  old_count * sizeof(ecs_entity_data_t),
                                                                  new_count * sizeof(ecs_entity_data_t));
 
-            // Update entity count
             ecs->entity_count = new_count;
         }
     }
 
+    // Activate the entity and return a handle
     ecs->entities[entity_id].active = true;
     ecs->entities[entity_id].ready  = true;
 
@@ -919,7 +930,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     // Call destructors on entity components
     ecs_destruct(ecs, entity.id);
 
-    // Push entity ID back into pool
+    // Push entity ID into pool
     ecs_id_array_t* pool = &ecs->entity_pool;
     ecs_id_array_push(ecs, pool, entity.id);
 
@@ -1125,7 +1136,28 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs)
 }
 
 /*=============================================================================
- * Internal realloc wrapper
+ * Handle constructors
+ *============================================================================*/
+static inline ecs_entity_t ecs_make_entity(ecs_id_t id)
+{
+    ecs_entity_t entity = { id };
+    return entity;
+}
+
+static inline ecs_comp_t ecs_make_comp(ecs_id_t id)
+{
+    ecs_comp_t comp = { id };
+    return comp;
+}
+
+static inline ecs_sys_t ecs_make_sys(ecs_id_t id)
+{
+    ecs_sys_t sys = { id };
+    return sys;
+}
+
+/*=============================================================================
+ * Realloc wrapper
  *============================================================================*/
 static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size)
 {
@@ -1204,7 +1236,7 @@ static void ecs_remove_from_systems(ecs_t* ecs, ecs_entity_t entity)
 }
 
 /*=============================================================================
- * Internal functions to flush destroyed entity and removed component
+ * Functions to flush destroyed entity and removed component
  *============================================================================*/
 
 static void ecs_flush_destroyed(ecs_t* ecs)
@@ -1242,7 +1274,7 @@ static void ecs_flush_removed(ecs_t* ecs)
 
 
 /*=============================================================================
- * Internal bitset functions
+ * Bitset functions
  *============================================================================*/
 
 #if ECS_MAX_COMPONENTS <= 64
@@ -1385,7 +1417,7 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set)
 #endif // ECS_MAX_COMPONENTS
 
 /*=============================================================================
- * Internal sparse set functions
+ * Sparse set functions
  *============================================================================*/
 
 static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capacity)
@@ -1494,7 +1526,7 @@ static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
 }
 
 /*=============================================================================
- * Internal system entity add/remove functions
+ * System entity add/remove functions
  *============================================================================*/
 
 inline static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
@@ -1516,7 +1548,7 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
 }
 
 /*=============================================================================
- * Internal ID pool functions
+ * ID array functions
  *============================================================================*/
 
 inline static void ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* array, int capacity)
@@ -1613,7 +1645,7 @@ static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, size_t ca
 }
 
 /*=============================================================================
- * Internal validation functions
+ * Validation functions
  *============================================================================*/
 #ifndef NDEBUG
 static bool ecs_is_not_null(void* ptr)
@@ -1658,7 +1690,7 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
 
     (A) The zlib License
 
-    Copyright (c) 2021 James McLean
+    Copyright (c) 2025 James McLean
 
     This software is provided 'as-is', without any express or implied warranty.
     In no event will the authors be held liable for any damages arising from the
