@@ -10,10 +10,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-ecs_sys_t PLAYER_SYS;
-ecs_sys_t MONSTER_SYS;
-ecs_sys_t CHEST_SYS;
-ecs_sys_t DRAWABLE_SYS;
+ecs_system_t PLAYER_SYS;
+ecs_system_t MONSTER_SYS;
+ecs_system_t CHEST_SYS;
+ecs_system_t DRAWABLE_SYS;
 
 bool get_entity_at(ecs_t* ecs,
                    pos_t pos,
