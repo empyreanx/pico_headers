@@ -316,7 +316,7 @@ void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys);
 /**
  * @brief Returns the number of entities assigned to the specified system
  */
-size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys);
+size_t ecs_get_system_entity_count(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Creates an entity
@@ -882,7 +882,7 @@ void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys)
     return ecs->systems[sys.id].udata;
 }
 
-size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys)
+size_t ecs_get_system_entity_count(ecs_t* ecs, ecs_system_t sys)
 {
     return ecs->systems[sys.id].entity_ids.size;
 }

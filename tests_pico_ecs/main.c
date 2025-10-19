@@ -14,8 +14,8 @@ ecs_t* ecs = NULL;
 ecs_comp_t comp1;
 ecs_comp_t comp2;
 
-ecs_system_t system1;
-ecs_system_t system2;
+ecs_system_t sys1;
+ecs_system_t sys2;
 
 typedef struct
 {
@@ -310,10 +310,11 @@ static struct
     size_t count;
 } remove_sys_state;
 
+// Copies the entity_count, should be 1
 static ecs_ret_t remove_comp_system(ecs_t* ecs,
-                                   ecs_entity_t* entities,
-                                   int entity_count,
-                                   void* udata)
+                                    ecs_entity_t* entities,
+                                    int entity_count,
+                                    void* udata)
 {
     (void)ecs;
     (void)entities;
@@ -325,20 +326,21 @@ static ecs_ret_t remove_comp_system(ecs_t* ecs,
     return 0;
 }
 
+// Test
 TEST_CASE(test_remove_comp_system)
 {
-    ecs_system_t system = ecs_register_system(ecs, remove_comp_system, NULL, NULL, NULL);
+    ecs_system_t sys = ecs_register_system(ecs, remove_comp_system, NULL, NULL, NULL);
 
-    ecs_require_component(ecs, system, comp2);
-    ecs_require_component(ecs, system, comp1);
+    ecs_require_component(ecs, sys, comp2);
+    ecs_require_component(ecs, sys, comp1);
 
-    ecs_entity_t entity1 = ecs_create(ecs);
-    ecs_add(ecs, entity1, comp1, NULL);
-    ecs_add(ecs, entity1, comp2, NULL);
+    ecs_entity_t entity = ecs_create(ecs);
+    ecs_add(ecs, entity, comp1, NULL);
+    ecs_add(ecs, entity, comp2, NULL);
 
-    ecs_remove(ecs, entity1, comp1);
+    ecs_remove(ecs, entity, comp1);
 
-    ecs_update_system(ecs, system);
+    ecs_update_system(ecs, sys);
 
     REQUIRE(remove_sys_state.count == 1);
 
@@ -373,15 +375,16 @@ static ecs_ret_t comp_system(ecs_t* ecs,
     return 0;
 }
 
+// Tests adding components to systems
 TEST_CASE(test_add_systems)
 {
     // Set up systems
-    system1 = ecs_register_system(ecs,  comp_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1);
+    sys1 = ecs_register_system(ecs,  comp_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
 
-    system2 = ecs_register_system(ecs,  comp_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system2, comp1);
-    ecs_require_component(ecs, system2, comp2);
+    sys2 = ecs_register_system(ecs,  comp_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys2, comp1);
+    ecs_require_component(ecs, sys2, comp2);
 
     // Create a couple entities
     ecs_entity_t entity1 = ecs_create(ecs);
@@ -391,8 +394,8 @@ TEST_CASE(test_add_systems)
     comp_t* comp_one = ecs_add(ecs, entity1, comp1, NULL);
     comp_one->used = false;
 
-    // Run system1
-    ecs_update_system(ecs, system1);
+    // Run sys1
+    ecs_update_system(ecs, sys1);
 
     // Confirm that entity 1 was process by the system
     REQUIRE(comp_one->used);
@@ -404,8 +407,8 @@ TEST_CASE(test_add_systems)
     comp_t* comp_two = ecs_add(ecs, entity2, comp2, NULL);
     comp_two->used = false;
 
-    // Run system2
-    ecs_update_system(ecs, system2);
+    // Run sys2
+    ecs_update_system(ecs, sys2);
 
     // Confirm that both entities we processed by the system
     REQUIRE(comp_one->used);
@@ -417,9 +420,9 @@ TEST_CASE(test_add_systems)
 TEST_CASE(test_remove)
 {
     // Set up system
-    system1 = ecs_register_system(ecs, comp_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1); // Entity must have at least
-    ecs_require_component(ecs, system1, comp2); // component 1 and 2 to match
+    sys1 = ecs_register_system(ecs, comp_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1); // Entity must have at least
+    ecs_require_component(ecs, sys1, comp2); // component 1 and 2 to match
 
     // Create an entity
     ecs_entity_t entity = ecs_create(ecs);
@@ -432,7 +435,7 @@ TEST_CASE(test_remove)
     comp_two->used = false;
 
     // Run system
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     // Verify that the system processed the entity
     REQUIRE(comp_one->used);
@@ -446,7 +449,7 @@ TEST_CASE(test_remove)
     ecs_remove(ecs, entity, comp2);
 
     // Run system again
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     // Verify that the entity was remove by the system
     REQUIRE(comp_one->used);
@@ -455,6 +458,7 @@ TEST_CASE(test_remove)
     return true;
 }
 
+// Destroys all entities starting with the front of the array
 static ecs_ret_t destroy_system(ecs_t* ecs,
                                 ecs_entity_t* entities,
                                 int entity_count,
@@ -480,9 +484,9 @@ static ecs_ret_t destroy_system(ecs_t* ecs,
 
 TEST_CASE(test_destroy_system)
 {
-    system1 = ecs_register_system(ecs, destroy_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1);
-    ecs_require_component(ecs, system1, comp2);
+    sys1 = ecs_register_system(ecs, destroy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
+    ecs_require_component(ecs, sys1, comp2);
 
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
@@ -492,8 +496,7 @@ TEST_CASE(test_destroy_system)
         REQUIRE(ecs_is_ready(ecs, entity));
     }
 
-    // Run system again
-    ecs_ret_t ret = ecs_update_system(ecs, system1);
+    ecs_ret_t ret = ecs_update_system(ecs, sys1);
 
     REQUIRE(ret == 0);
 
@@ -503,9 +506,9 @@ TEST_CASE(test_destroy_system)
 TEST_CASE(test_destroy)
 {
     // Set up system
-    system1 = ecs_register_system(ecs, comp_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1);
-    ecs_require_component(ecs, system1, comp2);
+    sys1 = ecs_register_system(ecs, comp_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
+    ecs_require_component(ecs, sys1, comp2);
 
     // Create an entity
     ecs_entity_t entity = ecs_create(ecs);
@@ -518,7 +521,7 @@ TEST_CASE(test_destroy)
     comp_two->used = false;
 
     // Run system
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     // Verify that the entity was processed by the system
     REQUIRE(comp_one->used);
@@ -532,7 +535,7 @@ TEST_CASE(test_destroy)
     comp_two->used = false;
 
     // Run system again
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     // Verify that entity was not processed by the system
     REQUIRE(!comp_one->used);
@@ -544,7 +547,7 @@ TEST_CASE(test_destroy)
     return true;
 }
 
-#if 0
+// Removes components starting at the front of the array
 static ecs_ret_t remove_system(ecs_t* ecs,
                                ecs_entity_t* entities,
                                int entity_count,
@@ -570,9 +573,9 @@ static ecs_ret_t remove_system(ecs_t* ecs,
 
 TEST_CASE(test_remove_system)
 {
-    system1 = ecs_register_system(ecs, remove_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1);
-    ecs_require_component(ecs, system1, comp2);
+    sys1 = ecs_register_system(ecs, remove_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
+    ecs_require_component(ecs, sys1, comp2);
 
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
@@ -582,83 +585,14 @@ TEST_CASE(test_remove_system)
         REQUIRE(ecs_is_ready(ecs, entity));
     }
 
-    // Run system again
-    ecs_ret_t ret = ecs_update_system(ecs, system1);
+    ecs_ret_t ret = ecs_update_system(ecs, sys1);
 
     REQUIRE(ret == 0);
 
     return true;
 }
 
-TEST_CASE(test_destroy_system)
-{
-    system1 = ecs_register_system(ecs, destroy_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1_id);
-    ecs_require_component(ecs, system1, comp2_id);
-
-    for (int i = 0; i < MAX_ENTITIES; i++)
-    {
-        ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1, NULL);
-        ecs_add(ecs, entity, comp2, NULL);
-        REQUIRE(ecs_is_ready(ecs, entity));
-    }
-
-    // Run system again
-    ecs_ret_t ret = ecs_update_system(ecs, system1);
-
-    REQUIRE(ret == 0);
-
-    return true;
-}
-
-#endif
-
-static ecs_ret_t remove_system(ecs_t* ecs,
-                               ecs_entity_t* entities,
-                               int entity_count,
-                               void* udata)
-{
-    (void)entities;
-    (void)entity_count;
-    (void)udata;
-
-    while (entity_count > 0)
-    {
-        ecs_entity_t entity = entities[0];
-
-        ecs_remove(ecs, entity, comp1);
-        entity_count--;
-
-        if (ecs_has(ecs, entity, comp1))
-            return -1;
-    }
-
-    return 0;
-}
-
-TEST_CASE(test_remove_system)
-{
-    system1 = ecs_register_system(ecs, remove_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1);
-    ecs_require_component(ecs, system1, comp2);
-
-    for (int i = 0; i < MAX_ENTITIES; i++)
-    {
-        ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1, NULL);
-        ecs_add(ecs, entity, comp2, NULL);
-        REQUIRE(ecs_is_ready(ecs, entity));
-    }
-
-    // Run system again
-    ecs_ret_t ret = ecs_update_system(ecs, system1);
-
-    REQUIRE(ret == 0);
-
-    return true;
-}
-
+// System that enqueues entities for destruction
 static ecs_ret_t queue_destroy_system(ecs_t* ecs,
                                       ecs_entity_t* entities,
                                       int entity_count,
@@ -680,9 +614,9 @@ static ecs_ret_t queue_destroy_system(ecs_t* ecs,
 
 TEST_CASE(test_queue_destroy_system)
 {
-    system1 = ecs_register_system(ecs, queue_destroy_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1);
-    ecs_require_component(ecs, system1, comp2);
+    sys1 = ecs_register_system(ecs, queue_destroy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
+    ecs_require_component(ecs, sys1, comp2);
 
     ecs_entity_t entities[MAX_ENTITIES];
 
@@ -696,7 +630,7 @@ TEST_CASE(test_queue_destroy_system)
     }
 
     // Run system again
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
@@ -706,6 +640,7 @@ TEST_CASE(test_queue_destroy_system)
     return true;
 }
 
+// System that enqueues components for removal
 static ecs_ret_t queue_remove_system(ecs_t* ecs,
                                      ecs_entity_t* entities,
                                      int entity_count,
@@ -725,9 +660,9 @@ static ecs_ret_t queue_remove_system(ecs_t* ecs,
 
 TEST_CASE(test_queue_remove_system)
 {
-    system1 = ecs_register_system(ecs, queue_remove_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1);
-    ecs_require_component(ecs, system1, comp2);
+    sys1 = ecs_register_system(ecs, queue_remove_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
+    ecs_require_component(ecs, sys1, comp2);
 
     ecs_entity_t entities[MAX_ENTITIES];
 
@@ -740,8 +675,7 @@ TEST_CASE(test_queue_remove_system)
         entities[i] = entity;
     }
 
-    // Run system again
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
@@ -754,12 +688,13 @@ TEST_CASE(test_queue_remove_system)
     return true;
 }
 
+// Tests destructors
 TEST_CASE(test_queue_destroy_system_with_destructor)
 {
     ecs_comp_t comp_type = ecs_register_component(ecs, sizeof(comp_t), constructor, destructor);
 
-    system1 = ecs_register_system(ecs, queue_destroy_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp_type);
+    sys1 = ecs_register_system(ecs, queue_destroy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp_type);
 
     ecs_entity_t entity = ecs_create(ecs);
     comp_t* comp = ecs_add(ecs, entity, comp_type, &(test_args_t){ true });
@@ -768,7 +703,7 @@ TEST_CASE(test_queue_destroy_system_with_destructor)
     REQUIRE(ecs_is_ready(ecs, entity));
 
     // Run system to queue destruction
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     // Verify entity is destroyed
     REQUIRE(!ecs_is_ready(ecs, entity));
@@ -780,11 +715,12 @@ TEST_CASE(test_queue_destroy_system_with_destructor)
     return true;
 }
 
+// Tests system enable/disable
 TEST_CASE(test_enable_disable)
 {
     // Set up system
-    system1 = ecs_register_system(ecs, comp_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1);
+    sys1 = ecs_register_system(ecs, comp_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
 
     // Create entity
     ecs_entity_t entity = ecs_create(ecs);
@@ -794,7 +730,7 @@ TEST_CASE(test_enable_disable)
     comp->used = false;
 
     // Run system
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     // Verify that entity was processed by system
     REQUIRE(comp->used);
@@ -803,19 +739,19 @@ TEST_CASE(test_enable_disable)
     comp->used = false;
 
     // Disable system
-    ecs_disable_system(ecs, system1);
+    ecs_disable_system(ecs, sys1);
 
     // Run system
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     // Verify that the entity was not processed by the system
     REQUIRE(!comp->used);
 
     // Enable system
-    ecs_enable_system(ecs, system1);
+    ecs_enable_system(ecs, sys1);
 
     // Run system again
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     // Verify that entity was processed by the system
     REQUIRE(comp->used);
@@ -854,13 +790,14 @@ static void on_remove(ecs_t* ecs, ecs_entity_t entity, void* udata)
     removed = true;
 }
 
+// Tests system add/remove callbacks
 TEST_CASE(test_add_remove_callbacks)
 {
-    system1 = ecs_register_system(ecs, empty_system, on_add, on_remove, NULL);
+    sys1 = ecs_register_system(ecs, empty_system, on_add, on_remove, NULL);
 
-    ecs_require_component(ecs, system1, comp1);
+    ecs_require_component(ecs, sys1, comp1);
 
-    ecs_update_system(ecs, system1);
+    ecs_update_system(ecs, sys1);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp1, NULL);
@@ -896,21 +833,22 @@ static ecs_ret_t alt_system(ecs_t* ecs,
     return 24;
 }
 
+// Tests replacing system callbacks on the fly
 TEST_CASE(test_set_system_callbacks)
 {
     added = false;
     removed = false;
 
-    system1 = ecs_register_system(ecs, test_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, system1, comp1);
+    sys1 = ecs_register_system(ecs, test_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
 
     // Test initial system callback works
-    ecs_ret_t ret = ecs_update_system(ecs, system1);
+    ecs_ret_t ret = ecs_update_system(ecs, sys1);
     REQUIRE(ret == 42);
 
     // Change system callback and test
-    ecs_set_system_callbacks(ecs, system1, alt_system, on_add, on_remove);
-    ret = ecs_update_system(ecs, system1);
+    ecs_set_system_callbacks(ecs, sys1, alt_system, on_add, on_remove);
+    ret = ecs_update_system(ecs, sys1);
     REQUIRE(ret == 24);
 
     // Create entity to trigger callbacks
@@ -927,20 +865,20 @@ TEST_CASE(test_set_system_callbacks)
 TEST_CASE(test_system_udata)
 {
     int test_value = 42;
-    system1 = ecs_register_system(ecs, empty_system, NULL, NULL, NULL);
+    sys1 = ecs_register_system(ecs, empty_system, NULL, NULL, NULL);
 
     // Test setting udata
-    ecs_set_system_udata(ecs, system1, &test_value);
+    ecs_set_system_udata(ecs, sys1, &test_value);
 
     // Test getting udata
-    void* retrieved_udata = ecs_get_system_udata(ecs, system1);
+    void* retrieved_udata = ecs_get_system_udata(ecs, sys1);
     REQUIRE(retrieved_udata == &test_value);
     REQUIRE(*(int*)retrieved_udata == 42);
 
     // Test overwriting udata
     int new_value = 24;
-    ecs_set_system_udata(ecs, system1, &new_value);
-    retrieved_udata = ecs_get_system_udata(ecs, system1);
+    ecs_set_system_udata(ecs, sys1, &new_value);
+    retrieved_udata = ecs_get_system_udata(ecs, sys1);
     REQUIRE(retrieved_udata == &new_value);
     REQUIRE(*(int*)retrieved_udata == 24);
 
