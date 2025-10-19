@@ -78,10 +78,10 @@ static void bench_end()
  *============================================================================*/
 
 // System types
-ecs_sys_t MovementSystem;
-ecs_sys_t ComflabSystem;
-ecs_sys_t BoundsSystem;
-ecs_sys_t QueueDestroySystem;
+ecs_system_t MovementSystem;
+ecs_system_t ComflabSystem;
+ecs_system_t BoundsSystem;
+ecs_system_t QueueDestroySystem;
 
 // Component types
 ecs_comp_t PosComponent;

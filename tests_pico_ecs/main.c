@@ -14,8 +14,8 @@ ecs_t* ecs = NULL;
 ecs_comp_t comp1;
 ecs_comp_t comp2;
 
-ecs_sys_t system1;
-ecs_sys_t system2;
+ecs_system_t system1;
+ecs_system_t system2;
 
 typedef struct
 {
@@ -110,20 +110,20 @@ TEST_CASE(test_exclude)
     memset(&state1, 0, sizeof(exclude_sys_state_t));
     memset(&state2, 0, sizeof(exclude_sys_state_t));
 
-    ecs_sys_t sys1 = ecs_register_system(ecs,
-                                              exclude_system,
-                                              exclude_add_cb,
-                                              exclude_remove_cb,
-                                              &state1);
+    ecs_system_t sys1 = ecs_register_system(ecs,
+                                            exclude_system,
+                                            exclude_add_cb,
+                                            exclude_remove_cb,
+                                            &state1);
 
     ecs_require_component(ecs, sys1, comp2);
     ecs_exclude_component(ecs, sys1, comp1);
 
-    ecs_sys_t sys2 = ecs_register_system(ecs,
-                                              exclude_system,
-                                              exclude_add_cb,
-                                              exclude_remove_cb,
-                                              &state2);
+    ecs_system_t sys2 = ecs_register_system(ecs,
+                                            exclude_system,
+                                            exclude_add_cb,
+                                            exclude_remove_cb,
+                                            &state2);
 
     ecs_require_component(ecs, sys2, comp2);
 
@@ -327,7 +327,7 @@ static ecs_ret_t remove_comp_system(ecs_t* ecs,
 
 TEST_CASE(test_remove_comp_system)
 {
-    ecs_sys_t system = ecs_register_system(ecs, remove_comp_system, NULL, NULL, NULL);
+    ecs_system_t system = ecs_register_system(ecs, remove_comp_system, NULL, NULL, NULL);
 
     ecs_require_component(ecs, system, comp2);
     ecs_require_component(ecs, system, comp1);
@@ -589,9 +589,8 @@ TEST_CASE(test_remove_system)
 
     return true;
 }
-#endif
 
-/*TEST_CASE(test_destroy_system)
+TEST_CASE(test_destroy_system)
 {
     system1 = ecs_register_system(ecs, destroy_system, NULL, NULL, NULL);
     ecs_require_component(ecs, system1, comp1_id);
@@ -611,7 +610,9 @@ TEST_CASE(test_remove_system)
     REQUIRE(ret == 0);
 
     return true;
-}*/
+}
+
+#endif
 
 static ecs_ret_t remove_system(ecs_t* ecs,
                                ecs_entity_t* entities,

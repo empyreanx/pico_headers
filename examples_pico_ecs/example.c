@@ -62,9 +62,9 @@ ecs_comp_t VelComp;
 ecs_comp_t RectComp;
 
 // System types
-ecs_sys_t System1;
-ecs_sys_t System2;
-ecs_sys_t System3;
+ecs_system_t System1;
+ecs_system_t System2;
+ecs_system_t System3;
 
 // Register components
 void register_components(ecs_t* ecs)

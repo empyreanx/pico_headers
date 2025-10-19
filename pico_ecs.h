@@ -59,6 +59,15 @@
 
     to a source file (once), then simply include the header normally.
 
+    Macros:
+    --------
+
+    - ECS_MALLOC(size, ctx)       (default: malloc)
+    - ECS_REALLOC(ptr, size, ctx) (default: realloc)
+    - ECS_FREE(ptr, ctx)          (default: free)
+
+    The ctx parameter is sometimes used by custom allocators
+
     Constants:
     --------
 
@@ -99,7 +108,7 @@ typedef ECS_ID_TYPE ecs_id_t;
 /**
  * @brief NULL/invalid/undefined value
  */
-#define ECS_INVALID ((ecs_id_t)0)
+#define ECS_INVALID(item) (item.id == 0)
 
 /**
  * @brief Return code for update callback and calling functions
@@ -119,7 +128,7 @@ typedef struct ecs_comp_t { ecs_id_t id; } ecs_comp_t;
 /**
  * @brief A system handle
  */
-typedef struct ecs_sys_t { ecs_id_t id; } ecs_sys_t;
+typedef struct ecs_system_t { ecs_id_t id; } ecs_system_t;
 
 /**
  * @brief Creates an ECS instance.
@@ -231,11 +240,11 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @param udata     The user data passed to the callbacks
  * @returns         A system handle
  */
-ecs_sys_t ecs_register_system(ecs_t* ecs,
-                              ecs_system_fn system_cb,
-                              ecs_added_fn add_cb,
-                              ecs_removed_fn remove_cb,
-                              void* udata);
+ecs_system_t ecs_register_system(ecs_t* ecs,
+                                 ecs_system_fn system_cb,
+                                 ecs_added_fn add_cb,
+                                 ecs_removed_fn remove_cb,
+                                 void* udata);
 /**
  * @brief Determines which components are available to the specified system.
  *
@@ -243,7 +252,7 @@ ecs_sys_t ecs_register_system(ecs_t* ecs,
  * @param sys  The target system
  * @param comp A component to require
  */
-void ecs_require_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
+void ecs_require_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
 
 /**
  * @brief Excludes entities having the specified component from being added to
@@ -253,7 +262,7 @@ void ecs_require_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
  * @param sys  The target system
  * @param comp A component to exclude
  */
-void ecs_exclude_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
+void ecs_exclude_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
 
 /**
  * @brief Enables a system
@@ -261,7 +270,7 @@ void ecs_exclude_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp);
  * @param ecs    The ECS instance
  * @param sys_id The specified system
  */
-void ecs_enable_system(ecs_t* ecs, ecs_sys_t sys);
+void ecs_enable_system(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Disables a system
@@ -269,7 +278,7 @@ void ecs_enable_system(ecs_t* ecs, ecs_sys_t sys);
  * @param ecs The ECS instance
  * @param sys The specified system
  */
-void ecs_disable_system(ecs_t* ecs, ecs_sys_t sys);
+void ecs_disable_system(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Updates the callbacks for an existing system
@@ -281,7 +290,7 @@ void ecs_disable_system(ecs_t* ecs, ecs_sys_t sys);
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
  */
 void ecs_set_system_callbacks(ecs_t* ecs,
-                              ecs_sys_t sys,
+                              ecs_system_t sys,
                               ecs_system_fn system_cb,
                               ecs_added_fn add_cb,
                               ecs_removed_fn remove_cb);
@@ -293,7 +302,7 @@ void ecs_set_system_callbacks(ecs_t* ecs,
  * @param sys   The system
  * @param udata The user data to set
  */
-void ecs_set_system_udata(ecs_t* ecs, ecs_sys_t sys, void* udata);
+void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata);
 
 /**
  * @brief Gets the user data from a system
@@ -302,7 +311,7 @@ void ecs_set_system_udata(ecs_t* ecs, ecs_sys_t sys, void* udata);
  * @param sys The system
  * @return    The system's user data
  */
-void* ecs_get_system_udata(ecs_t* ecs, ecs_sys_t sys);
+void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Creates an entity
@@ -314,7 +323,8 @@ void* ecs_get_system_udata(ecs_t* ecs, ecs_sys_t sys);
 ecs_entity_t ecs_create(ecs_t* ecs);
 
 /**
- * @brief Returns true if the entity is currently active and has not been queued for destruction
+ * @brief Returns true if the entity is currently active and has not been queued
+ * for destruction
  *
  * @param ecs The ECS instance
  * @param entity The target entity
@@ -413,7 +423,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param ecs The ECS instance
  * @param sys The system to update
  */
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_sys_t sys);
+ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Updates all systems
@@ -564,7 +574,7 @@ struct ecs_s
  *============================================================================*/
 static inline ecs_entity_t ecs_make_entity(ecs_id_t id);
 static inline ecs_comp_t ecs_make_comp(ecs_id_t id);
-static inline ecs_sys_t ecs_make_sys(ecs_id_t id);
+static inline ecs_system_t ecs_make_system(ecs_id_t id);
 
 /*=============================================================================
  * Realloc wrapper
@@ -759,17 +769,17 @@ ecs_comp_t ecs_register_component(ecs_t* ecs,
     return comp;
 }
 
-ecs_sys_t ecs_register_system(ecs_t* ecs,
-                              ecs_system_fn system_cb,
-                              ecs_added_fn add_cb,
-                              ecs_removed_fn remove_cb,
-                              void* udata)
+ecs_system_t ecs_register_system(ecs_t* ecs,
+                                 ecs_system_fn system_cb,
+                                 ecs_added_fn add_cb,
+                                 ecs_removed_fn remove_cb,
+                                 void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->system_count < ECS_MAX_SYSTEMS);
     ECS_ASSERT(NULL != system_cb);
 
-    ecs_sys_t sys = ecs_make_sys(ecs->system_count);
+    ecs_system_t sys = ecs_make_system(ecs->system_count);
     ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
 
     ecs_sparse_set_init(ecs, &sys_data->entity_ids, ecs->entity_count);
@@ -785,7 +795,7 @@ ecs_sys_t ecs_register_system(ecs_t* ecs,
     return sys;
 }
 
-void ecs_require_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp)
+void ecs_require_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -798,7 +808,7 @@ void ecs_require_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp)
     ecs_bitset_flip(&sys_data->require_bits, comp.id, true);
 }
 
-void ecs_exclude_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp)
+void ecs_exclude_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -811,7 +821,7 @@ void ecs_exclude_component(ecs_t* ecs, ecs_sys_t sys, ecs_comp_t comp)
     ecs_bitset_flip(&sys_data->exclude_bits, comp.id, true);
 }
 
-void ecs_enable_system(ecs_t* ecs, ecs_sys_t sys)
+void ecs_enable_system(ecs_t* ecs, ecs_system_t sys)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -821,7 +831,7 @@ void ecs_enable_system(ecs_t* ecs, ecs_sys_t sys)
     sys_data->active = true;
 }
 
-void ecs_disable_system(ecs_t* ecs, ecs_sys_t sys)
+void ecs_disable_system(ecs_t* ecs, ecs_system_t sys)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -832,10 +842,10 @@ void ecs_disable_system(ecs_t* ecs, ecs_sys_t sys)
 }
 
 void ecs_set_system_callbacks(ecs_t* ecs,
-                            ecs_sys_t sys,
-                            ecs_system_fn system_cb,
-                            ecs_added_fn add_cb,
-                            ecs_removed_fn remove_cb)
+                              ecs_system_t sys,
+                              ecs_system_fn system_cb,
+                              ecs_added_fn add_cb,
+                              ecs_removed_fn remove_cb)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -848,7 +858,7 @@ void ecs_set_system_callbacks(ecs_t* ecs,
     sys_data->remove_cb = remove_cb;
 }
 
-void ecs_set_system_udata(ecs_t* ecs, ecs_sys_t sys, void* udata)
+void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -858,7 +868,7 @@ void ecs_set_system_udata(ecs_t* ecs, ecs_sys_t sys, void* udata)
     sys_data->udata = udata;
 }
 
-void* ecs_get_system_udata(ecs_t* ecs, ecs_sys_t sys)
+void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -1097,7 +1107,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ecs_id_array_push(ecs, &ecs->remove_queue, comp.id);
 }
 
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_sys_t sys)
+ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -1125,7 +1135,7 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs)
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
-        ecs_sys_t sys = { sys_id };
+        ecs_system_t sys = ecs_make_system(sys_id);
         ecs_ret_t code = ecs_update_system(ecs, sys);
 
         if (0 != code)
@@ -1150,9 +1160,9 @@ static inline ecs_comp_t ecs_make_comp(ecs_id_t id)
     return comp;
 }
 
-static inline ecs_sys_t ecs_make_sys(ecs_id_t id)
+static inline ecs_system_t ecs_make_system(ecs_id_t id)
 {
-    ecs_sys_t sys = { id };
+    ecs_system_t sys = { id };
     return sys;
 }
 
@@ -1376,7 +1386,6 @@ static inline ecs_bitset_t ecs_bitset_or(ecs_bitset_t* set1,
 
     return set;
 }
-
 
 static inline ecs_bitset_t ecs_bitset_not(ecs_bitset_t* set)
 {
