@@ -314,6 +314,11 @@ void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata);
 void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys);
 
 /**
+ * @brief Returns the number of entities assigned to the specified system
+ */
+size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys);
+
+/**
  * @brief Creates an entity
  *
  * @param ecs The ECS instance
@@ -875,6 +880,11 @@ void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys)
     ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
 
     return ecs->systems[sys.id].udata;
+}
+
+size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys)
+{
+    return ecs->systems[sys.id].entity_ids.size;
 }
 
 ecs_entity_t ecs_create(ecs_t* ecs)
