@@ -110,20 +110,42 @@ char* read_level(int level)
     return buffer;
 }
 
-void load_levels(game_t* game)
+bool load_levels(game_t* game)
 {
-    int count      = level_count();
+    int count         = level_count();
     game->level_count = count;
     game->levels      = malloc(count * sizeof(level_t));
     game->maps        = malloc(count * sizeof(tilemap_t));
+
+    dim_t term_size = game->term_size;
 
     for (int i = 0; i < count; i++)
     {
         char* buffer = read_level(i);
         game->levels[i] = load_level(buffer);
+
+        for (int j = 0; j < game->levels[i]->room_count; j++)
+        {
+            room_t* room = &game->levels[i]->rooms[i];
+
+            if (room->dim.w + room->pos.x > term_size.w)
+                return false;
+
+            if (room->dim.h + room->pos.y > term_size.h)
+                return false;
+
+            if (room->pos.x < 0)
+                return false;
+
+            if (room->pos.y < 0)
+                return false;
+        }
+
         game->maps[i] = create_tilemap(game, game->levels[i]);
         free(buffer);
     }
+
+    return true;
 }
 
 void setup_level(game_t* game)
@@ -159,7 +181,11 @@ game_t* setup_game()
     register_systems(game);
 
     // Load all levels
-    load_levels(game);
+    if (!load_levels(game))
+    {
+        printf("Terminal size is too small\n");
+        return NULL;
+    }
 
     // Initialize player
 
@@ -267,6 +293,13 @@ int main(int argc, char* argv[])
     (void)argv;
 
     game_t* game = setup_game();
+
+    if (!game)
+    {
+        printf("Error setting up the game\n");
+        return -1;
+
+    }
     assert(game);
 
     while (!game->quit)
