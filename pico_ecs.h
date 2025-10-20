@@ -106,6 +106,18 @@ typedef struct ecs_s ecs_t;
 typedef ECS_ID_TYPE ecs_id_t;
 
 /**
+ * @brief Determine ID type
+ */
+#ifndef ECS_MSG_ID_TYPE
+#define ECS_MSG_ID_TYPE uint64_t
+#endif
+
+/**
+ * @brief ID used for entity and components
+ */
+typedef ECS_MSG_ID_TYPE ecs_msg_id_t;
+
+/**
  * @brief NULL/invalid/undefined value
  */
 #define ECS_INVALID(item) (item.id == 0)
@@ -210,6 +222,27 @@ typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
                                    void* udata);
 
 /**
+ * @brief System message callback
+ *
+ * Systems implement the core logic of an ECS by manipulating entities
+ * and components.
+ *
+ * @param ecs          The ECS instance
+ * @param entities     An array of entities managed by the system
+ * @param entity_count The number of entities in the array
+ * @param msg_id       Message ID to determine which type of payload data is passed in
+ * @param msg_data     The message payload
+ * @param udata        The user data associated with the system
+ */
+typedef ecs_ret_t (*ecs_msg_fn)(ecs_t* ecs,
+                                ecs_entity_t* entities,
+                                int entity_count,
+                                ecs_msg_id_t msg_id,
+                                void* msg_data,
+                                void* udata);
+
+
+/**
  * @brief Called when an entity is added to a system
  *
  * @param ecs    The ECS instance
@@ -242,6 +275,7 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  */
 ecs_system_t ecs_register_system(ecs_t* ecs,
                                  ecs_system_fn system_cb,
+                                 ecs_msg_fn msg_cb,
                                  ecs_added_fn add_cb,
                                  ecs_removed_fn remove_cb,
                                  void* udata);
@@ -423,7 +457,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 /**
  * @brief Update an individual system
  *
- * Calls system logic on required components, but not excluded ones.
+ * Calls system logic on all entities assigned to the system.
  *
  * @param ecs The ECS instance
  * @param sys The system to update
@@ -440,6 +474,30 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys);
  * @param ecs The ECS instance
  */
 ecs_ret_t ecs_update_systems(ecs_t* ecs);
+
+/**
+ * @brief Sends a messsage to an individual system
+ *
+ * This function is like {@link ecs_update_system} except that message data is
+ * passed into the callback
+ *
+ * @param ecs The ECS instance
+ * @param sys The system to update
+ * @param msg_id An ID that determines the type of the message payload
+ * @param msg_data The message payload (can be NULL)
+ */
+ecs_ret_t ecs_send_msg(ecs_t* ecs, ecs_system_t sys, ecs_msg_id_t msg_id, void* msg_data);
+
+/**
+ * @brief Sends a message to all systems
+ *
+ * Like {@link ecs_update_systems} except {@link ecs_send_msg} is called instead
+ *
+ * @param ecs The ECS instance
+ * @param msg_id An ID that determines the type of the message payload
+ * @param msg_data The message payload (can be NULL)
+ */
+ecs_ret_t ecs_broadcast_msg(ecs_t* ecs, ecs_msg_id_t msg_id, void* msg_data);
 
 #ifdef __cplusplus
 }
@@ -551,6 +609,7 @@ typedef struct
     bool             active;
     ecs_sparse_set_t entity_ids;
     ecs_system_fn    system_cb;
+    ecs_msg_fn       msg_cb;
     ecs_added_fn     add_cb;
     ecs_removed_fn   remove_cb;
     ecs_bitset_t     require_bits;
@@ -776,13 +835,14 @@ ecs_comp_t ecs_register_component(ecs_t* ecs,
 
 ecs_system_t ecs_register_system(ecs_t* ecs,
                                  ecs_system_fn system_cb,
+                                 ecs_msg_fn msg_cb,
                                  ecs_added_fn add_cb,
                                  ecs_removed_fn remove_cb,
                                  void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->system_count < ECS_MAX_SYSTEMS);
-    ECS_ASSERT(NULL != system_cb);
+    ECS_ASSERT(NULL != system_cb || NULL != msg_cb);
 
     ecs_system_t sys = ecs_make_system(ecs->system_count);
     ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
@@ -1147,6 +1207,49 @@ ecs_ret_t ecs_update_systems(ecs_t* ecs)
     {
         ecs_system_t sys = ecs_make_system(sys_id);
         ecs_ret_t code = ecs_update_system(ecs, sys);
+
+        if (0 != code)
+            return code;
+    }
+
+    return 0;
+}
+
+ecs_ret_t ecs_send_msg(ecs_t* ecs,
+                       ecs_system_t sys,
+                       ecs_msg_id_t msg_id,
+                       void* msg_data)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
+
+    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
+
+    if (!sys_data->active)
+        return 0;
+
+    ecs_ret_t code = sys_data->msg_cb(ecs,
+                     sys_data->entity_ids.dense,
+                     sys_data->entity_ids.size,
+                     msg_id,
+                     msg_data,
+                     sys_data->udata);
+
+    ecs_flush_destroyed(ecs);
+    ecs_flush_removed(ecs);
+
+    return code;
+}
+
+ecs_ret_t ecs_broadcast_msg(ecs_t* ecs, ecs_msg_id_t msg_id, void* msg_data)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    {
+        ecs_system_t sys = ecs_make_system(sys_id);
+        ecs_ret_t code = ecs_send_msg(ecs, sys, msg_id, msg_data);
 
         if (0 != code)
             return code;
