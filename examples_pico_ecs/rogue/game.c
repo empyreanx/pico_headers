@@ -199,7 +199,7 @@ game_t* setup_game()
     setup_level(game);
 
     draw_tilemap(game->maps[game->level]);
-    ecs_update_system(game->ecs, DRAWABLE_SYS);
+    ecs_update_system(game->ecs, DRAWABLE_SYS, 0);
 
     draw_player_msg(game, "Press any key to continue to start.");
     getch();
@@ -308,7 +308,7 @@ int main(int argc, char* argv[])
 
         draw_tilemap(game->maps[level]);
 
-        ecs_ret_t code = ecs_update_systems(game->ecs);
+        ecs_ret_t code = ecs_update_systems(game->ecs, 0);
 
         if (LEVEL_OVER == code)
         {

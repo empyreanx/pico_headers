@@ -77,13 +77,13 @@ void register_components(ecs_t* ecs)
 // System that prints the entity IDs of entities associated with this system
 ecs_ret_t system_update(ecs_t* ecs,
                        ecs_entity_t* entities,
-                       int entity_count,
+                       size_t entity_count,
                        void* udata)
 {
     (void)ecs;
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         printf("%lu ", entities[i].id);
     }

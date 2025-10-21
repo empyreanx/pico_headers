@@ -218,7 +218,7 @@ ecs_comp_t ecs_register_component(ecs_t* ecs,
  */
 typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
                                    ecs_entity_t* entities,
-                                   int entity_count,
+                                   size_t entity_count,
                                    void* udata);
 
 /**
@@ -325,6 +325,24 @@ void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata);
  * @return    The system's user data
  */
 void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys);
+
+/**
+ * @brief Sets the system's mask
+ *
+ * @param ecs  The ECS instance
+ * @param sys  The system
+ * @param mask The mask to set
+ */
+void ecs_set_system_mask(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
+
+/**
+ * @brief Returns the system mask
+ *
+ * @param ecs The ECS instance
+ * @param sys The system
+ * @return    The system's mask
+ */
+ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Returns the number of entities assigned to the specified system
@@ -885,8 +903,7 @@ void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata)
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
     ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
 
-    ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
-    sys_data->udata = udata;
+    ecs->systems[sys.id].udata = udata;
 }
 
 void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys)
@@ -896,6 +913,24 @@ void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys)
     ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
 
     return ecs->systems[sys.id].udata;
+}
+
+void ecs_set_system_mask(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
+
+    ecs->systems[sys.id].mask = mask;
+}
+
+ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
+
+    return ecs->systems[sys.id].mask;
 }
 
 size_t ecs_get_system_entity_count(ecs_t* ecs, ecs_system_t sys)

@@ -18,10 +18,10 @@ ecs_system_t DRAWABLE_SYS;
 bool get_entity_at(ecs_t* ecs,
                    pos_t pos,
                    ecs_entity_t entities[],
-                   int entity_count,
+                   size_t entity_count,
                    ecs_entity_t* entity)
 {
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         pos_t* entity_pos = ecs_get(ecs, entities[i], POS_COMP);
 
@@ -113,7 +113,7 @@ pos_t get_move_offset(move_t dir)
 
 ecs_ret_t player_sys(ecs_t* ecs,
                      ecs_entity_t* entities,
-                     int entity_count,
+                     size_t entity_count,
                      void* udata)
 {
     game_t* game = udata;
@@ -153,7 +153,7 @@ bool monster_try_move(ecs_t* ecs,
                       ecs_entity_t monster,
                       pos_t pos,
                       ecs_entity_t entities[],
-                      int entity_count)
+                      size_t entity_count)
 {
     pos_t* monster_pos = ecs_get(ecs, monster, POS_COMP);
 
@@ -179,7 +179,7 @@ void monster_do_wander(ecs_t* ecs,
                        ecs_entity_t player,
                        ecs_entity_t monster,
                        ecs_entity_t entities[],
-                       int entity_count)
+                       size_t entity_count)
 {
     pos_t* player_pos = ecs_get(ecs, player, POS_COMP);
 
@@ -203,7 +203,7 @@ void monster_do_pursue(ecs_t* ecs,
                        ecs_entity_t player,
                        ecs_entity_t monster,
                        ecs_entity_t entities[],
-                       int entity_count)
+                       size_t entity_count)
 {
     pos_t* player_pos = ecs_get(ecs, player, POS_COMP);
     monster_t* monster_comp = ecs_get(ecs, monster, MONSTER_COMP);
@@ -252,7 +252,7 @@ void monster_do_flee(ecs_t* ecs,
                      ecs_entity_t player,
                      ecs_entity_t monster,
                      ecs_entity_t entities[],
-                     int entity_count)
+                     size_t entity_count)
 {
     monster_t* monster_comp = ecs_get(ecs, monster, MONSTER_COMP);
     pos_t* monster_pos = ecs_get(ecs, monster, POS_COMP);
@@ -270,7 +270,7 @@ void monster_do_flee(ecs_t* ecs,
 
 ecs_ret_t monster_sys(ecs_t* ecs,
                       ecs_entity_t* entities,
-                      int entity_count,
+                      size_t entity_count,
                       void* udata)
 {
     game_t* game = udata;
@@ -283,7 +283,7 @@ ecs_ret_t monster_sys(ecs_t* ecs,
 
     ecs_entity_t player = game->player;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         ecs_entity_t monster = entities[i];
 
@@ -321,14 +321,14 @@ ecs_ret_t monster_sys(ecs_t* ecs,
 
 ecs_ret_t chest_sys(ecs_t* ecs,
                ecs_entity_t* entities,
-               int entity_count,
+               size_t entity_count,
                void* udata)
 {
     game_t* game = udata;
 
     pos_t* player_pos = ecs_get(ecs, game->player, POS_COMP);
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         pos_t* chest_pos = ecs_get(ecs, entities[i], POS_COMP);
 
@@ -354,12 +354,12 @@ ecs_ret_t chest_sys(ecs_t* ecs,
 
 ecs_ret_t draw_sys(ecs_t* ecs,
               ecs_entity_t* entities,
-              int entity_count,
+              size_t entity_count,
               void* udata)
 {
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         ecs_entity_t id = entities[i];
 
@@ -379,7 +379,7 @@ ecs_ret_t draw_sys(ecs_t* ecs,
 void register_systems(game_t* game)
 {
     // Player turn system
-    PLAYER_SYS = ecs_register_system(game->ecs, player_sys, NULL, NULL, game);
+    PLAYER_SYS = ecs_register_system(game->ecs, 0, player_sys, NULL, NULL, game);
 
     ecs_require_component(game->ecs, PLAYER_SYS, POS_COMP);
     ecs_require_component(game->ecs, PLAYER_SYS, DRAWABLE_COMP);
@@ -387,7 +387,7 @@ void register_systems(game_t* game)
     ecs_require_component(game->ecs, PLAYER_SYS, MONSTER_COMP);
 
     // Monster's turns
-    MONSTER_SYS = ecs_register_system(game->ecs, monster_sys, NULL, NULL, game);
+    MONSTER_SYS = ecs_register_system(game->ecs, 0, monster_sys, NULL, NULL, game);
 
     ecs_require_component(game->ecs, MONSTER_SYS, POS_COMP);
     ecs_require_component(game->ecs, MONSTER_SYS, DRAWABLE_COMP);
@@ -395,14 +395,14 @@ void register_systems(game_t* game)
     ecs_require_component(game->ecs, MONSTER_SYS, MONSTER_COMP);
 
     // Chest system
-    CHEST_SYS = ecs_register_system(game->ecs, chest_sys, NULL, NULL, game);
+    CHEST_SYS = ecs_register_system(game->ecs, 0, chest_sys, NULL, NULL, game);
 
     ecs_require_component(game->ecs, CHEST_SYS, CHEST_COMP);
     ecs_require_component(game->ecs, CHEST_SYS, POS_COMP);
     ecs_require_component(game->ecs, CHEST_SYS, DRAWABLE_COMP);
 
     // Drawable system
-    DRAWABLE_SYS = ecs_register_system(game->ecs, draw_sys, NULL, NULL, game);
+    DRAWABLE_SYS = ecs_register_system(game->ecs, 0, draw_sys, NULL, NULL, game);
 
     ecs_require_component(game->ecs, DRAWABLE_SYS, POS_COMP);
     ecs_require_component(game->ecs, DRAWABLE_SYS, DRAWABLE_COMP);

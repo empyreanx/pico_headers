@@ -114,17 +114,17 @@ typedef struct
 
 ecs_ret_t movement_system(ecs_t* ecs,
                           ecs_entity_t* entities,
-                          int entity_count,
+                          size_t entity_count,
                           void* udata);
 
 ecs_ret_t comflab_system(ecs_t* ecs,
                          ecs_entity_t* entities,
-                         int entity_count,
+                         size_t entity_count,
                          void* udata);
 
 ecs_ret_t bounds_system(ecs_t* ecs,
                         ecs_entity_t* entities,
-                        int entity_count,
+                        size_t entity_count,
                         void* udata);
 
 static void setup()
@@ -223,12 +223,12 @@ static void setup_get()
 
 ecs_ret_t movement_system(ecs_t* ecs,
                           ecs_entity_t* entities,
-                          int entity_count,
+                          size_t entity_count,
                           void* udata)
 {
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         // Get entity ID
         ecs_entity_t entity = entities[i];
@@ -245,12 +245,12 @@ ecs_ret_t movement_system(ecs_t* ecs,
 
 ecs_ret_t comflab_system(ecs_t* ecs,
                         ecs_entity_t* entities,
-                        int entity_count,
+                        size_t entity_count,
                         void* udata)
 {
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         // Get entity ID
         ecs_entity_t entity = entities[i];
@@ -266,12 +266,12 @@ ecs_ret_t comflab_system(ecs_t* ecs,
 
 ecs_ret_t bounds_system(ecs_t* ecs,
                         ecs_entity_t* entities,
-                        int entity_count,
+                        size_t entity_count,
                         void* udata)
 {
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         // Get entity ID
         ecs_entity_t entity = entities[i];
@@ -289,12 +289,12 @@ ecs_ret_t bounds_system(ecs_t* ecs,
 
 ecs_ret_t queue_destroy_system(ecs_t* ecs,
                                ecs_entity_t* entities,
-                               int entity_count,
+                               size_t entity_count,
                                void* udata)
 {
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         ecs_queue_destroy(ecs, entities[i]);
     }
