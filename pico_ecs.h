@@ -106,6 +106,18 @@ typedef struct ecs_s ecs_t;
 typedef ECS_ID_TYPE ecs_id_t;
 
 /**
+ * @brief Determine mask type
+ */
+#ifndef ECS_MASK_TYPE
+#define ECS_MASK_TYPE uint64_t
+#endif
+
+/**
+ * @brief ID used for entity and components
+ */
+typedef ECS_MASK_TYPE ecs_mask_t;
+
+/**
  * @brief NULL/invalid/undefined value
  */
 #define ECS_INVALID(item) (item.id == 0)
@@ -241,6 +253,7 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @returns         A system handle
  */
 ecs_system_t ecs_register_system(ecs_t* ecs,
+                                 ecs_mask_t mask,
                                  ecs_system_fn system_cb,
                                  ecs_added_fn add_cb,
                                  ecs_removed_fn remove_cb,
@@ -428,7 +441,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param ecs The ECS instance
  * @param sys The system to update
  */
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys);
+ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
 
 /**
  * @brief Updates all systems
@@ -439,7 +452,7 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys);
  *
  * @param ecs The ECS instance
  */
-ecs_ret_t ecs_update_systems(ecs_t* ecs);
+ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_mask_t mask);
 
 #ifdef __cplusplus
 }
@@ -550,6 +563,7 @@ typedef struct
 {
     bool             active;
     ecs_sparse_set_t entity_ids;
+    ecs_mask_t       mask;
     ecs_system_fn    system_cb;
     ecs_added_fn     add_cb;
     ecs_removed_fn   remove_cb;
@@ -775,6 +789,7 @@ ecs_comp_t ecs_register_component(ecs_t* ecs,
 }
 
 ecs_system_t ecs_register_system(ecs_t* ecs,
+                                 ecs_mask_t mask,
                                  ecs_system_fn system_cb,
                                  ecs_added_fn add_cb,
                                  ecs_removed_fn remove_cb,
@@ -790,6 +805,7 @@ ecs_system_t ecs_register_system(ecs_t* ecs,
     ecs_sparse_set_init(ecs, &sys_data->entity_ids, ecs->entity_count);
 
     sys_data->active = true;
+    sys_data->mask = mask;
     sys_data->system_cb = system_cb;
     sys_data->add_cb = add_cb;
     sys_data->remove_cb = remove_cb;
@@ -1117,7 +1133,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ecs_id_array_push(ecs, &ecs->remove_queue, comp.id);
 }
 
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys)
+ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -1126,6 +1142,9 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys)
     ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
 
     if (!sys_data->active)
+        return 0;
+
+    if (0 != sys_data->mask && !(sys_data->mask & mask))
         return 0;
 
     ecs_ret_t code = sys_data->system_cb(ecs,
@@ -1139,14 +1158,14 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys)
     return code;
 }
 
-ecs_ret_t ecs_update_systems(ecs_t* ecs)
+ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_mask_t mask)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_system_t sys = ecs_make_system(sys_id);
-        ecs_ret_t code = ecs_update_system(ecs, sys);
+        ecs_ret_t code = ecs_update_system(ecs, sys, mask);
 
         if (0 != code)
             return code;

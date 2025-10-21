@@ -162,17 +162,16 @@ static void setup_three_systems_min()
     ComflabComponent = ecs_register_component(ecs, sizeof(comflab_t), NULL, NULL);
     RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
 
-    MovementSystem = ecs_register_system(ecs, movement_system, NULL, NULL, NULL);
+    MovementSystem = ecs_register_system(ecs, 0, movement_system, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
     ecs_require_component(ecs, MovementSystem, DirComponent);
 
-    ComflabSystem = ecs_register_system(ecs, comflab_system, NULL, NULL, NULL);
+    ComflabSystem = ecs_register_system(ecs, 0, comflab_system, NULL, NULL, NULL);
     ecs_require_component(ecs, ComflabSystem, ComflabComponent);
 
-    BoundsSystem = ecs_register_system(ecs, bounds_system, NULL, NULL, NULL);
+    BoundsSystem = ecs_register_system(ecs, 0, bounds_system, NULL, NULL, NULL);
     ecs_require_component(ecs, BoundsSystem, RectComponent);
 }
-
 
 static void setup_three_systems_max()
 {
@@ -183,14 +182,14 @@ static void setup_three_systems_max()
     ComflabComponent = ecs_register_component(ecs, sizeof(comflab_t), NULL, NULL);
     RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
 
-    MovementSystem = ecs_register_system(ecs, movement_system, NULL, NULL, NULL);
+    MovementSystem = ecs_register_system(ecs, 0, movement_system, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
     ecs_require_component(ecs, MovementSystem, DirComponent);
 
-    ComflabSystem = ecs_register_system(ecs, comflab_system, NULL, NULL, NULL);
+    ComflabSystem = ecs_register_system(ecs, 0, comflab_system, NULL, NULL, NULL);
     ecs_require_component(ecs, ComflabSystem, ComflabComponent);
 
-    BoundsSystem = ecs_register_system(ecs, bounds_system, NULL, NULL, NULL);
+    BoundsSystem = ecs_register_system(ecs, 0, bounds_system, NULL, NULL, NULL);
     ecs_require_component(ecs, BoundsSystem, RectComponent);
 }
 
@@ -387,7 +386,7 @@ static void bench_get()
 
 static void bench_queue_destroy()
 {
-    QueueDestroySystem = ecs_register_system(ecs, queue_destroy_system, NULL, NULL, NULL);
+    QueueDestroySystem = ecs_register_system(ecs, 0, queue_destroy_system, NULL, NULL, NULL);
     ecs_require_component(ecs, QueueDestroySystem, PosComponent);
     ecs_require_component(ecs, QueueDestroySystem, RectComponent);
 
@@ -396,7 +395,7 @@ static void bench_queue_destroy()
         ecs_create(ecs);
     }
 
-    ecs_update_system(ecs, QueueDestroySystem);
+    ecs_update_system(ecs, QueueDestroySystem, 0);
 }
 
 static void bench_three_systems()
@@ -425,9 +424,9 @@ static void bench_three_systems()
     }
 
     // Run the system
-    ecs_update_system(ecs, MovementSystem);
-    ecs_update_system(ecs, ComflabSystem);
-    ecs_update_system(ecs, BoundsSystem);
+    ecs_update_system(ecs, MovementSystem, 0);
+    ecs_update_system(ecs, ComflabSystem, 0);
+    ecs_update_system(ecs, BoundsSystem, 0);
 }
 
 static void bench_three_systems_min()

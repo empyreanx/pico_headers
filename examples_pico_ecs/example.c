@@ -97,9 +97,9 @@ ecs_ret_t system_update(ecs_t* ecs,
 void register_systems(ecs_t* ecs)
 {
     // Register systems
-    System1 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
-    System2 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
-    System3 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
+    System1 = ecs_register_system(ecs, 0, system_update, NULL, NULL, NULL);
+    System2 = ecs_register_system(ecs, 0, system_update, NULL, NULL, NULL);
+    System3 = ecs_register_system(ecs, 0, system_update, NULL, NULL, NULL);
 
     // System1 requires PosComp compnents
     ecs_require_component(ecs, System1, PosComp);
@@ -157,13 +157,13 @@ int main()
 
     // Manually execute the systems
     printf("Executing system 1\n");
-    ecs_update_system(ecs, System1); // Output: e1 e2 e3
+    ecs_update_system(ecs, System1, 0); // Output: e1 e2 e3
 
     printf("Executing system 2\n");
-    ecs_update_system(ecs, System2); // Output: e2 e3
+    ecs_update_system(ecs, System2, 0); // Output: e2 e3
 
     printf("Executing system 3\n");
-    ecs_update_system(ecs, System3); // Output: e3
+    ecs_update_system(ecs, System3, 0); // Output: e3
 
     printf("---------------------------------------------------------------\n");
 
