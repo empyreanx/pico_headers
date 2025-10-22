@@ -24,6 +24,6 @@ The examples and tests compile and run on Linux (GCC), Windows (MSYS2/MinGW64), 
 
 Most libraries are licensed under your choice of zlib or the public domain. The remaining libraries are licensed under the MIT license.
 
-Deprecated libraries (pico_sat and the old pico_math) can be found [here](https://github.com/empyreanx/pico_headers_deprecated)
+Deprecated libraries (pico_sat, pico_math 1.0, and pico_ecs 2.4) can be found [here](https://github.com/empyreanx/pico_headers_deprecated)
 
 I give my thanks to [Randy Gaul](https://github.com/RandyGaul) for inspiration, answering my questions, and the template for this project.
