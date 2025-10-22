@@ -69,9 +69,9 @@ ecs_system_t System3;
 // Register components
 void register_components(ecs_t* ecs)
 {
-    PosComp  = ecs_register_component(ecs, sizeof(pos_t),  NULL, NULL);
-    VelComp  = ecs_register_component(ecs, sizeof(vel_t),  NULL, NULL);
-    RectComp = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComp  = ecs_define_component(ecs, sizeof(pos_t),  NULL, NULL);
+    VelComp  = ecs_define_component(ecs, sizeof(vel_t),  NULL, NULL);
+    RectComp = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
 }
 
 // System that prints the entity IDs of entities associated with this system
@@ -97,9 +97,9 @@ ecs_ret_t system_update(ecs_t* ecs,
 void register_systems(ecs_t* ecs)
 {
     // Register systems
-    System1 = ecs_register_system(ecs, 0, system_update, NULL, NULL, NULL);
-    System2 = ecs_register_system(ecs, 0, system_update, NULL, NULL, NULL);
-    System3 = ecs_register_system(ecs, 0, system_update, NULL, NULL, NULL);
+    System1 = ecs_define_system(ecs, 0, system_update, NULL, NULL, NULL);
+    System2 = ecs_define_system(ecs, 0, system_update, NULL, NULL, NULL);
+    System3 = ecs_define_system(ecs, 0, system_update, NULL, NULL, NULL);
 
     // System1 requires PosComp compnents
     ecs_require_component(ecs, System1, PosComp);
@@ -157,13 +157,13 @@ int main()
 
     // Manually execute the systems
     printf("Executing system 1\n");
-    ecs_update_system(ecs, System1, 0); // Output: e1 e2 e3
+    ecs_run_system(ecs, System1, 0); // Output: e1 e2 e3
 
     printf("Executing system 2\n");
-    ecs_update_system(ecs, System2, 0); // Output: e2 e3
+    ecs_run_system(ecs, System2, 0); // Output: e2 e3
 
     printf("Executing system 3\n");
-    ecs_update_system(ecs, System3, 0); // Output: e3
+    ecs_run_system(ecs, System3, 0); // Output: e3
 
     printf("---------------------------------------------------------------\n");
 

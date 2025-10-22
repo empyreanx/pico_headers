@@ -135,7 +135,7 @@ ecs_ret_t player_sys(ecs_t* ecs,
         if (ecs_has(ecs, target, MONSTER_COMP))
         {
             if (perform_attack(game, game->player, target))
-                ecs_queue_destroy(ecs, target);
+                ecs_defer_destroy(ecs, target);
         }
 
         return 0;
@@ -339,7 +339,7 @@ ecs_ret_t chest_sys(ecs_t* ecs,
             stats->health  += chest->health;
             stats->attack  += chest->attack;
             stats->defense += chest->defense;
-            ecs_queue_destroy(ecs, entities[i]);
+            ecs_defer_destroy(ecs, entities[i]);
         }
         else if (distance(player_pos, chest_pos) <= 2)
         {
@@ -379,7 +379,7 @@ ecs_ret_t draw_sys(ecs_t* ecs,
 void register_systems(game_t* game)
 {
     // Player turn system
-    PLAYER_SYS = ecs_register_system(game->ecs, 0, player_sys, NULL, NULL, game);
+    PLAYER_SYS = ecs_define_system(game->ecs, 0, player_sys, NULL, NULL, game);
 
     ecs_require_component(game->ecs, PLAYER_SYS, POS_COMP);
     ecs_require_component(game->ecs, PLAYER_SYS, DRAWABLE_COMP);
@@ -387,7 +387,7 @@ void register_systems(game_t* game)
     ecs_require_component(game->ecs, PLAYER_SYS, MONSTER_COMP);
 
     // Monster's turns
-    MONSTER_SYS = ecs_register_system(game->ecs, 0, monster_sys, NULL, NULL, game);
+    MONSTER_SYS = ecs_define_system(game->ecs, 0, monster_sys, NULL, NULL, game);
 
     ecs_require_component(game->ecs, MONSTER_SYS, POS_COMP);
     ecs_require_component(game->ecs, MONSTER_SYS, DRAWABLE_COMP);
@@ -395,14 +395,14 @@ void register_systems(game_t* game)
     ecs_require_component(game->ecs, MONSTER_SYS, MONSTER_COMP);
 
     // Chest system
-    CHEST_SYS = ecs_register_system(game->ecs, 0, chest_sys, NULL, NULL, game);
+    CHEST_SYS = ecs_define_system(game->ecs, 0, chest_sys, NULL, NULL, game);
 
     ecs_require_component(game->ecs, CHEST_SYS, CHEST_COMP);
     ecs_require_component(game->ecs, CHEST_SYS, POS_COMP);
     ecs_require_component(game->ecs, CHEST_SYS, DRAWABLE_COMP);
 
     // Drawable system
-    DRAWABLE_SYS = ecs_register_system(game->ecs, 0, draw_sys, NULL, NULL, game);
+    DRAWABLE_SYS = ecs_define_system(game->ecs, 0, draw_sys, NULL, NULL, game);
 
     ecs_require_component(game->ecs, DRAWABLE_SYS, POS_COMP);
     ecs_require_component(game->ecs, DRAWABLE_SYS, DRAWABLE_COMP);

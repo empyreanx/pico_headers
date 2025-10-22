@@ -49,17 +49,36 @@
 
     Please see the examples and unit tests for more details.
 
+    Version 2.4 - 3.0 Migration Guide:
+    ----------------------------
+
+    1. Replace raw IDs with typesafe handles.
+    2. Remove the 'dt' parameter from system functions, `ecs_run_system` and
+    3. `ecs_run_systems` calls.
+    4. Replace `int entity_count` with `size_t entity_count` in all system
+       functions
+    5. Insert a mask value of 0 into `ecs_register_system` calls
+    6. Ensure all update calls have the form `ecs_run_system(ctx, sys, 0)`
+       and `ecs_run_systems(ctx, 0)`
+    7. Now, make the following substitutions:
+        - ecs_register_system  -> ecs_define_system
+        - ecs_register_component  -> ecs_define_component
+        - ecs_run_system -> ecs_run_system
+        - ecs_run_systems -> ecs_run_systems
+        - ecs_queue_destroy -> ecs_defer_destroy
+        - ecs_defer_remove -> ecs_defer_remove
+
     Masks:
     ------
 
     Masks are a new feature in 3.0. Systems to are assigned to categories (using
-    a bitmask) at registration and then can selectively invoking those systems
+    a bitmask) at registration and then can selectively invoke those systems
     at update (also using a bitmask).
 
-    Note that passing 0 into `ecs_register_system` means the system matches
+    Note that passing 0 into `ecs_define_system` means the system matches
     all categories.
 
-    If `ecs_system_t sys = ecs_register_system(ecs, (1 << 0) | (1 << 1), ...)` Then,
+    If `ecs_system_t sys = ecs_define_system(ecs, (1 << 0) | (1 << 1), ...)` Then,
 
     This will run `sys`:
 
@@ -239,7 +258,7 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
  * @param udata       Data passed to callbacks (can be NULL)
  * @returns           A component handle
  */
-ecs_comp_t ecs_register_component(ecs_t* ecs,
+ecs_comp_t ecs_define_component(ecs_t* ecs,
                                   size_t size,
                                   ecs_constructor_fn constructor,
                                   ecs_destructor_fn destructor);
@@ -293,7 +312,7 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @param udata     The user data passed to the callbacks
  * @returns         A system handle
  */
-ecs_system_t ecs_register_system(ecs_t* ecs,
+ecs_system_t ecs_define_system(ecs_t* ecs,
                                  ecs_mask_t mask,
                                  ecs_system_fn system_cb,
                                  ecs_added_fn add_cb,
@@ -448,7 +467,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * WARNING: This function may change the order of a system's entity array. It
  * should be used with caution. A better option in most circumstances is to use
- * the {@link ecs_queue_destroy} function, which destroys the entity after the
+ * the {@link ecs_defer_destroy} function, which destroys the entity after the
  * system has finished executing.
  *
  * @param ecs    The ECS instance
@@ -461,7 +480,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
  *
  * WARNING: This function may change the order of a system's entity array. It
  * should be used with caution. A better option in most circumstances is to use
- * the {@link ecs_queue_remove} function, which removes the component after the
+ * the {@link ecs_defer_remove} function, which removes the component after the
  * system has finished executing.
  *
  * @param ecs    The ECS instance
@@ -478,7 +497,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param ecs    The ECS instance
  * @param entity The entity to destroy
  */
-void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity);
+void ecs_defer_destroy(ecs_t* ecs, ecs_entity_t entity);
 
 /**
  * @brief Queues a component for removal from the specified entity
@@ -490,7 +509,7 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity);
  * @param entity The entity that has the component
  * @param comp   The component to remove
  */
-void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
+void ecs_defer_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Update an individual system
@@ -501,19 +520,19 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param sys The system to update
  * @param mask Bitmask that determines which systems run based on category.
  */
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
+ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
 
 /**
  * @brief Updates all systems
  *
- * Calls {@link ecs_update_system} on all components in order of system
- * registration. In most cases it is better to call {@link ecs_update_system} as
+ * Calls {@link ecs_run_system} on all components in order of system
+ * registration. In many cases it is better to call {@link ecs_run_system} as
  * needed.
  *
  * @param ecs The ECS instance
  * @param mask Bitmask that determines which systems run based on category.
  */
-ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_mask_t mask);
+ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 
 #ifdef __cplusplus
 }
@@ -827,7 +846,7 @@ void ecs_reset(ecs_t* ecs)
     }
 }
 
-ecs_comp_t ecs_register_component(ecs_t* ecs,
+ecs_comp_t ecs_define_component(ecs_t* ecs,
                                   size_t size,
                                   ecs_constructor_fn constructor,
                                   ecs_destructor_fn destructor)
@@ -849,7 +868,7 @@ ecs_comp_t ecs_register_component(ecs_t* ecs,
     return comp;
 }
 
-ecs_system_t ecs_register_system(ecs_t* ecs,
+ecs_system_t ecs_define_system(ecs_t* ecs,
                                  ecs_mask_t mask,
                                  ecs_system_fn system_cb,
                                  ecs_added_fn add_cb,
@@ -1189,7 +1208,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ecs_bitset_flip(&entity_data->comp_bits, comp.id, false);
 }
 
-void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity)
+void ecs_defer_destroy(ecs_t* ecs, ecs_entity_t entity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
@@ -1201,7 +1220,7 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity)
     ecs_id_array_push(ecs, &ecs->destroy_queue, entity.id);
 }
 
-void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
+void ecs_defer_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
@@ -1211,7 +1230,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ecs_id_array_push(ecs, &ecs->remove_queue, comp.id);
 }
 
-ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
+ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -1236,14 +1255,14 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
     return code;
 }
 
-ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_mask_t mask)
+ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_system_t sys = ecs_make_system(sys_id);
-        ecs_ret_t code = ecs_update_system(ecs, sys, mask);
+        ecs_ret_t code = ecs_run_system(ecs, sys, mask);
 
         if (0 != code)
             return code;
