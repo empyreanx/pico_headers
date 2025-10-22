@@ -52,9 +52,12 @@
     Version 2.4 - 3.0 Migration Guide:
     ----------------------------
 
+    Version 3.0 is a major departure from 2.4. Here is a guide to help make the
+    leap into 3.0
+
     1. Replace raw IDs with typesafe handles.
-    2. Remove the 'dt' parameter from system functions, `ecs_run_system` and
-    3. `ecs_run_systems` calls.
+    2. Remove the 'dt' parameter from system functions, `ecs_update_system` and
+    3. `ecs_update_systems` calls.
     4. Replace `int entity_count` with `size_t entity_count` in all system
        functions
     5. Insert a mask value of 0 into `ecs_register_system` calls
@@ -67,6 +70,9 @@
         - ecs_run_systems -> ecs_run_systems
         - ecs_queue_destroy -> ecs_defer_destroy
         - ecs_defer_remove -> ecs_defer_remove
+
+    If you encounter any difficutlies with any of these steps and/or your project
+    doesn't compile once you're finished, feel free to submit an issue.
 
     Masks:
     ------
@@ -102,9 +108,10 @@
     - 3.0 (2025/10/22):
         - Typesafe entity, component, and system handles
         - System category masks
-        - Optimizations
+        - More descriptive names for some functions in the public API
         - Invalid entity value is now 0
         - The 'dt' parameter has been removed
+        - Optimizations
         - Significant internal refactoring
 
     Usage:
