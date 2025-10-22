@@ -49,6 +49,45 @@
 
     Please see the examples and unit tests for more details.
 
+    Masks:
+    ------
+
+    Masks are a new feature in 3.0. Systems to are assigned to categories (using
+    a bitmask) at registration and then can selectively invoking those systems
+    at update (also using a bitmask).
+
+    Note that passing 0 into `ecs_register_system` means the system matches
+    all categories.
+
+    If `ecs_system_t sys = ecs_register_system(ecs, (1 << 0) | (1 << 1), ...)` Then,
+
+    This will run `sys`:
+
+    `ecs_update_sysem(ecs, sys, (1 << 0) | (1 << 1));`
+
+    And so will this,
+
+    `ecs_update_sysem(ecs, sys, (1 << 1));`
+
+    But this will not,
+
+    `ecs_update_sysem(ecs, sys, (1 << 3));`
+
+    Nor will this:
+
+    `ecs_update_sysem(ecs, sys, 0);`
+
+    Revision History:
+    -----------------
+
+    - 3.0 (2025/10/22):
+        - Typesafe entity, component, and system handles
+        - System category masks
+        - Optimizations
+        - Invalid entity value is now 0
+        - The 'dt' parameter has been removed
+        - Significant internal refactoring
+
     Usage:
     ------
 
@@ -72,7 +111,7 @@
     --------
 
     - PICO_ECS_MAX_COMPONENTS (default: 32)
-    - PICO_ECS_MAX_SYSTEMS (default: 16)
+    - PICO_ECS_MAX_SYSTEMS    (default: 16)
 
     Must be defined before PICO_ECS_IMPLEMENTATION
 */
@@ -113,12 +152,12 @@ typedef ECS_ID_TYPE ecs_id_t;
 #endif
 
 /**
- * @brief ID used for entity and components
+ * @brief Type for value used in system matching
  */
 typedef ECS_MASK_TYPE ecs_mask_t;
 
 /**
- * @brief NULL/invalid/undefined value
+ * @brief True if item is invalid
  */
 #define ECS_INVALID(item) (item.id == 0)
 
@@ -246,6 +285,8 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * core logic of a game by manipulating game state as defined by components.
  *
  * @param ecs       The ECS instance
+ * @param mask      Bitmask that determines which categories the system belongs
+                    to. A value of 0 matches all categories
  * @param system_cb Callback that is fired every update
  * @param add_cb    Called when an entity is added to the system (can be NULL)
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
@@ -458,6 +499,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * @param ecs The ECS instance
  * @param sys The system to update
+ * @param mask Bitmask that determines which systems run based on category.
  */
 ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
 
@@ -469,6 +511,7 @@ ecs_ret_t ecs_update_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
  * needed.
  *
  * @param ecs The ECS instance
+ * @param mask Bitmask that determines which systems run based on category.
  */
 ecs_ret_t ecs_update_systems(ecs_t* ecs, ecs_mask_t mask);
 
