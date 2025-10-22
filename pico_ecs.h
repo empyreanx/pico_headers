@@ -45,41 +45,42 @@
     fewer assumptions about how that data will be used. In an ECS it is
     effortless to change functionality, by either adding or removing components
     from entities, and/or by changing system requirements. Adding new logic is
-    also simple as well, just register a new system!
+    also simple as well, just defining a new system!
 
     Please see the examples and unit tests for more details.
 
     Version 2.4 -> 3.0 Migration Guide:
     ----------------------------
 
-    Version 3.0 is a major departure from 2.4. Here is a guide to help make the
-    leap into 3.0
+    Version 3.0 is a major departure from 2.4. Here is a short guide to help
+    make the leap into 3.0
 
-    1. Replace raw IDs with typesafe handles.
-    2. Remove the 'dt' parameter from system functions, `ecs_update_system` and
-    3. `ecs_update_systems` calls.
-    4. Replace `int entity_count` with `size_t entity_count` in all system
-       functions
-    5. Insert a mask value of 0 into `ecs_register_system` calls
-    6. Ensure all update calls have the form `ecs_run_system(ctx, sys, 0)`
-       and `ecs_run_systems(ctx, 0)`
-    7. Now, make the following substitutions:
+    1. Make the following substitutions:
         - ecs_register_system  -> ecs_define_system
         - ecs_register_component  -> ecs_define_component
         - ecs_run_system -> ecs_run_system
         - ecs_run_systems -> ecs_run_systems
         - ecs_queue_destroy -> ecs_defer_destroy
         - ecs_defer_remove -> ecs_defer_remove
+    2. Remove the 'dt' parameter from system callbacks, `ecs_run_system` and
+       `ecs_run_systems` calls.
+    3. Replace `int entity_count` with `size_t entity_count` in all system
+       callbacks
+    5. Insert a mask value of 0 into `ecs_define_system` calls
+    4. Replace raw IDs with typesafe handles.
+    6. Ensure all update calls have the form `ecs_run_system(ctx, sys, 0)`
+       and `ecs_run_systems(ctx, 0)`
+    7. Replace raw IDs with typesafe handles.
 
-    If you encounter any difficutlies with any of these steps and/or your project
-    doesn't compile once you're finished, feel free to submit an issue.
+    If you encounter any difficultlies with any of these steps and/or your project
+    doesn't compile once you're finished, please submit an issue.
 
     Masks:
     ------
 
     Masks are a new feature in 3.0. Systems to are assigned to categories (using
-    a bitmask) at registration and then can selectively invoke those systems
-    at update (also using a bitmask).
+    a bitmask) at definition and then can selectively invoke those systems
+    at runtime (also using a bitmask).
 
     Note that passing 0 into `ecs_define_system` means the system matches
     all categories.
@@ -88,19 +89,19 @@
 
     This will run `sys`:
 
-    `ecs_update_sysem(ecs, sys, (1 << 0) | (1 << 1));`
+    `ecs_run_system(ecs, sys, (1 << 0) | (1 << 1));`
 
     And so will this,
 
-    `ecs_update_sysem(ecs, sys, (1 << 1));`
+    `ecs_run_system(ecs, sys, (1 << 1));`
 
     But this will not,
 
-    `ecs_update_sysem(ecs, sys, (1 << 3));`
+    `ecs_run_system(ecs, sys, (1 << 3));`
 
     Nor will this:
 
-    `ecs_update_sysem(ecs, sys, 0);`
+    `ecs_run_system(ecs, sys, 0);`
 
     Revision History:
     -----------------
@@ -253,9 +254,9 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
                                   void* comp_ptr);
 
 /**
- * @brief Registers a component
+ * @brief Defines a component
  *
- * Registers a component with the specfied size in bytes. Components define the
+ * Defines a component with the specfied size in bytes. Components define the
  * game state (usually contained within structs) and are manipulated by systems.
  *
  * @param ecs         The ECS instance
@@ -271,7 +272,7 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 ecs_destructor_fn destructor);
 
 /**
- * @brief System update callback
+ * @brief System callback
  *
  * Systems implement the core logic of an ECS by manipulating entities
  * and components.
@@ -305,9 +306,9 @@ typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 
 /**
- * @brief Registers a system
+ * @brief Defines a system
  *
- * Registers a system with the specified parameters. Systems contain the
+ * Defines a system with the specified parameters. Systems contain the
  * core logic of a game by manipulating game state as defined by components.
  *
  * @param ecs       The ECS instance
@@ -533,7 +534,7 @@ ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
  * @brief Updates all systems
  *
  * Calls {@link ecs_run_system} on all components in order of system
- * registration. In many cases it is better to call {@link ecs_run_system} as
+ * definition. In many cases it is better to call {@link ecs_run_system} as
  * needed.
  *
  * @param ecs The ECS instance
