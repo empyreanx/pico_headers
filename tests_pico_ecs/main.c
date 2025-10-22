@@ -809,10 +809,58 @@ TEST_CASE(test_add_remove_callbacks)
     return true;
 }
 
-static ecs_ret_t test_system(ecs_t* ecs,
-                             ecs_entity_t* entities,
-                             size_t entity_count,
-                             void* udata)
+static ecs_ret_t mask_test_system(ecs_t* ecs,
+                                  ecs_entity_t* entities,
+                                  size_t entity_count,
+                                  void* udata)
+{
+    (void)ecs;
+    (void)entities;
+    (void)entity_count;
+
+    bool* run = udata;
+    *run = true;
+
+    return 0;
+}
+
+TEST_CASE(test_system_mask)
+{
+    bool run = false;
+
+    sys1 = ecs_register_system(ecs, (1 << 0) | (1 << 1), mask_test_system, NULL, NULL, &run);
+
+    ecs_update_system(ecs, sys1, 0);
+
+    REQUIRE(!run);
+
+    ecs_update_system(ecs, sys1, (1 << 3));
+
+    REQUIRE(!run);
+
+    ecs_update_system(ecs, sys1, (1 << 1));
+
+    REQUIRE(run);
+
+    run = false;
+
+    ecs_update_system(ecs, sys1, (1 << 0) | (1 << 1));
+
+    REQUIRE(run);
+
+    run = false;
+
+    ecs_update_system(ecs, sys1, (ecs_mask_t)-1);
+
+    REQUIRE(run);
+
+    return true;
+}
+
+static ecs_ret_t ret_system(ecs_t* ecs,
+                            ecs_entity_t* entities,
+                            size_t entity_count,
+                            void* udata)
 {
     (void)ecs;
     (void)entities;
@@ -821,10 +869,10 @@ static ecs_ret_t test_system(ecs_t* ecs,
     return 42;
 }
 
-static ecs_ret_t alt_system(ecs_t* ecs,
-                           ecs_entity_t* entities,
-                           size_t entity_count,
-                           void* udata)
+static ecs_ret_t alt_ret_system(ecs_t* ecs,
+                                ecs_entity_t* entities,
+                                size_t entity_count,
+                                void* udata)
 {
     (void)ecs;
     (void)entities;
@@ -839,7 +887,7 @@ TEST_CASE(test_set_system_callbacks)
     added = false;
     removed = false;
 
-    sys1 =ecs_register_system(ecs, 0, test_system, NULL, NULL, NULL);
+    sys1 =ecs_register_system(ecs, 0, ret_system, NULL, NULL, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
     // Test initial system callback works
@@ -847,7 +895,7 @@ TEST_CASE(test_set_system_callbacks)
     REQUIRE(ret == 42);
 
     // Change system callback and test
-    ecs_set_system_callbacks(ecs, sys1, alt_system, on_add, on_remove);
+    ecs_set_system_callbacks(ecs, sys1, alt_ret_system, on_add, on_remove);
     ret = ecs_update_system(ecs, sys1, 0);
     REQUIRE(ret == 24);
 
@@ -904,6 +952,7 @@ static TEST_SUITE(suite_ecs)
     RUN_TEST_CASE(test_queue_remove_system);
     RUN_TEST_CASE(test_queue_destroy_system_with_destructor);
     RUN_TEST_CASE(test_enable_disable);
+    RUN_TEST_CASE(test_system_mask);
     RUN_TEST_CASE(test_add_remove_callbacks);
     RUN_TEST_CASE(test_set_system_callbacks);
     RUN_TEST_CASE(test_system_udata);
