@@ -49,7 +49,7 @@
 
     Please see the examples and unit tests for more details.
 
-    Version 2.4 - 3.0 Migration Guide:
+    Version 2.4 -> 3.0 Migration Guide:
     ----------------------------
 
     Version 3.0 is a major departure from 2.4. Here is a guide to help make the
@@ -266,9 +266,9 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
  * @returns           A component handle
  */
 ecs_comp_t ecs_define_component(ecs_t* ecs,
-                                  size_t size,
-                                  ecs_constructor_fn constructor,
-                                  ecs_destructor_fn destructor);
+                                size_t size,
+                                ecs_constructor_fn constructor,
+                                ecs_destructor_fn destructor);
 
 /**
  * @brief System update callback
@@ -320,11 +320,11 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @returns         A system handle
  */
 ecs_system_t ecs_define_system(ecs_t* ecs,
-                                 ecs_mask_t mask,
-                                 ecs_system_fn system_cb,
-                                 ecs_added_fn add_cb,
-                                 ecs_removed_fn remove_cb,
-                                 void* udata);
+                               ecs_mask_t mask,
+                               ecs_system_fn system_cb,
+                               ecs_added_fn add_cb,
+                               ecs_removed_fn remove_cb,
+                               void* udata);
 /**
  * @brief Determines which components are available to the specified system.
  *
@@ -854,9 +854,9 @@ void ecs_reset(ecs_t* ecs)
 }
 
 ecs_comp_t ecs_define_component(ecs_t* ecs,
-                                  size_t size,
-                                  ecs_constructor_fn constructor,
-                                  ecs_destructor_fn destructor)
+                                size_t size,
+                                ecs_constructor_fn constructor,
+                                ecs_destructor_fn destructor)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
@@ -876,11 +876,11 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
 }
 
 ecs_system_t ecs_define_system(ecs_t* ecs,
-                                 ecs_mask_t mask,
-                                 ecs_system_fn system_cb,
-                                 ecs_added_fn add_cb,
-                                 ecs_removed_fn remove_cb,
-                                 void* udata)
+                               ecs_mask_t mask,
+                               ecs_system_fn system_cb,
+                               ecs_added_fn add_cb,
+                               ecs_removed_fn remove_cb,
+                               void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->system_count < ECS_MAX_SYSTEMS);
