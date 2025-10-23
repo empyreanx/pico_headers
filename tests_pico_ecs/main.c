@@ -605,7 +605,7 @@ static ecs_ret_t queue_destroy_system(ecs_t* ecs,
         ecs_entity_t entity = entities[i];
 
         REQUIRE(ecs_is_ready(ecs, entity));
-        ecs_defer_destroy(ecs, entity);
+        ecs_queue_destroy(ecs, entity);
         REQUIRE(!ecs_is_ready(ecs, entity));
     }
 
@@ -652,7 +652,7 @@ static ecs_ret_t queue_remove_system(ecs_t* ecs,
 
     for (size_t i = 0; i < entity_count; i++)
     {
-        ecs_defer_remove(ecs, entities[i], comp1);
+        ecs_queue_remove(ecs, entities[i], comp1);
     }
 
     return 0;

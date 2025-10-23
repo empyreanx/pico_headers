@@ -60,8 +60,6 @@
         - ecs_register_component  -> ecs_define_component
         - ecs_update_system -> ecs_run_system
         - ecs_update_systems -> ecs_run_systems
-        - ecs_queue_destroy -> ecs_defer_destroy
-        - ecs_queue_remove -> ecs_defer_remove
     2. Remove the 'dt' parameter from system callbacks, replacing it with a
        function call or global variable where necessary.
     3. Replace 'int entity_count' with 'size_t entity_count' in all system
@@ -475,7 +473,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * WARNING: This function may change the order of a system's entity array. It
  * should be used with caution. A better option in most circumstances is to use
- * the {@link ecs_defer_destroy} function, which destroys the entity after the
+ * the {@link ecs_queue_destroy} function, which destroys the entity after the
  * system has finished executing.
  *
  * @param ecs    The ECS instance
@@ -488,7 +486,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
  *
  * WARNING: This function may change the order of a system's entity array. It
  * should be used with caution. A better option in most circumstances is to use
- * the {@link ecs_defer_remove} function, which removes the component after the
+ * the {@link ecs_queue_remove} function, which removes the component after the
  * system has finished executing.
  *
  * @param ecs    The ECS instance
@@ -505,7 +503,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param ecs    The ECS instance
  * @param entity The entity to destroy
  */
-void ecs_defer_destroy(ecs_t* ecs, ecs_entity_t entity);
+void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity);
 
 /**
  * @brief Queues a component for removal from the specified entity
@@ -517,7 +515,7 @@ void ecs_defer_destroy(ecs_t* ecs, ecs_entity_t entity);
  * @param entity The entity that has the component
  * @param comp   The component to remove
  */
-void ecs_defer_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
+void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Update an individual system
@@ -1216,7 +1214,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ecs_bitset_flip(&entity_data->comp_bits, comp.id, false);
 }
 
-void ecs_defer_destroy(ecs_t* ecs, ecs_entity_t entity)
+void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
@@ -1228,7 +1226,7 @@ void ecs_defer_destroy(ecs_t* ecs, ecs_entity_t entity)
     ecs_id_array_push(ecs, &ecs->destroy_queue, entity.id);
 }
 
-void ecs_defer_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
+void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
