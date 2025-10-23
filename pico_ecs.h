@@ -49,11 +49,11 @@
 
     Please see the examples and unit tests for more details.
 
-    Version 2.4 -> 3.0 Migration Guide:
+    Version 2.4 to 3.0 Migration Guide:
     ----------------------------
 
     Version 3.0 is a major departure from 2.4. Here is a short guide to help
-    make the leap to 3.0
+    make the leap to 3.0.
 
     1. Make the following substitutions:
         - ecs_register_system  -> ecs_define_system
@@ -331,7 +331,8 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_removed_fn remove_cb,
                                void* udata);
 /**
- * @brief Determines which components are available to the specified system.
+ * @brief Entities have the specified component may processed by the target
+ * system, depending on the other components required by it.
  *
  * @param ecs  The ECS instance
  * @param sys  The target system
