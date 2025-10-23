@@ -108,9 +108,10 @@
         - Typesafe entity, component, and system handles
         - System category masks
         - More descriptive names for some functions in the public API
-        - Invalid entity value is now 0
+        - Invalid entity ID is now 0
         - The 'dt' parameter has been removed
         - Optimizations
+        - Some function name changes
         - Significant internal refactoring
 
     Usage:
@@ -182,11 +183,6 @@ typedef ECS_ID_TYPE ecs_id_t;
 typedef ECS_MASK_TYPE ecs_mask_t;
 
 /**
- * @brief True if item is invalid
- */
-#define ECS_INVALID(item) (item.id == 0)
-
-/**
  * @brief Return code for system callback and calling functions
  */
 typedef int32_t ecs_ret_t;
@@ -205,6 +201,16 @@ typedef struct ecs_comp_t { ecs_id_t id; } ecs_comp_t;
  * @brief A system handle
  */
 typedef struct ecs_system_t { ecs_id_t id; } ecs_system_t;
+
+/**
+ * @brief Returns true if the entity is invalid and false otherwise
+ */
+bool ecs_is_invalid_entity(ecs_entity_t entity);
+
+/**
+ * @brief Returns an invalid entity
+ */
+ecs_entity_t ecs_get_invalid_entity();
 
 /**
  * @brief Creates an ECS instance.
@@ -766,6 +772,17 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
 /*=============================================================================
  * Public API implementation
  *============================================================================*/
+
+bool ecs_is_invalid_entity(ecs_entity_t entity)
+{
+    return 0 == entity.id;
+}
+
+ecs_entity_t ecs_get_invalid_entity()
+{
+    ecs_entity_t invalid = { 0 };
+    return invalid;
+}
 
 ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 {
