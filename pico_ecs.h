@@ -213,19 +213,19 @@ bool ecs_is_invalid_entity(ecs_entity_t entity);
 ecs_entity_t ecs_invalid_entity();
 
 /**
- * @brief Creates an ECS instance.
+ * @brief Creates an ECS context.
  *
  * @param entity_count The inital number of entities to pre-allocated
  * @param mem_ctx A context for a custom allocator
  *
- * @returns An ECS instance or NULL if out of memory
+ * @returns An ECS context or NULL if out of memory
  */
 ecs_t* ecs_new(size_t entity_count, void* mem_ctx);
 
 /**
- * @brief Destroys an ECS instance
+ * @brief Destroys an ECS context
  *
- * @param ecs The ECS instance
+ * @param ecs The ECS context
  */
 void ecs_free(ecs_t* ecs);
 
@@ -237,7 +237,7 @@ void ecs_reset(ecs_t* ecs);
 /**
  * @brief Called when a component is created (via ecs_add)
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity being constructed
  * @param ptr    The pointer to the component
  */
@@ -249,7 +249,7 @@ typedef void (*ecs_constructor_fn)(ecs_t* ecs,
 /**
  * @brief Called when a component is destroyed (via ecs_remove or ecs_destroy)
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity being destoryed
  * @param ptr    The pointer to the component
  */
@@ -263,7 +263,7 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
  * Defines a component with the specfied size in bytes. Components define the
  * game state (usually contained within structs) and are manipulated by systems.
  *
- * @param ecs         The ECS instance
+ * @param ecs         The ECS context
  * @param size        The number of bytes to allocate for each component instance
  * @param constructor Called when a component is created (disabled if NULL)
  * @param destructor  Called when a component is destroyed (disabled if NULL)
@@ -281,7 +281,7 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
  * Systems implement the core logic of an ECS by manipulating entities
  * and components.
  *
- * @param ecs          The ECS instance
+ * @param ecs          The ECS context
  * @param entities     An array of entities managed by the system
  * @param entity_count The number of entities in the array
  * @param udata        The user data associated with the system
@@ -294,7 +294,7 @@ typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
 /**
  * @brief Called when an entity is added to a system
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity being added
  * @param udata  The user data passed to the callback
  */
@@ -303,7 +303,7 @@ typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 /**
  * @brief Called when an entity is removed from a system
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The enitty being removed
  * @param udata  The user data passed to the callback
  */
@@ -315,7 +315,7 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * Defines a system with the specified parameters. Systems contain the
  * core logic of a game by manipulating game state as defined by components.
  *
- * @param ecs       The ECS instance
+ * @param ecs       The ECS context
  * @param mask      Bitmask that determines which categories the system belongs
                     to. A value of 0 matches all categories
  * @param system_cb Callback that is fired every update
@@ -334,7 +334,7 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
  * @brief Entities are processed by the target system if they have all of the
  * the components required by the system
  *
- * @param ecs  The ECS instance
+ * @param ecs  The ECS context
  * @param sys  The target system
  * @param comp A component to require
  */
@@ -344,7 +344,7 @@ void ecs_require_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
  * @brief Excludes entities having the specified component from being added to
  * the target system.
  *
- * @param ecs  The ECS instance
+ * @param ecs  The ECS context
  * @param sys  The target system
  * @param comp A component to exclude
  */
@@ -353,7 +353,7 @@ void ecs_exclude_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
 /**
  * @brief Enables a system
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param sys_id The specified system
  */
 void ecs_enable_system(ecs_t* ecs, ecs_system_t sys);
@@ -361,7 +361,7 @@ void ecs_enable_system(ecs_t* ecs, ecs_system_t sys);
 /**
  * @brief Disables a system
  *
- * @param ecs The ECS instance
+ * @param ecs The ECS context
  * @param sys The specified system
  */
 void ecs_disable_system(ecs_t* ecs, ecs_system_t sys);
@@ -369,7 +369,7 @@ void ecs_disable_system(ecs_t* ecs, ecs_system_t sys);
 /**
  * @brief Updates the callbacks for an existing system
  *
- * @param ecs       The ECS instance
+ * @param ecs       The ECS context
  * @param sys       The system
  * @param system_cb Callback that is fired every update
  * @param add_cb    Called when an entity is added to the system (can be NULL)
@@ -384,7 +384,7 @@ void ecs_set_system_callbacks(ecs_t* ecs,
 /**
  * @brief Sets the user data for a system
  *
- * @param ecs   The ECS instance
+ * @param ecs   The ECS context
  * @param sys   The system
  * @param udata The user data to set
  */
@@ -393,7 +393,7 @@ void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata);
 /**
  * @brief Gets the user data from a system
  *
- * @param ecs The ECS instance
+ * @param ecs The ECS context
  * @param sys The system
  * @return    The system's user data
  */
@@ -402,7 +402,7 @@ void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys);
 /**
  * @brief Sets the system's mask
  *
- * @param ecs  The ECS instance
+ * @param ecs  The ECS context
  * @param sys  The system
  * @param mask The mask to set
  */
@@ -411,7 +411,7 @@ void ecs_set_system_mask(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
 /**
  * @brief Returns the system mask
  *
- * @param ecs The ECS instance
+ * @param ecs The ECS context
  * @param sys The system
  * @return    The system's mask
  */
@@ -425,7 +425,7 @@ size_t ecs_get_system_entity_count(ecs_t* ecs, ecs_system_t sys);
 /**
  * @brief Creates an entity
  *
- * @param ecs The ECS instance
+ * @param ecs The ECS context
  *
  * @returns The new entity
  */
@@ -435,7 +435,7 @@ ecs_entity_t ecs_create(ecs_t* ecs);
  * @brief Returns true if the entity is currently active and has not been queued
  * for destruction
  *
- * @param ecs The ECS instance
+ * @param ecs The ECS context
  * @param entity The target entity
  */
 bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity);
@@ -443,7 +443,7 @@ bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity);
 /**
  * @brief Test if entity has the specified component
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity
  * @param comp   The component
  *
@@ -454,7 +454,7 @@ bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 /**
  * @brief Adds a component instance to an entity
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity
  * @param comp   The component
  *
@@ -465,7 +465,7 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args);
 /**
  * @brief Gets a component instance associated with an entity
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity
  * @param comp   The component
  *
@@ -483,7 +483,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * the {@link ecs_queue_destroy} function, which destroys the entity after the
  * system has finished executing.
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity to destroy
  */
 void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
@@ -496,7 +496,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
  * the {@link ecs_queue_remove} function, which removes the component after the
  * system has finished executing.
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity
  * @param comp   The component
  */
@@ -507,7 +507,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * Queued entities are destroyed after the curent iteration.
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity to destroy
  */
 void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity);
@@ -518,7 +518,7 @@ void ecs_queue_destroy(ecs_t* ecs, ecs_entity_t entity);
  * Queued entity/component pairs that will be deleted after the current system
  * returns.
  *
- * @param ecs    The ECS instance
+ * @param ecs    The ECS context
  * @param entity The entity that has the component
  * @param comp   The component to remove
  */
@@ -529,7 +529,7 @@ void ecs_queue_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * Calls system logic on required components, but not excluded ones.
  *
- * @param ecs The ECS instance
+ * @param ecs The ECS context
  * @param sys The system to update
  * @param mask Bitmask that determines which systems run based on category.
  */
@@ -542,7 +542,7 @@ ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
  * definition. In many cases it is better to call {@link ecs_run_system} as
  * needed.
  *
- * @param ecs The ECS instance
+ * @param ecs The ECS context
  * @param mask Bitmask that determines which systems run based on category.
  */
 ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
