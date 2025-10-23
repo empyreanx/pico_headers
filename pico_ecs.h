@@ -331,7 +331,7 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_removed_fn remove_cb,
                                void* udata);
 /**
- * @brief Entities have the specified component may processed by the target
+ * @brief Entities having the specified component may processed by the target
  * system, depending on the other components required by it.
  *
  * @param ecs  The ECS instance
