@@ -6,7 +6,7 @@ A collection of cross-platform single header libraries written in C.
 Library | Docs | Description | Version
 ------- | -----| ------------| -------
 **[pico_b64](pico_b64.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__b64_8h.html)**  | Base64 encoding/decoding library             | 1.0
-**[pico_ecs](pico_ecs.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__ecs_8h.html)**  | Pure and simple ECS                          | 2.4
+**[pico_ecs](pico_ecs.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__ecs_8h.html)**  | Pure and simple ECS                          | 3.0
 **[pico_gfx](pico_gfx.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__gfx_8h.html)**  | Graphics library based on sokol_gfx          | 0.1
 **[pico_gl](pico_gl.h)**     | **[docs](https://empyreanx.github.io/docs/ph/pico__gl_8h.html)**   | Graphics library based on OpenGL             | 0.1
 **[pico_hit](pico_hit.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__hit_8h.html)**  | 2D collision detection (SAT) and ray casting | 0.2
@@ -24,6 +24,6 @@ The examples and tests compile and run on Linux (GCC), Windows (MSYS2/MinGW64), 
 
 Most libraries are licensed under your choice of zlib or the public domain. The remaining libraries are licensed under the MIT license.
 
-Deprecated libraries (pico_sat and the old pico_math) can be found [here](https://github.com/empyreanx/pico_headers_deprecated)
+Deprecated libraries (pico_sat, pico_math 1.0, and pico_ecs 2.4) can be found [here](https://github.com/empyreanx/pico_headers_deprecated)
 
 I give my thanks to [Randy Gaul](https://github.com/RandyGaul) for inspiration, answering my questions, and the template for this project.

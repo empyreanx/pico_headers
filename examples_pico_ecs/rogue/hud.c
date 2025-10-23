@@ -8,7 +8,7 @@
 
 void draw_hud(game_t* game)
 {
-    stats_t* stats = ecs_get(game->ecs, game->player_id, STATS_COMP);
+    stats_t* stats = ecs_get(game->ecs, game->player, STATS_COMP);
 
     dim_t term_size = game->term_size;
 

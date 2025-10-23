@@ -8,12 +8,12 @@
 
 struct game_s;
 
-extern ecs_id_t POS_COMP;
-extern ecs_id_t DRAWABLE_COMP;
-extern ecs_id_t STATS_COMP;
-extern ecs_id_t PLAYER_COMP;
-extern ecs_id_t MONSTER_COMP;
-extern ecs_id_t CHEST_COMP;
+extern ecs_comp_t POS_COMP;
+extern ecs_comp_t DRAWABLE_COMP;
+extern ecs_comp_t STATS_COMP;
+extern ecs_comp_t PLAYER_COMP;
+extern ecs_comp_t MONSTER_COMP;
+extern ecs_comp_t CHEST_COMP;
 
 typedef struct
 {

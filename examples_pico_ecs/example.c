@@ -56,38 +56,36 @@ typedef struct
     int x, y, w, h;
 } rect_t;
 
-// Corresponding component IDs
-ecs_id_t PosComp;
-ecs_id_t VelComp;
-ecs_id_t RectComp;
+// Component types
+ecs_comp_t PosComp;
+ecs_comp_t VelComp;
+ecs_comp_t RectComp;
 
-// System IDs
-ecs_id_t System1;
-ecs_id_t System2;
-ecs_id_t System3;
+// System types
+ecs_system_t System1;
+ecs_system_t System2;
+ecs_system_t System3;
 
 // Register components
 void register_components(ecs_t* ecs)
 {
-    PosComp  = ecs_register_component(ecs, sizeof(pos_t),  NULL, NULL);
-    VelComp  = ecs_register_component(ecs, sizeof(vel_t),  NULL, NULL);
-    RectComp = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComp  = ecs_define_component(ecs, sizeof(pos_t),  NULL, NULL);
+    VelComp  = ecs_define_component(ecs, sizeof(vel_t),  NULL, NULL);
+    RectComp = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
 }
 
 // System that prints the entity IDs of entities associated with this system
 ecs_ret_t system_update(ecs_t* ecs,
-                   ecs_id_t* entities,
-                   int entity_count,
-                   ecs_dt_t dt,
-                   void* udata)
+                       ecs_entity_t* entities,
+                       size_t entity_count,
+                       void* udata)
 {
     (void)ecs;
-    (void)dt;
     (void)udata;
 
-    for (int id = 0; id < entity_count; id++)
+    for (size_t i = 0; i < entity_count; i++)
     {
-        printf("%u ", entities[id]);
+        printf("%lu ", entities[i].id);
     }
 
     printf("\n");
@@ -99,9 +97,9 @@ ecs_ret_t system_update(ecs_t* ecs,
 void register_systems(ecs_t* ecs)
 {
     // Register systems
-    System1 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
-    System2 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
-    System3 = ecs_register_system(ecs, system_update, NULL, NULL, NULL);
+    System1 = ecs_define_system(ecs, 0, system_update, NULL, NULL, NULL);
+    System2 = ecs_define_system(ecs, 0, system_update, NULL, NULL, NULL);
+    System3 = ecs_define_system(ecs, 0, system_update, NULL, NULL, NULL);
 
     // System1 requires PosComp compnents
     ecs_require_component(ecs, System1, PosComp);
@@ -127,29 +125,29 @@ int main()
     register_systems(ecs);
 
     // Create three entities
-    ecs_id_t e1 = ecs_create(ecs);
-    ecs_id_t e2 = ecs_create(ecs);
-    ecs_id_t e3 = ecs_create(ecs);
+    ecs_entity_t e1 = ecs_create(ecs);
+    ecs_entity_t e2 = ecs_create(ecs);
+    ecs_entity_t e3 = ecs_create(ecs);
 
     // Add components to entities
     printf("---------------------------------------------------------------\n");
-    printf("Created entities: %u, %u, %u\n", e1, e2, e3);
+    printf("Created entities: %lu, %lu, %lu\n", e1.id, e2.id, e3.id);
     printf("---------------------------------------------------------------\n");
 
-    printf("PosComp added to: %u\n", e1);
+    printf("PosComp added to: %lu\n", e1.id);
     ecs_add(ecs, e1, PosComp, NULL);
 
     printf("---------------------------------------------------------------\n");
-    printf("PosComp added to: %u\n", e2);
-    printf("VeloComp added to: %u\n", e2);
+    printf("PosComp added to: %lu\n",  e2.id);
+    printf("VeloComp added to: %lu\n", e2.id);
 
     ecs_add(ecs, e2, PosComp, NULL);
     ecs_add(ecs, e2, VelComp, NULL);
 
     printf("---------------------------------------------------------------\n");
-    printf("PosComp added to: %u\n", e3);
-    printf("VeloComp added to: %u\n", e3);
-    printf("RectComp added to: %u\n", e3);
+    printf("PosComp added to: %lu\n",  e3.id);
+    printf("VeloComp added to: %lu\n", e3.id);
+    printf("RectComp added to: %lu\n", e3.id);
 
     ecs_add(ecs, e3, PosComp, NULL);
     ecs_add(ecs, e3, VelComp, NULL);
@@ -159,13 +157,13 @@ int main()
 
     // Manually execute the systems
     printf("Executing system 1\n");
-    ecs_update_system(ecs, System1, 0.0f); // Output: e1 e2 e3
+    ecs_run_system(ecs, System1, 0); // Output: e1 e2 e3
 
     printf("Executing system 2\n");
-    ecs_update_system(ecs, System2, 0.0f); // Output: e2 e3
+    ecs_run_system(ecs, System2, 0); // Output: e2 e3
 
     printf("Executing system 3\n");
-    ecs_update_system(ecs, System3, 0.0f); // Output: e3
+    ecs_run_system(ecs, System3, 0); // Output: e3
 
     printf("---------------------------------------------------------------\n");
 

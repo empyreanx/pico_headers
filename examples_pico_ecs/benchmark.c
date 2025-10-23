@@ -77,17 +77,17 @@ static void bench_end()
  * Systems/components
  *============================================================================*/
 
-// System IDs
-ecs_id_t MovementSystem;
-ecs_id_t ComflabSystem;
-ecs_id_t BoundsSystem;
-ecs_id_t QueueDestroySystem;
+// System types
+ecs_system_t MovementSystem;
+ecs_system_t ComflabSystem;
+ecs_system_t BoundsSystem;
+ecs_system_t QueueDestroySystem;
 
-// Component IDs
-ecs_id_t PosComponent;
-ecs_id_t DirComponent;
-ecs_id_t RectComponent;
-ecs_id_t ComflabComponent;
+// Component types
+ecs_comp_t PosComponent;
+ecs_comp_t DirComponent;
+ecs_comp_t RectComponent;
+ecs_comp_t ComflabComponent;
 
 // Position component
 typedef struct
@@ -112,18 +112,19 @@ typedef struct
  * Setup / teardown functions
  *============================================================================*/
 
-ecs_ret_t movement_system(ecs_t* ecs, ecs_id_t* entities,
-                          int entity_count, ecs_dt_t dt,
+ecs_ret_t movement_system(ecs_t* ecs,
+                          ecs_entity_t* entities,
+                          size_t entity_count,
                           void* udata);
 
-ecs_ret_t comflab_system(ecs_t* ecs, ecs_id_t* entities,
-                         int entity_count, ecs_dt_t dt,
+ecs_ret_t comflab_system(ecs_t* ecs,
+                         ecs_entity_t* entities,
+                         size_t entity_count,
                          void* udata);
 
 ecs_ret_t bounds_system(ecs_t* ecs,
-                        ecs_id_t* entities,
-                        int entity_count,
-                        ecs_dt_t dt,
+                        ecs_entity_t* entities,
+                        size_t entity_count,
                         void* udata);
 
 static void setup()
@@ -132,8 +133,8 @@ static void setup()
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
     // Register two new components
-    PosComponent  = ecs_register_component(ecs, sizeof(v2d_t),  NULL, NULL);
-    RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComponent  = ecs_define_component(ecs, sizeof(v2d_t),  NULL, NULL);
+    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
 }
 
 static void setup_destroy_with_two_components()
@@ -141,14 +142,14 @@ static void setup_destroy_with_two_components()
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    PosComponent  = ecs_register_component(ecs, sizeof(v2d_t),  NULL, NULL);
-    RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComponent  = ecs_define_component(ecs, sizeof(v2d_t),  NULL, NULL);
+    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
 
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
-        ecs_id_t id = ecs_create(ecs);
-        ecs_add(ecs, id, PosComponent, NULL);
-        ecs_add(ecs, id, RectComponent, NULL);
+        ecs_entity_t entity = ecs_create(ecs);
+        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, RectComponent, NULL);
     }
 }
 
@@ -156,40 +157,39 @@ static void setup_three_systems_min()
 {
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    PosComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL);
-    DirComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL);
-    ComflabComponent = ecs_register_component(ecs, sizeof(comflab_t), NULL, NULL);
-    RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
+    DirComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
+    ComflabComponent = ecs_define_component(ecs, sizeof(comflab_t), NULL, NULL);
+    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
 
-    MovementSystem = ecs_register_system(ecs, movement_system, NULL, NULL, NULL);
+    MovementSystem = ecs_define_system(ecs, 0, movement_system, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
     ecs_require_component(ecs, MovementSystem, DirComponent);
 
-    ComflabSystem = ecs_register_system(ecs, comflab_system, NULL, NULL, NULL);
+    ComflabSystem = ecs_define_system(ecs, 0, comflab_system, NULL, NULL, NULL);
     ecs_require_component(ecs, ComflabSystem, ComflabComponent);
 
-    BoundsSystem = ecs_register_system(ecs, bounds_system, NULL, NULL, NULL);
+    BoundsSystem = ecs_define_system(ecs, 0, bounds_system, NULL, NULL, NULL);
     ecs_require_component(ecs, BoundsSystem, RectComponent);
 }
-
 
 static void setup_three_systems_max()
 {
     ecs = ecs_new(MAX_ENTITIES, NULL);
 
-    PosComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL);
-    DirComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL);
-    ComflabComponent = ecs_register_component(ecs, sizeof(comflab_t), NULL, NULL);
-    RectComponent = ecs_register_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
+    DirComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
+    ComflabComponent = ecs_define_component(ecs, sizeof(comflab_t), NULL, NULL);
+    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
 
-    MovementSystem = ecs_register_system(ecs, movement_system, NULL, NULL, NULL);
+    MovementSystem = ecs_define_system(ecs, 0, movement_system, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
     ecs_require_component(ecs, MovementSystem, DirComponent);
 
-    ComflabSystem = ecs_register_system(ecs, comflab_system, NULL, NULL, NULL);
+    ComflabSystem = ecs_define_system(ecs, 0, comflab_system, NULL, NULL, NULL);
     ecs_require_component(ecs, ComflabSystem, ComflabComponent);
 
-    BoundsSystem = ecs_register_system(ecs, bounds_system, NULL, NULL, NULL);
+    BoundsSystem = ecs_define_system(ecs, 0, bounds_system, NULL, NULL, NULL);
     ecs_require_component(ecs, BoundsSystem, RectComponent);
 }
 
@@ -205,15 +205,15 @@ static void setup_get()
 {
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
-    PosComponent = ecs_register_component(ecs, sizeof(v2d_t), NULL, NULL);
+    PosComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
 
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
-        ecs_id_t id = ecs_create(ecs);
+        ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        ecs_add(ecs, id, PosComponent, NULL);
+        ecs_add(ecs, entity, PosComponent, NULL);
     }
 }
 
@@ -222,43 +222,40 @@ static void setup_get()
  *============================================================================*/
 
 ecs_ret_t movement_system(ecs_t* ecs,
-                          ecs_id_t* entities,
-                          int entity_count,
-                          ecs_dt_t dt,
+                          ecs_entity_t* entities,
+                          size_t entity_count,
                           void* udata)
 {
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         // Get entity ID
-        ecs_id_t id = entities[i];
+        ecs_entity_t entity = entities[i];
 
-        v2d_t* pos = ecs_get(ecs, id, PosComponent);
-        v2d_t* dir = ecs_get(ecs, id, DirComponent);
+        v2d_t* pos = ecs_get(ecs, entity, PosComponent);
+        v2d_t* dir = ecs_get(ecs, entity, DirComponent);
 
-        pos->x += pos->x + dir->x * dt;
-        pos->y += pos->y + dir->y * dt;
+        pos->x += pos->x + dir->x * 1.f / 60.f;
+        pos->y += pos->y + dir->y * 1.f / 60.f;
     }
 
     return 0;
 }
 
 ecs_ret_t comflab_system(ecs_t* ecs,
-                        ecs_id_t* entities,
-                        int entity_count,
-                        ecs_dt_t dt,
+                        ecs_entity_t* entities,
+                        size_t entity_count,
                         void* udata)
 {
-    (void)dt;
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         // Get entity ID
-        ecs_id_t id = entities[i];
+        ecs_entity_t entity = entities[i];
 
-        comflab_t* comflab = ecs_get(ecs, id, ComflabComponent);
+        comflab_t* comflab = ecs_get(ecs, entity, ComflabComponent);
         comflab->thingy *= 1.000001f;
     	comflab->mingy = !comflab->mingy;
 	    comflab->dingy++;
@@ -268,20 +265,18 @@ ecs_ret_t comflab_system(ecs_t* ecs,
 }
 
 ecs_ret_t bounds_system(ecs_t* ecs,
-                        ecs_id_t* entities,
-                        int entity_count,
-                        ecs_dt_t dt,
+                        ecs_entity_t* entities,
+                        size_t entity_count,
                         void* udata)
 {
-    (void)dt;
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         // Get entity ID
-        ecs_id_t id = entities[i];
+        ecs_entity_t entity = entities[i];
 
-        rect_t* bounds = ecs_get(ecs, id, RectComponent);
+        rect_t* bounds = ecs_get(ecs, entity, RectComponent);
 
         bounds->x = 1;
         bounds->y = 1;
@@ -293,15 +288,13 @@ ecs_ret_t bounds_system(ecs_t* ecs,
 }
 
 ecs_ret_t queue_destroy_system(ecs_t* ecs,
-                               ecs_id_t* entities,
-                               int entity_count,
-                               ecs_dt_t dt,
+                               ecs_entity_t* entities,
+                               size_t entity_count,
                                void* udata)
 {
-    (void)dt;
     (void)udata;
 
-    for (int i = 0; i < entity_count; i++)
+    for (size_t i = 0; i < entity_count; i++)
     {
         ecs_queue_destroy(ecs, entities[i]);
     }
@@ -316,7 +309,7 @@ ecs_ret_t queue_destroy_system(ecs_t* ecs,
 // Creates entity IDs as fast as possible
 static void bench_create()
 {
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
         ecs_create(ecs);
 }
 
@@ -324,53 +317,54 @@ static void bench_create()
 // coresponding entity
 static void bench_create_destroy()
 {
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
         ecs_destroy(ecs, ecs_create(ecs));
 }
 
 static void bench_destroy_with_two_components()
 {
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
-        ecs_destroy(ecs, i);
+        ecs_entity_t entity = {(ecs_id_t)i};
+        ecs_destroy(ecs, entity);
     }
 }
 
 static void bench_create_with_two_components()
 {
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
-        ecs_id_t id = ecs_create(ecs);
+        ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        ecs_add(ecs, id, PosComponent, NULL);
-        ecs_add(ecs, id, RectComponent, NULL);
+        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, RectComponent, NULL);
     }
 }
 
 // Adds components to entities and assigns values to them
 static void bench_add_remove()
 {
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
-        ecs_id_t id = ecs_create(ecs);
-        ecs_add(ecs, id, PosComponent, NULL);
-        ecs_remove(ecs, id, PosComponent);
+        ecs_entity_t entity = ecs_create(ecs);
+        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_remove(ecs, entity, PosComponent);
     }
 }
 
 // Adds components to entities and assigns values to them
 static void bench_add_assign()
 {
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
-        ecs_id_t id = ecs_create(ecs);
+        ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        v2d_t*  pos  = (v2d_t*)ecs_add(ecs, id, PosComponent, NULL);
-        rect_t* rect = (rect_t*)ecs_add(ecs, id, RectComponent, NULL);
+        v2d_t*  pos  = (v2d_t*) ecs_add(ecs, entity, PosComponent,  NULL);
+        rect_t* rect = (rect_t*)ecs_add(ecs, entity, RectComponent, NULL);
 
         // Set concrete component values
         *pos  = (v2d_t) { 1, 2 };
@@ -382,43 +376,44 @@ static void bench_add_assign()
 // values to them
 static void bench_get()
 {
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
-        // Create entity
-        ecs_get(ecs, i, PosComponent);
+        // Create entity id
+        ecs_entity_t entity = {(ecs_id_t)i};
+        ecs_get(ecs, entity, PosComponent);
     }
 }
 
 static void bench_queue_destroy()
 {
-    QueueDestroySystem = ecs_register_system(ecs, queue_destroy_system, NULL, NULL, NULL);
+    QueueDestroySystem = ecs_define_system(ecs, 0, queue_destroy_system, NULL, NULL, NULL);
     ecs_require_component(ecs, QueueDestroySystem, PosComponent);
     ecs_require_component(ecs, QueueDestroySystem, RectComponent);
 
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_create(ecs);
     }
 
-    ecs_update_system(ecs, QueueDestroySystem, 1.0f);
+    ecs_run_system(ecs, QueueDestroySystem, 0);
 }
 
 static void bench_three_systems()
 {
     // Create entities
-    for (ecs_id_t i = 0; i < MAX_ENTITIES; i++)
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         // Create entity
-        ecs_id_t id = ecs_create(ecs);
+        ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        v2d_t*  pos    = ecs_add(ecs, id, PosComponent, NULL);
-        v2d_t*  dir    = ecs_add(ecs, id, DirComponent, NULL);
-        rect_t* bounds = ecs_add(ecs, id, RectComponent, NULL);
+        v2d_t*  pos    = ecs_add(ecs, entity, PosComponent, NULL);
+        v2d_t*  dir    = ecs_add(ecs, entity, DirComponent, NULL);
+        rect_t* bounds = ecs_add(ecs, entity, RectComponent, NULL);
 
         if (i % 2 == 0)
         {
-            comflab_t* comflab = ecs_add(ecs, id, ComflabComponent, NULL);
+            comflab_t* comflab = ecs_add(ecs, entity, ComflabComponent, NULL);
             *comflab = (comflab_t){ 0 };
         }
 
@@ -429,9 +424,9 @@ static void bench_three_systems()
     }
 
     // Run the system
-    ecs_update_system(ecs, MovementSystem, 1.0f);
-    ecs_update_system(ecs, ComflabSystem, 1.0f);
-    ecs_update_system(ecs, BoundsSystem, 1.0f);
+    ecs_run_system(ecs, MovementSystem, 0);
+    ecs_run_system(ecs, ComflabSystem, 0);
+    ecs_run_system(ecs, BoundsSystem, 0);
 }
 
 static void bench_three_systems_min()

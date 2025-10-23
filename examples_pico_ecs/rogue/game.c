@@ -48,7 +48,7 @@ void term_refresh()
 
 void load_entities(game_t* game, level_t* level)
 {
-    game->player_id = make_player(game, level->player.x, level->player.y);
+    game->player = make_player(game, level->player.x, level->player.y);
 
     for (int i = 0; i < level->npc_count; i++)
     {
@@ -110,20 +110,42 @@ char* read_level(int level)
     return buffer;
 }
 
-void load_levels(game_t* game)
+bool load_levels(game_t* game)
 {
-    int count      = level_count();
+    int count         = level_count();
     game->level_count = count;
     game->levels      = malloc(count * sizeof(level_t));
     game->maps        = malloc(count * sizeof(tilemap_t));
+
+    dim_t term_size = game->term_size;
 
     for (int i = 0; i < count; i++)
     {
         char* buffer = read_level(i);
         game->levels[i] = load_level(buffer);
+
+        for (int j = 0; j < game->levels[i]->room_count; j++)
+        {
+            room_t* room = &game->levels[i]->rooms[i];
+
+            if (room->dim.w + room->pos.x > term_size.w)
+                return false;
+
+            if (room->dim.h + room->pos.y > term_size.h)
+                return false;
+
+            if (room->pos.x < 0)
+                return false;
+
+            if (room->pos.y < 0)
+                return false;
+        }
+
         game->maps[i] = create_tilemap(game, game->levels[i]);
         free(buffer);
     }
+
+    return true;
 }
 
 void setup_level(game_t* game)
@@ -135,7 +157,7 @@ void setup_level(game_t* game)
 
     game->map = game->maps[level];
 
-    player_t* player = ecs_get(game->ecs, game->player_id, PLAYER_COMP);
+    player_t* player = ecs_get(game->ecs, game->player, PLAYER_COMP);
     player->cmd = MOVE_NONE;
 }
 
@@ -159,7 +181,11 @@ game_t* setup_game()
     register_systems(game);
 
     // Load all levels
-    load_levels(game);
+    if (!load_levels(game))
+    {
+        printf("Terminal size is too small\n");
+        return NULL;
+    }
 
     // Initialize player
 
@@ -173,7 +199,7 @@ game_t* setup_game()
     setup_level(game);
 
     draw_tilemap(game->maps[game->level]);
-    ecs_update_system(game->ecs, DRAWABLE_SYS, 0.0);
+    ecs_run_system(game->ecs, DRAWABLE_SYS, 0);
 
     draw_player_msg(game, "Press any key to continue to start.");
     getch();
@@ -202,7 +228,7 @@ void shutdown_game(game_t* game)
 
 void handle_input(game_t* game)
 {
-    player_t* player = ecs_get(game->ecs, game->player_id, PLAYER_COMP);
+    player_t* player = ecs_get(game->ecs, game->player, PLAYER_COMP);
 
     int ch = getch();
 
@@ -267,6 +293,13 @@ int main(int argc, char* argv[])
     (void)argv;
 
     game_t* game = setup_game();
+
+    if (!game)
+    {
+        printf("Error setting up the game\n");
+        return -1;
+
+    }
     assert(game);
 
     while (!game->quit)
@@ -275,7 +308,7 @@ int main(int argc, char* argv[])
 
         draw_tilemap(game->maps[level]);
 
-        ecs_ret_t code = ecs_update_systems(game->ecs, 0.0);
+        ecs_ret_t code = ecs_run_systems(game->ecs, 0);
 
         if (LEVEL_OVER == code)
         {
