@@ -53,24 +53,24 @@
     ----------------------------
 
     Version 3.0 is a major departure from 2.4. Here is a short guide to help
-    make the leap into 3.0
+    make the leap to 3.0
 
     1. Make the following substitutions:
         - ecs_register_system  -> ecs_define_system
         - ecs_register_component  -> ecs_define_component
-        - ecs_run_system -> ecs_run_system
-        - ecs_run_systems -> ecs_run_systems
+        - ecs_update_system -> ecs_run_system
+        - ecs_update_systems -> ecs_run_systems
         - ecs_queue_destroy -> ecs_defer_destroy
-        - ecs_defer_remove -> ecs_defer_remove
-    2. Remove the 'dt' parameter from system callbacks, `ecs_run_system` and
-       `ecs_run_systems` calls.
-    3. Replace `int entity_count` with `size_t entity_count` in all system
+        - ecs_queue_remove -> ecs_defer_remove
+    2. Remove the 'dt' parameter from system callbacks, replacing it with a
+       function call or global variable where necessary.
+    3. Replace 'int entity_count' with 'size_t entity_count' in all system
        callbacks
-    5. Insert a mask value of 0 into `ecs_define_system` calls
-    4. Replace raw IDs with typesafe handles.
-    6. Ensure all update calls have the form `ecs_run_system(ctx, sys, 0)`
-       and `ecs_run_systems(ctx, 0)`
-    7. Replace raw IDs with typesafe handles.
+    4. Insert a mask value of 0 into `ecs_define_system` calls, for example,
+       `ecs_define_system(ecs, 0, ...)`
+    5. Ensure all update calls have the form `ecs_run_system(ctx, sys, 0)`
+       and/or `ecs_run_systems(ctx, 0)`
+    6. Replace raw IDs with typesafe handles.
 
     If you encounter any difficultlies with any of these steps and/or your project
     doesn't compile once you're finished, please submit an issue.
@@ -189,7 +189,7 @@ typedef ECS_MASK_TYPE ecs_mask_t;
 #define ECS_INVALID(item) (item.id == 0)
 
 /**
- * @brief Return code for update callback and calling functions
+ * @brief Return code for system callback and calling functions
  */
 typedef int32_t ecs_ret_t;
 
@@ -211,7 +211,7 @@ typedef struct ecs_system_t { ecs_id_t id; } ecs_system_t;
 /**
  * @brief Creates an ECS instance.
  *
- * @param entity_count The inital number of entities to allocated
+ * @param entity_count The inital number of entities to pre-allocated
  * @param mem_ctx A context for a custom allocator
  *
  * @returns An ECS instance or NULL if out of memory
@@ -781,7 +781,7 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     memset(ecs, 0, sizeof(ecs_t));
 
-    ecs->entity_count   = entity_count;
+    ecs->entity_count   = (entity_count > 0) ? entity_count : 1;
     ecs->next_entity_id = 1;
     ecs->mem_ctx        = mem_ctx;
 
