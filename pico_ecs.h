@@ -210,7 +210,7 @@ bool ecs_is_invalid_entity(ecs_entity_t entity);
 /**
  * @brief Returns an invalid entity
  */
-ecs_entity_t ecs_get_invalid_entity();
+ecs_entity_t ecs_invalid_entity();
 
 /**
  * @brief Creates an ECS instance.
@@ -331,8 +331,8 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_removed_fn remove_cb,
                                void* udata);
 /**
- * @brief Entities having the specified component may processed by the target
- * system, depending on the other components required by it.
+ * @brief Entities are processed by the target system if they have all of the
+ * the components required by the system
  *
  * @param ecs  The ECS instance
  * @param sys  The target system
@@ -779,7 +779,7 @@ bool ecs_is_invalid_entity(ecs_entity_t entity)
     return 0 == entity.id;
 }
 
-ecs_entity_t ecs_get_invalid_entity()
+ecs_entity_t ecs_invalid_entity()
 {
     ecs_entity_t invalid = { 0 };
     return invalid;
