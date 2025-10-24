@@ -1,5 +1,5 @@
 /**
-    @file pico_sat.h
+    @file pico_hit.h
     @brief Separating Axis Theorem (SAT) Tests written in C99.
 
     ----------------------------------------------------------------------------
