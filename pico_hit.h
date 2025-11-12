@@ -357,7 +357,7 @@ ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count, bool reverse)
 
     if (reverse)
     {
-        for (int i = vertex_count - 1; i >= 0; i++)
+        for (int i = vertex_count - 1; i >= 0; i--)
         {
             poly.vertices[i] = vertices[i];
         }
