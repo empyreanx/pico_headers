@@ -90,7 +90,7 @@ typedef struct
  */
 typedef struct
 {
-    int   vertex_count;                      //!< Number of vertices in polygon
+    int vertex_count;                      //!< Number of vertices in polygon
     pv2 vertices[PICO_HIT_MAX_POLY_VERTS]; //!< Polygon vertices
     pv2 normals[PICO_HIT_MAX_POLY_VERTS];  //!< Polygon edge normals
     pv2 edges[PICO_HIT_MAX_POLY_VERTS];    //!< Edges of polygon
@@ -140,7 +140,7 @@ ph_circle_t ph_make_circle(pv2 pos, pfloat radius);
  * @param vertices     The vertices of the polygon (must use CCW winding)
  * @returns The polygon with the given vertices
  */
-ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count);
+ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count, bool reverse);
 
 /**
  * @brief Constructs a ray
@@ -345,7 +345,7 @@ ph_circle_t ph_make_circle(pv2 pos, pfloat radius)
     return circle;
 }
 
-ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count)
+ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count, bool reverse)
 {
     SAT_ASSERT(vertex_count <= PICO_HIT_MAX_POLY_VERTS);
     SAT_ASSERT(vertices);
@@ -355,9 +355,19 @@ ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count)
     // Copy vertices
     poly.vertex_count = vertex_count;
 
-    for (int i = 0; i < vertex_count; i++)
+    if (reverse)
     {
-        poly.vertices[i] = vertices[i];
+        for (int i = vertex_count - 1; i >= 0; i++)
+        {
+            poly.vertices[i] = vertices[i];
+        }
+    }
+    else
+    {
+        for (int i = 0; i < vertex_count; i++)
+        {
+            poly.vertices[i] = vertices[i];
+        }
     }
 
     // Cache edges and edge normals
@@ -397,7 +407,7 @@ ph_poly_t ph_aabb_to_poly(const pb2* aabb)
         { pos.x + size.x, pos.y          }
     };
 
-    return ph_make_poly(vertices, 4);
+    return ph_make_poly(vertices, 4, false);
 }
 
 bool ph_sat_poly_poly(const ph_poly_t* poly_a,
@@ -779,7 +789,7 @@ ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly)
         vertices[i] = pt2_map(transform, poly->vertices[i]);
     }
 
-    return ph_make_poly(vertices, poly->vertex_count);
+    return ph_make_poly(vertices, poly->vertex_count, false);
 }
 
 ph_circle_t ph_transform_circle(const pt2* transform,

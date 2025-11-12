@@ -54,8 +54,8 @@ TEST_CASE(test_poly_poly)
         { 60, 0  }
     };
 
-    ph_poly_t p1 = ph_make_poly(vertices1, 4);
-    ph_poly_t p2 = ph_make_poly(vertices2, 3);
+    ph_poly_t p1 = ph_make_poly(vertices1, 4, false);
+    ph_poly_t p2 = ph_make_poly(vertices2, 3, false);
 
     ph_manifold_t manifold;
 
@@ -193,7 +193,7 @@ TEST_CASE(test_poly_to_aabb)
         {  5, 1 }
     };
 
-    ph_poly_t p = ph_make_poly(vertices, 3);
+    ph_poly_t p = ph_make_poly(vertices, 3, false);
 
     pb2 exp = pb2_make_minmax(pv2_make(-4, 1), pv2_make(5, 5));
     pb2 res = ph_poly_to_aabb(&p);
