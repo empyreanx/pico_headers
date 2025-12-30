@@ -80,7 +80,7 @@ extern "C" {
  */
 typedef struct
 {
-    pv2  pos;      //!< Center of circle
+    pv2 center;      //!< Center of circle
     pfloat radius; //!< Radius of the circle
 } ph_circle_t;
 
@@ -94,6 +94,7 @@ typedef struct
     pv2 vertices[PICO_HIT_MAX_POLY_VERTS]; //!< Polygon vertices
     pv2 normals[PICO_HIT_MAX_POLY_VERTS];  //!< Polygon edge normals
     pv2 edges[PICO_HIT_MAX_POLY_VERTS];    //!< Edges of polygon
+    pv2 centroid;
 } ph_poly_t;
 
 /**
@@ -115,7 +116,8 @@ typedef struct
 {
     pv2    normal;  //!< Normal to colliding edge (in direction of MTV)
     pfloat overlap; //!< Amount of overlap between two shapes along colliding axis (MTD)
-    pv2    vector;  //!< Vector defined by `vector = normal * overlap`
+    pv2    vector;  //!< Vector defined by `vector = normal * overlap
+    pv2    contact;
 } ph_manifold_t;
 
 /**
@@ -337,10 +339,10 @@ static pv2 ph_m2_map(ph_m2 m, pv2 v);
  * Public API implementation
  *============================================================================*/
 
-ph_circle_t ph_make_circle(pv2 pos, pfloat radius)
+ph_circle_t ph_make_circle(pv2 center, pfloat radius)
 {
     ph_circle_t circle;
-    circle.pos = pos;
+    circle.center = center;
     circle.radius = radius;
     return circle;
 }
@@ -350,16 +352,18 @@ ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count, bool reverse)
     SAT_ASSERT(vertex_count <= PICO_HIT_MAX_POLY_VERTS);
     SAT_ASSERT(vertices);
 
-    ph_poly_t poly;
+    ph_poly_t poly = { 0 };
 
     // Copy vertices
     poly.vertex_count = vertex_count;
+    poly.centroid = pv2_zero();
 
     if (reverse)
     {
-        for (int i = vertex_count - 1; i >= 0; i--)
+        for (int i = 0; i < vertex_count; i++)
         {
-            poly.vertices[i] = vertices[i];
+            poly.vertices[i] = vertices[vertex_count - i - 1];
+            poly.centroid = pv2_add(poly.centroid, poly.vertices[i]);
         }
     }
     else
@@ -367,16 +371,18 @@ ph_poly_t ph_make_poly(const pv2 vertices[], int vertex_count, bool reverse)
         for (int i = 0; i < vertex_count; i++)
         {
             poly.vertices[i] = vertices[i];
+            poly.centroid = pv2_add(poly.centroid, poly.vertices[i]);
         }
     }
+
+    poly.centroid = pv2_scale(poly.centroid, 1.0f / vertex_count);
 
     // Cache edges and edge normals
     for (int i = 0; i < vertex_count; i++)
     {
-        int next = (i + 1) == vertex_count ? 0 : i + 1;
-
         pv2 v1 = vertices[i];
-        pv2 v2 = vertices[next];
+        pv2 v2 = vertices[(i + 1) % vertex_count];
+
         poly.edges[i] = pv2_sub(v2, v1);
         poly.normals[i] = pv2_perp(poly.edges[i]);
         poly.normals[i] = pv2_normalize(poly.normals[i]);
@@ -417,8 +423,8 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
     SAT_ASSERT(poly_a);
     SAT_ASSERT(poly_b);
 
-    if (manifold)
-        ph_init_manifold(manifold);
+    pfloat best_overlap = PM_FLOAT_MAX;
+    pv2 best_normal = pv2_zero();
 
     // Test axises on poly_a
     for (int i = 0; i < poly_a->vertex_count; i++)
@@ -430,9 +436,11 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
         if (overlap == 0.0f)
             return false;
 
-        // Update manifold information with new overlap and normal
-        if (manifold)
-            ph_update_manifold(manifold, poly_a->normals[i], overlap);
+        if (manifold && pf_abs(overlap) < best_overlap)
+        {
+            best_overlap = pf_abs(overlap);
+            best_normal = poly_a->normals[i];
+        }
     }
 
     // Test axises on poly_b
@@ -445,14 +453,312 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
         if (overlap == 0.0f)
             return false;
 
-        // Update manifold information with new overlap and normal
-        if (manifold)
-            ph_update_manifold(manifold, poly_b->normals[i], overlap);
+        if (manifold && pf_abs(overlap) < best_overlap)
+        {
+            best_overlap = pf_abs(overlap);
+            best_normal = poly_a->normals[i];
+        }
+    }
+
+    if (manifold)
+    {
+        manifold->overlap = best_overlap;
+        manifold->normal = best_normal;
+
+        pv2 diff = pv2_sub(poly_b->centroid, poly_a->centroid);
+
+        if (pv2_dot(diff, manifold->normal) < 0.0f)
+        {
+             manifold->normal = pv2_reflect(manifold->normal);
+        }
+
+        manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
     }
 
     return true;
 }
 
+void project_polygon(const ph_poly_t *poly, pv2 axis, pfloat *min, pfloat *max)
+{
+    *min = *max = pv2_dot(axis, poly->vertices[0]);
+
+    for (int i = 1; i < poly->vertex_count; i++) {
+        pfloat proj = pv2_dot(axis, poly->vertices[i]);
+        if (proj < *min) *min = proj;
+        if (proj > *max) *max = proj;
+    }
+}
+
+// Project circle onto axis
+void project_circle(const ph_circle_t *circle, pv2 axis, float *min, float *max)
+{
+    pfloat center_proj = pv2_dot(axis, circle->center);
+    *min = center_proj - circle->radius;
+    *max = center_proj + circle->radius;
+}
+
+pfloat calculate_overlap(float min1, float max1, float min2, float max2) {
+    if (max1 < min2 || max2 < min1)
+    {
+        return 0.0f;
+    }
+
+    return pf_min(max1, max2) - pf_max(min1, min2);
+}
+
+int find_closest_vertex(const ph_poly_t *poly, pv2 point) {
+    int closest = 0;
+    pfloat min_dist_sq = PM_FLOAT_MAX;
+
+    for (int i = 0; i < poly->vertex_count; i++) {
+        pv2 diff = pv2_sub(poly->vertices[i], point);
+        pfloat dist_sq = pv2_dot(diff, diff);
+
+        if (dist_sq < min_dist_sq)
+        {
+            min_dist_sq = dist_sq;
+            closest = i;
+        }
+    }
+
+    return closest;
+}
+
+// Find closest point on line segment to a point
+pv2 closest_point_on_segment(pv2 a, pv2 b, pv2 p) {
+    pv2 ab = pv2_sub(b, a);
+    pv2 ap = pv2_sub(p, a);
+
+    float ab_length_sq = pv2_dot(ab, ab);
+    if (ab_length_sq < 0.0001f) {
+        return a;
+    }
+
+    float t = pv2_dot(ap, ab) / ab_length_sq;
+    t = fmaxf(0.0f, fminf(1.0f, t));
+
+    return pv2_add(a, pv2_scale(ab, t));
+}
+
+// Find contact point on polygon closest to circle
+pv2 find_contact_point(const ph_poly_t *poly, ph_circle_t *circle) {
+    pv2 closest = poly->vertices[0];
+    float min_dist_sq = PM_FLOAT_MAX;
+
+    // Check all edges
+    for (int i = 0; i < poly->vertex_count; i++) {
+        int next = (i + 1) % poly->vertex_count;
+        pv2 point = closest_point_on_segment(
+            poly->vertices[i],
+            poly->vertices[next],
+            circle->center
+        );
+
+        pv2 diff = pv2_sub(point, circle->center);
+        float dist_sq = pv2_dot(diff, diff);
+
+        if (dist_sq < min_dist_sq) {
+            min_dist_sq = dist_sq;
+            closest = point;
+        }
+    }
+
+    return closest;
+}
+//#if 0
+bool ph_sat_poly_circle(const ph_poly_t* poly,
+                        const ph_circle_t* circle,
+                        ph_manifold_t* manifold)
+{
+    if (manifold)
+        ph_init_manifold(manifold);
+
+// Test polygon edge normals
+    for (int i = 0; i < poly->vertex_count; i++)
+    {
+        int next = (i + 1) % poly->vertex_count;
+        pv2 edge = pv2_sub(poly->vertices[next], poly->vertices[i]);
+        pv2 axis = pv2_normalize(pv2_perp(edge));
+
+        float poly_min, poly_max, circle_min, circle_max;
+        project_polygon(poly, axis, &poly_min, &poly_max);
+        project_circle(circle, axis, &circle_min, &circle_max);
+
+        float overlap = calculate_overlap(poly_min, poly_max, circle_min, circle_max);
+
+        if (overlap <= 0.0f)
+        {
+            return false; // No collision
+        }
+
+        if (manifold && overlap < manifold->overlap)
+        {
+            manifold->overlap = overlap;
+            // Normal points from polygon to circle
+            /*if (circle_min < poly_min)
+            {
+                manifold->normal = pv2_scale(axis, -1.0f);
+            }
+            else
+            {
+                manifold->normal = axis;
+            }*/
+
+            manifold->normal = axis;
+        }
+    }
+
+    // Test axis from circle center to closest point on each edge
+    // This handles cases where edges penetrate deep into the circle
+    for (int i = 0; i < poly->vertex_count; i++)
+    {
+        int next = (i + 1) % poly->vertex_count;
+
+        // Find closest point on this edge to circle center
+        pv2 closest_on_edge = closest_point_on_segment(
+            poly->vertices[i],
+            poly->vertices[next],
+            circle->center
+        );
+
+        // Create axis from closest point to circle center
+        pv2 axis = pv2_sub(circle->center, closest_on_edge);
+        pfloat axis_len = pv2_len(axis);
+
+        // Skip if too close (degenerate case)
+        if (axis_len < 0.0001f)
+            continue;
+
+        axis = pv2_scale(axis, 1.0f / axis_len); // Normalize
+
+        pfloat poly_min, poly_max, circle_min, circle_max;
+        project_polygon((ph_poly_t*)poly, axis, &poly_min, &poly_max);
+        project_circle((ph_circle_t*)circle, axis, &circle_min, &circle_max);
+
+        pfloat overlap = calculate_overlap(poly_min, poly_max, circle_min, circle_max);
+
+        if (overlap <= 0.0f)
+        {
+            return false; // No collision
+        }
+
+        if (manifold && overlap < manifold->overlap)
+        {
+            manifold->overlap = overlap;
+            manifold->normal = axis;
+        }
+    }
+
+#if 0
+    if (manifold)
+    {
+        manifold->contact = find_contact_point((ph_poly_t*)poly, (ph_circle_t*)circle);
+
+        if (pv2_dot(manifold->normal, pv2_sub(circle->center, manifold->contact)) < 0.0f)
+            manifold->normal = pv2_reflect(manifold->normal);
+
+        manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
+    }
+#endif
+//#if 0
+    if (manifold)
+    {
+        manifold->contact = find_contact_point((ph_poly_t*)poly, (ph_circle_t*)circle);
+
+        // Ensure normal always points from polygon centroid toward circle center
+        pv2 separation_direction = pv2_sub(circle->center, poly->centroid);
+
+        if (pv2_dot(manifold->normal, separation_direction) >= 0.0f)
+        {
+            manifold->normal = pv2_reflect(manifold->normal);
+        }
+
+        manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
+    }
+//#endif
+    return true;
+}
+//#endif
+#if 0
+bool ph_sat_poly_circle(const ph_poly_t* poly,
+                        const ph_circle_t* circle,
+                        ph_manifold_t* manifold)
+{
+    SAT_ASSERT(poly);
+    SAT_ASSERT(circle);
+
+    pfloat best_overlap = PM_FLOAT_MAX;
+    pv2 best_normal = pv2_zero();
+    int best_face = 0;
+
+    // Test face normals
+    for (int i = 0; i < poly->vertex_count; i++)
+    {
+        pv2 v1 = poly->vertices[i];
+        pv2 v2 = poly->vertices[(i + 1) % poly->vertex_count];
+
+        pv2 edge = pv2_sub(v2, v1);
+        pv2 axis = pv2_normalize(pv2_perp(edge));
+
+        pfloat dist = pv2_dot(axis, pv2_sub(circle->center, v1));
+
+        if (dist > circle->radius)
+        {
+            return false;
+        }
+
+        pfloat overlap = circle->radius - dist;
+
+        if (overlap < best_overlap)
+        {
+            best_overlap = overlap;
+            best_normal = axis;
+            best_face = i;
+        }
+    }
+
+    pv2 v1 = poly->vertices[best_face];
+    pv2 v2 = poly->vertices[(best_face + 1) % poly->vertex_count];
+
+    pv2 edge = pv2_sub(v2, v1);
+    pfloat edge_len2 = pv2_len2(edge);
+
+    pfloat t = pv2_dot(pv2_sub(circle->center, v1), edge) / edge_len2;
+
+    if (0.0f <= t && t <= 1.0f)
+    {
+        manifold->overlap = best_overlap;
+        manifold->normal = best_normal;
+        //manifold->contact = pv2_sub(circle->center, pv2_scale(best_normal, circle->radius));
+        pfloat dist = pv2_dot(best_normal, pv2_sub(circle->center, v1));
+        manifold->contact = pv2_sub(circle->center,
+                            pv2_scale(best_normal, dist));
+    }
+    else
+    {
+        pv2 closest = (t < 0.0f) ? v1 : v2;
+        pv2 d = pv2_sub(circle->center, closest);
+
+        pfloat dist2 = pv2_len2(d);
+
+        if (dist2 > circle->radius * circle->radius)
+            return false;
+
+        pfloat dist = pf_sqrt(dist2);
+        manifold->overlap = circle->radius - dist;
+        manifold->normal = (dist > 0.0f) ? pv2_scale(d, 1.0f / dist) : best_normal;
+        manifold->contact = closest;
+    }
+
+    if (pv2_dot(manifold->normal, pv2_sub(circle->center, manifold->contact)) >= 0.0f)
+        manifold->normal = pv2_reflect(manifold->normal);
+
+    manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
+
+    return true;
+}
+#endif
+#if 0
 bool ph_sat_poly_circle(const ph_poly_t* poly,
                         const ph_circle_t* circle,
                         ph_manifold_t* manifold)
@@ -463,7 +769,9 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
     if (manifold)
         ph_init_manifold(manifold);
 
+    pfloat best_overlap = PM_FLOAT_MAX;
     pfloat radius2 = circle->radius * circle->radius;
+    pfloat radius = circle->radius;
 
     // The main idea behind this function is to classify the position of the
     // circle relative to the Voronoi region(s) it is part of. This uses very
@@ -475,14 +783,17 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
 
     for (int i = 0; i < count; i++)
     {
-        int next = (i + 1) == count ? 0 : i + 1;
-        int prev = (i - 1) <= 0 ? count - 1 : i - 1;
+        int next = i == count - 1 ? 0 : i + 1;
+        int prev = i == 0 ? count - 1 : i - 1;
+
+        pfloat overlap = 0.0f;
+        pv2 normal = pv2_zero();
 
         // Edge to test
         pv2 edge = poly->edges[i];
 
         // Postion of circle relative to vertex
-        pv2 point = pv2_sub(circle->pos, poly->vertices[i]);
+        pv2 point = pv2_sub(circle->center, poly->vertices[i]);
 
         // Find the Voronoi region of the point (circle center relative to
         // vertex)  with respect to the edge
@@ -496,7 +807,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
             // in the intersection of the Voronoi regions defined by the
             // endpoints of the edges.
 
-            pv2 point2 = pv2_sub(circle->pos, poly->vertices[prev]);
+            pv2 point2 = pv2_sub(circle->center, poly->vertices[prev]);
             edge = poly->edges[prev];
 
             region = ph_voronoi_region(point2, edge);
@@ -505,10 +816,15 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
             {
                 // The circle center is in the left/right Voronoi region, so
                 // check to see if it contains the vertex
-                pfloat diff2 = pv2_len2(point);
+                //pfloat diff2 = pv2_len2(point);
+
+                pfloat dist = pv2_len(point);
 
                 // Equivalent to diff > radius
-                if (diff2 > radius2)
+                //if (diff2 > radius2)
+                //    return false;
+
+                if (dist > radius)
                     return false;
 
                 // Vertex is contained within circle, so the circle overlaps the
@@ -517,13 +833,13 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
                 if (manifold)
                 {
                     // Calculate distance because we need it now
-                    pfloat diff = pf_sqrt(diff2);
+                    //pfloat diff = pf_sqrt(diff2);
 
                     // Calculate overlap
-                    pfloat overlap = circle->radius - diff;
+                    overlap = circle->radius - dist;
 
                     // Normal direction is just the circle relative to the vertex
-                    pv2 normal = pv2_normalize(point);
+                    normal = pv2_normalize(point);
 
                     // Update manifold
                     ph_update_manifold(manifold, normal, overlap);
@@ -533,7 +849,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         // This case is symmetric to the above
         else if (region == PH_VORONOI_RIGHT)
         {
-            pv2 point2 = pv2_sub(circle->pos, poly->vertices[next]);
+            pv2 point2 = pv2_sub(circle->center, poly->vertices[next]);
             edge = poly->edges[next];
 
             region = ph_voronoi_region(point2, edge);
@@ -548,8 +864,8 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
                 if (manifold)
                 {
                     pfloat diff = pf_sqrt(diff2);
-                    pfloat overlap = circle->radius - diff;
-                    pv2 normal = pv2_normalize(point);
+                    overlap = circle->radius - diff;
+                    normal = pv2_normalize(point);
                     ph_update_manifold(manifold, normal, overlap);
                 }
             }
@@ -558,7 +874,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         {
             // In this case, the location of the circle is between the endpoints
             // of an edge.
-            pv2 normal = poly->normals[i];
+            normal = poly->normals[i];
 
             // Location of center of circle along the edge normal
             pfloat diff = pv2_dot(normal, point);
@@ -571,17 +887,38 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
             if (manifold)
             {
                 // Calculate overlap
-                pfloat overlap = circle->radius - diff;
+                overlap = circle->radius - diff;
 
                 // Update manifold
                 ph_update_manifold(manifold, normal, overlap);
             }
         }
+
+        /*if (manifold)
+        {
+            if (pf_abs(overlap) < pf_abs(best_overlap))
+            {
+                best_overlap = overlap;
+            }
+
+            manifold->overlap = best_overlap;
+            manifold->normal = normal;
+            manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
+        }*/
     }
+
+    pv2 separation_direction = pv2_sub(circle->center, poly->centroid);
+
+    if (pv2_dot(manifold->normal, separation_direction) >= 0.0f)
+    {
+        manifold->normal = pv2_reflect(manifold->normal);
+    }
+
+    manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
 
     return true;
 }
-
+#endif
 bool ph_sat_circle_poly(const ph_circle_t* circle,
                         const ph_poly_t* poly,
                         ph_manifold_t* manifold)
@@ -613,7 +950,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
         ph_init_manifold(manifold);
 
     // Position of circle_b relative to circle_a
-    pv2 diff = pv2_sub(circle_b->pos, circle_a->pos);
+    pv2 diff = pv2_sub(circle_b->center, circle_a->center);
 
     // Squared distance between circle centers
     pfloat dist2 = pv2_len2(diff);
@@ -747,7 +1084,7 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
 bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast)
 {
     pfloat r = circle->radius;
-    pv2 m = pv2_sub(ray->pos, circle->pos);
+    pv2 m = pv2_sub(ray->pos, circle->center);
     pfloat b = pv2_dot(m, ray->dir);
     pfloat c = pv2_dot(m, m) - r * r;
 
@@ -769,7 +1106,7 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
         pv2 p = pv2_add(ray->pos, pv2_scale(ray->dir, dist));
 
         raycast->dist = dist;
-        raycast->normal = pv2_normalize(pv2_sub(p, circle->pos));
+        raycast->normal = pv2_normalize(pv2_sub(p, circle->center));
     }
 
     return true;
@@ -795,7 +1132,7 @@ ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly)
 ph_circle_t ph_transform_circle(const pt2* transform,
                                 const ph_circle_t* circle)
 {
-    return ph_make_circle(pt2_map(transform, circle->pos), circle->radius);
+    return ph_make_circle(pt2_map(transform, circle->center), circle->radius);
 }
 
 pb2 ph_poly_to_aabb(const ph_poly_t* poly)
@@ -807,8 +1144,8 @@ pb2 ph_circle_to_aabb(const ph_circle_t* circle)
 {
     pv2 half_radius = pv2_make(circle->radius / 2.0f, circle->radius / 2.0f);
 
-    pv2 min = pv2_sub(circle->pos, half_radius);
-    pv2 max = pv2_add(circle->pos, half_radius);
+    pv2 min = pv2_sub(circle->center, half_radius);
+    pv2 max = pv2_add(circle->center, half_radius);
 
     return pb2_make_minmax(min, max);
 }
@@ -837,13 +1174,7 @@ static void ph_update_manifold(ph_manifold_t* manifold, pv2 normal, pfloat overl
     {
         // Update overlap (always positive)
         manifold->overlap = abs_overlap;
-
-        // If the overlap is less that zero the normal must be reversed
-        if (overlap < 0.0f)
-            manifold->normal = pv2_reflect(normal);
-        else if (overlap > 0.0f)
-            manifold->normal = normal;
-
+        manifold->normal = normal;
         manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
     }
 }
@@ -876,8 +1207,8 @@ static void ph_axis_range(const ph_poly_t* poly, pv2 normal, pfloat range[2])
 }
 
 static pfloat ph_axis_overlap(const ph_poly_t* poly_a,
-                                const ph_poly_t* poly_b,
-                                pv2 axis)
+                              const ph_poly_t* poly_b,
+                              pv2 axis)
 
 {
     SAT_ASSERT(poly_a);
@@ -894,12 +1225,41 @@ static pfloat ph_axis_overlap(const ph_poly_t* poly_a,
     if (range_a[1] < range_b[0] || range_b[1] < range_a[0])
         return 0.0f;
 
-    // Calculate overlap candidates
-    pfloat overlap1 = range_a[1] - range_b[0];
-    pfloat overlap2 = range_b[1] - range_a[0];
+    if (range_a[0] < range_b[0])
+    {
+        if (range_a[1] < range_b[1])
+        {
+            return range_a[1] - range_b[0];
+        }
+        else
+        {
+            // Calculate overlap candidates
+            pfloat overlap1 = range_a[1] - range_b[0];
+            pfloat overlap2 = range_b[1] - range_a[0];
 
-    // Return the smaller overlap
-    return (overlap2 > overlap1) ? overlap1 : -overlap2;
+            // Return the smaller overlap
+            return (overlap2 > overlap1) ? overlap1 : -overlap2;
+        }
+    }
+    else
+    {
+        if (range_a[1] > range_b[1])
+        {
+            return range_a[0] - range_b[1];
+        }
+        else
+        {
+            // Calculate overlap candidates
+            pfloat overlap1 = range_a[1] - range_b[0];
+            pfloat overlap2 = range_b[1] - range_a[0];
+
+            // Return the smaller overlap
+            return (overlap2 > overlap1) ? overlap1 : -overlap2;
+        }
+    }
+
+    SAT_ASSERT(false);
+    return 0.0f;
 }
 
 static ph_voronoi_region_t ph_voronoi_region(pv2 point, pv2 line)
