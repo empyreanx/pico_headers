@@ -606,7 +606,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
         ph_init_manifold(manifold);
 
     // Position of circle_b relative to circle_a
-    pv2 diff = pv2_sub(circle_b->center, circle_a->center);
+    pv2 diff = pv2_sub(circle_a->center, circle_b->center);
 
     // Squared distance between circle centers
     pfloat dist2 = pv2_len2(diff);
@@ -635,6 +635,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
 
         manifold->overlap = overlap;
         manifold->normal = normal;
+        manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
     }
 
     return true;

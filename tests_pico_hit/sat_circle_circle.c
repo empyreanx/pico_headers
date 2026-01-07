@@ -11,8 +11,8 @@ TEST_CASE(test_circle_cicle_collide)
     REQUIRE(ph_sat_circle_circle(&c1, &c2, &manifold));
 
     REQUIRE(pf_equal(manifold.overlap, 1));
-    REQUIRE(pv2_equal(manifold.normal, pv2_make(-1, 0)));
-    REQUIRE(pv2_equal(manifold.vector, pv2_make(-1, 0)));
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1, 0)));
+    REQUIRE(pv2_equal(manifold.vector, pv2_make(1, 0)));
 
     return true;
 }

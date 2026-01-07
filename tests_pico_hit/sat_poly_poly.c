@@ -16,8 +16,8 @@ TEST_CASE(test_aabb_aabb_collide)
         REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
 
         REQUIRE(pf_equal(manifold.overlap, 1));
-        REQUIRE(pv2_equal(manifold.normal, pv2_make(1, 0)));
-        REQUIRE(pv2_equal(manifold.vector, pv2_make(1, 0)));
+        REQUIRE(pv2_equal(manifold.normal, pv2_make(-1, 0)));
+        REQUIRE(pv2_equal(manifold.vector, pv2_make(-1, 0)));
     }
 
     // Collide left side
@@ -30,8 +30,8 @@ TEST_CASE(test_aabb_aabb_collide)
         REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
 
         REQUIRE(pf_equal(manifold.overlap, 1));
-        REQUIRE(pv2_equal(manifold.normal, pv2_make(-1, 0)));
-        REQUIRE(pv2_equal(manifold.vector, pv2_make(-1, 0)));
+        REQUIRE(pv2_equal(manifold.normal, pv2_make(1, 0)));
+        REQUIRE(pv2_equal(manifold.vector, pv2_make(1, 0)));
     }
 
     return true;
@@ -62,7 +62,7 @@ TEST_CASE(test_poly_poly)
     REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
 
     REQUIRE(pf_equal(manifold.overlap, 10));
-    REQUIRE(pv2_equal(manifold.normal, pv2_make(1, 0)));
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(-1, 0)));
 
     return true;
 }
