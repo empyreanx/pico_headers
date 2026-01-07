@@ -114,7 +114,7 @@ typedef struct
 */
 typedef struct
 {
-    pv2 pos;    //!< The origin of the ray
+    pv2 origin; //!< The origin of the ray
     pv2 dir;    //!< The direction of the ray (normalized)
     pfloat len; //!< The length of the ray
 } ph_ray_t;
@@ -125,7 +125,7 @@ typedef struct
 typedef struct
 {
     pv2 normal;  //!< The surface normal at the point of impact
-    pfloat dist; //!< The distance from the ray's position/direction to the point of impact
+    pfloat dist; //!< The distance from the ray's origin to the point of impact
 } ph_raycast_t;
 
 /**
@@ -147,20 +147,20 @@ ph_poly_t ph_make_poly(const pv2 vertices[], int count, bool reverse);
 /**
  * @brief Constructs a ray
  * @param pos The origin of the array
- * @param dir The direction of the ray
+ * @param dir The direction of the ray (normalized)
  * @param len The length of the ray
  */
-ph_ray_t ph_make_ray(pv2 pos, pv2 dir, pfloat len);
+ph_ray_t ph_make_ray(pv2 origin, pv2 dir, pfloat len);
 
 /**
- * @brief Converts and axis-aligned bounding box (AABB) to a polygon
+ * @brief Converts an axis-aligned bounding box (AABB) to a polygon
  * @brief aabb The AABB
  * @returns the AABB as a polygon
  */
 ph_poly_t ph_aabb_to_poly(const pb2* aabb);
 
 /**
- * @brief Tests to see if one polygon overlaps with another
+ * @brief Tests to see if one convex polygon overlaps with another
  * @param poly_a The colliding polygon
  * @param poly_b The target polygon
  * @param manifold The collision manifold to populate (or NULL)
@@ -171,7 +171,7 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
                       ph_manifold_t* manifold);
 
 /**
- * @brief Tests to see if a polygon overlaps a circle
+ * @brief Tests to see if a convex polygon overlaps a circle
  * @param poly The colliding polygon
  * @param circle The target circle
  * @param manifold The collision manifold to populate (or NULL)
@@ -381,9 +381,9 @@ ph_poly_t ph_make_poly(const pv2 vertices[], int count, bool reverse)
     return poly;
 }
 
-ph_ray_t ph_make_ray(pv2 pos, pv2 dir, pfloat len)
+ph_ray_t ph_make_ray(pv2 origin, pv2 dir, pfloat len)
 {
-    return (ph_ray_t){ pos, pv2_normalize(dir), len};
+    return (ph_ray_t){ origin, pv2_normalize(dir), len};
 }
 
 ph_poly_t ph_aabb_to_poly(const pb2* aabb)
@@ -407,10 +407,10 @@ ph_poly_t ph_aabb_to_poly(const pb2* aabb)
 }
 
 /*
- * The SAT test for polygons states that two polygons do not overlap if it is
- * possible to draw a line between them (a separating axis). It turns out that
- * it is sufficient to check the normal directions of each polygon to see if
- * there is overlap.
+ * The SAT test for polygons states that two convex polygons do not overlap if
+ * it is possible to draw a line between them (a separating axis). It turns out
+ * that it is sufficient to check the normal directions of each polygon to see
+ * if there is overlap.
  */
 bool ph_sat_poly_poly(const ph_poly_t* poly_a,
                       const ph_poly_t* poly_b,
@@ -419,6 +419,7 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
     PH_ASSERT(poly_a);
     PH_ASSERT(poly_b);
 
+    // Reset manifold
     if (manifold)
         ph_init_manifold(manifold);
 
@@ -492,15 +493,17 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
 
 /*
  * As in the poly/poly case, if an axis separates the a polygon and a circe
- * then they do not overlap. Thus we check along the face normals of
- * the polyon to see if there is overlap. There are cases, however, where this
- * is not sufficent. In this case we check the axis from the vertex closest to
- * the center of the circle and see if there is any overlap.
+ * then they do not overlap (circles are essentially convex). Thus we check
+ * along the face normals of the polyon to see if there is overlap. There are
+ * cases, however, where this is not sufficent. In this case we check the axis
+ * from the vertex closest to the center of the circle and see if there is any
+ * overlap.
  */
 bool ph_sat_poly_circle(const ph_poly_t* poly,
                         const ph_circle_t* circle,
                         ph_manifold_t* manifold)
 {
+    // Reset manifold
     if (manifold)
         ph_init_manifold(manifold);
 
@@ -602,6 +605,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
     PH_ASSERT(circle_a);
     PH_ASSERT(circle_b);
 
+    // Reset manifold
     if (manifold)
         ph_init_manifold(manifold);
 
@@ -649,8 +653,8 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
 */
 bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast)
 {
-    pv2 r1 = ray->pos;
-    pv2 r2 = pv2_add(ray->pos, pv2_scale(ray->dir, ray->len));
+    pv2 r1 = ray->origin;
+    pv2 r2 = pv2_add(ray->origin, pv2_scale(ray->dir, ray->len));
 
     pv2 v = pv2_sub(r2, r1);
     pv2 w = pv2_sub(s2, s1);
@@ -676,7 +680,7 @@ bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast)
 
     if (hit && raycast)
     {
-        raycast->normal = pv2_normalize(pv2_perp(w));
+        raycast->normal = pv2_normalize(pv2_perp(w)); //TODO: ensure correct orientation
         raycast->dist = p.x * ray->len;
     }
 
@@ -685,7 +689,7 @@ bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast)
 
 /*
     The idea behind this function is to use ph_ray_line on each of the edges
-    that make up the polygon. The function can exit early if the raycast is null.
+    that make up the polygon. The function can exit early if the raycast is NULL.
     Otherwise all edges of the polygon will be tested.
 */
 bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast)
@@ -741,7 +745,7 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
 bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast)
 {
     pfloat r = circle->radius;
-    pv2 m = pv2_sub(ray->pos, circle->center);
+    pv2 m = pv2_sub(ray->origin, circle->center);
     pfloat b = pv2_dot(m, ray->dir);
     pfloat c = pv2_dot(m, m) - r * r;
 
@@ -760,7 +764,7 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
         if (dist < 0.0f)
             dist = 0.0f;
 
-        pv2 p = pv2_add(ray->pos, pv2_scale(ray->dir, dist));
+        pv2 p = pv2_add(ray->origin, pv2_scale(ray->dir, dist));
 
         raycast->dist = dist;
         raycast->normal = pv2_normalize(pv2_sub(p, circle->center));
@@ -771,7 +775,7 @@ bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t*
 
 pv2 ph_ray_at(const ph_ray_t* ray, pfloat dist)
 {
-    return pv2_add(ray->pos, pv2_scale(ray->dir, dist));
+    return pv2_add(ray->origin, pv2_scale(ray->dir, dist));
 }
 
 ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly)

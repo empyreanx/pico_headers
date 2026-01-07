@@ -56,22 +56,26 @@ TEST_CASE(test_aabb_circle_not_collide)
     return true;
 }
 
+TEST_CASE(test_circle_aabb_collide)
+{
+    pb2 aabb = pb2_make(5, 5, 3, 3);
+    ph_poly_t p = ph_aabb_to_poly(&aabb);
+    ph_circle_t c = ph_make_circle(pv2_make(8, 6.5), 1.0f);
+
+    ph_manifold_t manifold_p;
+    ph_manifold_t manifold_c;
+
+    REQUIRE(ph_sat_poly_circle(&p, &c, &manifold_p));
+    REQUIRE(ph_sat_circle_poly(&c, &p, &manifold_c));
+
+    REQUIRE(pv2_equal(manifold_c.normal, pv2_reflect(manifold_p.normal)));
+    REQUIRE(pv2_equal(manifold_c.vector, pv2_reflect(manifold_p.vector)));
+
+    return true;
+}
+
 TEST_CASE(test_irregular_poly_circle)
 {
-#if 0
-    // world
-    pv2 vertices[] =
-    {
-        { 118.085091, 39.956306 },
-        { 107.585091, 33.356304 },
-        { 84.635086, 34.106304  },
-        { 90.185089, 89.156311  },
-        { 107.435089, 89.306305 },
-        { 118.685089, 51.356304 },
-    };
-#endif
-
-//#if 0
     // local
     pv2 vertices[] =
     {
@@ -82,7 +86,6 @@ TEST_CASE(test_irregular_poly_circle)
         { 106.000000,  197.000000 },
         { 181.000000,  -56.000000 },
     };
-//#endif
 
     ph_poly_t poly = ph_make_poly(vertices, sizeof(vertices)/sizeof(vertices[0]), false);
 
@@ -104,5 +107,6 @@ TEST_SUITE(suite_poly_circle)
 {
     RUN_TEST_CASE(test_aabb_circle_collide);
     RUN_TEST_CASE(test_aabb_circle_not_collide);
+    RUN_TEST_CASE(test_circle_aabb_collide);
     RUN_TEST_CASE(test_irregular_poly_circle);
 }
