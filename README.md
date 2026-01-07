@@ -9,7 +9,7 @@ Library | Docs | Description | Version
 **[pico_ecs](pico_ecs.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__ecs_8h.html)**  | Pure and simple ECS                          | 3.0
 **[pico_gfx](pico_gfx.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__gfx_8h.html)**  | Graphics library based on sokol_gfx          | 0.1
 **[pico_gl](pico_gl.h)**     | **[docs](https://empyreanx.github.io/docs/ph/pico__gl_8h.html)**   | Graphics library based on OpenGL             | 0.1
-**[pico_hit](pico_hit.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__hit_8h.html)**  | 2D collision detection (SAT) and ray casting | 0.2
+**[pico_hit](pico_hit.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__hit_8h.html)**  | 2D collision detection (SAT) and ray casting | 0.3
 **[pico_log](pico_log.h)**   | **[docs](https://empyreanx.github.io/docs/ph/pico__log_8h.html)**  | Minimal and flexible logging framework       | 1.0
 **[pico_math](pico_math.h)** | **[docs](https://empyreanx.github.io/docs/ph/pico__math_8h.html)** | 2D math library for games                    | 2.0
 **[pico_qt](pico_qt.h)**     | **[docs](https://empyreanx.github.io/docs/ph/pico__qt_8h.html)**   | A simple quadtree library                    | 1.1
