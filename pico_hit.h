@@ -106,7 +106,7 @@ typedef struct
 {
     pv2    normal;  //!< Normal to colliding edge (in direction of MTV)
     pfloat overlap; //!< Amount of overlap between two shapes along colliding axis (MTD)
-    pv2    vector;  //!< Vector defined by `vector = normal * overlap
+    pv2    vector;  //!< Minimum Translation Vector (MTV) defined by `vector = normal * overlap
 } ph_manifold_t;
 
 /**
@@ -130,10 +130,10 @@ typedef struct
 
 /**
  * @brief Initializes a circle
- * @param pos Circle center
+ * @param center Circle center
  * @param radius Circle radius
  */
-ph_circle_t ph_make_circle(pv2 pos, pfloat radius);
+ph_circle_t ph_make_circle(pv2 center, pfloat radius);
 
 /**
  * @brief Initializes a polygon
@@ -218,7 +218,7 @@ bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast);
  * @brief Tests if ray intersects a polygon
  *
  * @param ray Ray to test
- * @param poly The polygon
+ * @param poly The target polygon
  * @param raycast Normal and distance of impact (or NULL). May terminate early if NULL
  * @returns True if the ray collides with the polygon and false otherwise
  */
@@ -228,7 +228,7 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
  * @brief Tests if ray intersects a circle
  *
  * @param ray Ray to test
- * @param circle The circle
+ * @param circle The target circle
  * @param raycast Normal and distance of impact (if not NULL).
  * @returns True if the ray collides with the circle and false otherwise
  */
@@ -407,10 +407,10 @@ ph_poly_t ph_aabb_to_poly(const pb2* aabb)
 }
 
 /*
- * The SAT test for polygons states that two convex polygons do not overlap if
- * it is possible to draw a line between them (a separating axis). It turns out
- * that it is sufficient to check the normal directions of each polygon to see
- * if there is overlap.
+ * The SAT test states that two convex polygons do not overlap if it is
+ * possible to draw a non-intersecting line between them (a separating
+ * axis). It is sufficient to check the normal directions of each face of the
+ * polygons to see if there is overlap.
  */
 bool ph_sat_poly_poly(const ph_poly_t* poly_a,
                       const ph_poly_t* poly_b,
