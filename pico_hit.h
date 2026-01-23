@@ -98,7 +98,7 @@ typedef struct
 } ph_poly_t;
 
 /**
- * @brief A collision manifold
+ * @brief A collision result
  * Provides information about a collision. Normals always point from the target
  * shape to the colliding shape.
  */
@@ -106,8 +106,8 @@ typedef struct
 {
     pv2    normal;  //!< Normal to colliding edge (in direction of MTV)
     pfloat overlap; //!< Amount of overlap between two shapes along colliding axis (MTD)
-    pv2    vector;  //!< Minimum Translation Vector (MTV) defined by `vector = normal * overlap
-} ph_manifold_t;
+    pv2    mtv;     //!< Minimum Translation Vector (MTV) defined by `mtv = normal * overlap
+} ph_sat_t;
 
 /**
  * @brief A ray (directed line segment)
@@ -163,45 +163,45 @@ ph_poly_t ph_aabb_to_poly(const pb2* aabb);
  * @brief Tests to see if one convex polygon overlaps with another
  * @param poly_a The colliding polygon
  * @param poly_b The target polygon
- * @param manifold The collision manifold to populate (or NULL)
+ * @param result The collision result to populate (or NULL)
  * @returns True if the polygons overlap and false otherwise
  */
 bool ph_sat_poly_poly(const ph_poly_t* poly_a,
                       const ph_poly_t* poly_b,
-                      ph_manifold_t* manifold);
+                      ph_sat_t* result);
 
 /**
  * @brief Tests to see if a convex polygon overlaps a circle
  * @param poly The colliding polygon
  * @param circle The target circle
- * @param manifold The collision manifold to populate (or NULL)
+ * @param result The collision result to populate (or NULL)
  * @returns True if the polygon and circle overlap, and false otherwise
  */
 bool ph_sat_poly_circle(const ph_poly_t* poly,
                         const ph_circle_t* circle,
-                        ph_manifold_t* manifold);
+                        ph_sat_t* result);
 
 /**
  * @brief Tests to see if a circle overlaps a polygon
  * @param circle The colliding circle
  * @param poly The target polygon
- * @param manifold The collision manifold to populate (or NULL)
+ * @param result The collision result to populate (or NULL)
  * @returns True if the circle overlaps the polygon, and false otherwise
  */
 bool ph_sat_circle_poly(const ph_circle_t* circle,
                         const ph_poly_t* poly,
-                        ph_manifold_t* manifold);
+                        ph_sat_t* result);
 
 /**
  * @brief Tests to see if two circles overlap
  * @param circle_a The colliding circle
  * @param circle_b The target circle
- * @param manifold The collision manifold to populate (or NULL)
+ * @param result The collision result to populate (or NULL)
  * @returns True if the circle and the other circle, and false otherwise
  */
 bool ph_sat_circle_circle(const ph_circle_t* circle_a,
                           const ph_circle_t* circle_b,
-                          ph_manifold_t* manifold);
+                          ph_sat_t* result);
 
 /**
  * @brief Tests if ray intersects a (directed) line segment
@@ -288,8 +288,8 @@ pb2 ph_circle_to_aabb(const ph_circle_t* circle);
  * Internal function declarations
  *============================================================================*/
 
-// Initializes a manifold
-static void ph_init_manifold(ph_manifold_t* manifold);
+// Initializes a result
+static void ph_init_result(ph_sat_t* result);
 
 // Determines a polygon's limits under a projection onto an axis
 static void ph_project_poly(const ph_poly_t* poly,
@@ -414,14 +414,14 @@ ph_poly_t ph_aabb_to_poly(const pb2* aabb)
  */
 bool ph_sat_poly_poly(const ph_poly_t* poly_a,
                       const ph_poly_t* poly_b,
-                      ph_manifold_t* manifold)
+                      ph_sat_t* result)
 {
     PH_ASSERT(poly_a);
     PH_ASSERT(poly_b);
 
-    // Reset manifold
-    if (manifold)
-        ph_init_manifold(manifold);
+    // Reset result
+    if (result)
+        ph_init_result(result);
 
     // Test axises on poly_a
     for (int i = 0; i < poly_a->count; i++)
@@ -441,11 +441,11 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
         if (overlap <= 0.0f)
             return false;
 
-        // Update manifold
-        if (manifold && overlap < manifold->overlap)
+        // Update result
+        if (result && overlap < result->overlap)
         {
-            manifold->overlap = overlap;
-            manifold->normal = poly_a->normals[i];
+            result->overlap = overlap;
+            result->normal = poly_a->normals[i];
         }
     }
 
@@ -467,25 +467,25 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
         if (overlap <= 0.0f)
             return false;
 
-        // Update manifold
-        if (manifold && overlap < manifold->overlap)
+        // Update result
+        if (result && overlap < result->overlap)
         {
-            manifold->overlap = overlap;
-            manifold->normal = poly_a->normals[i];
+            result->overlap = overlap;
+            result->normal = poly_a->normals[i];
         }
     }
 
-    if (manifold)
+    if (result)
     {
         // Ensure the normal vector has the correct orientation
         pv2 diff = pv2_sub(poly_b->centroid, poly_a->centroid);
 
-        if (pv2_dot(diff, manifold->normal) >= 0.0f)
+        if (pv2_dot(diff, result->normal) >= 0.0f)
         {
-             manifold->normal = pv2_reflect(manifold->normal);
+             result->normal = pv2_reflect(result->normal);
         }
 
-        manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
+        result->mtv = pv2_scale(result->normal, result->overlap);
     }
 
     return true;
@@ -501,11 +501,11 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
  */
 bool ph_sat_poly_circle(const ph_poly_t* poly,
                         const ph_circle_t* circle,
-                        ph_manifold_t* manifold)
+                        ph_sat_t* result)
 {
-    // Reset manifold
-    if (manifold)
-        ph_init_manifold(manifold);
+    // Reset result
+    if (result)
+        ph_init_result(result);
 
     for (int i = 0; i < poly->count; i++)
     {
@@ -526,11 +526,11 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         if (overlap <= 0.0f)
             return false;
 
-        // Update manifold
-        if (manifold && overlap < manifold->overlap)
+        // Update result
+        if (result && overlap < result->overlap)
         {
-            manifold->overlap = overlap;
-            manifold->normal = axis;
+            result->overlap = overlap;
+            result->normal = axis;
         }
     }
 
@@ -555,24 +555,24 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         if (overlap <= 0.0f)
             return false;
 
-        // Update manifold
-        if (manifold && overlap < manifold->overlap) {
-            manifold->overlap = overlap;
-            manifold->normal = axis;
+        // Update result
+        if (result && overlap < result->overlap) {
+            result->overlap = overlap;
+            result->normal = axis;
         }
     }
 
-    if (manifold)
+    if (result)
     {
         // Ensure the normal vector has the correct orientation
         pv2 diff = pv2_sub(circle->center, poly->centroid);
 
-        if (pv2_dot(manifold->normal, diff) >= 0.0f)
+        if (pv2_dot(result->normal, diff) >= 0.0f)
         {
-            manifold->normal = pv2_reflect(manifold->normal);
+            result->normal = pv2_reflect(result->normal);
         }
 
-        manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
+        result->mtv = pv2_scale(result->normal, result->overlap);
     }
 
     return true;
@@ -580,19 +580,19 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
 
 bool ph_sat_circle_poly(const ph_circle_t* circle,
                         const ph_poly_t* poly,
-                        ph_manifold_t* manifold)
+                        ph_sat_t* result)
 {
     PH_ASSERT(poly);
     PH_ASSERT(circle);
 
-    bool hit = ph_sat_poly_circle(poly, circle, (manifold) ? manifold : NULL);
+    bool hit = ph_sat_poly_circle(poly, circle, (result) ? result : NULL);
 
-    if (hit && manifold)
+    if (hit && result)
     {
         // Since arguments were swapped, reversing these vectors is all that is
         // required
-        manifold->normal = pv2_reflect(manifold->normal);
-        manifold->vector = pv2_reflect(manifold->vector);
+        result->normal = pv2_reflect(result->normal);
+        result->mtv = pv2_reflect(result->mtv);
     }
 
     return hit;
@@ -600,14 +600,14 @@ bool ph_sat_circle_poly(const ph_circle_t* circle,
 
 bool ph_sat_circle_circle(const ph_circle_t* circle_a,
                           const ph_circle_t* circle_b,
-                          ph_manifold_t* manifold)
+                          ph_sat_t* result)
 {
     PH_ASSERT(circle_a);
     PH_ASSERT(circle_b);
 
-    // Reset manifold
-    if (manifold)
-        ph_init_manifold(manifold);
+    // Reset result
+    if (result)
+        ph_init_result(result);
 
     // Position of circle_b relative to circle_a
     pv2 diff = pv2_sub(circle_a->center, circle_b->center);
@@ -626,7 +626,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
     if (dist2 >= total_radius2)
         return false;
 
-    if (manifold)
+    if (result)
     {
          // Calculate distance because we need it now
         pfloat dist = pf_sqrt(dist2);
@@ -637,9 +637,9 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
         // Normal direction is just circle_b relative to circle_a
         pv2 normal = pv2_normalize(diff);
 
-        manifold->overlap = overlap;
-        manifold->normal = normal;
-        manifold->vector = pv2_scale(manifold->normal, manifold->overlap);
+        result->overlap = overlap;
+        result->normal = normal;
+        result->mtv = pv2_scale(result->normal, result->overlap);
     }
 
     return true;
@@ -815,13 +815,13 @@ pb2 ph_circle_to_aabb(const ph_circle_t* circle)
  * Internal function definitions
  *============================================================================*/
 
-static void ph_init_manifold(ph_manifold_t* manifold)
+static void ph_init_result(ph_sat_t* result)
 {
-    PH_ASSERT(manifold);
+    PH_ASSERT(result);
 
-    manifold->overlap = PM_FLOAT_MAX;
-    manifold->normal  = pv2_zero();
-    manifold->vector  = pv2_zero();
+    result->overlap = PM_FLOAT_MAX;
+    result->normal  = pv2_zero();
+    result->mtv  = pv2_zero();
 }
 
 static pfloat ph_calc_overlap(pfloat min1, pfloat max1, pfloat min2, pfloat max2)

@@ -11,13 +11,13 @@ TEST_CASE(test_aabb_aabb_collide)
         pb2 aabb2 = pb2_make(6, 6, 2, 2);
         ph_poly_t p2 = ph_aabb_to_poly(&aabb2);
 
-        ph_manifold_t manifold;
+        ph_sat_t result;
 
-        REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
+        REQUIRE(ph_sat_poly_poly(&p1, &p2, &result));
 
-        REQUIRE(pf_equal(manifold.overlap, 1));
-        REQUIRE(pv2_equal(manifold.normal, pv2_make(-1, 0)));
-        REQUIRE(pv2_equal(manifold.vector, pv2_make(-1, 0)));
+        REQUIRE(pf_equal(result.overlap, 1));
+        REQUIRE(pv2_equal(result.normal, pv2_make(-1, 0)));
+        REQUIRE(pv2_equal(result.mtv, pv2_make(-1, 0)));
     }
 
     // Collide left side
@@ -25,13 +25,13 @@ TEST_CASE(test_aabb_aabb_collide)
         pb2 aabb2 = pb2_make(4, 5, 2, 2);
         ph_poly_t p2 = ph_aabb_to_poly(&aabb2);
 
-        ph_manifold_t manifold;
+        ph_sat_t result;
 
-        REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
+        REQUIRE(ph_sat_poly_poly(&p1, &p2, &result));
 
-        REQUIRE(pf_equal(manifold.overlap, 1));
-        REQUIRE(pv2_equal(manifold.normal, pv2_make(1, 0)));
-        REQUIRE(pv2_equal(manifold.vector, pv2_make(1, 0)));
+        REQUIRE(pf_equal(result.overlap, 1));
+        REQUIRE(pv2_equal(result.normal, pv2_make(1, 0)));
+        REQUIRE(pv2_equal(result.mtv, pv2_make(1, 0)));
     }
 
     return true;
@@ -57,12 +57,12 @@ TEST_CASE(test_poly_poly)
     ph_poly_t p1 = ph_make_poly(vertices1, 4, false);
     ph_poly_t p2 = ph_make_poly(vertices2, 3, false);
 
-    ph_manifold_t manifold;
+    ph_sat_t result;
 
-    REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
+    REQUIRE(ph_sat_poly_poly(&p1, &p2, &result));
 
-    REQUIRE(pf_equal(manifold.overlap, 10));
-    REQUIRE(pv2_equal(manifold.normal, pv2_make(-1, 0)));
+    REQUIRE(pf_equal(result.overlap, 10));
+    REQUIRE(pv2_equal(result.normal, pv2_make(-1, 0)));
 
     return true;
 }
@@ -87,10 +87,10 @@ TEST_CASE(test_poly_poly_mtv)
 
     ph_poly_t p1 = ph_make_poly(vertices1, 4, false);
     ph_poly_t p2 = ph_make_poly(vertices2, 3, false);
-    ph_manifold_t manifold;
+    ph_sat_t result;
 
-    REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
-    pt2 tf = pt2_translation(manifold.vector);
+    REQUIRE(ph_sat_poly_poly(&p1, &p2, &result));
+    pt2 tf = pt2_translation(result.mtv);
     ph_poly_t tf_poly = ph_transform_poly(&tf, &p1);
 
     REQUIRE(!ph_sat_poly_poly(&tf_poly, &p2, NULL));

@@ -10,13 +10,13 @@ TEST_CASE(test_aabb_circle_collide)
     {
         ph_circle_t c = ph_make_circle(pv2_make(8, 6.5), 1.0f);
 
-        ph_manifold_t manifold;
+        ph_sat_t result;
 
-        REQUIRE(ph_sat_poly_circle(&p, &c, &manifold));
+        REQUIRE(ph_sat_poly_circle(&p, &c, &result));
 
-        REQUIRE(pf_equal(manifold.overlap, 1));
-        REQUIRE(pv2_equal(manifold.normal, pv2_make(-1, 0)));
-        REQUIRE(pv2_equal(manifold.vector, pv2_make(-1, 0)));
+        REQUIRE(pf_equal(result.overlap, 1));
+        REQUIRE(pv2_equal(result.normal, pv2_make(-1, 0)));
+        REQUIRE(pv2_equal(result.mtv, pv2_make(-1, 0)));
     }
 
     // Top
@@ -28,17 +28,17 @@ TEST_CASE(test_aabb_circle_collide)
     {
         ph_circle_t c = ph_make_circle(pv2_make(5, 5), 1.0f);
 
-        ph_manifold_t manifold;
+        ph_sat_t result;
 
-        REQUIRE(ph_sat_poly_circle(&p, &c, &manifold));
+        REQUIRE(ph_sat_poly_circle(&p, &c, &result));
 
-        REQUIRE(pf_equal(manifold.overlap, 1.0f));
+        REQUIRE(pf_equal(result.overlap, 1.0f));
 
-        REQUIRE(pv2_equal(manifold.normal, pv2_make( 1, 0)) ||
-                pv2_equal(manifold.normal, pv2_make( 0, 1)));
+        REQUIRE(pv2_equal(result.normal, pv2_make( 1, 0)) ||
+                pv2_equal(result.normal, pv2_make( 0, 1)));
 
-        REQUIRE(pv2_equal(manifold.vector, pv2_make( 1, 0)) ||
-                pv2_equal(manifold.vector, pv2_make( 0, 1)));
+        REQUIRE(pv2_equal(result.mtv, pv2_make( 1, 0)) ||
+                pv2_equal(result.mtv, pv2_make( 0, 1)));
     }
 
     return true;
@@ -62,14 +62,14 @@ TEST_CASE(test_circle_aabb_collide)
     ph_poly_t p = ph_aabb_to_poly(&aabb);
     ph_circle_t c = ph_make_circle(pv2_make(8, 6.5), 1.0f);
 
-    ph_manifold_t manifold_p;
-    ph_manifold_t manifold_c;
+    ph_sat_t result_p;
+    ph_sat_t result_c;
 
-    REQUIRE(ph_sat_poly_circle(&p, &c, &manifold_p));
-    REQUIRE(ph_sat_circle_poly(&c, &p, &manifold_c));
+    REQUIRE(ph_sat_poly_circle(&p, &c, &result_p));
+    REQUIRE(ph_sat_circle_poly(&c, &p, &result_c));
 
-    REQUIRE(pv2_equal(manifold_c.normal, pv2_reflect(manifold_p.normal)));
-    REQUIRE(pv2_equal(manifold_c.vector, pv2_reflect(manifold_p.vector)));
+    REQUIRE(pv2_equal(result_c.normal, pv2_reflect(result_p.normal)));
+    REQUIRE(pv2_equal(result_c.mtv, pv2_reflect(result_p.mtv)));
 
     return true;
 }
@@ -96,9 +96,9 @@ TEST_CASE(test_irregular_poly_circle)
 
     ph_circle_t circle = ph_make_circle(pv2_make(100, 100), 20);
 
-    ph_manifold_t manifold = { 0 };
+    ph_sat_t result = { 0 };
 
-    REQUIRE(ph_sat_poly_circle(&poly, &circle, &manifold));
+    REQUIRE(ph_sat_poly_circle(&poly, &circle, &result));
 
     return true;
 }
