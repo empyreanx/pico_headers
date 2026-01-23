@@ -67,6 +67,37 @@ TEST_CASE(test_poly_poly)
     return true;
 }
 
+
+TEST_CASE(test_poly_poly_mtv)
+{
+    pv2 vertices1[] =
+    {
+        { 0,  0  },
+        { 0,  40 },
+        { 40, 40 },
+        { 40, 0  }
+    };
+
+    pv2 vertices2[] =
+    {
+        { 30, 0  },
+        { 30, 30 },
+        { 60, 0  }
+    };
+
+    ph_poly_t p1 = ph_make_poly(vertices1, 4, false);
+    ph_poly_t p2 = ph_make_poly(vertices2, 3, false);
+    ph_manifold_t manifold;
+
+    REQUIRE(ph_sat_poly_poly(&p1, &p2, &manifold));
+    pt2 tf = pt2_translation(manifold.vector);
+    ph_poly_t tf_poly = ph_transform_poly(&tf, &p1);
+
+    REQUIRE(!ph_sat_poly_poly(&tf_poly, &p2, NULL));
+
+    return true;
+}
+
 TEST_CASE(test_aabb_aabb_not_collide)
 {
     pb2 aabb1 = pb2_make(5, 5, 2, 2);
@@ -116,5 +147,6 @@ TEST_SUITE(suite_poly_poly)
     RUN_TEST_CASE(test_aabb_aabb_collide);
     RUN_TEST_CASE(test_aabb_aabb_not_collide);
     RUN_TEST_CASE(test_poly_poly);
+    RUN_TEST_CASE(test_poly_poly_mtv);
     RUN_TEST_CASE(test_poly_to_aabb);
 }
