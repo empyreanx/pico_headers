@@ -110,6 +110,22 @@ typedef struct
 } ph_sat_t;
 
 /**
+ * @brief A contact point
+ */
+typedef struct
+{
+    pv2 pos;      //!< Position of the contact in world-space
+    pfloat depth; //< Depth of the contact relative to the incident edge
+} ph_contact_t;
+
+typedef struct
+{
+    pv2 normal;               //!< Contact normal (from SAT)
+    ph_contact_t contacts[2]; //!< Contact points (maximum of two)
+    int count;                //!< Numer of contacts
+} ph_manifold_t;
+
+/**
  * @brief A ray (directed line segment)
 */
 typedef struct
@@ -202,6 +218,11 @@ bool ph_sat_circle_poly(const ph_circle_t* circle,
 bool ph_sat_circle_circle(const ph_circle_t* circle_a,
                           const ph_circle_t* circle_b,
                           ph_sat_t* result);
+
+int ph_contacts_poly_poly(const ph_poly_t* poly_a,
+                          const ph_poly_t* poly_b,
+                          pv2 normal,
+                          ph_manifold_t* manifold);
 
 /**
  * @brief Tests if ray intersects a (directed) line segment
@@ -643,6 +664,66 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
     }
 
     return true;
+}
+
+static pv2 ph_find_best_edge(const ph_poly_t* poly, pv2 normal)
+{
+    PH_ASSERT(poly);
+
+    pfloat max_dot = -PM_FLOAT_MAX;
+    int max_index = 0;
+
+    for (int i = 0; i < poly->count; i++)
+    {
+        pfloat dot = pv2_dot(normal, poly->vertices[i]);
+
+        if (dot > max_dot)
+        {
+            max_dot = dot;
+            max_index = i;
+        }
+    }
+
+    pv2 edge1 = poly->edges[max_index];
+    pv2 edge2 = poly->edges[(max_index + poly->count - 1) % poly->count];
+
+    edge1 = pv2_normalize(edge1);
+    edge2 = pv2_normalize(edge2);
+
+    return (pv2_dot(edge1, normal) <= pv2_dot(edge2, normal)) ? edge1 : edge2;
+}
+
+#if 0
+static int ph_find_incident_edge(const ph_poly_t* poly, pv2 normal)
+{
+    pfloat min_dot = PM_FLOAT_MAX;
+    int edge_index = 0;
+
+    for (int i = 0; i < poly->count; i++)
+    {
+        float dot = pv2_dot(poly->normals[i], normal);
+
+        if (dot < min_dot)
+        {
+            min_dot = dot;
+            edge_index = i;
+        }
+    }
+
+    return edge_index;
+}
+#endif
+
+int ph_manifold_poly_poly(const ph_poly_t* poly_a,
+                          const ph_poly_t* poly_b,
+                          pv2 normal,
+                          ph_manifold_t* manifold)
+{
+    PH_ASSERT(poly_a);
+    PH_ASSERT(poly_b);
+    PH_ASSERT(manifold);
+
+    return 0;
 }
 
 /*
