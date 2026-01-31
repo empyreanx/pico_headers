@@ -668,8 +668,9 @@ typedef struct
 struct ecs_s
 {
     ecs_id_array_t     entity_pool;
-    ecs_id_array_t     destroy_queue;
+    ecs_id_array_t     add_queue;
     ecs_id_array_t     remove_queue;
+    ecs_id_array_t     destroy_queue;
     ecs_entity_data_t* entities;
     size_t             entity_count;
     size_t             next_entity_id;
@@ -678,6 +679,7 @@ struct ecs_s
     size_t             comp_count;
     ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
     size_t             system_count;
+    int                active_system;
     void*              mem_ctx;
 };
 
@@ -711,8 +713,9 @@ static inline bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id);
 /*=============================================================================
  * Functions to flush destroyed entities and removed component
  *============================================================================*/
-static void ecs_flush_destroyed(ecs_t* ecs);
-static void ecs_flush_removed(ecs_t* ecs);
+static void ecs_flush_added(ecs_t* ecs, ecs_id_t sys_id);
+static void ecs_flush_removed(ecs_t* ecs, ecs_id_t sys_id);
+static void ecs_flush_destroyed(ecs_t* ecs, ecs_id_t sys_id);
 
 /*=============================================================================
  * Bitset functions
@@ -799,12 +802,14 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     ecs->entity_count   = (entity_count > 0) ? entity_count : 1;
     ecs->next_entity_id = 1;
+    ecs->active_system  = -1;
     ecs->mem_ctx        = mem_ctx;
 
     // Initialize entity pool and queues
     ecs_id_array_init(ecs, &ecs->entity_pool,   entity_count);
-    ecs_id_array_init(ecs, &ecs->destroy_queue, entity_count);
+    ecs_id_array_init(ecs, &ecs->add_queue,     entity_count * 2);
     ecs_id_array_init(ecs, &ecs->remove_queue,  entity_count * 2);
+    ecs_id_array_init(ecs, &ecs->destroy_queue, entity_count);
 
     // Allocate entity array
     ecs->entities = (ecs_entity_data_t*)ECS_MALLOC(ecs->entity_count * sizeof(ecs_entity_data_t),
@@ -827,8 +832,9 @@ void ecs_free(ecs_t* ecs)
     }
 
     ecs_id_array_free(ecs, &ecs->entity_pool);
-    ecs_id_array_free(ecs, &ecs->destroy_queue);
+    ecs_id_array_free(ecs, &ecs->add_queue);
     ecs_id_array_free(ecs, &ecs->remove_queue);
+    ecs_id_array_free(ecs, &ecs->destroy_queue);
 
     for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
     {
@@ -1156,6 +1162,9 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     // Add or remove entity from systems
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
+        if (ecs->active_system == (int)sys_id)
+            continue;
+
         ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
         if (ecs_entity_system_test(&sys_data->require_bits, &sys_data->exclude_bits, &entity_data->comp_bits))
@@ -1173,6 +1182,46 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
             {
                 if (sys_data->remove_cb)
                     sys_data->remove_cb(ecs, entity, sys_data->udata);
+            }
+        }
+    }
+
+    if (ecs->active_system > 0)
+    {
+        ecs_sys_data_t* sys_data = &ecs->systems[ecs->active_system];
+
+        if (ecs_entity_system_test(&sys_data->require_bits, &sys_data->exclude_bits, &entity_data->comp_bits))
+        {
+            ecs_sparse_set_t* set = &sys_data->entity_ids;
+
+            if (set->size < set->capacity)
+            {
+                if (ecs_sparse_set_add(ecs, set, entity.id))
+                {
+                    if (sys_data->add_cb)
+                        sys_data->add_cb(ecs, entity, sys_data->udata);
+                }
+            }
+            else
+            {
+                if (!ecs_sparse_set_find(set, entity.id, NULL))
+                {
+                    if (sys_data->add_cb)
+                        sys_data->add_cb(ecs, entity, sys_data->udata);
+
+                    ecs_id_array_push(ecs, &ecs->add_queue, entity.id);
+                }
+            }
+        }
+        else
+        {
+            if (!ecs_bitset_is_zero(&sys_data->exclude_bits))
+            {
+                if (sys_data->remove_cb)
+                    sys_data->remove_cb(ecs, entity, sys_data->udata);
+
+                ecs_id_array_push(ecs, &ecs->remove_queue, entity.id);
+                ecs_id_array_push(ecs, &ecs->remove_queue, comp.id);
             }
         }
     }
@@ -1268,13 +1317,18 @@ ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
     if (0 != sys_data->mask && !(sys_data->mask & mask))
         return 0;
 
+    ecs->active_system = (int)sys.id;
+
     ecs_ret_t code = sys_data->system_cb(ecs,
                      sys_data->entity_ids.dense,
                      sys_data->entity_ids.size,
                      sys_data->udata);
 
-    ecs_flush_destroyed(ecs);
-    ecs_flush_removed(ecs);
+    ecs_flush_added(ecs, sys.id);
+    ecs_flush_removed(ecs, sys.id);
+    ecs_flush_destroyed(ecs, sys.id);
+
+    ecs->active_system = -1;
 
     return code;
 }
@@ -1398,23 +1452,24 @@ static void ecs_remove_from_systems(ecs_t* ecs, ecs_entity_t entity)
 /*=============================================================================
  * Functions to flush destroyed entity and removed component
  *============================================================================*/
-
-static void ecs_flush_destroyed(ecs_t* ecs)
+static void ecs_flush_added(ecs_t* ecs, ecs_id_t sys_id)
 {
-    ecs_id_array_t* destroy_queue = &ecs->destroy_queue;
+    ecs_id_array_t* queue = &ecs->add_queue;
 
-    for (size_t i = 0; i < destroy_queue->size; i++)
+    for (size_t i = 0; i < queue->size; i++)
     {
-        ecs_id_t entity_id = destroy_queue->data[i];
+        ecs_id_t entity_id = queue->data[i];
 
         if (ecs_is_active(ecs, entity_id))
-            ecs_destroy(ecs, ecs_make_entity(entity_id));
+        {
+            ecs_sparse_set_add(ecs, &ecs->systems[sys_id].entity_ids, entity_id);
+        }
     }
 
-    destroy_queue->size = 0;
+    queue->size = 0;
 }
 
-static void ecs_flush_removed(ecs_t* ecs)
+ static void ecs_flush_removed(ecs_t* ecs, ecs_id_t sys_id)
 {
     ecs_id_array_t* remove_queue = &ecs->remove_queue;
 
@@ -1424,12 +1479,27 @@ static void ecs_flush_removed(ecs_t* ecs)
 
         if (ecs_is_active(ecs, entity_id))
         {
-            ecs_id_t comp_id = remove_queue->data[i + 1];
-            ecs_remove(ecs, ecs_make_entity(entity_id), ecs_make_comp(comp_id));
+            //ecs_id_t comp_id = remove_queue->data[i + 1];
+            //ecs_remove(ecs, ecs_make_entity(entity_id), ecs_make_comp(comp_id));
         }
     }
 
     remove_queue->size = 0;
+}
+
+static void ecs_flush_destroyed(ecs_t* ecs, ecs_id_t sys_id)
+{
+    ecs_id_array_t* destroy_queue = &ecs->destroy_queue;
+
+    for (size_t i = 0; i < destroy_queue->size; i++)
+    {
+        ecs_id_t entity_id = destroy_queue->data[i];
+
+        //if (ecs_is_active(ecs, entity_id))
+        //    ecs_destroy(ecs, ecs_make_entity(entity_id));
+    }
+
+    destroy_queue->size = 0;
 }
 
 
