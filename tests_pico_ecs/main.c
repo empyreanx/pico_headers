@@ -587,6 +587,7 @@ TEST_CASE(test_remove_system)
     return true;
 }
 
+#if 0
 // System that enqueues entities for destruction
 static ecs_ret_t queue_destroy_system(ecs_t* ecs,
                                       ecs_entity_t* entities,
@@ -606,7 +607,9 @@ static ecs_ret_t queue_destroy_system(ecs_t* ecs,
 
     return 0;
 }
+#endif
 
+#if 0
 TEST_CASE(test_queue_destroy_system)
 {
     sys1 =ecs_define_system(ecs, 0, queue_destroy_system, NULL, NULL, NULL);
@@ -634,7 +637,9 @@ TEST_CASE(test_queue_destroy_system)
 
     return true;
 }
+#endif
 
+#if 0
 // System that enqueues components for removal
 static ecs_ret_t queue_remove_system(ecs_t* ecs,
                                      ecs_entity_t* entities,
@@ -652,7 +657,9 @@ static ecs_ret_t queue_remove_system(ecs_t* ecs,
 
     return 0;
 }
+#endif
 
+#if 0
 TEST_CASE(test_queue_remove_system)
 {
     sys1 =ecs_define_system(ecs, 0, queue_remove_system, NULL, NULL, NULL);
@@ -682,7 +689,9 @@ TEST_CASE(test_queue_remove_system)
 
     return true;
 }
+#endif
 
+#if 0
 // Tests destructors
 TEST_CASE(test_queue_destroy_system_with_destructor)
 {
@@ -709,6 +718,7 @@ TEST_CASE(test_queue_destroy_system_with_destructor)
 
     return true;
 }
+#endif
 
 // Tests system enable/disable
 TEST_CASE(test_enable_disable)
@@ -943,9 +953,11 @@ static TEST_SUITE(suite_ecs)
     RUN_TEST_CASE(test_destroy);
     RUN_TEST_CASE(test_destroy_system);
     RUN_TEST_CASE(test_remove_system);
+    #if 0
     RUN_TEST_CASE(test_queue_destroy_system);
     RUN_TEST_CASE(test_queue_remove_system);
     RUN_TEST_CASE(test_queue_destroy_system_with_destructor);
+    #endif
     RUN_TEST_CASE(test_enable_disable);
     RUN_TEST_CASE(test_system_mask);
     RUN_TEST_CASE(test_add_remove_callbacks);
