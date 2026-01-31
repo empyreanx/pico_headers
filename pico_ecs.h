@@ -1091,6 +1091,8 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
                     sys_data->remove_cb(ecs, entity, sys_data->udata);
 
                 ecs_id_array_push(ecs, &ecs->destroy_queue, entity.id);
+
+                entity_data->ready = false;
             }
         }
     }
