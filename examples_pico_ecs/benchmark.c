@@ -296,7 +296,7 @@ ecs_ret_t queue_destroy_system(ecs_t* ecs,
 
     for (size_t i = 0; i < entity_count; i++)
     {
-        ecs_queue_destroy(ecs, entities[i]);
+        ecs_destroy(ecs, entities[i]);
     }
 
     return 0;
