@@ -1060,15 +1060,20 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     // Remove entity from systems
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
+        // Skip if the system is active and matches the current system ID. This
+        // system will be processed below
         if (ecs->active_system == (int)sys_id)
             continue;
 
         ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
+        // Test to see if entity's components matches the system
         if (ecs_entity_system_test(&sys_data->require_bits,
                                    &sys_data->exclude_bits,
                                    &entity_data->comp_bits))
         {
+            // Directly remove from sparse set since no system is being
+            // processed
             if (ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
             {
                 if (sys_data->remove_cb)
@@ -1077,14 +1082,18 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         }
     }
 
+    // True if a system is being processed
     if (ecs->active_system >= 0)
     {
         ecs_sys_data_t* sys_data = &ecs->systems[ecs->active_system];
 
+            // Test to see if entity's components matches the system
         if (ecs_entity_system_test(&sys_data->require_bits,
                                    &sys_data->exclude_bits,
                                    &entity_data->comp_bits))
         {
+            // Since a system is being processed we need to protect its sparse
+            // set, so we queue a removed command
             if (ecs_sparse_set_find(&sys_data->entity_ids, entity.id, NULL))
             {
                 if (sys_data->remove_cb)
@@ -1093,6 +1102,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
                 ecs_id_array_push(ecs, &ecs->destroy_queue, entity.id);
 
                 entity_data->ready = false;
+                entity_data->active = true;
             }
         }
     }
@@ -1100,6 +1110,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     // Call destructors on entity components
     ecs_destruct(ecs, entity.id);
 
+    // If a system is not active, then clean up
     if (ecs->active_system < 0)
     {
         // Push entity ID into pool
@@ -1172,40 +1183,58 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     // Add or remove entity from systems
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
+        // Skip if the system is active and matches the current system ID. This
+        // system will be processed below
         if (ecs->active_system == (int)sys_id)
             continue;
 
         ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
-        if (ecs_entity_system_test(&sys_data->require_bits, &sys_data->exclude_bits, &entity_data->comp_bits))
+        // Test to see if entity's components matches the system
+        if (ecs_entity_system_test(&sys_data->require_bits,
+                                   &sys_data->exclude_bits,
+                                   &entity_data->comp_bits))
         {
+            // Add the entity directly to the sparse set
             if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity.id))
             {
                 if (sys_data->add_cb)
                     sys_data->add_cb(ecs, entity, sys_data->udata);
             }
         }
-        else // Just remove the entity if its components no longer match for whatever reason.
+        else
         {
-            if (!ecs_bitset_is_zero(&sys_data->exclude_bits) &&
-                 ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
+            // As a minor optimization, check if the system excludes components
+            if (!ecs_bitset_is_zero(&sys_data->exclude_bits))
             {
-                if (sys_data->remove_cb)
-                    sys_data->remove_cb(ecs, entity, sys_data->udata);
+                // Just remove the entity from the sparse set if its components
+                // no longer match
+                if (ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
+                {
+                    if (sys_data->remove_cb)
+                        sys_data->remove_cb(ecs, entity, sys_data->udata);
+                }
             }
         }
     }
 
+    // True if a system is running
     if (ecs->active_system >= 0)
     {
+        // Load active system data
         ecs_sys_data_t* sys_data = &ecs->systems[ecs->active_system];
 
-        if (ecs_entity_system_test(&sys_data->require_bits, &sys_data->exclude_bits, &entity_data->comp_bits))
+        // Test to see if entity's components matches the system
+        if (ecs_entity_system_test(&sys_data->require_bits,
+                                   &sys_data->exclude_bits,
+                                   &entity_data->comp_bits))
         {
             ecs_sparse_set_t* set = &sys_data->entity_ids;
 
+            // If the sparse set has room to grow, directly add the entity
             if (set->size < set->capacity)
             {
+                // Add the entity directly to the sparse set
                 if (ecs_sparse_set_add(ecs, set, entity.id))
                 {
                     if (sys_data->add_cb)
@@ -1214,6 +1243,7 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
             }
             else
             {
+                // The sparse set is full, so queue an add command
                 if (!ecs_sparse_set_find(set, entity.id, NULL))
                 {
                     if (sys_data->add_cb)
@@ -1225,8 +1255,12 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
         }
         else
         {
+            // As a minor optimization, check if the system excludes components
             if (!ecs_bitset_is_zero(&sys_data->exclude_bits))
             {
+                // Since we are updating the active system, we need to protect
+                // the sparse set. Thus, if the entity is in the set, queue
+                // a remove command
                 if (ecs_sparse_set_find(&sys_data->entity_ids, entity.id, NULL))
                 {
                     if (sys_data->remove_cb)
@@ -1258,15 +1292,22 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     memset(&comp_bit, 0, sizeof(ecs_bitset_t));
     ecs_bitset_flip(&comp_bit, comp.id, true);
 
+    // Add or remove entity from systems
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
-        ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
-
+        // Skip if the system is active and matches the current system ID. This
+        // system will be processed below
         if (ecs->active_system == (int)sys_id)
             continue;
 
-        if (ecs_entity_system_test(&sys_data->require_bits, &sys_data->exclude_bits, &comp_bit))
+        ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
+
+        // Test to see if entity's components matches the system
+        if (ecs_entity_system_test(&sys_data->require_bits,
+                                   &sys_data->exclude_bits,
+                                   &comp_bit))
         {
+            // No system is running, so we can directly remove the entity
             if (ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
             {
                 if (sys_data->remove_cb)
@@ -1275,21 +1316,34 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         }
         else
         {
-            if (!ecs_bitset_is_zero(&sys_data->exclude_bits) &&
-                 ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity.id))
+            // As a minor optimization, check if the system excludes components
+            if (!ecs_bitset_is_zero(&sys_data->exclude_bits))
             {
-                if (sys_data->add_cb)
-                    sys_data->add_cb(ecs, entity, sys_data->udata);
+                // No system is running, so we can add the entity directly
+                if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity.id))
+                {
+                    if (sys_data->add_cb)
+                        sys_data->add_cb(ecs, entity, sys_data->udata);
+                }
             }
         }
     }
 
+    // True if a system is running
     if (ecs->active_system >= 0)
     {
+        // Load active system data
         ecs_sys_data_t* sys_data = &ecs->systems[ecs->active_system];
 
-        if (ecs_entity_system_test(&sys_data->require_bits, &sys_data->exclude_bits, &comp_bit))
+        // Test to see if entity's components matches the system
+        if (ecs_entity_system_test(&sys_data->require_bits,
+                                   &sys_data->exclude_bits,
+                                   &comp_bit))
         {
+            // Since we are updating the active system, we need to protect
+            // the sparse set. Thus, if the entity is in the set, queue
+            // a remove command
+
             if (ecs_sparse_set_find(&sys_data->entity_ids, entity.id, NULL))
             {
                 if (sys_data->remove_cb)
@@ -1300,10 +1354,12 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         }
         else
         {
+            // As a minor optimization, check if the system excludes components
             if (!ecs_bitset_is_zero(&sys_data->exclude_bits))
             {
                 ecs_sparse_set_t* set = &sys_data->entity_ids;
 
+                // If the sparse set has room to grow, directly add the entity
                 if (set->size < set->capacity)
                 {
                     if (ecs_sparse_set_add(ecs, set, entity.id))
@@ -1314,6 +1370,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
                 }
                 else
                 {
+                    // Sparse set is full, so queue an entity id add command
                     if (!ecs_sparse_set_find(set, entity.id, NULL))
                     {
                         if (sys_data->add_cb)
@@ -1326,6 +1383,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         }
     }
 
+    // Destroy component
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
     if (comp_data->destructor)
@@ -1472,10 +1530,8 @@ static void ecs_flush_added(ecs_t* ecs, ecs_id_t sys_id)
     {
         ecs_id_t entity_id = queue->data[i];
 
-        if (ecs_is_active(ecs, entity_id))
-        {
-            ecs_sparse_set_add(ecs, &ecs->systems[sys_id].entity_ids, entity_id);
-        }
+        ECS_ASSERT(ecs_is_active(ecs, entity_id));
+        ecs_sparse_set_add(ecs, &ecs->systems[sys_id].entity_ids, entity_id);
     }
 
     queue->size = 0;
@@ -1489,10 +1545,8 @@ static void ecs_flush_added(ecs_t* ecs, ecs_id_t sys_id)
     {
         ecs_id_t entity_id = remove_queue->data[i];
 
-        if (ecs_is_active(ecs, entity_id))
-        {
-            ecs_sparse_set_remove(&ecs->systems[sys_id].entity_ids, entity_id);
-        }
+        ECS_ASSERT(ecs_is_active(ecs, entity_id));
+        ecs_sparse_set_remove(&ecs->systems[sys_id].entity_ids, entity_id);
     }
 
     remove_queue->size = 0;
@@ -1506,17 +1560,15 @@ static void ecs_flush_destroyed(ecs_t* ecs, ecs_id_t sys_id)
     {
         ecs_id_t entity_id = destroy_queue->data[i];
 
-        if (ecs_is_active(ecs, entity_id))
-        {
-            ecs_sparse_set_remove(&ecs->systems[sys_id].entity_ids, entity_id);
+        ECS_ASSERT(ecs_is_active(ecs, entity_id));
+        ecs_sparse_set_remove(&ecs->systems[sys_id].entity_ids, entity_id);
 
-            // Push entity ID into pool
-            ecs_id_array_t* pool = &ecs->entity_pool;
-            ecs_id_array_push(ecs, pool, entity_id);
+        // Push entity ID into pool
+        ecs_id_array_t* pool = &ecs->entity_pool;
+        ecs_id_array_push(ecs, pool, entity_id);
 
-            // Reset entity (sets bitset to 0 and, active and ready to false)
-            memset(&ecs->entities[entity_id], 0, sizeof(ecs_entity_data_t));
-        }
+        // Reset entity (sets bitset to 0 and, active and ready to false)
+        memset(&ecs->entities[entity_id], 0, sizeof(ecs_entity_data_t));
     }
 
     destroy_queue->size = 0;

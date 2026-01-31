@@ -464,18 +464,13 @@ static ecs_ret_t destroy_system(ecs_t* ecs,
                                 size_t entity_count,
                                 void* udata)
 {
-    (void)entities;
-    (void)entity_count;
     (void)udata;
 
-    while (entity_count > 0)
+    for (size_t i = 0; i < entity_count; i++)
     {
-        ecs_entity_t entity = entities[0];
+        ecs_destroy(ecs, entities[i]);
 
-        ecs_destroy(ecs, entity);
-        entity_count--;
-
-        if (ecs_is_ready(ecs, entity))
+        if (ecs_is_ready(ecs, entities[i]))
             return -1;
     }
 
