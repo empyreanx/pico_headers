@@ -135,7 +135,7 @@ ecs_ret_t player_sys(ecs_t* ecs,
         if (ecs_has(ecs, target, MONSTER_COMP))
         {
             if (perform_attack(game, game->player, target))
-                ecs_queue_destroy(ecs, target);
+                ecs_destroy(ecs, target);
         }
 
         return 0;
@@ -339,7 +339,7 @@ ecs_ret_t chest_sys(ecs_t* ecs,
             stats->health  += chest->health;
             stats->attack  += chest->attack;
             stats->defense += chest->defense;
-            ecs_queue_destroy(ecs, entities[i]);
+            ecs_destroy(ecs, entities[i]);
         }
         else if (distance(player_pos, chest_pos) <= 2)
         {
