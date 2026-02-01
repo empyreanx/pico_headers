@@ -114,6 +114,13 @@
         - Some function name changes
         - Significant internal refactoring
 
+    - 3.1 (2026/02/01):
+        - Fixed sparse set related bugs
+        - More sophisticated logic regarding adding entities to/from systems
+        - Functions ecs_queue_remove and ecs_queue_destroy have been removed.
+          (they can be replaced directly by ecs_remove and ecs_destroy
+          respectively)
+
     Usage:
     ------
 
@@ -130,6 +137,7 @@
     - ECS_MALLOC(size, ctx)       (default: malloc)
     - ECS_REALLOC(ptr, size, ctx) (default: realloc)
     - ECS_FREE(ptr, ctx)          (default: free)
+    - ECS_MEMSET                  (default: memset)
 
     The ctx parameter is sometimes used by custom allocators
 
@@ -478,11 +486,6 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * Destroys an entity, releasing resources and returning it to the pool.
  *
- * WARNING: This function may change the order of a system's entity array. It
- * should be used with caution. A better option in most circumstances is to use
- * the {@link ecs_queue_destroy} function, which destroys the entity after the
- * system has finished executing.
- *
  * @param ecs    The ECS context
  * @param entity The entity to destroy
  */
@@ -490,11 +493,6 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
 
 /**
  * @brief Removes a component instance from an entity
- *
- * WARNING: This function may change the order of a system's entity array. It
- * should be used with caution. A better option in most circumstances is to use
- * the {@link ecs_queue_remove} function, which removes the component after the
- * system has finished executing.
  *
  * @param ecs    The ECS context
  * @param entity The entity
@@ -532,11 +530,6 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 #endif // PICO_ECS_H
 
 #ifdef PICO_ECS_IMPLEMENTATION // Define once
-
-#include <stddef.h> // size_t
-#include <stdint.h> // uint32_t, uint64_t
-#include <stdlib.h> // malloc, realloc, free
-#include <string.h> // memcpy, memset
 
 #ifndef PICO_ECS_MAX_COMPONENTS
 #define PICO_ECS_MAX_COMPONENTS 32
@@ -714,8 +707,8 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set);
 static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capacity);
 static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set);
 static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id);
-static bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_t* found);
-static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
+static inline bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_t* found);
+static inline bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
 
 /*=============================================================================
  * System entity add/remove functions
@@ -727,11 +720,11 @@ static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
 /*=============================================================================
  * ID array functions
  *============================================================================*/
-static void     ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* pool, int capacity);
-static void     ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* pool);
-static void     ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* pool, ecs_id_t id);
-static ecs_id_t ecs_id_array_pop(ecs_id_array_t* pool);
-static int      ecs_id_array_size(ecs_id_array_t* pool);
+static void   ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* pool, int capacity);
+static void   ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* pool);
+static inline void  ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* pool, ecs_id_t id);
+static inline ecs_id_t ecs_id_array_pop(ecs_id_array_t* pool);
+static int    ecs_id_array_size(ecs_id_array_t* pool);
 
 /*=============================================================================
  * Component array functions
@@ -786,8 +779,8 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     // Initialize entity pool and queues
     ecs_id_array_init(ecs, &ecs->entity_pool,   entity_count);
-    ecs_id_array_init(ecs, &ecs->add_queue,     entity_count * 2);
-    ecs_id_array_init(ecs, &ecs->remove_queue,  entity_count * 2);
+    ecs_id_array_init(ecs, &ecs->add_queue,     entity_count);
+    ecs_id_array_init(ecs, &ecs->remove_queue,  entity_count);
     ecs_id_array_init(ecs, &ecs->destroy_queue, entity_count);
 
     // Allocate entity array
@@ -1800,7 +1793,7 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
     return true;
 }
 
-static bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_t* found)
+static inline bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_t* found)
 {
     ECS_ASSERT(ecs_is_not_null(set));
 
@@ -1816,7 +1809,7 @@ static bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_t* foun
     }
 }
 
-static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
+static inline bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
 {
     ECS_ASSERT(ecs_is_not_null(set));
 
@@ -1837,7 +1830,7 @@ static bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
  * System entity add/remove functions
  *============================================================================*/
 
-inline static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
+static inline bool ecs_entity_system_test(ecs_bitset_t* require_bits,
                                           ecs_bitset_t* exclude_bits,
                                           ecs_bitset_t* entity_bits)
 {
@@ -1859,7 +1852,7 @@ inline static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
  * ID array functions
  *============================================================================*/
 
-inline static void ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* array, int capacity)
+static void ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* array, int capacity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
@@ -1872,7 +1865,7 @@ inline static void ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* array, int capa
     array->data = (ecs_id_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
 }
 
-inline static void ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* array)
+static void ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* array)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
@@ -1882,7 +1875,7 @@ inline static void ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* array)
     ECS_FREE(array->data, ecs->mem_ctx);
 }
 
-inline static void ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* array, ecs_id_t id)
+static inline void ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* array, ecs_id_t id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
@@ -1894,20 +1887,20 @@ inline static void ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* array, ecs_id_t
     {
         array->capacity *= 2;
         array->data = (ecs_id_t*)ECS_REALLOC(array->data,
-                                              array->capacity * sizeof(ecs_id_t),
-                                              ecs->mem_ctx);
+                                             array->capacity * sizeof(ecs_id_t),
+                                             ecs->mem_ctx);
     }
 
     array->data[array->size++] = id;
 }
 
-inline static ecs_id_t ecs_id_array_pop(ecs_id_array_t* array)
+static inline ecs_id_t ecs_id_array_pop(ecs_id_array_t* array)
 {
     ECS_ASSERT(ecs_is_not_null(array));
     return array->data[--array->size];
 }
 
-inline static int ecs_id_array_size(ecs_id_array_t* array)
+static inline int ecs_id_array_size(ecs_id_array_t* array)
 {
     return array->size;
 }

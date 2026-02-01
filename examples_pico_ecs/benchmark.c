@@ -81,7 +81,7 @@ static void bench_end()
 ecs_system_t MovementSystem;
 ecs_system_t ComflabSystem;
 ecs_system_t BoundsSystem;
-ecs_system_t QueueDestroySystem;
+ecs_system_t DestroySystem;
 
 // Component types
 ecs_comp_t PosComponent;
@@ -287,21 +287,6 @@ ecs_ret_t bounds_system(ecs_t* ecs,
     return 0;
 }
 
-ecs_ret_t queue_destroy_system(ecs_t* ecs,
-                               ecs_entity_t* entities,
-                               size_t entity_count,
-                               void* udata)
-{
-    (void)udata;
-
-    for (size_t i = 0; i < entity_count; i++)
-    {
-        ecs_destroy(ecs, entities[i]);
-    }
-
-    return 0;
-}
-
 /*=============================================================================
  * Benchmark functions
  *============================================================================*/
@@ -319,6 +304,37 @@ static void bench_create_destroy()
 {
     for (size_t i = 0; i < MAX_ENTITIES; i++)
         ecs_destroy(ecs, ecs_create(ecs));
+}
+
+ecs_ret_t destroy_system(ecs_t* ecs,
+                               ecs_entity_t* entities,
+                               size_t entity_count,
+                               void* udata)
+{
+    (void)udata;
+
+    for (size_t i = 0; i < entity_count; i++)
+    {
+        ecs_destroy(ecs, entities[i]);
+    }
+
+    return 0;
+}
+
+static void bench_add_destroy()
+{
+    DestroySystem = ecs_define_system(ecs, 0, destroy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, DestroySystem, PosComponent);
+    ecs_require_component(ecs, DestroySystem, RectComponent);
+
+    for (size_t i = 0; i < MAX_ENTITIES; i++)
+    {
+        ecs_entity_t entity = ecs_create(ecs);
+        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, RectComponent, NULL);
+    }
+
+    ecs_run_system(ecs, DestroySystem, 0);
 }
 
 static void bench_destroy_with_two_components()
@@ -384,20 +400,6 @@ static void bench_get()
     }
 }
 
-static void bench_queue_destroy()
-{
-    QueueDestroySystem = ecs_define_system(ecs, 0, queue_destroy_system, NULL, NULL, NULL);
-    ecs_require_component(ecs, QueueDestroySystem, PosComponent);
-    ecs_require_component(ecs, QueueDestroySystem, RectComponent);
-
-    for (size_t i = 0; i < MAX_ENTITIES; i++)
-    {
-        ecs_create(ecs);
-    }
-
-    ecs_run_system(ecs, QueueDestroySystem, 0);
-}
-
 static void bench_three_systems()
 {
     // Create entities
@@ -448,11 +450,11 @@ int main()
     BENCH_RUN(bench_create, setup, teardown);
     BENCH_RUN(bench_create_destroy, setup, teardown);
     BENCH_RUN(bench_create_with_two_components, setup, teardown);
+    BENCH_RUN(bench_add_destroy, setup, teardown);
     BENCH_RUN(bench_destroy_with_two_components, setup_destroy_with_two_components, teardown);
     BENCH_RUN(bench_add_remove, setup, teardown);
     BENCH_RUN(bench_add_assign, setup, teardown);
     BENCH_RUN(bench_get, setup_get, teardown);
-    BENCH_RUN(bench_queue_destroy, setup, teardown);
     BENCH_RUN(bench_three_systems_min, setup_three_systems_min, teardown);
     BENCH_RUN(bench_three_systems_max, setup_three_systems_max, teardown);
 
