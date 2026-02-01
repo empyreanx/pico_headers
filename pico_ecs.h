@@ -562,6 +562,11 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 #define PICO_ECS_FREE(ptr, ctx)          (free(ptr))
 #endif
 
+#ifndef PICO_ECS_MEMSET
+    #include <string.h>
+    #define PICO_ECS_MEMSET memset
+#endif
+
 /*=============================================================================
  *  Aliases
  *============================================================================*/
@@ -572,6 +577,7 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 #define ECS_MALLOC          PICO_ECS_MALLOC
 #define ECS_REALLOC         PICO_ECS_REALLOC
 #define ECS_FREE            PICO_ECS_FREE
+#define ECS_MEMSET          PICO_ECS_MEMSET
 
 /*=============================================================================
  *  Data structures
@@ -771,7 +777,7 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
     if (NULL == ecs)
         return NULL;
 
-    memset(ecs, 0, sizeof(ecs_t));
+    ECS_MEMSET(ecs, 0, sizeof(ecs_t));
 
     ecs->entity_count   = (entity_count > 0) ? entity_count : 1;
     ecs->next_entity_id = 1;
@@ -789,7 +795,7 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
                                                    ecs->mem_ctx);
 
     // Zero entity array
-    memset(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
+    ECS_MEMSET(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
 
     return ecs;
 }
@@ -836,10 +842,11 @@ void ecs_reset(ecs_t* ecs)
     }
 
     ecs->entity_pool.size   = 0;
+    ecs->add_queue.size     = 0;
     ecs->destroy_queue.size = 0;
     ecs->remove_queue.size  = 0;
 
-    memset(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
+    ECS_MEMSET(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
 
     ecs->next_entity_id = 1;
 
@@ -1118,7 +1125,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         ecs_id_array_push(ecs, pool, entity.id);
 
         // Reset entity (sets bitset to 0 and, active and ready to false)
-        memset(entity_data, 0, sizeof(ecs_entity_data_t));
+        ECS_MEMSET(entity_data, 0, sizeof(ecs_entity_data_t));
     }
 }
 
@@ -1170,7 +1177,7 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     void* comp_ptr = ecs_get(ecs, entity, comp);
 
     // Zero component
-    memset(comp_ptr, 0, comp_array->size);
+    ECS_MEMSET(comp_ptr, 0, comp_array->size);
 
     // Call constructor
     if (comp_data->constructor)
@@ -1289,7 +1296,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // Create bit mask with comp bit flipped on
     ecs_bitset_t comp_bit;
 
-    memset(&comp_bit, 0, sizeof(ecs_bitset_t));
+    ECS_MEMSET(&comp_bit, 0, sizeof(ecs_bitset_t));
     ecs_bitset_flip(&comp_bit, comp.id, true);
 
     // Add or remove entity from systems
@@ -1475,7 +1482,7 @@ static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new
     if (new_size > old_size && ptr) {
         size_t diff = new_size - old_size;
         void* start = ((char*)ptr)+ old_size;
-        memset(start, 0, diff);
+        ECS_MEMSET(start, 0, diff);
     }
 
     return ptr;
@@ -1568,7 +1575,7 @@ static void ecs_flush_destroyed(ecs_t* ecs, ecs_id_t sys_id)
         ecs_id_array_push(ecs, pool, entity_id);
 
         // Reset entity (sets bitset to 0 and, active and ready to false)
-        memset(&ecs->entities[entity_id], 0, sizeof(ecs_entity_data_t));
+        ECS_MEMSET(&ecs->entities[entity_id], 0, sizeof(ecs_entity_data_t));
     }
 
     destroy_queue->size = 0;
@@ -1735,7 +1742,7 @@ static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capaci
     set->dense  = (ecs_entity_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
     set->sparse = (size_t*)      ECS_MALLOC(capacity * sizeof(size_t),   ecs->mem_ctx);
 
-    memset(set->sparse, 0, capacity * sizeof(size_t));
+    ECS_MEMSET(set->sparse, 0, capacity * sizeof(size_t));
 }
 
 static void ecs_sparse_set_free(ecs_t* ecs, ecs_sparse_set_t* set)
@@ -1912,7 +1919,7 @@ static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size
 
     (void)ecs;
 
-    memset(array, 0, sizeof(ecs_comp_array_t));
+    ECS_MEMSET(array, 0, sizeof(ecs_comp_array_t));
 
     array->capacity = capacity;
     array->size = size;
