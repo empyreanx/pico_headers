@@ -1754,13 +1754,15 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
         return false;
 
     // Grow sparse set if necessary
-    if (set->size == set->capacity)
+    //if (set->size == set->capacity)
+    if (id >= set->capacity)
     {
         size_t old_capacity = set->capacity;
-        size_t new_capacity = old_capacity;
+        size_t new_capacity = old_capacity * 2;
 
         // Calculate new capacity
-        new_capacity *= 2;
+        while (old_capacity >= new_capacity)
+            new_capacity *= 2;
 
         // Grow dense array
         set->dense = (ecs_entity_t*)ECS_REALLOC(set->dense,
@@ -1789,7 +1791,7 @@ static inline bool ecs_sparse_set_find(ecs_sparse_set_t* set, ecs_id_t id, size_
 {
     ECS_ASSERT(ecs_is_not_null(set));
 
-    if (set->sparse[id] < set->size && set->dense[set->sparse[id]].id == id)
+    if (id < set->capacity && set->sparse[id] < set->size && set->dense[set->sparse[id]].id == id)
     {
         if (found) *found = set->sparse[id];
         return true;
