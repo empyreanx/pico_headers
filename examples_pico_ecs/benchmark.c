@@ -43,8 +43,8 @@ int random_int(int min, int max)
     return rand() % (max + 1 - min) + min;
 }
 
-#define MIN_ENTITIES (1 * 1000)
-#define MAX_ENTITIES (1000 * 1000)
+#define MIN_ENTITIES (1 * 1024)
+#define MAX_ENTITIES (1024 * 1024)
 
 static clock_t start, end;
 static ecs_t* ecs = NULL;
@@ -321,7 +321,7 @@ ecs_ret_t destroy_system(ecs_t* ecs,
     return 0;
 }
 
-static void bench_add_destroy()
+static void bench_destroy()
 {
     DestroySystem = ecs_define_system(ecs, 0, destroy_system, NULL, NULL, NULL);
     ecs_require_component(ecs, DestroySystem, PosComponent);
@@ -450,7 +450,7 @@ int main()
     BENCH_RUN(bench_create, setup, teardown);
     BENCH_RUN(bench_create_destroy, setup, teardown);
     BENCH_RUN(bench_create_with_two_components, setup, teardown);
-    BENCH_RUN(bench_add_destroy, setup, teardown);
+    BENCH_RUN(bench_destroy, setup, teardown);
     BENCH_RUN(bench_destroy_with_two_components, setup_destroy_with_two_components, teardown);
     BENCH_RUN(bench_add_remove, setup, teardown);
     BENCH_RUN(bench_add_assign, setup, teardown);

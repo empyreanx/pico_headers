@@ -830,7 +830,7 @@ void ecs_reset(ecs_t* ecs)
 
     ECS_MEMSET(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
 
-    ecs->next_entity_id = 1;
+    ecs->next_entity_id = 0;
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
@@ -1015,6 +1015,9 @@ ecs_entity_t ecs_create(ecs_t* ecs)
         {
             size_t old_count = ecs->entity_count;
             size_t new_count = 2 * old_count;
+
+            while (old_count >= new_count)
+                new_count *= 2;
 
             ecs->entities = (ecs_entity_data_t*)ecs_realloc_zero(ecs, ecs->entities,
                                                                  old_count * sizeof(ecs_entity_data_t),
