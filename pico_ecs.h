@@ -211,14 +211,14 @@ typedef struct ecs_comp_t { ecs_id_t id; } ecs_comp_t;
 typedef struct ecs_system_t { ecs_id_t id; } ecs_system_t;
 
 /**
- * @brief Returns true if the entity is invalid and false otherwise
+ * @brief An invalid ID
  */
-bool ecs_is_invalid_entity(ecs_entity_t entity);
+#define ECS_INVALID_ID ((ecs_id_t)-1)
 
 /**
- * @brief Returns an invalid entity
+ * @brief True if the argument (entity/system/component) is invalid
  */
-ecs_entity_t ecs_invalid_entity();
+#define ECS_IS_INVALID(obj) ((obj.id) == ECS_INVALID_ID)
 
 /**
  * @brief Creates an ECS context.
@@ -749,17 +749,6 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
  * Public API implementation
  *============================================================================*/
 
-bool ecs_is_invalid_entity(ecs_entity_t entity)
-{
-    return 0 == entity.id;
-}
-
-ecs_entity_t ecs_invalid_entity()
-{
-    ecs_entity_t invalid = { 0 };
-    return invalid;
-}
-
 ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 {
     ECS_ASSERT(entity_count > 0);
@@ -773,7 +762,7 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
     ECS_MEMSET(ecs, 0, sizeof(ecs_t));
 
     ecs->entity_count   = (entity_count > 0) ? entity_count : 1;
-    ecs->next_entity_id = 1;
+    ecs->next_entity_id = 0;
     ecs->active_system  = -1;
     ecs->mem_ctx        = mem_ctx;
 
@@ -1183,7 +1172,7 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     // Add or remove entity from systems
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
-        // Skip if the system is active and matches the current system ID. This
+        // Skip if a system is active and matches the current system ID, this
         // system will be processed below
         if (ecs->active_system == (int)sys_id)
             continue;
@@ -1231,7 +1220,8 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
         {
             ecs_sparse_set_t* set = &sys_data->entity_ids;
 
-            // If the sparse set has room to grow, directly add the entity
+            // If the sparse set has room, so directly add the entity
+            //if (set->size < set->capacity)
             if (set->size < set->capacity)
             {
                 // Add the entity directly to the sparse set
@@ -1756,8 +1746,12 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
 
     (void)ecs;
 
+    // Check if ID exists within the set
+    if (ecs_sparse_set_find(set, id, NULL))
+        return false;
+
     // Grow sparse set if necessary
-    if (id >= set->capacity)
+    if (set->size == set->capacity)
     {
         size_t old_capacity = set->capacity;
         size_t new_capacity = old_capacity;
@@ -1780,14 +1774,9 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
         set->capacity = new_capacity;
     }
 
-    // Check if ID exists within the set
-    if (ecs_sparse_set_find(set, id, NULL))
-        return false;
-
     // Add ID to set
     set->dense[set->size].id = id;
     set->sparse[id] = set->size;
-
     set->size++;
 
     return true;
