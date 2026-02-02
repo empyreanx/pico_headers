@@ -1765,9 +1765,11 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
             new_capacity *= 2;
 
         // Grow dense array
-        set->dense = (ecs_entity_t*)ECS_REALLOC(set->dense,
-                                                new_capacity * sizeof(ecs_id_t),
-                                                ecs->mem_ctx);
+        set->dense = (ecs_entity_t*)ecs_realloc_zero(ecs,
+                                                set->dense,
+                                                old_capacity * sizeof(size_t),
+                                                new_capacity * sizeof(size_t));
+
 
         // Grow sparse array and zero it
         set->sparse = (size_t*)ecs_realloc_zero(ecs,
