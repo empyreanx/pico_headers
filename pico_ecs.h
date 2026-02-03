@@ -717,6 +717,10 @@ static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
                                    ecs_bitset_t* exclude_bits,
                                    ecs_bitset_t* entity_bits);
 
+static bool ecs_entity_system_remove_test(ecs_bitset_t* require_bits,
+                                          ecs_bitset_t* exclude_bits,
+                                          ecs_bitset_t* entity_bits);
+
 /*=============================================================================
  * ID array functions
  *============================================================================*/
@@ -1296,9 +1300,9 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
         // Test to see if entity's components matches the system
-        if (ecs_entity_system_test(&sys_data->require_bits,
-                                   &sys_data->exclude_bits,
-                                   &comp_bit))
+        if (ecs_entity_system_remove_test(&sys_data->require_bits,
+                                          &sys_data->exclude_bits,
+                                          &comp_bit))
         {
             // No system is running, so we can directly remove the entity
             if (ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
@@ -1329,9 +1333,9 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         ecs_sys_data_t* sys_data = &ecs->systems[ecs->active_system];
 
         // Test to see if entity's components matches the system
-        if (ecs_entity_system_test(&sys_data->require_bits,
-                                   &sys_data->exclude_bits,
-                                   &comp_bit))
+        if (ecs_entity_system_remove_test(&sys_data->require_bits,
+                                          &sys_data->exclude_bits,
+                                          &comp_bit))
         {
             // Since we are updating the active system, we need to protect
             // the sparse set. Thus, if the entity is in the set, queue
@@ -1842,6 +1846,24 @@ static inline bool ecs_entity_system_test(ecs_bitset_t* require_bits,
 
     ecs_bitset_t entity_and_require = ecs_bitset_and(entity_bits, require_bits);
     return ecs_bitset_equal(&entity_and_require, require_bits);
+}
+
+static inline bool ecs_entity_system_remove_test(ecs_bitset_t* require_bits,
+                                                 ecs_bitset_t* exclude_bits,
+                                                 ecs_bitset_t* entity_bits)
+{
+    if (!ecs_bitset_is_zero(exclude_bits))
+    {
+        ecs_bitset_t overlap = ecs_bitset_and(entity_bits, exclude_bits);
+
+        if (ecs_bitset_true(&overlap))
+        {
+            return false;
+        }
+    }
+
+    ecs_bitset_t entity_and_require = ecs_bitset_and(entity_bits, require_bits);
+    return ecs_bitset_true(&entity_and_require);
 }
 
 /*=============================================================================
