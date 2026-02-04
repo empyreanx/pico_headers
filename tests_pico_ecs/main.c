@@ -512,7 +512,9 @@ TEST_CASE(test_remove)
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
 
     // Remove component
+    REQUIRE(ecs_has(ecs, entity1, comp2));
     ecs_remove(ecs, entity1, comp2);
+    REQUIRE(!ecs_has(ecs, entity1, comp2));
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 0);
 
@@ -524,7 +526,9 @@ TEST_CASE(test_remove)
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
 
-    ecs_remove(ecs, entity1, comp2);
+    REQUIRE(ecs_has(ecs, entity2, comp3));
+    ecs_remove(ecs, entity2, comp3);
+    REQUIRE(!ecs_has(ecs, entity2, comp3));
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
 
