@@ -13,6 +13,7 @@
 ecs_t* ecs = NULL;
 ecs_comp_t comp1;
 ecs_comp_t comp2;
+ecs_comp_t comp3;
 
 ecs_system_t sys1;
 ecs_system_t sys2;
@@ -27,6 +28,7 @@ void setup()
     ecs = ecs_new(MIN_ENTITIES, NULL);
     comp1 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL);
     comp2 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL);
+    comp3 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL);
 }
 
 void teardown()
@@ -501,18 +503,30 @@ TEST_CASE(test_remove)
     ecs_require_component(ecs, sys1, comp2); // component 1 and 2 to match
 
     // Create an entity
-    ecs_entity_t entity = ecs_create(ecs);
+    ecs_entity_t entity1 = ecs_create(ecs);
 
     // Add components to the entity
-    ecs_add(ecs, entity, comp1, NULL);
-    ecs_add(ecs, entity, comp2, NULL);
+    ecs_add(ecs, entity1, comp1, NULL);
+    ecs_add(ecs, entity1, comp2, NULL);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
 
     // Remove component
-    ecs_remove(ecs, entity, comp2);
+    ecs_remove(ecs, entity1, comp2);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 0);
+
+    ecs_entity_t entity2 = ecs_create(ecs);
+
+    ecs_add(ecs, entity2, comp1, NULL);
+    ecs_add(ecs, entity2, comp2, NULL);
+    ecs_add(ecs, entity2, comp3, NULL);
+
+    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
+
+    ecs_remove(ecs, entity1, comp2);
+
+    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
 
     return true;
 }
@@ -584,7 +598,7 @@ TEST_CASE(test_destroy)
     return true;
 }
 
-// Removes components starting at the front of the array
+// TODO: make more elaborate
 static ecs_ret_t remove_system(ecs_t* ecs,
                                ecs_entity_t* entities,
                                size_t entity_count,
@@ -594,17 +608,16 @@ static ecs_ret_t remove_system(ecs_t* ecs,
     (void)entity_count;
     (void)udata;
 
-    while (entity_count > 0)
+    for (size_t i = 0; i < entity_count; i++)
     {
-        ecs_entity_t entity = entities[0];
+        ecs_entity_t entity = entities[i];
 
         ecs_remove(ecs, entity, comp1);
-        entity_count--;
 
         if (ecs_has(ecs, entity, comp1))
             return -1;
-
     }
+
     return 0;
 }
 
@@ -662,9 +675,9 @@ TEST_CASE(test_queue_add)
 
 
 ecs_ret_t queue_remove_system(ecs_t* ecs,
-                           ecs_entity_t* entities,
-                           size_t entity_count,
-                           void* udata)
+                             ecs_entity_t* entities,
+                             size_t entity_count,
+                             void* udata)
 {
     (void)entities;
     (void)entity_count;
