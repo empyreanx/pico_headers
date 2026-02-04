@@ -49,11 +49,11 @@
 
     Please see the examples and unit tests for more details.
 
-    Version 2.4 to 3.0 Migration Guide:
+    Version 2.4 to 3.1 Migration Guide:
     ----------------------------
 
-    Version 3.0 is a major departure from 2.4. Here is a short guide to help
-    make the leap to 3.0.
+    Version 3.1 is a major departure from 2.4. Here is a short guide to help
+    make the leap to 3.1.
 
     1. Make the following substitutions:
         - ecs_register_system  -> ecs_define_system
@@ -69,8 +69,10 @@
     5. Ensure all update calls have the form `ecs_run_system(ctx, sys, 0)`
        and/or `ecs_run_systems(ctx, 0)`
     6. Replace raw IDs with typesafe handles.
+    7. Replace all ecs_queue_remove and ecs_queue_destroy with ecs_remove and
+       ecs_remove respectively.
 
-    If you encounter any difficultlies with any of these steps and/or your project
+    If you encounter any difficulties with any of these steps and/or your project
     doesn't compile once you're finished, please submit an issue.
 
     Masks:
@@ -120,6 +122,7 @@
         - Functions ecs_queue_remove and ecs_queue_destroy have been removed.
           (they can be replaced directly by ecs_remove and ecs_destroy
           respectively)
+        - Improved unit test quality and coverage
 
     Usage:
     ------
