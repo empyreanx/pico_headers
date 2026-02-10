@@ -1,5 +1,5 @@
 CC     = gcc
-CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -DNDEBUG -O2 #-g
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -DNDEBUG -O2 -g
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
@@ -14,7 +14,7 @@ all: benchmark example
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 benchmark: benchmark.o $(DEPS)
-	$(CC) -o benchmark benchmark.o #-g
+	$(CC) -o benchmark benchmark.o -g
 
 example: example.o $(DEPS)
 	$(CC) -o example example.o #-g
