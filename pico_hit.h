@@ -485,7 +485,7 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
         pfloat overlap = ph_calc_overlap(poly_b_min, poly_b_max, poly_a_min, poly_a_max);
 
         // Axis is separating
-        if (overlap <= 0.0f)
+        if (overlap <= 0.0f) //FIXME (overlap <= PM_EPSILON)
             return false;
 
         // Update result
@@ -501,12 +501,12 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
         // Ensure the normal vector has the correct orientation
         pv2 diff = pv2_sub(poly_b->centroid, poly_a->centroid);
 
-        if (pv2_dot(diff, result->normal) >= 0.0f)
+        if (pv2_dot(diff, result->normal) < 0.0f)
         {
-             result->normal = pv2_reflect(result->normal);
+            result->normal = pv2_reflect(result->normal);
         }
 
-        result->mtv = pv2_scale(result->normal, result->overlap);
+        result->mtv = pv2_scale(result->normal, -result->overlap);
     }
 
     return true;
@@ -577,7 +577,8 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
             return false;
 
         // Update result
-        if (result && overlap < result->overlap) {
+        if (result && overlap < result->overlap)
+        {
             result->overlap = overlap;
             result->normal = axis;
         }
@@ -588,12 +589,13 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         // Ensure the normal vector has the correct orientation
         pv2 diff = pv2_sub(circle->center, poly->centroid);
 
-        if (pv2_dot(result->normal, diff) >= 0.0f)
+
+        if (pv2_dot(result->normal, diff) < 0.0f)
         {
             result->normal = pv2_reflect(result->normal);
         }
 
-        result->mtv = pv2_scale(result->normal, result->overlap);
+        result->mtv = pv2_scale(result->normal, -result->overlap);
     }
 
     return true;
@@ -631,7 +633,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
         ph_init_result(result);
 
     // Position of circle_b relative to circle_a
-    pv2 diff = pv2_sub(circle_a->center, circle_b->center);
+    pv2 diff = pv2_sub(circle_b->center, circle_a->center);
 
     // Squared distance between circle centers
     pfloat dist2 = pv2_len2(diff);
@@ -660,7 +662,8 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
 
         result->overlap = overlap;
         result->normal = normal;
-        result->mtv = pv2_scale(result->normal, result->overlap);
+
+        result->mtv = pv2_scale(result->normal, -result->overlap);
     }
 
     return true;

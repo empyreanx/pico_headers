@@ -16,7 +16,7 @@ TEST_CASE(test_aabb_aabb_collide)
         REQUIRE(ph_sat_poly_poly(&p1, &p2, &result));
 
         REQUIRE(pf_equal(result.overlap, 1));
-        REQUIRE(pv2_equal(result.normal, pv2_make(-1, 0)));
+        REQUIRE(pv2_equal(result.normal, pv2_make(1, 0)));
         REQUIRE(pv2_equal(result.mtv, pv2_make(-1, 0)));
     }
 
@@ -30,7 +30,7 @@ TEST_CASE(test_aabb_aabb_collide)
         REQUIRE(ph_sat_poly_poly(&p1, &p2, &result));
 
         REQUIRE(pf_equal(result.overlap, 1));
-        REQUIRE(pv2_equal(result.normal, pv2_make(1, 0)));
+        REQUIRE(pv2_equal(result.normal, pv2_make(-1, 0)));
         REQUIRE(pv2_equal(result.mtv, pv2_make(1, 0)));
     }
 
@@ -62,7 +62,7 @@ TEST_CASE(test_poly_poly)
     REQUIRE(ph_sat_poly_poly(&p1, &p2, &result));
 
     REQUIRE(pf_equal(result.overlap, 10));
-    REQUIRE(pv2_equal(result.normal, pv2_make(-1, 0)));
+    REQUIRE(pv2_equal(result.normal, pv2_make(1, 0)));
 
     return true;
 }

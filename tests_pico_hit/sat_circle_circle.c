@@ -11,7 +11,7 @@ TEST_CASE(test_circle_cicle_collide)
     REQUIRE(ph_sat_circle_circle(&c1, &c2, &result));
 
     REQUIRE(pf_equal(result.overlap, 1));
-    REQUIRE(pv2_equal(result.normal, pv2_make(1, 0)));
+    REQUIRE(pv2_equal(result.normal, pv2_make(-1, 0)));
     REQUIRE(pv2_equal(result.mtv, pv2_make(1, 0)));
 
     return true;

@@ -15,7 +15,7 @@ TEST_CASE(test_aabb_circle_collide)
         REQUIRE(ph_sat_poly_circle(&p, &c, &result));
 
         REQUIRE(pf_equal(result.overlap, 1));
-        REQUIRE(pv2_equal(result.normal, pv2_make(-1, 0)));
+        REQUIRE(pv2_equal(result.normal, pv2_make(1, 0)));
         REQUIRE(pv2_equal(result.mtv, pv2_make(-1, 0)));
     }
 
@@ -31,14 +31,9 @@ TEST_CASE(test_aabb_circle_collide)
         ph_sat_t result;
 
         REQUIRE(ph_sat_poly_circle(&p, &c, &result));
-
         REQUIRE(pf_equal(result.overlap, 1.0f));
-
-        REQUIRE(pv2_equal(result.normal, pv2_make( 1, 0)) ||
-                pv2_equal(result.normal, pv2_make( 0, 1)));
-
-        REQUIRE(pv2_equal(result.mtv, pv2_make( 1, 0)) ||
-                pv2_equal(result.mtv, pv2_make( 0, 1)));
+        REQUIRE(pv2_equal(result.normal, pv2_make(-1,  0)));
+        REQUIRE(pv2_equal(result.mtv, pv2_make(1, 0)));
     }
 
     return true;
