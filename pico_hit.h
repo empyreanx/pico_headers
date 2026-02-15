@@ -670,54 +670,6 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
     return true;
 }
 
-#if 0
-static pv2 ph_find_best_edge(const ph_poly_t* poly, pv2 normal)
-{
-    PH_ASSERT(poly);
-
-    pfloat max_dot = -PM_FLOAT_MAX;
-    int max_index = 0;
-
-    for (int i = 0; i < poly->count; i++)
-    {
-        pfloat dot = pv2_dot(normal, poly->vertices[i]);
-
-        if (dot > max_dot)
-        {
-            max_dot = dot;
-            max_index = i;
-        }
-    }
-
-    pv2 edge1 = poly->edges[max_index];
-    pv2 edge2 = poly->edges[(max_index + poly->count - 1) % poly->count];
-
-    edge1 = pv2_normalize(edge1);
-    edge2 = pv2_normalize(edge2);
-
-    return (pv2_dot(edge1, normal) <= pv2_dot(edge2, normal)) ? edge1 : edge2;
-}
-
-static int ph_find_incident_edge(const ph_poly_t* poly, pv2 normal)
-{
-    pfloat min_dot = PM_FLOAT_MAX;
-    int edge_index = 0;
-
-    for (int i = 0; i < poly->count; i++)
-    {
-        float dot = pv2_dot(poly->normals[i], normal);
-
-        if (dot < min_dot)
-        {
-            min_dot = dot;
-            edge_index = i;
-        }
-    }
-
-    return edge_index;
-}
-#endif
-
 static int ph_find_best_edge(const ph_poly_t* poly, pv2 normal, pfloat* max_dot)
 {
     int best_edge = 0;
@@ -745,7 +697,6 @@ static int ph_find_incident_edge(const ph_poly_t* poly, pv2 normal)
 
     for (int i = 0; i < poly->count; i++)
     {
-        pv2 edge = poly->edges[i];
         pfloat dot = pv2_dot(poly->normals[i], normal);
 
         if (dot < min_dot)
@@ -795,7 +746,6 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
     int best_edge_a = ph_find_best_edge(poly_a, normal, &max_dot_a);
     int best_edge_b = ph_find_best_edge(poly_b, pv2_reflect(normal), &max_dot_b);
 
-    bool flip = false;
     const ph_poly_t* ref_poly = NULL;
     const ph_poly_t* inc_poly = NULL;
     int ref_index = 0;
@@ -805,7 +755,6 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
         ref_poly = poly_a;
         inc_poly = poly_b;
         ref_index = best_edge_a;
-        flip = false;
     }
     else
     {
@@ -813,7 +762,6 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
         inc_poly = poly_a;
         ref_index = best_edge_b;
         normal = pv2_reflect(normal);
-        flip = true;
     }
 
     int inc_index = ph_find_incident_edge(inc_poly, normal);
@@ -826,7 +774,39 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
     pv2 inc_v2 = inc_poly->vertices[(inc_index + 1) % inc_poly->count];
 
     pv2 ref_edge = pv2_sub(ref_v2, ref_v1);
-    pv2 ref_edge_norm = pv2_normalize(ref_edge);
+    pv2 ref_edge_normal = pv2_normalize(ref_edge);
+
+    // Clip incident edge against reference edge side planes
+    pv2 clipped[2] = {inc_v1, inc_v2};
+    pv2 temp[2] = {0};
+
+    float offset1 = pv2_dot(ref_edge, ref_v1);
+    int num_points = ph_clip_segment_to_line(clipped, temp, pv2_reflect(ref_edge), -offset1);
+
+    if (num_points < 2)
+        return false;
+
+    float offset2 = pv2_dot(ref_edge, ref_v2);
+    num_points = ph_clip_segment_to_line(temp, clipped, ref_edge, offset2);
+
+    if (num_points < 2)
+        return false;
+
+    for (int i = 0; i < num_points; i++)
+    {
+        pfloat separation = pv2_dot(pv2_sub(clipped[i], ref_v1), ref_edge_normal);
+
+        if (separation <= 0.0f)
+        {
+            ph_contact_t* contact = &manifold->contacts[manifold->count];
+            contact->point = clipped[i];
+            contact->depth = -separation;
+            manifold->count++;
+
+            if (manifold->count >= 2)
+                break;
+        }
+    }
 
     return 0;
 }
