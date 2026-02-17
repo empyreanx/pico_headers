@@ -672,7 +672,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
 
 static int ph_find_best_edge(const ph_poly_t* poly, pv2 normal, pfloat* max_dot)
 {
-    int best_edge = 0;
+    int index = 0;
     *max_dot = PM_FLOAT_MIN;
 
     for (int i = 0; i < poly->count; i++)
@@ -682,18 +682,18 @@ static int ph_find_best_edge(const ph_poly_t* poly, pv2 normal, pfloat* max_dot)
         if (dot > *max_dot)
         {
             *max_dot = dot;
-            best_edge = i;
+            index = i;
         }
     }
 
-    return best_edge;
+    return index;
 }
 
 static int ph_find_incident_edge(const ph_poly_t* poly, pv2 normal)
 {
     pfloat min_dot = PM_FLOAT_MAX;
 
-    int inc_index = 0;
+    int index = 0;
 
     for (int i = 0; i < poly->count; i++)
     {
@@ -702,11 +702,11 @@ static int ph_find_incident_edge(const ph_poly_t* poly, pv2 normal)
         if (dot < min_dot)
         {
             min_dot = dot;
-            inc_index = i;
+            index = i;
         }
     }
 
-    return inc_index;
+    return index;
 }
 
 static int ph_clip_segment_to_line(pv2* v_in, pv2* v_out, pv2 plane_normal, pfloat offset)
@@ -730,6 +730,8 @@ static int ph_clip_segment_to_line(pv2* v_in, pv2* v_out, pv2 plane_normal, pflo
 
     return num_out;
 }
+
+
 
 bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
                            const ph_poly_t* poly_b,
@@ -776,23 +778,29 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
     pv2 ref_edge = pv2_sub(ref_v2, ref_v1);
     pv2 ref_edge_normal = pv2_normalize(ref_edge);
 
+    // Ensure refNormal points outward from reference polygon
+    if (pv2_dot(ref_edge_normal, normal) < 0.0f)
+    {
+        ref_edge_normal = pv2_reflect(ref_edge_normal);
+    }
+
     // Clip incident edge against reference edge side planes
     pv2 clipped[2] = {inc_v1, inc_v2};
     pv2 temp[2] = {0};
 
     float offset1 = pv2_dot(ref_edge, ref_v1);
-    int num_points = ph_clip_segment_to_line(clipped, temp, pv2_reflect(ref_edge), -offset1);
+    int num_clipped = ph_clip_segment_to_line(clipped, temp, pv2_reflect(ref_edge), -offset1);
 
-    if (num_points < 2)
+    if (num_clipped < 2)
         return false;
 
     float offset2 = pv2_dot(ref_edge, ref_v2);
-    num_points = ph_clip_segment_to_line(temp, clipped, ref_edge, offset2);
+    num_clipped = ph_clip_segment_to_line(temp, clipped, ref_edge, offset2);
 
-    if (num_points < 2)
+    if (num_clipped < 2)
         return false;
 
-    for (int i = 0; i < num_points; i++)
+    for (int i = 0; i < num_clipped; i++)
     {
         pfloat separation = pv2_dot(pv2_sub(clipped[i], ref_v1), ref_edge_normal);
 
@@ -804,7 +812,9 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
             manifold->count++;
 
             if (manifold->count >= 2)
+            {
                 break;
+            }
         }
     }
 
