@@ -731,8 +731,6 @@ static int ph_clip_segment_to_line(pv2* v_in, pv2* v_out, pv2 plane_normal, pflo
     return num_out;
 }
 
-
-
 bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
                            const ph_poly_t* poly_b,
                            pv2 normal,
@@ -741,6 +739,10 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
     PH_ASSERT(poly_a);
     PH_ASSERT(poly_b);
     PH_ASSERT(manifold);
+
+    manifold->count = 0;
+    manifold->normal = normal;
+    manifold->overlap = 0.0f;
 
     pfloat max_dot_a = 0.f;
     pfloat max_dot_b = 0.f;
@@ -764,61 +766,64 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
         inc_poly = poly_a;
         ref_index = best_edge_b;
         normal = pv2_reflect(normal);
+        manifold->normal = normal;
     }
 
     int inc_index = ph_find_incident_edge(inc_poly, normal);
 
-    // Get reference edge
+    // Reference edge vertices
     pv2 ref_v1 = ref_poly->vertices[ref_index];
     pv2 ref_v2 = ref_poly->vertices[(ref_index + 1) % ref_poly->count];
 
+    // Incident edge vertices
     pv2 inc_v1 = inc_poly->vertices[inc_index];
     pv2 inc_v2 = inc_poly->vertices[(inc_index + 1) % inc_poly->count];
 
+    // Reference edge tangent and normal
     pv2 ref_edge = pv2_sub(ref_v2, ref_v1);
-    pv2 ref_edge_normal = pv2_normalize(ref_edge);
+    pv2 ref_tangent = pv2_normalize(ref_edge);
+    pv2 ref_normal = pv2_perp(ref_tangent);
 
-    // Ensure refNormal points outward from reference polygon
-    if (pv2_dot(ref_edge_normal, normal) < 0.0f)
-    {
-        ref_edge_normal = pv2_reflect(ref_edge_normal);
-    }
+    if (pv2_dot(ref_normal, normal) < 0.0f)
+        ref_normal = pv2_reflect(ref_normal);
 
-    // Clip incident edge against reference edge side planes
-    pv2 clipped[2] = {inc_v1, inc_v2};
-    pv2 temp[2] = {0};
+    // Clip incident edge against reference side planes
+    pv2 clip_in[2] = { inc_v1, inc_v2 };
+    pv2 clip_out[2];
 
-    float offset1 = pv2_dot(ref_edge, ref_v1);
-    int num_clipped = ph_clip_segment_to_line(clipped, temp, pv2_reflect(ref_edge), -offset1);
+    // First clip against -tangent plane (side1)
+    pv2 side_normal1 = pv2_reflect(ref_tangent); // -tangent
+    pfloat offset1 = pv2_dot(side_normal1, ref_v1);
+    int num = ph_clip_segment_to_line(clip_in, clip_out, side_normal1, offset1);
 
-    if (num_clipped < 2)
+    if (num < 2)
         return false;
 
-    float offset2 = pv2_dot(ref_edge, ref_v2);
-    num_clipped = ph_clip_segment_to_line(temp, clipped, ref_edge, offset2);
+    // Then clip against +tangent plane (side2)
+    pfloat offset2 = pv2_dot(ref_tangent, ref_v2);
+    num = ph_clip_segment_to_line(clip_out, clip_in, ref_tangent, offset2);
 
-    if (num_clipped < 2)
+    if (num < 2)
         return false;
 
-    for (int i = 0; i < num_clipped; i++)
+    // Keep points that are behind the reference face plane (penetrating)
+    for (int i = 0; i < num; i++)
     {
-        pfloat separation = pv2_dot(pv2_sub(clipped[i], ref_v1), ref_edge_normal);
+        pfloat separation = pv2_dot(ref_normal, pv2_sub(clip_in[i], ref_v1));
 
         if (separation <= 0.0f)
         {
             ph_contact_t* contact = &manifold->contacts[manifold->count];
-            contact->point = clipped[i];
+            contact->point = clip_in[i];
             contact->depth = -separation;
             manifold->count++;
 
             if (manifold->count >= 2)
-            {
                 break;
-            }
         }
     }
 
-    return 0;
+    return (manifold->count > 0);
 }
 
 /*
