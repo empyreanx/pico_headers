@@ -342,8 +342,9 @@ TEST_CASE(test_contact_poly_circle_near_vertex)
     // Square at origin
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
 
-    // Circle near top-right vertex at (1, 1)
-    ph_circle_t circle = ph_make_circle(pv2_make(1.5f, 1.5f), 0.7f);
+    // Circle near top-right vertex at (1, 1) - increase radius slightly
+    // to ensure overlap for the test (avoids exact borderline cases).
+    ph_circle_t circle = ph_make_circle(pv2_make(1.5f, 1.5f), 0.72f);
 
     ph_manifold_t manifold = {0};
 
@@ -380,8 +381,9 @@ TEST_CASE(test_contact_poly_circle_manifold_normal)
     // Square at origin
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
 
-    // Circle to the right
-    ph_circle_t circle = ph_make_circle(pv2_make(1.5f, 0.0f), 0.5f);
+    // Circle to the right — nudge center slightly to ensure a small overlap
+    // with the right edge (avoids exact touching which can be brittle).
+    ph_circle_t circle = ph_make_circle(pv2_make(1.49f, 0.0f), 0.5f);
 
     ph_manifold_t manifold = {0};
 

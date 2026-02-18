@@ -885,15 +885,11 @@ bool ph_contact_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t*
         }
     }
 
-    // Compute contact depth as penetration of the circle at the closest point.
-    // depth = radius - distance(circle_center, closest_point)
-    pfloat dist = pf_sqrt(min_dist2);
-    pfloat depth = circle->radius - dist;
-
-    if (depth < 0.0f)
-        depth = 0.0f;
-
-    manifold->contacts[0].depth = depth;
+    // Use the SAT overlap for contact depth when available. This represents
+    // the minimum translational distance (MTD) separating the shapes along
+    // the collision normal. It handles cases where the circle is contained
+    // within the polygon as well as edge/vertex contacts.
+    manifold->contacts[0].depth = result.overlap;
     manifold->contacts[0].point = closest;
 
     return true;
