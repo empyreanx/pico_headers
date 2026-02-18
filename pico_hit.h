@@ -876,6 +876,14 @@ bool ph_contact_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t*
         }
     }
 
+    // Compute contact depth as penetration of the circle at the closest point.
+    // depth = radius - distance(circle_center, closest_point)
+    pfloat dist = pf_sqrt(min_dist2);
+    pfloat depth = circle->radius - dist;
+
+    if (depth < 0.0f)
+        depth = 0.0f;
+
     manifold->contacts[0].depth = 0.0f;
     manifold->contacts[0].point = closest;
 
