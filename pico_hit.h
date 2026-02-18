@@ -826,6 +826,62 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
     return (manifold->count > 0);
 }
 
+static pv2 ph_closest_point_on_segment(pv2 a, pv2 b, pv2 p)
+{
+    pv2 ab = pv2_sub(b, a);
+    pv2 ap = pv2_sub(p, a);
+
+    pfloat ab_len2 = pv2_dot(ab, ab);
+
+    if (ab_len2 < PM_EPSILON)
+        return a;
+
+    pfloat t = pv2_dot(ap, ab) / ab_len2;
+    t = pf_max(0.0f, pf_min(1.0f, t));
+
+    return pv2_add(a, pv2_scale(ab, t));
+}
+
+bool ph_contact_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold)
+{
+    ph_sat_t result = { 0 };
+
+    if (!ph_sat_poly_circle(poly, circle, &result))
+        return false;
+
+    manifold->normal = result.normal;
+    manifold->overlap = result.overlap;
+    manifold->count = 1;
+
+    pv2 closest = poly->vertices[0];
+    pfloat min_dist2 = PM_FLOAT_MAX;
+
+    // Check all edges
+    for (int i = 0; i < poly->count; i++) {
+        int next = (i + 1) % poly->count;
+
+        pv2 point = ph_closest_point_on_segment(
+            poly->vertices[i],
+            poly->vertices[next],
+            circle->center
+        );
+
+        pv2 diff = pv2_sub(point, circle->center);
+        float dist2 = pv2_dot(diff, diff);
+
+        if (dist2 < min_dist2)
+        {
+            min_dist2 = dist2;
+            closest = point;
+        }
+    }
+
+    manifold->contacts[0].depth = 0.0f;
+    manifold->contacts[0].point = closest;
+
+    return true;
+}
+
 /*
     The basic idea here is to represent the rays in parametric form and
     solve a linear equation to get the parameters where they intersect.
