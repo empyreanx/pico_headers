@@ -1761,14 +1761,13 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
         return false;
 
     // Grow sparse set if necessary
-    //if (set->size == set->capacity)
     if (id >= set->capacity)
     {
         size_t old_capacity = set->capacity;
         size_t new_capacity = old_capacity * 2;
 
         // Calculate new capacity
-        while (old_capacity >= new_capacity)
+        while (id >= new_capacity)
             new_capacity *= 2;
 
         // Grow dense array
