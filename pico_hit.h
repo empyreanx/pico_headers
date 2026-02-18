@@ -226,6 +226,15 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
                            ph_manifold_t* manifold);
 
 /**
+ * @brief Tests if a polygon and circle collide and generates contact information
+ * @param poly The polygon
+ * @param circle The circle
+ * @param manifold The contact manifold to populate
+ * @returns True if the polygon and circle collide, false otherwise
+ */
+bool ph_contact_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold);
+
+/**
  * @brief Tests if ray intersects a (directed) line segment
  *
  * @param ray Ray to test
@@ -884,7 +893,7 @@ bool ph_contact_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t*
     if (depth < 0.0f)
         depth = 0.0f;
 
-    manifold->contacts[0].depth = 0.0f;
+    manifold->contacts[0].depth = depth;
     manifold->contacts[0].point = closest;
 
     return true;
