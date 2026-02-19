@@ -15,7 +15,7 @@ static ph_poly_t make_square(pv2 center, pfloat size)
 }
 
 // Test: Basic square-to-square collision with simple overlap
-TEST_CASE(test_contacts_poly_poly_square_overlap)
+TEST_CASE(test_manifold_poly_poly_square_overlap)
 {
     // Two squares overlapping slightly
     ph_poly_t poly_a = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -24,7 +24,7 @@ TEST_CASE(test_contacts_poly_poly_square_overlap)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);  // Normal pointing to the right
 
-    bool hit = ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     // Should generate contacts
     REQUIRE(hit);
@@ -35,7 +35,7 @@ TEST_CASE(test_contacts_poly_poly_square_overlap)
 }
 
 // Test: Verify contact point is within expected bounds
-TEST_CASE(test_contacts_poly_poly_contact_position)
+TEST_CASE(test_manifold_poly_poly_contact_position)
 {
     // Square A at origin, Square B offset to the right
     ph_poly_t poly_a = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -44,7 +44,7 @@ TEST_CASE(test_contacts_poly_poly_contact_position)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
@@ -64,7 +64,7 @@ TEST_CASE(test_contacts_poly_poly_contact_position)
 }
 
 // Test: Contact depth verification
-TEST_CASE(test_contacts_poly_poly_contact_depth)
+TEST_CASE(test_manifold_poly_poly_contact_depth)
 {
     // Small overlap should result in small depth
     ph_poly_t poly_a = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -73,7 +73,7 @@ TEST_CASE(test_contacts_poly_poly_contact_depth)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
@@ -88,7 +88,7 @@ TEST_CASE(test_contacts_poly_poly_contact_depth)
 }
 
 // Test: Horizontal edge-to-edge collision
-TEST_CASE(test_contacts_poly_poly_horizontal_edge)
+TEST_CASE(test_manifold_poly_poly_horizontal_edge)
 {
     // Two squares touching horizontally
     ph_poly_t poly_a = make_square(pv2_make(-1.0f, 0.0f), 2.0f);
@@ -97,7 +97,7 @@ TEST_CASE(test_contacts_poly_poly_horizontal_edge)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     // They should generate contacts
     REQUIRE(hit);
@@ -107,7 +107,7 @@ TEST_CASE(test_contacts_poly_poly_horizontal_edge)
 }
 
 // Test: Vertical edge-to-edge collision
-TEST_CASE(test_contacts_poly_poly_vertical_edge)
+TEST_CASE(test_manifold_poly_poly_vertical_edge)
 {
     // Two squares touching vertically
     ph_poly_t poly_a = make_square(pv2_make(0.0f, -1.0f), 2.0f);
@@ -116,7 +116,7 @@ TEST_CASE(test_contacts_poly_poly_vertical_edge)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(0.0f, 1.0f);
 
-    bool hit = ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     // They should generate contacts
     REQUIRE(hit);
@@ -126,7 +126,7 @@ TEST_CASE(test_contacts_poly_poly_vertical_edge)
 }
 
 // Test: Diagonal collision
-TEST_CASE(test_contacts_poly_poly_diagonal_overlap)
+TEST_CASE(test_manifold_poly_poly_diagonal_overlap)
 {
     // Two squares overlapping diagonally
     ph_poly_t poly_a = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -135,7 +135,7 @@ TEST_CASE(test_contacts_poly_poly_diagonal_overlap)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_normalize(pv2_make(1.0f, 1.0f));
 
-    bool hit = ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
@@ -145,7 +145,7 @@ TEST_CASE(test_contacts_poly_poly_diagonal_overlap)
 }
 
 // Test: Maximum two contacts per manifold
-TEST_CASE(test_contacts_poly_poly_max_contacts)
+TEST_CASE(test_manifold_poly_poly_max_contacts)
 {
     // Two overlapping squares
     ph_poly_t poly_a = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -154,7 +154,7 @@ TEST_CASE(test_contacts_poly_poly_max_contacts)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     REQUIRE(hit);
     // The manifold should have at most 2 contact points
@@ -164,7 +164,7 @@ TEST_CASE(test_contacts_poly_poly_max_contacts)
 }
 
 // Test: Triangle-to-square collision
-TEST_CASE(test_contacts_poly_poly_triangle_square)
+TEST_CASE(test_manifold_poly_poly_triangle_square)
 {
     // Triangle
     pv2 tri_vertices[] = {
@@ -180,7 +180,7 @@ TEST_CASE(test_contacts_poly_poly_triangle_square)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_contacts_poly_poly(&triangle, &square, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&triangle, &square, normal, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
@@ -190,7 +190,7 @@ TEST_CASE(test_contacts_poly_poly_triangle_square)
 }
 
 // Test: Deep overlap generates contacts
-TEST_CASE(test_contacts_poly_poly_deep_overlap)
+TEST_CASE(test_manifold_poly_poly_deep_overlap)
 {
     // Two squares with significant overlap
     ph_poly_t poly_a = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -199,7 +199,7 @@ TEST_CASE(test_contacts_poly_poly_deep_overlap)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
@@ -211,7 +211,7 @@ TEST_CASE(test_contacts_poly_poly_deep_overlap)
 }
 
 // Test: Manifold is cleared before use
-TEST_CASE(test_contacts_poly_poly_manifold_cleared)
+TEST_CASE(test_manifold_poly_poly_manifold_cleared)
 {
     ph_poly_t poly_a = make_square(pv2_make(0.0f, 0.0f), 2.0f);
     ph_poly_t poly_b = make_square(pv2_make(1.5f, 0.0f), 2.0f);
@@ -221,7 +221,7 @@ TEST_CASE(test_contacts_poly_poly_manifold_cleared)
 
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     // Count should be set from 0, not added to existing value
     REQUIRE(hit);
@@ -232,7 +232,7 @@ TEST_CASE(test_contacts_poly_poly_manifold_cleared)
 }
 
 // Test: Normalized normal input handling
-TEST_CASE(test_contacts_poly_poly_with_normalized_normal)
+TEST_CASE(test_manifold_poly_poly_with_normalized_normal)
 {
     ph_poly_t poly_a = make_square(pv2_make(0.0f, 0.0f), 2.0f);
     ph_poly_t poly_b = make_square(pv2_make(1.5f, 0.0f), 2.0f);
@@ -241,7 +241,7 @@ TEST_CASE(test_contacts_poly_poly_with_normalized_normal)
     // Provide a normalized normal
     pv2 normal = pv2_normalize(pv2_make(3.0f, 4.0f));
 
-    ph_contacts_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
 
     // Should still work with normalized normal
     REQUIRE(manifold.count >= 0);
@@ -251,7 +251,7 @@ TEST_CASE(test_contacts_poly_poly_with_normalized_normal)
 }
 
 // Test: Basic polygon-circle collision detection
-TEST_CASE(test_contact_poly_circle_basic_collision)
+TEST_CASE(test_manifold_poly_circle_basic_collision)
 {
     // Create a square and a circle that overlaps
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -259,7 +259,7 @@ TEST_CASE(test_contact_poly_circle_basic_collision)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count == 1);
@@ -269,7 +269,7 @@ TEST_CASE(test_contact_poly_circle_basic_collision)
 }
 
 // Test: Circle touching polygon edge
-TEST_CASE(test_contact_poly_circle_edge_touch)
+TEST_CASE(test_manifold_poly_circle_edge_touch)
 {
     // Square at origin
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -279,7 +279,7 @@ TEST_CASE(test_contact_poly_circle_edge_touch)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count == 1);
@@ -291,7 +291,7 @@ TEST_CASE(test_contact_poly_circle_edge_touch)
 }
 
 // Test: Circle center inside polygon
-TEST_CASE(test_contact_poly_circle_center_inside)
+TEST_CASE(test_manifold_poly_circle_center_inside)
 {
     // Square at origin
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -301,7 +301,7 @@ TEST_CASE(test_contact_poly_circle_center_inside)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count == 1);
@@ -312,7 +312,7 @@ TEST_CASE(test_contact_poly_circle_center_inside)
 }
 
 // Test: Contact depth calculation accuracy
-TEST_CASE(test_contact_poly_circle_depth_accuracy)
+TEST_CASE(test_manifold_poly_circle_depth_accuracy)
 {
     // Square at origin with size 2 (so edges at ±1)
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -323,7 +323,7 @@ TEST_CASE(test_contact_poly_circle_depth_accuracy)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count == 1);
@@ -337,7 +337,7 @@ TEST_CASE(test_contact_poly_circle_depth_accuracy)
 }
 
 // Test: Circle near polygon vertex
-TEST_CASE(test_contact_poly_circle_near_vertex)
+TEST_CASE(test_manifold_poly_circle_near_vertex)
 {
     // Square at origin
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -348,7 +348,7 @@ TEST_CASE(test_contact_poly_circle_near_vertex)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count == 1);
@@ -358,7 +358,7 @@ TEST_CASE(test_contact_poly_circle_near_vertex)
 }
 
 // Test: No collision when circle is outside
-TEST_CASE(test_contact_poly_circle_no_collision)
+TEST_CASE(test_manifold_poly_circle_no_collision)
 {
     // Square at origin
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -368,7 +368,7 @@ TEST_CASE(test_contact_poly_circle_no_collision)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(!hit);
 
@@ -376,7 +376,7 @@ TEST_CASE(test_contact_poly_circle_no_collision)
 }
 
 // Test: Manifold normal is set correctly
-TEST_CASE(test_contact_poly_circle_manifold_normal)
+TEST_CASE(test_manifold_poly_circle_manifold_normal)
 {
     // Square at origin
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
@@ -387,7 +387,7 @@ TEST_CASE(test_contact_poly_circle_manifold_normal)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(hit);
     // Normal should be set from SAT result
@@ -401,7 +401,7 @@ TEST_CASE(test_contact_poly_circle_manifold_normal)
 }
 
 // Test: Manifold count is always 1
-TEST_CASE(test_contact_poly_circle_count_is_one)
+TEST_CASE(test_manifold_poly_circle_count_is_one)
 {
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
     ph_circle_t circle = ph_make_circle(pv2_make(1.0f, 0.0f), 0.5f);
@@ -409,7 +409,7 @@ TEST_CASE(test_contact_poly_circle_count_is_one)
     ph_manifold_t manifold = {0};
     manifold.count = 999;  // Pre-set to invalid value
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count == 1);
@@ -418,7 +418,7 @@ TEST_CASE(test_contact_poly_circle_count_is_one)
 }
 
 // Test: Contact point is on polygon edge
-TEST_CASE(test_contact_poly_circle_point_on_edge)
+TEST_CASE(test_manifold_poly_circle_point_on_edge)
 {
     // Triangle
     pv2 tri_vertices[] = {
@@ -433,7 +433,7 @@ TEST_CASE(test_contact_poly_circle_point_on_edge)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&triangle, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&triangle, &circle, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count == 1);
@@ -445,7 +445,7 @@ TEST_CASE(test_contact_poly_circle_point_on_edge)
 }
 
 // Test: Large circle vs small polygon
-TEST_CASE(test_contact_poly_circle_large_circle)
+TEST_CASE(test_manifold_poly_circle_large_circle)
 {
     // Small square
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 0.5f);
@@ -455,7 +455,7 @@ TEST_CASE(test_contact_poly_circle_large_circle)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count == 1);
@@ -465,7 +465,7 @@ TEST_CASE(test_contact_poly_circle_large_circle)
 }
 
 // Test: Small circle vs large polygon
-TEST_CASE(test_contact_poly_circle_small_circle)
+TEST_CASE(test_manifold_poly_circle_small_circle)
 {
     // Large square
     ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 4.0f);
@@ -475,7 +475,7 @@ TEST_CASE(test_contact_poly_circle_small_circle)
 
     ph_manifold_t manifold = {0};
 
-    bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+    bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count == 1);
@@ -485,7 +485,7 @@ TEST_CASE(test_contact_poly_circle_small_circle)
 }
 
 // Test: Depth is non-negative
-TEST_CASE(test_contact_poly_circle_depth_non_negative)
+TEST_CASE(test_manifold_poly_circle_depth_non_negative)
 {
     for (int test_num = 0; test_num < 5; test_num++)
     {
@@ -503,7 +503,7 @@ TEST_CASE(test_contact_poly_circle_depth_non_negative)
         ph_circle_t circle = ph_make_circle(positions[test_num], 0.6f);
         ph_manifold_t manifold = {0};
 
-        bool hit = ph_contact_poly_circle(&square, &circle, &manifold);
+        bool hit = ph_manifold_poly_circle(&square, &circle, &manifold);
 
         if (hit)
         {
@@ -516,27 +516,27 @@ TEST_CASE(test_contact_poly_circle_depth_non_negative)
 
 TEST_SUITE(suite_contacts)
 {
-    RUN_TEST_CASE(test_contacts_poly_poly_square_overlap);
-    RUN_TEST_CASE(test_contacts_poly_poly_contact_position);
-    RUN_TEST_CASE(test_contacts_poly_poly_contact_depth);
-    RUN_TEST_CASE(test_contacts_poly_poly_horizontal_edge);
-    RUN_TEST_CASE(test_contacts_poly_poly_vertical_edge);
-    RUN_TEST_CASE(test_contacts_poly_poly_diagonal_overlap);
-    RUN_TEST_CASE(test_contacts_poly_poly_max_contacts);
-    RUN_TEST_CASE(test_contacts_poly_poly_triangle_square);
-    RUN_TEST_CASE(test_contacts_poly_poly_deep_overlap);
-    RUN_TEST_CASE(test_contacts_poly_poly_manifold_cleared);
-    RUN_TEST_CASE(test_contacts_poly_poly_with_normalized_normal);
-    RUN_TEST_CASE(test_contact_poly_circle_basic_collision);
-    RUN_TEST_CASE(test_contact_poly_circle_edge_touch);
-    RUN_TEST_CASE(test_contact_poly_circle_center_inside);
-    RUN_TEST_CASE(test_contact_poly_circle_depth_accuracy);
-    RUN_TEST_CASE(test_contact_poly_circle_near_vertex);
-    RUN_TEST_CASE(test_contact_poly_circle_no_collision);
-    RUN_TEST_CASE(test_contact_poly_circle_manifold_normal);
-    RUN_TEST_CASE(test_contact_poly_circle_count_is_one);
-    RUN_TEST_CASE(test_contact_poly_circle_point_on_edge);
-    RUN_TEST_CASE(test_contact_poly_circle_large_circle);
-    RUN_TEST_CASE(test_contact_poly_circle_small_circle);
-    RUN_TEST_CASE(test_contact_poly_circle_depth_non_negative);
+    RUN_TEST_CASE(test_manifold_poly_poly_square_overlap);
+    RUN_TEST_CASE(test_manifold_poly_poly_contact_position);
+    RUN_TEST_CASE(test_manifold_poly_poly_contact_depth);
+    RUN_TEST_CASE(test_manifold_poly_poly_horizontal_edge);
+    RUN_TEST_CASE(test_manifold_poly_poly_vertical_edge);
+    RUN_TEST_CASE(test_manifold_poly_poly_diagonal_overlap);
+    RUN_TEST_CASE(test_manifold_poly_poly_max_contacts);
+    RUN_TEST_CASE(test_manifold_poly_poly_triangle_square);
+    RUN_TEST_CASE(test_manifold_poly_poly_deep_overlap);
+    RUN_TEST_CASE(test_manifold_poly_poly_manifold_cleared);
+    RUN_TEST_CASE(test_manifold_poly_poly_with_normalized_normal);
+    RUN_TEST_CASE(test_manifold_poly_circle_basic_collision);
+    RUN_TEST_CASE(test_manifold_poly_circle_edge_touch);
+    RUN_TEST_CASE(test_manifold_poly_circle_center_inside);
+    RUN_TEST_CASE(test_manifold_poly_circle_depth_accuracy);
+    RUN_TEST_CASE(test_manifold_poly_circle_near_vertex);
+    RUN_TEST_CASE(test_manifold_poly_circle_no_collision);
+    RUN_TEST_CASE(test_manifold_poly_circle_manifold_normal);
+    RUN_TEST_CASE(test_manifold_poly_circle_count_is_one);
+    RUN_TEST_CASE(test_manifold_poly_circle_point_on_edge);
+    RUN_TEST_CASE(test_manifold_poly_circle_large_circle);
+    RUN_TEST_CASE(test_manifold_poly_circle_small_circle);
+    RUN_TEST_CASE(test_manifold_poly_circle_depth_non_negative);
 }

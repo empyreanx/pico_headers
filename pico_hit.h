@@ -220,7 +220,7 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
                           const ph_circle_t* circle_b,
                           ph_sat_t* result);
 
-bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
+bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
                            const ph_poly_t* poly_b,
                            pv2 normal,
                            ph_manifold_t* manifold);
@@ -232,7 +232,7 @@ bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
  * @param manifold The contact manifold to populate
  * @returns True if the polygon and circle collide, false otherwise
  */
-bool ph_contact_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold);
+bool ph_manifold_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold);
 
 /**
  * @brief Tests if ray intersects a (directed) line segment
@@ -740,7 +740,7 @@ static int ph_clip_segment_to_line(pv2* v_in, pv2* v_out, pv2 plane_normal, pflo
     return num_out;
 }
 
-bool ph_contacts_poly_poly(const ph_poly_t* poly_a,
+bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
                            const ph_poly_t* poly_b,
                            pv2 normal,
                            ph_manifold_t* manifold)
@@ -851,7 +851,7 @@ static pv2 ph_closest_point_on_segment(pv2 a, pv2 b, pv2 p)
     return pv2_add(a, pv2_scale(ab, t));
 }
 
-bool ph_contact_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold)
+bool ph_manifold_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold)
 {
     ph_sat_t result = { 0 };
 
