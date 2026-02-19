@@ -853,6 +853,10 @@ static pv2 ph_closest_point_on_segment(pv2 a, pv2 b, pv2 p)
 
 bool ph_manifold_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold)
 {
+    PH_ASSERT(poly);
+    PH_ASSERT(circle);
+    PH_ASSERT(manifold);
+
     ph_sat_t result = { 0 };
 
     if (!ph_sat_poly_circle(poly, circle, &result))
