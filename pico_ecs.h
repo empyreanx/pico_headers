@@ -159,6 +159,7 @@
 #include <stdbool.h> // bool, true, false
 #include <stddef.h>  // size_t
 #include <stdint.h>  // uint32_t
+#include <limits.h>  // CHAR_BIT, SIZE_MAX, ULLONG_MAX
 
 #ifdef __cplusplus
 extern "C" {
@@ -170,7 +171,7 @@ extern "C" {
 typedef struct ecs_s ecs_t;
 
 /**
- * @brief Determine ID type
+ * @brief Determine ID type. It should be unsigned.
  */
 #ifndef ECS_ID_TYPE
 #define ECS_ID_TYPE uint64_t
@@ -727,7 +728,7 @@ static bool ecs_entity_system_remove_test(ecs_bitset_t* require_bits,
 /*=============================================================================
  * ID array functions
  *============================================================================*/
-static void   ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* pool, int capacity);
+static void   ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* pool, size_t capacity);
 static void   ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* pool);
 static inline void  ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* pool, ecs_id_t id);
 static inline ecs_id_t ecs_id_array_pop(ecs_id_array_t* pool);
@@ -738,7 +739,7 @@ static int    ecs_id_array_size(ecs_id_array_t* pool);
  *============================================================================*/
 static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size, size_t capacity);
 static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array);
-static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, size_t capacity);
+static void ecs_comp_array_resize_for(ecs_t* ecs, ecs_comp_array_t* array, ecs_id_t id);
 
 /*=============================================================================
  * Validation functions
@@ -747,6 +748,8 @@ static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, size_t ca
 static bool ecs_is_not_null(void* ptr);
 static bool ecs_is_valid_component_id(ecs_id_t id);
 static bool ecs_is_valid_system_id(ecs_id_t id);
+static bool ecs_is_valid_id(ecs_id_t id);
+static bool ecs_is_valid_capacity(size_t capacity, size_t elem_size);
 static bool ecs_is_entity_ready(ecs_t* ecs, ecs_id_t entity_id);
 static bool ecs_is_component_ready(ecs_t* ecs, ecs_id_t comp_id);
 static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
@@ -759,6 +762,8 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
 ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 {
     ECS_ASSERT(entity_count > 0);
+    ECS_ASSERT(!ecs_is_valid_id(ECS_INVALID_ID) && "ecs_id_t is signed");
+    ECS_ASSERT(ecs_is_valid_capacity(entity_count, sizeof(ecs_entity_data_t)));
 
     ecs_t* ecs = (ecs_t*)ECS_MALLOC(sizeof(ecs_t), mem_ctx);
 
@@ -1023,8 +1028,8 @@ ecs_entity_t ecs_create(ecs_t* ecs)
             size_t old_count = ecs->entity_count;
             size_t new_count = 2 * old_count;
 
-            while (old_count >= new_count)
-                new_count *= 2;
+            ECS_ASSERT(ecs_is_valid_capacity(old_count, sizeof(ecs_entity_data_t)));
+            ECS_ASSERT(ecs_is_valid_capacity(new_count, sizeof(ecs_entity_data_t)));
 
             ecs->entities = (ecs_entity_data_t*)ecs_realloc_zero(ecs, ecs->entities,
                                                                  old_count * sizeof(ecs_entity_data_t),
@@ -1163,7 +1168,7 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
     // Grow the component array
-    ecs_comp_array_resize(ecs, comp_array, entity.id);
+    ecs_comp_array_resize_for(ecs, comp_array, entity.id);
 
     // Get pointer to component
     void* comp_ptr = ecs_get(ecs, entity, comp);
@@ -1230,8 +1235,8 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
         {
             ecs_sparse_set_t* set = &sys_data->entity_ids;
 
-            // If the sparse set has room, so directly add the entity
-            //if (set->size < set->capacity)
+            // If the sparse set has room to grow without allocation,
+            // directly add the entity
             if (set->size < set->capacity)
             {
                 // Add the entity directly to the sparse set
@@ -1359,7 +1364,8 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
             {
                 ecs_sparse_set_t* set = &sys_data->entity_ids;
 
-                // If the sparse set has room to grow, directly add the entity
+                // If the sparse set has room to grow without allocation,
+                // directly add the entity
                 if (set->size < set->capacity)
                 {
                     if (ecs_sparse_set_add(ecs, set, entity.id))
@@ -1725,14 +1731,15 @@ static void ecs_sparse_set_init(ecs_t* ecs, ecs_sparse_set_t* set, size_t capaci
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(set));
-    ECS_ASSERT(capacity > 0);
+    ECS_ASSERT(ecs_is_valid_capacity(capacity, sizeof(ecs_entity_t)));
+    ECS_ASSERT(ecs_is_valid_capacity(capacity, sizeof(size_t)));
 
     (void)ecs;
 
     set->capacity = capacity;
     set->size = 0;
 
-    set->dense  = (ecs_entity_t*)ECS_MALLOC(capacity * sizeof(ecs_id_t), ecs->mem_ctx);
+    set->dense  = (ecs_entity_t*)ECS_MALLOC(capacity * sizeof(ecs_entity_t), ecs->mem_ctx);
     set->sparse = (size_t*)      ECS_MALLOC(capacity * sizeof(size_t),   ecs->mem_ctx);
 
     ECS_MEMSET(set->sparse, 0, capacity * sizeof(size_t));
@@ -1753,6 +1760,9 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(set));
+    ECS_ASSERT(ecs_is_valid_id(id));
+    ECS_ASSERT(ecs_is_valid_capacity(set->capacity, sizeof(ecs_entity_t)));
+    ECS_ASSERT(ecs_is_valid_capacity(set->capacity, sizeof(size_t)));
 
     (void)ecs;
 
@@ -1764,11 +1774,15 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
     if (id >= set->capacity)
     {
         size_t old_capacity = set->capacity;
-        size_t new_capacity = old_capacity * 2;
+        size_t new_capacity = old_capacity;
 
         // Calculate new capacity
-        while (id >= new_capacity)
+        do {
             new_capacity *= 2;
+            ECS_ASSERT(ecs_is_valid_capacity(new_capacity, sizeof(ecs_entity_t)));
+            ECS_ASSERT(ecs_is_valid_capacity(new_capacity, sizeof(size_t)));
+        } while (id >= new_capacity);
+
 
         // Grow dense array
         set->dense = (ecs_entity_t*)ecs_realloc_zero(ecs,
@@ -1872,11 +1886,11 @@ static inline bool ecs_entity_system_remove_test(ecs_bitset_t* require_bits,
  * ID array functions
  *============================================================================*/
 
-static void ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* array, int capacity)
+static void ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* array, size_t capacity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
-    ECS_ASSERT(capacity > 0);
+    ECS_ASSERT(ecs_is_valid_capacity(capacity, sizeof(ecs_id_t)));
 
     (void)ecs;
 
@@ -1899,13 +1913,18 @@ static inline void ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* array, ecs_id_t
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
-    ECS_ASSERT(array->capacity > 0);
+    ECS_ASSERT(ecs_is_valid_capacity(array->capacity, sizeof(ecs_id_t)));
 
     (void)ecs;
 
     if (array->size == array->capacity)
     {
+
+        // note that a valid capacity doesn't have its high bit set, so
+        // doubling it won't wrap
         array->capacity *= 2;
+        ECS_ASSERT(ecs_is_valid_capacity(array->capacity, sizeof(ecs_id_t)));
+
         array->data = (ecs_id_t*)ECS_REALLOC(array->data,
                                              array->capacity * sizeof(ecs_id_t),
                                              ecs->mem_ctx);
@@ -1929,6 +1948,7 @@ static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
+    ECS_ASSERT(ecs_is_valid_capacity(capacity, size));
 
     (void)ecs;
 
@@ -1949,16 +1969,25 @@ static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array)
     ECS_FREE(array->data, ecs->mem_ctx);
 }
 
-static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, size_t capacity)
+static void ecs_comp_array_resize_for(ecs_t* ecs, ecs_comp_array_t* array, ecs_id_t id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
+    ECS_ASSERT(ecs_is_valid_id(id));
+    ECS_ASSERT(ecs_is_valid_capacity(array->capacity, array->size));
 
     (void)ecs;
 
-    if (capacity >= array->capacity)
+    if (id >= array->capacity)
     {
-        array->capacity *= 2;
+        do {
+            // note that a valid capacity doesn't have its high bit set, so
+            // doubling it won't wrap
+            array->capacity *= 2;
+
+            ECS_ASSERT(ecs_is_valid_capacity(array->capacity, array->size));
+        } while (id >= array->capacity);
+
         array->data = ECS_REALLOC(array->data,
                                   array->capacity * array->size,
                                   ecs->mem_ctx);
@@ -1982,6 +2011,79 @@ static bool ecs_is_valid_component_id(ecs_id_t id)
 static bool ecs_is_valid_system_id(ecs_id_t id)
 {
     return id < ECS_MAX_SYSTEMS;
+}
+
+static bool ecs_is_valid_id(ecs_id_t id)
+{
+    // ensures high bit is not set - works for any unsigned ecs_id_t
+    return id == ((id << 1) >> 1);
+}
+
+static bool ecs_is_valid_capacity(size_t capacity, size_t elem_size)
+{
+    // ensures any array allocations won't overflow ssize_t (signed!) and are
+    // nonzero. On weird systems (CHAR_BIT != 8, size_t is not a power of 2),
+    // we assume that it's not fine - if anyone uses those systems then this
+    // can be fixed.
+
+    if (capacity == 0 || elem_size == 0)
+    {
+        return false;
+    }
+
+    // for the sake of efficiency, the below computations assume that elem_size
+    // fits in 32 bits
+    if (elem_size > 0xFFFFFFFF)
+    {
+        return false;
+    }
+
+    if (CHAR_BIT != 8)
+    {
+        // I lack confidence in my ability to reason about weird char sizes
+        // If you're using this on a system with such properties, why?
+        return false;
+    }
+
+    // it is absurd to me that *_WIDTH wasn't standardized until C23
+    // size_t must be at least 16 bits
+#if SIZE_MAX == 0xFFFF
+
+    // 16-bit system with 32-bit math
+    // This currently isn't well supported by other parts of this file, but
+    // it's here for completeness
+    return ((uint_least32_t)capacity * elem_size) <= (uint_least32_t)(size_t)SSIZE_MAX;
+
+#elif SIZE_MAX == 0xFFFFFFFF
+
+#if UINTMAX_MAX == 0xFFFFFFFF
+    // 32-bit system with 32-bit math
+    uintmax_t high = capacity >> 16;
+    uintmax_t low = capacity & 0xFFFF;
+    return high * elem_size + ((low * elem_size) >> 16) < (((size_t)SSIZE_MAX >> 16) >> 1);
+
+#elif UINTMAX_MAX >= 0xFFFFFFFFFFFFFFFF
+    // 32-bit system with 64-bit math
+    return ((uintmax_t)capacity * elem_size) <= 0x7FFFFFFF;
+#endif // UINTMAX_MAX >= 0xFFFFFFFFFFFFFFFF
+
+#else // SIZE_MAX > 0xFFFFFFFF
+
+    // still have this under a guard because I'm not sure how to test for this
+    // in the C99 preprocessor
+    if (sizeof(size_t) == 8)
+    {
+        // to check for overflow on 64-bit multiplication, we split it up into
+        // two parts and check for 32-bit overflow. We checked earlier that
+        // elem_size is smaller than 32 bits.
+        size_t high = capacity >> 32;
+        size_t low = capacity & 0xFFFFFFFF;
+        return high * elem_size + ((low * elem_size) >> 32) <= 0x7FFFFFFF;
+    }
+#endif // SIZE_MAX == 0xFFFFFFFF
+
+    // weird system - give up.
+    return false;
 }
 
 static bool ecs_is_entity_ready(ecs_t* ecs, ecs_id_t entity_id)
