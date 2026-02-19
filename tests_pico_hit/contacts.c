@@ -592,6 +592,191 @@ TEST_CASE(test_manifold_circle_circle_coincident_centers)
     return true;
 }
 
+// -------------------- Circle / Polygon manifold tests (circle first) -------
+
+// Test: Basic circle vs polygon collision
+TEST_CASE(test_manifold_circle_poly_basic_collision)
+{
+    ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
+    ph_circle_t circle = ph_make_circle(pv2_make(1.5f, 0.0f), 0.8f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+    REQUIRE(manifold.contacts[0].depth > 0.0f);
+
+    return true;
+}
+
+// Test: Circle touching polygon edge
+TEST_CASE(test_manifold_circle_poly_edge_touch)
+{
+    ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
+    ph_circle_t circle = ph_make_circle(pv2_make(1.8f, 0.0f), 0.8f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+    REQUIRE(manifold.contacts[0].point.x >= 0.9f);
+    REQUIRE(manifold.contacts[0].point.x <= 1.1f);
+
+    return true;
+}
+
+// Test: Circle center inside polygon
+TEST_CASE(test_manifold_circle_poly_center_inside)
+{
+    ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
+    ph_circle_t circle = ph_make_circle(pv2_make(0.2f, 0.2f), 0.5f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+    REQUIRE(manifold.contacts[0].depth > 0.0f);
+
+    return true;
+}
+
+// Test: No collision when circle is outside
+TEST_CASE(test_manifold_circle_poly_no_collision)
+{
+    ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
+    ph_circle_t circle = ph_make_circle(pv2_make(5.0f, 0.0f), 0.5f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+    REQUIRE(!hit);
+
+    return true;
+}
+
+// Test: Manifold normal is set correctly
+TEST_CASE(test_manifold_circle_poly_manifold_normal)
+{
+    ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
+    ph_circle_t circle = ph_make_circle(pv2_make(1.49f, 0.0f), 0.5f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(!pf_equal(manifold.normal.x, 0.0f) || !pf_equal(manifold.normal.y, 0.0f));
+    pfloat normal_len = pf_sqrt(pv2_dot(manifold.normal, manifold.normal));
+    REQUIRE(normal_len > 0.99f);
+    REQUIRE(normal_len < 1.01f);
+
+    return true;
+}
+
+// Test: Manifold count is always 1
+TEST_CASE(test_manifold_circle_poly_count_is_one)
+{
+    ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
+    ph_circle_t circle = ph_make_circle(pv2_make(1.0f, 0.0f), 0.5f);
+
+    ph_manifold_t manifold = {0};
+    manifold.count = 999;
+
+    bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+
+    return true;
+}
+
+// Test: Depth is non-negative
+TEST_CASE(test_manifold_circle_poly_depth_non_negative)
+{
+    for (int test_num = 0; test_num < 5; test_num++)
+    {
+        ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
+
+        pv2 positions[] = {
+            pv2_make(1.0f, 0.0f),
+            pv2_make(0.0f, 1.0f),
+            pv2_make(0.7f, 0.7f),
+            pv2_make(-0.5f, -0.5f),
+            pv2_make(0.2f, 0.2f)
+        };
+
+        ph_circle_t circle = ph_make_circle(positions[test_num], 0.6f);
+        ph_manifold_t manifold = {0};
+
+        bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+        if (hit)
+        {
+            REQUIRE(manifold.contacts[0].depth >= 0.0f);
+        }
+    }
+
+    return true;
+}
+
+// Test: Circle near polygon vertex
+TEST_CASE(test_manifold_circle_poly_near_vertex)
+{
+    ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 2.0f);
+    ph_circle_t circle = ph_make_circle(pv2_make(1.5f, 1.5f), 0.72f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+    REQUIRE(manifold.contacts[0].depth > 0.0f);
+
+    return true;
+}
+
+// Test: Large circle vs small polygon
+TEST_CASE(test_manifold_circle_poly_large_circle)
+{
+    ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 0.5f);
+    ph_circle_t circle = ph_make_circle(pv2_make(0.0f, 0.0f), 2.0f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+    REQUIRE(manifold.contacts[0].depth > 0.0f);
+
+    return true;
+}
+
+// Test: Small circle vs large polygon
+TEST_CASE(test_manifold_circle_poly_small_circle)
+{
+    ph_poly_t square = make_square(pv2_make(0.0f, 0.0f), 4.0f);
+    ph_circle_t circle = ph_make_circle(pv2_make(0.5f, 0.5f), 0.2f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_poly(&circle, &square, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+    REQUIRE(manifold.contacts[0].depth > 0.0f);
+
+    return true;
+}
+
 TEST_SUITE(suite_contacts)
 {
     RUN_TEST_CASE(test_manifold_poly_poly_square_overlap);
@@ -617,6 +802,16 @@ TEST_SUITE(suite_contacts)
     RUN_TEST_CASE(test_manifold_poly_circle_large_circle);
     RUN_TEST_CASE(test_manifold_poly_circle_small_circle);
     RUN_TEST_CASE(test_manifold_poly_circle_depth_non_negative);
+    RUN_TEST_CASE(test_manifold_circle_poly_basic_collision);
+    RUN_TEST_CASE(test_manifold_circle_poly_edge_touch);
+    RUN_TEST_CASE(test_manifold_circle_poly_center_inside);
+    RUN_TEST_CASE(test_manifold_circle_poly_depth_non_negative);
+    RUN_TEST_CASE(test_manifold_circle_poly_near_vertex);
+    RUN_TEST_CASE(test_manifold_circle_poly_no_collision);
+    RUN_TEST_CASE(test_manifold_circle_poly_manifold_normal);
+    RUN_TEST_CASE(test_manifold_circle_poly_count_is_one);
+    RUN_TEST_CASE(test_manifold_circle_poly_large_circle);
+    RUN_TEST_CASE(test_manifold_circle_poly_small_circle);
     RUN_TEST_CASE(test_manifold_circle_circle_basic_overlap);
     RUN_TEST_CASE(test_manifold_circle_circle_tangent_no_hit);
     RUN_TEST_CASE(test_manifold_circle_circle_contained);

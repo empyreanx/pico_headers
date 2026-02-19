@@ -232,7 +232,8 @@ bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
  * @param manifold The contact manifold to populate
  * @returns True if the polygon and circle collide, false otherwise
  */
-bool ph_manifold_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold);
+bool ph_manifold_poly_circle(const ph_poly_t *poly, const ph_circle_t *circle, ph_manifold_t* manifold);
+bool ph_manifold_circle_poly(const ph_circle_t *circle, const ph_poly_t *poly, ph_manifold_t* manifold);
 
 /**
  * @brief Tests if two circles collide and generates contact information
@@ -860,7 +861,7 @@ static pv2 ph_closest_point_on_segment(pv2 a, pv2 b, pv2 p)
     return pv2_add(a, pv2_scale(ab, t));
 }
 
-bool ph_manifold_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold)
+bool ph_manifold_poly_circle(const ph_poly_t *poly, const ph_circle_t *circle, ph_manifold_t* manifold)
 {
     PH_ASSERT(poly);
     PH_ASSERT(circle);
@@ -904,6 +905,30 @@ bool ph_manifold_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t
     // within the polygon as well as edge/vertex contacts.
     manifold->contacts[0].depth = result.overlap;
     manifold->contacts[0].point = closest;
+
+    return true;
+}
+
+bool ph_manifold_circle_poly(const ph_circle_t* circle, const ph_poly_t* poly, ph_manifold_t* manifold)
+{
+    PH_ASSERT(circle);
+    PH_ASSERT(poly);
+    PH_ASSERT(manifold);
+
+    /* Call the polygon/circle manifold generator and adapt the result for
+       the swapped argument order. */
+    ph_manifold_t tmp = { 0 };
+
+    if (!ph_manifold_poly_circle((ph_poly_t*)poly, (ph_circle_t*)circle, &tmp))
+        return false;
+
+    /* Reflect the normal because the caller's shapes were swapped. Copy
+       the remaining manifold data unchanged (contact points are in world
+       space and do not need transforming). */
+    manifold->normal = pv2_reflect(tmp.normal);
+    manifold->overlap = tmp.overlap;
+    manifold->count = tmp.count;
+    manifold->contacts[0] = tmp.contacts[0];
 
     return true;
 }
