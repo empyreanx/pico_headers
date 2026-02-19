@@ -391,7 +391,7 @@ TEST_CASE(test_manifold_poly_circle_manifold_normal)
 
     REQUIRE(hit);
     // Normal should be set from SAT result
-    REQUIRE(manifold.normal.x != 0.0f || manifold.normal.y != 0.0f);
+    REQUIRE(!pf_equal(manifold.normal.x, 0.0f) || !pf_equal(manifold.normal.y, 0.0f));
     // Normal should be normalized
     pfloat normal_len = pf_sqrt(pv2_dot(manifold.normal, manifold.normal));
     REQUIRE(normal_len > 0.99f);
@@ -514,6 +514,84 @@ TEST_CASE(test_manifold_poly_circle_depth_non_negative)
     return true;
 }
 
+// -------------------- Circle / Circle manifold tests ----------------------
+
+// Test: Basic overlapping circles
+TEST_CASE(test_manifold_circle_circle_basic_overlap)
+{
+    ph_circle_t a = ph_make_circle(pv2_make(0.0f, 0.0f), 1.0f);
+    ph_circle_t b = ph_make_circle(pv2_make(1.5f, 0.0f), 1.0f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_circle(&a, &b, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+    REQUIRE(manifold.contacts[0].depth > 0.49f);
+
+    pfloat nlen = pf_sqrt(pv2_dot(manifold.normal, manifold.normal));
+    REQUIRE(nlen > 0.99f && nlen < 1.01f);
+
+    // Contact point should be between the two circle surface points
+    REQUIRE(manifold.contacts[0].point.x > 0.4f);
+    REQUIRE(manifold.contacts[0].point.x < 1.0f);
+
+    return true;
+}
+
+// Test: Tangent circles should not produce a manifold
+TEST_CASE(test_manifold_circle_circle_tangent_no_hit)
+{
+    ph_circle_t a = ph_make_circle(pv2_make(0.0f, 0.0f), 1.0f);
+    ph_circle_t b = ph_make_circle(pv2_make(2.0f, 0.0f), 1.0f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_circle(&a, &b, &manifold);
+
+    REQUIRE(!hit);
+
+    return true;
+}
+
+// Test: One circle fully contained inside another
+TEST_CASE(test_manifold_circle_circle_contained)
+{
+    ph_circle_t a = ph_make_circle(pv2_make(0.0f, 0.0f), 2.0f);
+    ph_circle_t b = ph_make_circle(pv2_make(0.5f, 0.0f), 0.5f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_circle(&a, &b, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+    REQUIRE(manifold.contacts[0].depth > 1.9f);
+
+    return true;
+}
+
+// Test: Coincident centers
+TEST_CASE(test_manifold_circle_circle_coincident_centers)
+{
+    ph_circle_t a = ph_make_circle(pv2_make(0.0f, 0.0f), 1.0f);
+    ph_circle_t b = ph_make_circle(pv2_make(0.0f, 0.0f), 0.5f);
+
+    ph_manifold_t manifold = {0};
+
+    bool hit = ph_manifold_circle_circle(&a, &b, &manifold);
+
+    REQUIRE(hit);
+    REQUIRE(manifold.count == 1);
+
+    pfloat nlen = pf_sqrt(pv2_dot(manifold.normal, manifold.normal));
+    REQUIRE(nlen > 0.99f && nlen < 1.01f);
+    REQUIRE(manifold.contacts[0].depth > 0.0f);
+
+    return true;
+}
+
 TEST_SUITE(suite_contacts)
 {
     RUN_TEST_CASE(test_manifold_poly_poly_square_overlap);
@@ -539,4 +617,8 @@ TEST_SUITE(suite_contacts)
     RUN_TEST_CASE(test_manifold_poly_circle_large_circle);
     RUN_TEST_CASE(test_manifold_poly_circle_small_circle);
     RUN_TEST_CASE(test_manifold_poly_circle_depth_non_negative);
+    RUN_TEST_CASE(test_manifold_circle_circle_basic_overlap);
+    RUN_TEST_CASE(test_manifold_circle_circle_tangent_no_hit);
+    RUN_TEST_CASE(test_manifold_circle_circle_contained);
+    RUN_TEST_CASE(test_manifold_circle_circle_coincident_centers);
 }

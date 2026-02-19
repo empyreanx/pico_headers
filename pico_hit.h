@@ -235,6 +235,15 @@ bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
 bool ph_manifold_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t* manifold);
 
 /**
+ * @brief Tests if two circles collide and generates contact information
+ * @param circle_a First circle
+ * @param circle_b Second circle
+ * @param manifold The contact manifold to populate
+ * @returns True if the circles collide, false otherwise
+ */
+bool ph_manifold_circle_circle(const ph_circle_t* circle_a, const ph_circle_t* circle_b, ph_manifold_t* manifold);
+
+/**
  * @brief Tests if ray intersects a (directed) line segment
  *
  * @param ray Ray to test
@@ -895,6 +904,47 @@ bool ph_manifold_poly_circle(ph_poly_t *poly, ph_circle_t *circle, ph_manifold_t
     // within the polygon as well as edge/vertex contacts.
     manifold->contacts[0].depth = result.overlap;
     manifold->contacts[0].point = closest;
+
+    return true;
+}
+
+bool ph_manifold_circle_circle(const ph_circle_t* circle_a, const ph_circle_t* circle_b, ph_manifold_t* manifold)
+{
+    PH_ASSERT(circle_a);
+    PH_ASSERT(circle_b);
+    PH_ASSERT(manifold);
+
+    ph_sat_t result = { 0 };
+
+    if (!ph_sat_circle_circle(circle_a, circle_b, &result))
+        return false;
+
+    manifold->normal = result.normal;
+    manifold->overlap = result.overlap;
+    manifold->count = 1;
+
+    // Compute contact point as midpoint between the two surface points
+    pv2 diff = pv2_sub(circle_b->center, circle_a->center);
+    pfloat dist2 = pv2_len2(diff);
+
+    pfloat dist = pf_sqrt(dist2);
+    pv2 normal = pv2_zero();
+
+    if (dist > PM_EPSILON)
+        normal = pv2_scale(diff, 1.0f / dist);
+    else
+        normal = pv2_make(1.0f, 0.0f);
+
+    /* Ensure manifold normal is well defined */
+    manifold->normal = normal;
+
+    pv2 pa = pv2_add(circle_a->center, pv2_scale(normal, circle_a->radius));
+    pv2 pb = pv2_sub(circle_b->center, pv2_scale(normal, circle_b->radius));
+
+    pv2 contact = pv2_scale(pv2_add(pa, pb), 0.5f);
+
+    manifold->contacts[0].point = contact;
+    manifold->contacts[0].depth = manifold->overlap;
 
     return true;
 }
