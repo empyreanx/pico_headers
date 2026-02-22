@@ -222,7 +222,6 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
 
 bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
                            const ph_poly_t* poly_b,
-                           pv2 normal,
                            ph_manifold_t* manifold);
 
 /**
@@ -349,6 +348,18 @@ static pfloat ph_calc_overlap(pfloat min1, pfloat max1, pfloat min2, pfloat max2
 
 // Returns the vertex closest to a given point
 static int ph_closest_vertex(const ph_poly_t *poly, pv2 point);
+
+// Find the point on a line segment that is closest to the specified point
+static pv2 ph_closest_point_on_segment(pv2 end_point_a, pv2 end_point_b, pv2 point);
+
+// Find a reference candidate for the given polygon
+static int ph_find_best_edge(const ph_poly_t* poly, pv2 normal, pfloat* max_dot);
+
+// Find the incident edge for the given incident polygon
+static int ph_find_incident_edge(const ph_poly_t* poly, pv2 normal);
+
+// Clip input points against the specified plane normal
+static int ph_clip_segment_to_line(pv2* in_points, pv2* out_points, pv2 plane_normal, pfloat offset);
 
 // 2D matrix
 typedef struct
@@ -689,83 +700,29 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
     return true;
 }
 
-static int ph_find_best_edge(const ph_poly_t* poly, pv2 normal, pfloat* max_dot)
-{
-    int index = 0;
-    *max_dot = PM_FLOAT_MIN;
-
-    for (int i = 0; i < poly->count; i++)
-    {
-        pfloat dot = pv2_dot(poly->normals[i], normal);
-
-        if (dot > *max_dot)
-        {
-            *max_dot = dot;
-            index = i;
-        }
-    }
-
-    return index;
-}
-
-static int ph_find_incident_edge(const ph_poly_t* poly, pv2 normal)
-{
-    pfloat min_dot = PM_FLOAT_MAX;
-
-    int index = 0;
-
-    for (int i = 0; i < poly->count; i++)
-    {
-        pfloat dot = pv2_dot(poly->normals[i], normal);
-
-        if (dot < min_dot)
-        {
-            min_dot = dot;
-            index = i;
-        }
-    }
-
-    return index;
-}
-
-static int ph_clip_segment_to_line(pv2* v_in, pv2* v_out, pv2 plane_normal, pfloat offset)
-{
-    int num_out = 0;
-
-    float d0 = pv2_dot(plane_normal, v_in[0]) - offset;
-    float d1 = pv2_dot(plane_normal, v_in[1]) - offset;
-
-    // Both points behind plane - keep both
-    if (d0 <= 0.0f) v_out[num_out++] = v_in[0];
-    if (d1 <= 0.0f) v_out[num_out++] = v_in[1];
-
-    // Points on opposite sides - find intersection
-    if (d0 * d1 < 0.0f)
-    {
-        pfloat alpha = d0 / (d0 - d1);
-        pv2 intersection = pv2_add(v_in[0], pv2_scale(pv2_sub(v_in[1], v_in[0]), alpha));
-        v_out[num_out++] = intersection;
-    }
-
-    return num_out;
-}
-
 bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
                            const ph_poly_t* poly_b,
-                           pv2 normal,
                            ph_manifold_t* manifold)
 {
     PH_ASSERT(poly_a);
     PH_ASSERT(poly_b);
     PH_ASSERT(manifold);
 
+    ph_sat_t result = { 0 };
+
+    if (!ph_sat_poly_poly(poly_a, poly_b, &result))
+        return false;
+
     manifold->count = 0;
-    manifold->normal = normal;
-    manifold->overlap = 0.0f;
+    manifold->normal = result.normal;
+    manifold->overlap = result.overlap;
+
+    pv2 normal = result.normal;
 
     pfloat max_dot_a = 0.f;
     pfloat max_dot_b = 0.f;
 
+    // Get reference edge candidates
     int best_edge_a = ph_find_best_edge(poly_a, normal, &max_dot_a);
     int best_edge_b = ph_find_best_edge(poly_b, pv2_reflect(normal), &max_dot_b);
 
@@ -773,6 +730,7 @@ bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
     const ph_poly_t* inc_poly = NULL;
     int ref_index = 0;
 
+    // Determine the reference and incident polygons
     if (max_dot_a > max_dot_b)
     {
         ref_poly = poly_a;
@@ -785,9 +743,9 @@ bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
         inc_poly = poly_a;
         ref_index = best_edge_b;
         normal = pv2_reflect(normal);
-        manifold->normal = normal;
     }
 
+    // Determine the incident edge in the incident polygon
     int inc_index = ph_find_incident_edge(inc_poly, normal);
 
     // Reference edge vertices
@@ -810,23 +768,24 @@ bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
     pv2 clip_in[2] = { inc_v1, inc_v2 };
     pv2 clip_out[2];
 
-    // First clip against -tangent plane (side1)
-    pv2 side_normal1 = pv2_reflect(ref_tangent); // -tangent
+    // First clip against +tangent plane (side1)
+    pv2 side_normal1 = ref_tangent;
     pfloat offset1 = pv2_dot(side_normal1, ref_v1);
-    int num = ph_clip_segment_to_line(clip_in, clip_out, side_normal1, offset1);
+    int num_clipped = ph_clip_segment_to_line(clip_in, clip_out, side_normal1, offset1);
 
-    if (num < 2)
+    if (num_clipped < 2)
         return false;
 
-    // Then clip against +tangent plane (side2)
-    pfloat offset2 = pv2_dot(ref_tangent, ref_v2);
-    num = ph_clip_segment_to_line(clip_out, clip_in, ref_tangent, offset2);
+    // Then clip against -tangent plane (side2)
+    pv2 side_normal2 = pv2_reflect(ref_tangent);
+    pfloat offset2 = pv2_dot(side_normal2, ref_v2);
+    num_clipped = ph_clip_segment_to_line(clip_out, clip_in, side_normal2, offset2);
 
-    if (num < 2)
+    if (num_clipped < 2)
         return false;
 
     // Keep points that are behind the reference face plane (penetrating)
-    for (int i = 0; i < num; i++)
+    for (int i = 0; i < num_clipped; i++)
     {
         pfloat separation = pv2_dot(ref_normal, pv2_sub(clip_in[i], ref_v1));
 
@@ -843,22 +802,6 @@ bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
     }
 
     return (manifold->count > 0);
-}
-
-static pv2 ph_closest_point_on_segment(pv2 a, pv2 b, pv2 p)
-{
-    pv2 ab = pv2_sub(b, a);
-    pv2 ap = pv2_sub(p, a);
-
-    pfloat ab_len2 = pv2_dot(ab, ab);
-
-    if (ab_len2 < PM_EPSILON)
-        return a;
-
-    pfloat t = pv2_dot(ap, ab) / ab_len2;
-    t = pf_max(0.0f, pf_min(1.0f, t));
-
-    return pv2_add(a, pv2_scale(ab, t));
 }
 
 bool ph_manifold_poly_circle(const ph_poly_t *poly, const ph_circle_t *circle, ph_manifold_t* manifold)
@@ -879,8 +822,10 @@ bool ph_manifold_poly_circle(const ph_poly_t *poly, const ph_circle_t *circle, p
     pv2 closest = poly->vertices[0];
     pfloat min_dist2 = PM_FLOAT_MAX;
 
-    // Check all edges
-    for (int i = 0; i < poly->count; i++) {
+    // Loop through all edges and find the point on the edge that is closest to
+    // to the circle center
+    for (int i = 0; i < poly->count; i++)
+    {
         int next = (i + 1) % poly->count;
 
         pv2 point = ph_closest_point_on_segment(
@@ -899,10 +844,10 @@ bool ph_manifold_poly_circle(const ph_poly_t *poly, const ph_circle_t *circle, p
         }
     }
 
-    // Use the SAT overlap for contact depth when available. This represents
-    // the minimum translational distance (MTD) separating the shapes along
-    // the collision normal. It handles cases where the circle is contained
-    // within the polygon as well as edge/vertex contacts.
+    // Use the SAT overlap for contact depth when available. This represents the
+    // minimum translational distance (MTD) separating the shapes along the
+    // collision normal. It handles cases where the circle is contained within
+    // the polygon as well as edge/vertex contacts.
     manifold->contacts[0].depth = result.overlap;
     manifold->contacts[0].point = closest;
 
@@ -915,16 +860,11 @@ bool ph_manifold_circle_poly(const ph_circle_t* circle, const ph_poly_t* poly, p
     PH_ASSERT(poly);
     PH_ASSERT(manifold);
 
-    /* Call the polygon/circle manifold generator and adapt the result for
-       the swapped argument order. */
     ph_manifold_t tmp = { 0 };
 
     if (!ph_manifold_poly_circle((ph_poly_t*)poly, (ph_circle_t*)circle, &tmp))
         return false;
 
-    /* Reflect the normal because the caller's shapes were swapped. Copy
-       the remaining manifold data unchanged (contact points are in world
-       space and do not need transforming). */
     manifold->normal = pv2_reflect(tmp.normal);
     manifold->overlap = tmp.overlap;
     manifold->count = tmp.count;
@@ -933,7 +873,9 @@ bool ph_manifold_circle_poly(const ph_circle_t* circle, const ph_poly_t* poly, p
     return true;
 }
 
-bool ph_manifold_circle_circle(const ph_circle_t* circle_a, const ph_circle_t* circle_b, ph_manifold_t* manifold)
+bool ph_manifold_circle_circle(const ph_circle_t* circle_a,
+                               const ph_circle_t* circle_b,
+                               ph_manifold_t* manifold)
 {
     PH_ASSERT(circle_a);
     PH_ASSERT(circle_b);
@@ -955,10 +897,10 @@ bool ph_manifold_circle_circle(const ph_circle_t* circle_a, const ph_circle_t* c
     pfloat dist = pf_sqrt(dist2);
     pv2 normal = pv2_zero();
 
-    if (dist > PM_EPSILON)
+    //if (dist > PM_EPSILON)
         normal = pv2_scale(diff, 1.0f / dist);
-    else
-        normal = pv2_make(1.0f, 0.0f);
+    //else
+    //    normal = pv2_make(1.0f, 0.0f);
 
     /* Ensure manifold normal is well defined */
     manifold->normal = normal;
@@ -1213,6 +1155,86 @@ static int ph_closest_vertex(const ph_poly_t *poly, pv2 point)
     }
 
     return closest;
+}
+
+// Works by projecting (end_point_a, point) onto (end_point_a, pv2 end_point_b)
+static pv2 ph_closest_point_on_segment(pv2 end_point_a, pv2 end_point_b, pv2 point)
+{
+    pv2 ab = pv2_sub(end_point_b, end_point_a);
+    pv2 ap = pv2_sub(point, end_point_b);
+
+    pfloat ab_len2 = pv2_dot(ab, ab);
+
+    if (ab_len2 < PM_EPSILON)
+        return end_point_a;
+
+    pfloat alpha = pv2_dot(ap, ab) / ab_len2;
+    alpha = pf_max(0.0f, pf_min(1.0f, alpha));
+
+    return pv2_add(end_point_a, pv2_scale(ab, alpha));
+}
+
+// Finds the edge that is most perpendicular to the separation normal vector
+static int ph_find_best_edge(const ph_poly_t* poly, pv2 normal, pfloat* max_dot)
+{
+    int index = 0;
+    *max_dot = PM_FLOAT_MIN;
+
+    for (int i = 0; i < poly->count; i++)
+    {
+        pfloat dot = pv2_dot(poly->normals[i], normal);
+
+        if (dot > *max_dot)
+        {
+            *max_dot = dot;
+            index = i;
+        }
+    }
+
+    return index;
+}
+
+// Finds the edge most anti-parallel to reference edge
+static int ph_find_incident_edge(const ph_poly_t* poly, pv2 normal)
+{
+    pfloat min_dot = PM_FLOAT_MAX;
+
+    int index = 0;
+
+    for (int i = 0; i < poly->count; i++)
+    {
+        pfloat dot = pv2_dot(poly->normals[i], normal);
+
+        if (dot < min_dot)
+        {
+            min_dot = dot;
+            index = i;
+        }
+    }
+
+    return index;
+}
+
+static int ph_clip_segment_to_line(pv2* in_points, pv2* out_points, pv2 plane_normal, pfloat offset)
+{
+    int num_out = 0;
+
+    float d0 = pv2_dot(plane_normal, in_points[0]) - offset;
+    float d1 = pv2_dot(plane_normal, in_points[1]) - offset;
+
+    // Both points in front of plane - keep both
+    if (d0 >= 0.0f) out_points[num_out++] = in_points[0];
+    if (d1 >= 0.0f) out_points[num_out++] = in_points[1];
+
+    // Points on opposite sides - find intersection
+    if (d0 * d1 < 0.0f)
+    {
+        pfloat alpha = d0 / (d0 - d1);
+        pv2 intersection = pv2_add(in_points[0], pv2_scale(pv2_sub(in_points[1], in_points[0]), alpha));
+        out_points[num_out++] = intersection;
+    }
+
+    return num_out;
 }
 
 // Determinant of 2D matrix

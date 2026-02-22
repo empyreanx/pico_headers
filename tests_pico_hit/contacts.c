@@ -22,12 +22,11 @@ TEST_CASE(test_manifold_poly_poly_square_overlap)
     ph_poly_t poly_b = make_square(pv2_make(1.5f, 0.0f), 2.0f);
 
     ph_manifold_t manifold = {0};
-    pv2 normal = pv2_make(1.0f, 0.0f);  // Normal pointing to the right
-
-    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     // Should generate contacts
     REQUIRE(hit);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1.0f, 0.0f)));
     REQUIRE(manifold.count > 0);
     REQUIRE(manifold.count <= 2);
 
@@ -42,12 +41,12 @@ TEST_CASE(test_manifold_poly_poly_contact_position)
     ph_poly_t poly_b = make_square(pv2_make(1.5f, 0.0f), 2.0f);
 
     ph_manifold_t manifold = {0};
-    pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1.0f, 0.0f)));
 
     // Contact points should be within the overlapping region
     for (int i = 0; i < manifold.count; i++)
@@ -71,12 +70,11 @@ TEST_CASE(test_manifold_poly_poly_contact_depth)
     ph_poly_t poly_b = make_square(pv2_make(1.9f, 0.0f), 2.0f);
 
     ph_manifold_t manifold = {0};
-    pv2 normal = pv2_make(1.0f, 0.0f);
-
-    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1.0f, 0.0f)));
 
     // Depth should be small (less than 0.2 since we have small overlap)
     for (int i = 0; i < manifold.count; i++)
@@ -95,13 +93,13 @@ TEST_CASE(test_manifold_poly_poly_horizontal_edge)
     ph_poly_t poly_b = make_square(pv2_make(1.0f, 0.0f), 2.0f);
 
     ph_manifold_t manifold = {0};
-    pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     // They should generate contacts
     REQUIRE(hit);
     REQUIRE(manifold.count >= 1);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1.0f, 0.0f)));
 
     return true;
 }
@@ -116,11 +114,12 @@ TEST_CASE(test_manifold_poly_poly_vertical_edge)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(0.0f, 1.0f);
 
-    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     // They should generate contacts
     REQUIRE(hit);
     REQUIRE(manifold.count >= 1);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(0.0f, 1.0f)));
 
     return true;
 }
@@ -135,11 +134,12 @@ TEST_CASE(test_manifold_poly_poly_diagonal_overlap)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_normalize(pv2_make(1.0f, 1.0f));
 
-    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
     REQUIRE(manifold.count <= 2);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1.0f, 1.0f)));
 
     return true;
 }
@@ -154,11 +154,12 @@ TEST_CASE(test_manifold_poly_poly_max_contacts)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     REQUIRE(hit);
     // The manifold should have at most 2 contact points
     REQUIRE(manifold.count <= 2);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1.0f, 0.0f)));
 
     return true;
 }
@@ -180,11 +181,12 @@ TEST_CASE(test_manifold_poly_poly_triangle_square)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_manifold_poly_poly(&triangle, &square, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&triangle, &square, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
     REQUIRE(manifold.count <= 2);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1.0f, 0.0f)));
 
     return true;
 }
@@ -199,13 +201,14 @@ TEST_CASE(test_manifold_poly_poly_deep_overlap)
     ph_manifold_t manifold = {0};
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
 
     // With deep overlap, we should typically get 2 contacts
     REQUIRE(manifold.count <= 2);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1.0f, 0.0f)));
 
     return true;
 }
@@ -221,12 +224,13 @@ TEST_CASE(test_manifold_poly_poly_manifold_cleared)
 
     pv2 normal = pv2_make(1.0f, 0.0f);
 
-    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    bool hit = ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     // Count should be set from 0, not added to existing value
     REQUIRE(hit);
     REQUIRE(manifold.count >= 0);
     REQUIRE(manifold.count <= 2);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(1.0f, 0.0f)));
 
     return true;
 }
@@ -241,11 +245,12 @@ TEST_CASE(test_manifold_poly_poly_with_normalized_normal)
     // Provide a normalized normal
     pv2 normal = pv2_normalize(pv2_make(3.0f, 4.0f));
 
-    ph_manifold_poly_poly(&poly_a, &poly_b, normal, &manifold);
+    ph_manifold_poly_poly(&poly_a, &poly_b, &manifold);
 
     // Should still work with normalized normal
     REQUIRE(manifold.count >= 0);
     REQUIRE(manifold.count <= 2);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(3.0f, 4.0f)));
 
     return true;
 }
