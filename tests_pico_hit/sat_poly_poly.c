@@ -61,12 +61,11 @@ TEST_CASE(test_poly_poly)
 
     REQUIRE(ph_sat_poly_poly(&p1, &p2, &result));
 
-    REQUIRE(pf_equal(result.overlap, 10));
-    REQUIRE(pv2_equal(result.normal, pv2_make(1, 0)));
+    REQUIRE(pf_equal(result.overlap, 10.f));
+    REQUIRE(pv2_equal(result.normal, pv2_make(1.f, 0.f)));
 
     return true;
 }
-
 
 TEST_CASE(test_poly_poly_mtv)
 {
@@ -90,7 +89,10 @@ TEST_CASE(test_poly_poly_mtv)
     ph_sat_t result;
 
     REQUIRE(ph_sat_poly_poly(&p1, &p2, &result));
-    pt2 tf = pt2_translation(result.mtv);
+
+    pv2 mtv = pv2_scale(result.normal, -result.overlap - PM_EPSILON);
+
+    pt2 tf = pt2_translation(mtv);
     ph_poly_t tf_poly = ph_transform_poly(&tf, &p1);
 
     REQUIRE(!ph_sat_poly_poly(&tf_poly, &p2, NULL));
@@ -113,7 +115,7 @@ TEST_CASE(test_aabb_aabb_not_collide)
 
     // Left
     {
-        pb2 aabb2 = pb2_make(3, 5, 2, 2);
+        pb2 aabb2 = pb2_make(2, 5, 2, 2);
         ph_poly_t p2 = ph_aabb_to_poly(&aabb2);
 
         REQUIRE(!ph_sat_poly_poly(&p1, &p2, NULL));

@@ -490,7 +490,7 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
         pfloat overlap = ph_calc_overlap(poly_a_min, poly_a_max, poly_b_min, poly_b_max);
 
         // Axis is separating
-        if (overlap <= 0.0f)
+        if (overlap < 0.0f)
             return false;
 
         // Update result
@@ -516,7 +516,7 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
         pfloat overlap = ph_calc_overlap(poly_b_min, poly_b_max, poly_a_min, poly_a_max);
 
         // Axis is separating
-        if (overlap <= 0.0f) //FIXME (overlap <= PM_EPSILON)
+        if (overlap < 0.0f)
             return false;
 
         // Update result
@@ -575,7 +575,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         float overlap = ph_calc_overlap(poly_min, poly_max, circle_min, circle_max);
 
         // Axis is separating
-        if (overlap <= 0.0f)
+        if (overlap < 0.0f)
             return false;
 
         // Update result
@@ -604,7 +604,7 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
         pfloat overlap = ph_calc_overlap(poly_min, poly_max, circle_min, circle_max);
 
         // Axis is separating
-        if (overlap <= 0.0f)
+        if (overlap < 0.0f)
             return false;
 
         // Update result
@@ -1097,12 +1097,17 @@ static void ph_init_result(ph_sat_t* result)
 
 static pfloat ph_calc_overlap(pfloat min1, pfloat max1, pfloat min2, pfloat max2)
 {
-    if (max1 < min2 || max2 < min1)
-    {
-        return 0.0f;
-    }
+    // Compute signed overlap (negative => separated, zero => touching, positive => intersecting)
+    pfloat overlap = pf_min(max1, max2) - pf_max(min1, min2);
 
-    return pf_min(max1, max2) - pf_max(min1, min2);
+    if (overlap < 0.0f)
+        return overlap;
+
+    // Treat touching (zero overlap) as a collision by returning a small positive value
+    if (pf_equal(overlap, 0.0f))
+        return PM_EPSILON;
+
+    return overlap;
 }
 
 static void ph_project_poly(const ph_poly_t* poly,
