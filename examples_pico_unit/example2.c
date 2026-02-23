@@ -91,10 +91,14 @@ test_suite1 ()
 static void
 test_suite2 ()
 {
+    pu_setup(test_setup, test_teardown);
+    
     RUN_TEST_CASE(test_passing1);
     RUN_TEST_CASE(test_failing2);
     RUN_TEST_CASE(test_passing1);
     RUN_TEST_CASE(test_failing3_with_message);
+    
+    pu_clear_setup();
 }
 
 /* Run all test suites and print test statistics. */
