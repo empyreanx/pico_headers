@@ -91,7 +91,7 @@ extern "C" {
 #define REQUIRE(expr, ...) \
     do { \
         if (!pu_require((expr) ? true : false, (#expr), __FILE__, __LINE__, \
-                        __VA_OPT__(__VA_ARGS__,) NULL)) \
+                        ##__VA_ARGS__, NULL)) \
             return false; \
     } while(false)
 
