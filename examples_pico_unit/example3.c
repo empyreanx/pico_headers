@@ -1,6 +1,16 @@
 #define PICO_UNIT_IMPLEMENTATION
 #include "../pico_unit.h"
 
+/*
+ * Used to extend REQUIRE
+ */
+static bool str_eq(const char* str1, const char* str2)
+{
+    return 0 == strcmp(str1, str2);
+}
+
+static unsigned g_fix = 0;
+
 /* Sets up fixture for (called before test). */
 static void
 test_setup ()
@@ -56,15 +66,7 @@ TEST_CASE(test_failing2)
     return true;
 }
 
-/* A test containing a failed assertion with a formatted message. */
-TEST_CASE(test_failing3_with_message)
-{
-    REQUIRE((g_fix % 2) == 1, "Expected value %d to be odd", g_fix); /* Fails here */
-
-    return true;
-}
-
-/* A test suite containing two passing and three failing tests. */
+/* A test suite containing two passing and two failing tests. */
 static void
 test_suite1 ()
 {
@@ -73,7 +75,6 @@ test_suite1 ()
     RUN_TEST_CASE(test_passing2);
     RUN_TEST_CASE(test_failing1);
     RUN_TEST_CASE(test_failing2);
-    RUN_TEST_CASE(test_failing3_with_message);
     pu_clear_setup();
 }
 

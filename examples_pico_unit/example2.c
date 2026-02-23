@@ -66,14 +66,6 @@ TEST_CASE(test_failing2)
     return true;
 }
 
-/* A test containing a failed assertion with a formatted message. */
-TEST_CASE(test_failing3_with_message)
-{
-    REQUIRE((g_fix % 2) == 1, "Expected value %d to be odd", g_fix); /* Fails here */
-
-    return true;
-}
-
 /* A test suite containing two passing and one failing test. */
 static void
 test_suite1 ()
@@ -87,18 +79,13 @@ test_suite1 ()
     pu_clear_setup();
 }
 
-/* A test suite containing two passing and two failing tests. */
+/* A test suite containing two passing and one failing tests. */
 static void
 test_suite2 ()
 {
-    pu_setup(test_setup, test_teardown);
-    
     RUN_TEST_CASE(test_passing1);
     RUN_TEST_CASE(test_failing2);
     RUN_TEST_CASE(test_passing1);
-    RUN_TEST_CASE(test_failing3_with_message);
-    
-    pu_clear_setup();
 }
 
 /* Run all test suites and print test statistics. */
