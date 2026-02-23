@@ -86,12 +86,11 @@ extern "C" {
  * message is displayed.
  *
  * @param expr The expression to evaluate
- * @param optional printf-style format string and args for failure note
  */
-#define REQUIRE(expr, ...) \
+#define REQUIRE(expr) \
     do { \
         if (!pu_require((expr) ? true : false, (#expr), __FILE__, __LINE__, \
-                        ##__VA_ARGS__, NULL)) \
+                        NULL)) \
             return false; \
     } while(false)
 
@@ -233,12 +232,12 @@ static bool     pu_quiet        = false;
 static pu_setup_fn pu_setup_fp    = NULL;
 static pu_setup_fn pu_teardown_fp = NULL;
 
-#define pu_quiet_printf(fmt, ...)                   \
-    do {                                            \
-        if (!pu_quiet)                              \
-        {                                           \
-            printf(fmt __VA_OPT__(,) __VA_ARGS__); \
-        }                                           \
+#define pu_quiet_printf(...)      \
+    do {                          \
+        if (!pu_quiet)            \
+        {                         \
+            printf(__VA_ARGS__);  \
+        }                         \
     } while(0)
 
 void
