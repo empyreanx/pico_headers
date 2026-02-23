@@ -990,13 +990,6 @@ TEST_CASE(test_capacity_validation)
     REQUIRE(ecs_is_valid_capacity(500, 128));
     REQUIRE(ecs_is_valid_capacity(1000, 8));
 
-
-#if SIZE_MAX > 0xFFFFFFFF
-    // elem count over 32-bits is not valid
-    REQUIRE(ecs_is_valid_capacity(1, 0X0FFFFFFFF));
-    REQUIRE(!ecs_is_valid_capacity(1, 0x100000000));
-#endif
-
     return true;
 }
 
