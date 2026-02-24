@@ -1780,8 +1780,7 @@ static bool ecs_sparse_set_add(ecs_t* ecs, ecs_sparse_set_t* set, ecs_id_t id)
 
         // Note that since a valid id doesn't have its high bit set, and
         // capacity is in terms of elements, doubling the capacity won't wrap
-        do
-        {
+        do {
             new_capacity *= 2;
         } while (id >= new_capacity);
 
@@ -1989,8 +1988,7 @@ static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, ecs_id_t 
     {
         // Note that since a valid id doesn't have its high bit set, and
         // capacity is in terms of elements, doubling the capacity won't wrap
-        do
-        {
+        do {
             array->capacity *= 2;
         } while (id >= array->capacity);
 
