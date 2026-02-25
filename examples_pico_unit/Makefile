@@ -8,7 +8,7 @@ endif
 
 DEPS   = ../pico_unit.h
 
-all: example1 example2
+all: example1 example2 example3
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -19,7 +19,10 @@ example1: example1.o $(DEPS)
 example2: example2.o $(DEPS)
 	$(CC) -o example2 example2.o
 
+example3: example3.o $(DEPS)
+	$(CC) -o example3 example3.o
+
 .PHONY: clean
 
 clean:
-	rm -f example1 example2 *.o
+	rm -f example1 example2 example3 *.o

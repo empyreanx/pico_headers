@@ -19,6 +19,7 @@
     * Ability to print test statistics
     * Optional color coded output
     * Optional time measurement
+    * Optional quiet mode that only shows failures
     * Permissive licensing (zlib or public domain)
 
     Summary:
@@ -87,8 +88,9 @@ extern "C" {
  * @param expr The expression to evaluate
  */
 #define REQUIRE(expr) \
-    do  { \
-        if (!pu_require((expr) ? true : false, (#expr), __FILE__, __LINE__)) \
+    do { \
+        if (!pu_require((expr) ? true : false, (#expr), __FILE__, __LINE__, \
+                        NULL)) \
             return false; \
     } while(false)
 
@@ -151,6 +153,16 @@ void pu_display_colors(bool enabled);
 void pu_display_time(bool enabled);
 
 /**
+ * @brief Turns on quiet mode. Only failures are printed.
+ */
+void pu_display_quiet(bool enabled);
+
+/**
+ * @brief Returns whether quiet mode is enabled.
+ */
+bool pu_is_quiet(void);
+
+/**
  * @brief Prints test statistics.
  */
 void pu_print_stats(void);
@@ -175,7 +187,8 @@ typedef void (*pu_suite_fn)(void);
 bool pu_require(bool passed,
                 const char* const expr,
                 const char* const file,
-                int line);
+                int line,
+                const char* const fmt, ...);
 
 /**
  * @brief Used internally
@@ -195,7 +208,8 @@ void pu_run_suite(const char* const name, pu_suite_fn suite_fp);
 
 #ifdef PICO_UNIT_IMPLEMENTATION
 
-#include <stdio.h> /* printf */
+#include <stdarg.h> /* va_list, va_start, va_end */
+#include <stdio.h>  /* printf, fprintf, vfprintf */
 
 #ifndef PICO_UNIT_NO_CLOCK
 #include <time.h>  /* clock_t, clock */
@@ -211,11 +225,20 @@ static unsigned pu_num_asserts  = 0;
 static unsigned pu_num_passed   = 0;
 static unsigned pu_num_failed   = 0;
 static unsigned pu_num_suites   = 0;
-static bool     pu_colors      = false;
-static bool     pu_time        = false;
+static bool     pu_colors       = false;
+static bool     pu_time         = false;
+static bool     pu_quiet        = false;
 
 static pu_setup_fn pu_setup_fp    = NULL;
 static pu_setup_fn pu_teardown_fp = NULL;
+
+#define pu_quiet_printf(...)      \
+    do {                          \
+        if (!pu_quiet)            \
+        {                         \
+            printf(__VA_ARGS__);  \
+        }                         \
+    } while(0)
 
 void
 pu_setup (pu_setup_fn fp_setup, pu_setup_fn fp_teardown)
@@ -243,6 +266,18 @@ pu_display_time (bool enabled)
     pu_time = enabled;
 }
 
+void
+pu_display_quiet (bool enabled)
+{
+    pu_quiet = enabled;
+}
+
+bool
+pu_is_quiet (void)
+{
+    return pu_quiet;
+}
+
 bool
 pu_test_failed(void)
 {
@@ -250,10 +285,11 @@ pu_test_failed(void)
 }
 
 bool
-pu_require(bool passed,
-           const char* const expr,
-           const char* const file,
-           int line)
+pu_require(bool passed, 
+           const char* const expr, 
+           const char* const file, 
+           int line, 
+           const char* const fmt, ...)
 {
     pu_num_asserts++;
 
@@ -264,14 +300,24 @@ pu_require(bool passed,
 
     if (pu_colors)
     {
-        printf("(%c%sFAILED%c%s: %s (%d): %s)\n",
-               TERM_COLOR_CODE, TERM_COLOR_RED,
-               TERM_COLOR_CODE, TERM_COLOR_RESET,
-               file, line, expr);
+        fprintf(stderr, "(%c%sFAILED%c%s: %s (%d): %s)\n",
+                TERM_COLOR_CODE, TERM_COLOR_RED,
+                TERM_COLOR_CODE, TERM_COLOR_RESET,
+                file, line, expr);
     }
     else
     {
-        printf("(FAILED: %s (%d): %s)\n", file, line, expr);
+        fprintf(stderr, "(FAILED: %s (%d): %s)\n", file, line, expr);
+    }
+
+    if (fmt)
+    {
+        va_list args;
+        va_start(args, fmt);
+        fprintf(stderr, "  note: ");
+        vfprintf(stderr, fmt, args);
+        fprintf(stderr, "\n");
+        va_end(args);
     }
 
     return false;
@@ -285,7 +331,7 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
         pu_setup_fp();
     }
 
-    printf("Running: %s ", name);
+    pu_quiet_printf("Running: %s ", name);
 
     #ifndef PICO_UNIT_NO_CLOCK
 
@@ -302,6 +348,8 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
     if (!test_fp())
     {
         pu_num_failed++;
+
+        pu_quiet_printf("\n");
 
         if (NULL != pu_teardown_fp)
         {
@@ -322,24 +370,24 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
 
     if (pu_colors)
     {
-        printf("(%c%sOK%c%s)", TERM_COLOR_CODE, TERM_COLOR_GREEN,
-                               TERM_COLOR_CODE, TERM_COLOR_RESET);
+        pu_quiet_printf("(%c%sOK%c%s)", TERM_COLOR_CODE, TERM_COLOR_GREEN,
+                                        TERM_COLOR_CODE, TERM_COLOR_RESET);
     }
     else
     {
-        printf("(OK)");
+        pu_quiet_printf("(OK)");
     }
 
     #ifndef PICO_UNIT_NO_CLOCK
 
     if (pu_time)
     {
-        printf(" (%f secs)", (double)(end_time - start_time) / CLOCKS_PER_SEC);
+        pu_quiet_printf(" (%f secs)", (double)(end_time - start_time) / CLOCKS_PER_SEC);
     }
 
     #endif // PICO_UNIT_NO_CLOCK
 
-    printf("\n");
+    pu_quiet_printf("\n");
 
     pu_num_passed++;
 
@@ -352,20 +400,21 @@ pu_run_test (const char* const name, pu_test_fn test_fp)
 void
 pu_run_suite (const char* const name, pu_suite_fn suite_fp)
 {
-    printf("===============================================================\n");
+    pu_quiet_printf("===============================================================\n");
 
     if (pu_colors)
     {
-        printf("%c%sRunning: %s%c%s\n", TERM_COLOR_CODE, TERM_COLOR_BOLD,
-                                        name,
-                                        TERM_COLOR_CODE, TERM_COLOR_RESET);
+        pu_quiet_printf("%c%sRunning: %s%c%s\n", TERM_COLOR_CODE, TERM_COLOR_BOLD,
+                                                 name,
+                                                 TERM_COLOR_CODE, TERM_COLOR_RESET);
     }
     else
     {
-        printf("Running: %s\n", name);
+        pu_quiet_printf("Running: %s\n", name);
     }
 
-    printf("---------------------------------------------------------------\n");
+    pu_quiet_printf("---------------------------------------------------------------\n");
+
     suite_fp();
     pu_num_suites++;
 }
@@ -373,31 +422,31 @@ pu_run_suite (const char* const name, pu_suite_fn suite_fp)
 void
 pu_print_stats (void)
 {
-    printf("===============================================================\n");
-
+    pu_quiet_printf("===============================================================\n");
+        
     if (pu_colors)
     {
-        printf("Summary: Passed: %c%s%u%c%s "
-               "Failed: %c%s%u%c%s "
-               "Total: %u Suites: %u "
-               "Asserts: %u\n",
-                TERM_COLOR_CODE, TERM_COLOR_GREEN, pu_num_passed,
-                TERM_COLOR_CODE, TERM_COLOR_RESET,
-                TERM_COLOR_CODE, TERM_COLOR_RED, pu_num_failed,
-                TERM_COLOR_CODE, TERM_COLOR_RESET,
-                pu_num_passed + pu_num_failed,
-                pu_num_suites,  pu_num_asserts);
+        pu_quiet_printf("Summary: Passed: %c%s%u%c%s "
+                        "Failed: %c%s%u%c%s "
+                        "Total: %u Suites: %u "
+                        "Asserts: %u\n",
+                        TERM_COLOR_CODE, TERM_COLOR_GREEN, pu_num_passed,
+                        TERM_COLOR_CODE, TERM_COLOR_RESET,
+                        TERM_COLOR_CODE, TERM_COLOR_RED, pu_num_failed,
+                        TERM_COLOR_CODE, TERM_COLOR_RESET,
+                        pu_num_passed + pu_num_failed,
+                        pu_num_suites,  pu_num_asserts);
     }
     else
     {
-        printf("Summary: Passed: %u "
-               "Failed: %u "
-               "Total: %u Suites: %u "
-               "Asserts: %u\n",
-                pu_num_passed,
-                pu_num_failed,
-                pu_num_passed + pu_num_failed,
-                pu_num_suites,  pu_num_asserts);
+        pu_quiet_printf("Summary: Passed: %u "
+                        "Failed: %u "
+                        "Total: %u Suites: %u "
+                        "Asserts: %u\n",
+                        pu_num_passed,
+                        pu_num_failed,
+                        pu_num_passed + pu_num_failed,
+                        pu_num_suites,  pu_num_asserts);
     }
 }
 
