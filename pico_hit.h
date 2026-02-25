@@ -897,10 +897,10 @@ bool ph_manifold_circle_circle(const ph_circle_t* circle_a,
     pfloat dist = pf_sqrt(dist2);
     pv2 normal = pv2_zero();
 
-    //if (dist > PM_EPSILON)
+    if (dist > PM_EPSILON)
         normal = pv2_scale(diff, 1.0f / dist);
-    //else
-    //    normal = pv2_make(1.0f, 0.0f);
+    else
+        normal = pv2_make(1.0f, 0.0f);
 
     /* Ensure manifold normal is well defined */
     manifold->normal = normal;

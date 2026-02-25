@@ -199,12 +199,7 @@ TEST_CASE(test_manifold_poly_poly_triangle_square)
     REQUIRE(hit);
     REQUIRE(manifold.count > 0);
     REQUIRE(manifold.count <= 2);
-
-    pv2 right = pv2_make(1.0f, 0.0f);
-    pv2 left = pv2_make(-1.0f, 0.0f);
-
-    bool normal_ok = pv2_equal(manifold.normal, right) || pv2_equal(manifold.normal, left);
-    REQUIRE(normal_ok);
+    REQUIRE(pv2_equal(manifold.normal, pv2_make(0, -1)));
 
     return true;
 }
