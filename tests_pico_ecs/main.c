@@ -970,6 +970,29 @@ TEST_CASE(test_system_udata)
     return true;
 }
 
+TEST_CASE(test_capacity_validation)
+{
+    // capacity with the high bit set is not valid
+    REQUIRE(ecs_is_valid_capacity(SIZE_MAX >> 8, 1 << 7));
+    REQUIRE(!ecs_is_valid_capacity((SIZE_MAX >> 8) + 1, 1 << 7));
+    REQUIRE(!ecs_is_valid_capacity(SIZE_MAX >> 8, 1 << 8));
+
+    // capacity with the high bit set is not valid
+    REQUIRE(ecs_is_valid_capacity((SIZE_MAX >> 1), 1));
+    REQUIRE(!ecs_is_valid_capacity((SIZE_MAX >> 1) + 1, 1));
+
+    // zero capacity is invalid
+    REQUIRE(!ecs_is_valid_capacity(0, 16));
+    REQUIRE(!ecs_is_valid_capacity(16, 0));
+    REQUIRE(!ecs_is_valid_capacity(0, 0));
+
+    // normal cases
+    REQUIRE(ecs_is_valid_capacity(500, 128));
+    REQUIRE(ecs_is_valid_capacity(1000, 8));
+
+    return true;
+}
+
 static TEST_SUITE(suite_ecs)
 {
     RUN_TEST_CASE(test_reset);
@@ -994,6 +1017,7 @@ static TEST_SUITE(suite_ecs)
     RUN_TEST_CASE(test_add_remove_callbacks);
     RUN_TEST_CASE(test_set_system_callbacks);
     RUN_TEST_CASE(test_system_udata);
+    RUN_TEST_CASE(test_capacity_validation);
 }
 
 int main ()
