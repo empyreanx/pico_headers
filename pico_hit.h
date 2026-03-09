@@ -220,6 +220,13 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
                           const ph_circle_t* circle_b,
                           ph_sat_t* result);
 
+/**
+ * @brief Tests if a polygon collides with another polygon and generates contact information
+ * @param poly_a The colliding polygon
+ * @param poly_b The target polygon
+ * @param manifold The contact manifold to populate
+ * @returns True if contacts are generated successfully, and false otherwise
+ */
 bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
                            const ph_poly_t* poly_b,
                            ph_manifold_t* manifold);
@@ -229,19 +236,33 @@ bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
  * @param poly The polygon
  * @param circle The circle
  * @param manifold The contact manifold to populate
- * @returns True if the polygon and circle collide, false otherwise
+ * @returns True if contacts are generated successfully, and false otherwise
  */
-bool ph_manifold_poly_circle(const ph_poly_t *poly, const ph_circle_t *circle, ph_manifold_t* manifold);
-bool ph_manifold_circle_poly(const ph_circle_t *circle, const ph_poly_t *poly, ph_manifold_t* manifold);
+bool ph_manifold_poly_circle(const ph_poly_t *poly,
+                             const ph_circle_t *circle,
+                             ph_manifold_t* manifold);
+
+/**
+ * @brief Tests if a circle and polygon collide and generates contact information
+ * @param circle The circle
+ * @param poly The polygon
+ * @param manifold The contact manifold to populate
+ * @returns True if contacts are generated successfully, and false otherwise
+ */
+bool ph_manifold_circle_poly(const ph_circle_t *circle,
+                             const ph_poly_t *poly,
+                             ph_manifold_t* manifold);
 
 /**
  * @brief Tests if two circles collide and generates contact information
  * @param circle_a First circle
  * @param circle_b Second circle
  * @param manifold The contact manifold to populate
- * @returns True if the circles collide, false otherwise
+ * @returns True if contacts are generated successfully, and false otherwise
  */
-bool ph_manifold_circle_circle(const ph_circle_t* circle_a, const ph_circle_t* circle_b, ph_manifold_t* manifold);
+bool ph_manifold_circle_circle(const ph_circle_t* circle_a,
+                               const ph_circle_t* circle_b,
+                               ph_manifold_t* manifold);
 
 /**
  * @brief Tests if ray intersects a (directed) line segment
@@ -390,14 +411,13 @@ ph_circle_t ph_make_circle(pv2 center, pfloat radius)
 
 ph_poly_t ph_make_poly(const pv2 vertices[], int count, bool reverse)
 {
-    PH_ASSERT(count <= PICO_HIT_MAX_POLY_VERTS);
     PH_ASSERT(vertices);
+    PH_ASSERT(count <= PICO_HIT_MAX_POLY_VERTS);
 
     ph_poly_t poly = { 0 };
 
     // Copy vertices
     poly.count = count;
-    poly.centroid = pv2_zero();
 
     // Convert CW to CCW if true
     if (reverse)
@@ -405,7 +425,7 @@ ph_poly_t ph_make_poly(const pv2 vertices[], int count, bool reverse)
         for (int i = 0; i < count; i++)
         {
             poly.vertices[i] = vertices[count - i - 1];
-            poly.centroid = pv2_add(poly.centroid, poly.vertices[i]);
+
         }
     }
     else
@@ -413,22 +433,25 @@ ph_poly_t ph_make_poly(const pv2 vertices[], int count, bool reverse)
         for (int i = 0; i < count; i++)
         {
             poly.vertices[i] = vertices[i];
-            poly.centroid = pv2_add(poly.centroid, poly.vertices[i]);
         }
     }
 
-    poly.centroid = pv2_scale(poly.centroid, 1.0f / count);
+    poly.centroid = pv2_zero();
 
     // Cache edges and edge normals
     for (int i = 0; i < count; i++)
     {
-        pv2 v1 = vertices[i];
-        pv2 v2 = vertices[(i + 1) % count];
+        pv2 v1 = poly.vertices[i];
+        pv2 v2 = poly.vertices[(i + 1) % count];
 
         poly.edges[i] = pv2_sub(v2, v1);
         poly.normals[i] = pv2_perp(poly.edges[i]);
         poly.normals[i] = pv2_normalize(poly.normals[i]);
+
+        poly.centroid = pv2_add(poly.centroid, poly.vertices[i]);
     }
+
+    poly.centroid = pv2_scale(poly.centroid, 1.0f / count);
 
     return poly;
 }
@@ -766,7 +789,7 @@ bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
 
     // Clip incident edge against reference side planes
     pv2 clip_in[2] = { inc_v1, inc_v2 };
-    pv2 clip_out[2];
+    pv2 clip_out[2] = { 0 };
 
     // First clip against +tangent plane (side1)
     pv2 side_normal1 = ref_tangent;
@@ -1058,7 +1081,7 @@ ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly)
         vertices[i] = pt2_map(transform, poly->vertices[i]);
     }
 
-    return ph_make_poly(vertices, poly->count, false);
+    return ph_make_poly(vertices, poly->count, pt2_det(transform) < 0.0);
 }
 
 ph_circle_t ph_transform_circle(const pt2* transform,
