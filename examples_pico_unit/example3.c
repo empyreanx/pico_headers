@@ -66,37 +66,25 @@ TEST_CASE(test_failing2)
     return true;
 }
 
-/* A test suite containing two passing and one failing test. */
+/* A test suite containing two passing and two failing tests. */
 static void
 test_suite1 ()
 {
     pu_setup(test_setup, test_teardown);
-
     RUN_TEST_CASE(test_passing1);
     RUN_TEST_CASE(test_passing2);
     RUN_TEST_CASE(test_failing1);
-
+    RUN_TEST_CASE(test_failing2);
     pu_clear_setup();
 }
 
-/* A test suite containing two passing and one failing tests. */
-static void
-test_suite2 ()
-{
-    RUN_TEST_CASE(test_passing1);
-    RUN_TEST_CASE(test_failing2);
-    RUN_TEST_CASE(test_passing1);
-}
-
-/* Run all test suites and print test statistics. */
+/* Run all test suites in quiet mode */
 int
 main ()
 {
-    pu_display_colors(true);
-    pu_display_time(true);
+    pu_display_quiet(true); /* optional: only print failures. No stats or passing tests */
     RUN_TEST_SUITE(test_suite1);
-    RUN_TEST_SUITE(test_suite2);
-    pu_print_stats();
+    pu_print_stats(); /* prints nothing when quiet mode is enabled */
     return 0;
 }
 
