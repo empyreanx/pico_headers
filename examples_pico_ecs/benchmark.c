@@ -295,7 +295,9 @@ ecs_ret_t bounds_system(ecs_t* ecs,
 static void bench_create()
 {
     for (size_t i = 0; i < MAX_ENTITIES; i++)
+    {
         ecs_create(ecs);
+    }
 }
 
 // Creates entity IDs as fast as possible and immediately destroys the
@@ -303,7 +305,9 @@ static void bench_create()
 static void bench_create_destroy()
 {
     for (size_t i = 0; i < MAX_ENTITIES; i++)
+    {
         ecs_destroy(ecs, ecs_create(ecs));
+    }
 }
 
 ecs_ret_t destroy_system(ecs_t* ecs,
