@@ -124,6 +124,10 @@
           respectively)
         - Improved unit test quality and coverage
 
+    - 3.2 (2026/03/09):
+        - Capacity overflow detection
+        - Invalid entity ID value has been reverted to max ID value
+
     Usage:
     ------
 
