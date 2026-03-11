@@ -41,6 +41,7 @@
 typedef struct
 {
     float pos[2];
+    float color[4];
     float uv[2];
 } vertex_t;
 
@@ -143,13 +144,13 @@ int main(int argc, char *argv[])
 
     vertex_t vertices[6] =
     {
-        { { 0, 0, }, { 0, 1 } },
-        { { 0, h, }, { 0, 0 } },
-        { { w, 0, }, { 1, 1 } },
+        { { 0, 0, }, { 0 }, { 0, 1 } },
+        { { 0, h, }, { 0 }, { 0, 0 } },
+        { { w, 0, }, { 0 }, { 1, 1 } },
 
-        { { 0, h, }, { 0, 0 } },
-        { { w, h, }, { 1, 0 } },
-        { { w, 0, }, { 1, 1 } }
+        { { 0, h, }, { 0 }, { 0, 0 } },
+        { { w, h, }, { 0 }, { 1, 0 } },
+        { { w, 0, }, { 0 }, { 1, 1 } }
     };
 
     pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)
@@ -158,6 +159,7 @@ int main(int argc, char *argv[])
         {
             .bufs =
             {
+                [0] = { .stride = sizeof(vertex_t) },
                 [1] = { .instanced = true } // Buffer in slot 1 is instanced
             },
             .attrs =

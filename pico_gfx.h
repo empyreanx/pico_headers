@@ -514,6 +514,7 @@ typedef struct
 {
     bool instanced; //!< True if the buffer will be used for instanced rendering
     int step;       //!< The step rate (default is 1)
+    int stride;     //!< Size of an element in the vertex array
 } pg_vertex_buf_t;
 
 /**
@@ -1313,6 +1314,7 @@ static void pg_set_buffers(const pg_pipeline_layout_t* layout, sg_pipeline_desc*
         }
 
         desc->layout.buffers[slot].step_rate = (step >= 1) ? step : 1;
+        desc->layout.buffers[slot].stride = layout->bufs[slot].stride;
     }
 }
 
