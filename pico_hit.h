@@ -546,7 +546,7 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
         if (result && overlap < result->overlap)
         {
             result->overlap = overlap;
-            result->normal = poly_a->normals[i];
+            result->normal = poly_b->normals[i];
         }
     }
 
