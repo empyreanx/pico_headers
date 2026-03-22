@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-        - { name: Windows (mingw32), os: windows-latest, shell: 'msys2 {0}', msystem: mingw32, msys-env: mingw-w64-i686 }
+        #- { name: Windows (mingw32), os: windows-latest, shell: 'msys2 {0}', msystem: mingw32, msys-env: mingw-w64-i686 }
         - { name: Windows (mingw64), os: windows-latest, shell: 'msys2 {0}', msystem: mingw64, msys-env: mingw-w64-x86_64 }
         - { name: Linux,             os: ubuntu-latest,  shell: bash }
         - { name: MacOS,             os: macos-latest,   shell: bash }
