@@ -28,7 +28,7 @@ jobs:
         with:
           msystem: ${{ matrix.platform.msystem }}
           install: >-
-            ${{ matrix.platform.msys-env }}-clang
+            ${{ matrix.platform.msys-env }}-gcc
             make
       - name: Setup Linux dependencies
         if: runner.os == 'Linux'
