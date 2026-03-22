@@ -122,11 +122,36 @@ float bvh_cost(const bvh_t *tree);
  * apply it.  This keeps the tree height near O(log n) without a full rebuild.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
 #include <float.h>
 #include <math.h>
+
+#ifdef NDEBUG
+    #define PICO_BVH_ASSERT(expr) ((void)0)
+#else
+    #ifndef PICO_BVH_ASSERT
+        #include <assert.h>
+        #define PICO_BVH_ASSERT(expr) (assert(expr))
+    #endif
+#endif
+
+#if !defined(PICO_BVH_CALLOC)  || \
+    !defined(PICO_BVH_REALLOC) || \
+    !defined(PICO_BVH_FREE)
+    #include <stdlib.h>
+    #define PICO_BVH_CALLOC(num, size)  (calloc(num, size))
+    #define PICO_BVH_REALLOC(ptr, size) (realloc(ptr, size))
+    #define PICO_BVH_FREE(ptr)          (free(ptr))
+#endif
+
+#ifndef PICO_BVH_MEMSET
+    #include <string.h>
+    #define PICO_BVH_MEMSET memset
+#endif
+
+#ifndef PICO_BVH_MEMCPY
+    #include <string.h>
+    #define PICO_BVH_MEMCPY memcpy
+#endif
 
 /* ── math primitives ──────────────────────────────────────────────────────────── */
 
@@ -192,7 +217,7 @@ static void bvh_grow(bvh_t *t)
     int old_cap  = t->capacity;
     int new_cap  = old_cap * 2;
     t->nodes     = realloc(t->nodes, (size_t)new_cap * sizeof(bvh_node_t));
-    assert(t->nodes);
+    PICO_BVH_ASSERT(t->nodes);
     memset(t->nodes + old_cap, 0, (size_t)(new_cap - old_cap) * sizeof(bvh_node_t));
 
     /* chain new slots onto the free list */
@@ -226,7 +251,7 @@ static int bvh_alloc_node(bvh_t *t)
 
 static void bvh_free_node(bvh_t *t, int id)
 {
-    assert(id >= 0 && id < t->capacity);
+    PICO_BVH_ASSERT(id >= 0 && id < t->capacity);
     t->nodes[id].allocated = false;
     t->nodes[id].child[0]  = t->free_list;
     t->free_list           = id;
@@ -400,7 +425,7 @@ static void bvh_heap_push(bvh_min_heap_t *h, bvh_heap_entry_t e)
     {
         h->cap  = h->cap ? h->cap * 2 : 16;
         h->data = realloc(h->data, (size_t)h->cap * sizeof(bvh_heap_entry_t));
-        assert(h->data);
+        PICO_BVH_ASSERT(h->data);
     }
     /* sift-up */
     int i = h->size++;
@@ -489,7 +514,7 @@ static int bvh_best_sibling(bvh_t *t, bvh_aabb_t L_aabb)
         }
     }
 
-    free(heap.data);
+    PICO_BVH_FREE(heap.data);
     return best_id;
 }
 
@@ -497,11 +522,11 @@ static int bvh_best_sibling(bvh_t *t, bvh_aabb_t L_aabb)
 
 bvh_t *bvh_create(void)
 {
-    bvh_t *t   = calloc(1, sizeof(bvh_t));
-    assert(t);
+    bvh_t *t   = PICO_BVH_CALLOC(1, sizeof(bvh_t));
+    PICO_BVH_ASSERT(t);
     t->capacity = BVH_INITIAL_CAPACITY;
-    t->nodes    = calloc((size_t)t->capacity, sizeof(bvh_node_t));
-    assert(t->nodes);
+    t->nodes    = PICO_BVH_CALLOC((size_t)t->capacity, sizeof(bvh_node_t));
+    PICO_BVH_ASSERT(t->nodes);
     t->root      = BVH_NULL_ID;
     t->leaf_count = 0;
 
@@ -521,8 +546,8 @@ void bvh_destroy(bvh_t *t)
     {
         return;
     }
-    free(t->nodes);
-    free(t);
+    PICO_BVH_FREE(t->nodes);
+    PICO_BVH_FREE(t);
 }
 
 /* ── public: insert ──────────────────────────────────────────────────────── */
@@ -585,8 +610,8 @@ int bvh_insert(bvh_t *t, bvh_aabb_t aabb, float margin, void *user_data)
 
 void bvh_remove(bvh_t *t, int leaf_id)
 {
-    assert(leaf_id >= 0 && leaf_id < t->capacity);
-    assert(BVH_IS_LEAF(&t->nodes[leaf_id]));
+    PICO_BVH_ASSERT(leaf_id >= 0 && leaf_id < t->capacity);
+    PICO_BVH_ASSERT(BVH_IS_LEAF(&t->nodes[leaf_id]));
 
     int parent_id = t->nodes[leaf_id].parent;
     bvh_free_node(t, leaf_id);
@@ -632,7 +657,7 @@ void bvh_remove(bvh_t *t, int leaf_id)
 
 bool bvh_move(bvh_t *t, int leaf_id, bvh_aabb_t new_aabb, float margin)
 {
-    assert(BVH_IS_LEAF(&t->nodes[leaf_id]));
+    PICO_BVH_ASSERT(BVH_IS_LEAF(&t->nodes[leaf_id]));
 
     bvh_aabb_t fat = margin > 0.f ? bvh_aabb_fatten(new_aabb, margin) : new_aabb;
 
@@ -667,7 +692,7 @@ bool bvh_move(bvh_t *t, int leaf_id, bvh_aabb_t new_aabb, float margin)
 
     int new_id = bvh_insert(t, fat, 0.f, ud);
     (void)new_id;
-    assert(new_id == leaf_id);
+    PICO_BVH_ASSERT(new_id == leaf_id);
     return true;
 }
 
@@ -710,7 +735,7 @@ void bvh_query_aabb(const bvh_t *t, bvh_aabb_t query, bvh_query_cb cb, void *ctx
         }
         else
         {
-            assert(top + 2 <= 1024);
+            PICO_BVH_ASSERT(top + 2 <= 1024);
             stack[top++] = n->child[0];
             stack[top++] = n->child[1];
         }
@@ -783,7 +808,7 @@ void bvh_query_ray(const bvh_t *t,
         }
         else
         {
-            assert(top + 2 <= 1024);
+            PICO_BVH_ASSERT(top + 2 <= 1024);
             stack[top++] = n->child[0];
             stack[top++] = n->child[1];
         }
@@ -794,7 +819,7 @@ void bvh_query_ray(const bvh_t *t,
 
 void *bvh_user_data(const bvh_t *t, int leaf_id)
 {
-    assert(BVH_IS_LEAF(&t->nodes[leaf_id]));
+    PICO_BVH_ASSERT(BVH_IS_LEAF(&t->nodes[leaf_id]));
     return t->nodes[leaf_id].user_data;
 }
 
