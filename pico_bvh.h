@@ -9,8 +9,8 @@
  *
  *   BVH* tree = bvh_create();
  *
- *   int id = bvh_insert(tree, aabb, margin, user_data);
- *   bvh_move  (tree, id, new_aabb, margin);
+ *   int id = bvh_insert(tree, aabb, padding, user_data);
+ *   bvh_move  (tree, id, new_aabb, padding);
  *   bvh_remove(tree, id);
  *
  *   bvh_query_aabb(tree, query, cb, ctx);
@@ -74,11 +74,11 @@ void bvh_destroy(bvh_t* tree);
 /**
  * @brief Inserts a new leaf.
  *
- * The stored AABB is padded by `margin` (pass 0 for exact fit).
+ * The stored AABB is padded by `padding` (pass 0 for exact fit).
  *
  * @returns A stable ID for future move/remove calls.
  */
-int  bvh_insert(bvh_t* tree, bvh_aabb_t aabb, float margin, void *user_data);
+int bvh_insert(bvh_t* tree, bvh_aabb_t aabb, float padding, void *user_data);
 
 /**
  * @brief Remove a leaf.
@@ -90,7 +90,7 @@ void bvh_remove(bvh_t* tree, int leaf_id);
  * @returns true if the tree was restructured (the old padded AABB no longer
  * contained the new tight one).
  */
-bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float margin);
+bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
 
 /* ── queries ─────────────────────────────────────────────────────────────── */
 
@@ -144,7 +144,7 @@ float bvh_cost(const bvh_t* tree);
  * ────────────
  * The tree is a pool-allocated binary tree stored in a flat array.
  * Every node keeps:
- *   • A "padded" AABB (tight AABB padded by a user-supplied margin).
+ *   • A "padded" AABB (tight AABB padded by a user-supplied padding).
  *   • child[0], child[1] – BVH_NULL_ID for leaves.
  *   • parent             – BVH_NULL_ID for the root.
  *   • height             – 0 for leaves, max(child heights)+1 otherwise.
@@ -311,7 +311,7 @@ static void bvh_free_node(bvh_t* t, int id)
 
 static void bvh_refit(bvh_t* t, int id)
 {
-    bvh_node_t *n   = &t->nodes[id];
+    bvh_node_t *n = &t->nodes[id];
     n->aabb     = bvh_aabb_union(t->nodes[n->child[0]].aabb,
                   t->nodes[n->child[1]].aabb);
     int h0      = t->nodes[n->child[0]].height;
@@ -625,13 +625,13 @@ void bvh_destroy(bvh_t* t)
 
 /* ── public: insert ──────────────────────────────────────────────────────── */
 
-int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float margin, void *user_data)
+int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float padding, void *user_data)
 {
     int leaf_id      = bvh_alloc_node(t);
     bvh_node_t *leaf = &t->nodes[leaf_id];
-    leaf->aabb       = margin > 0.f ? bvh_aabb_pad(aabb, margin) : aabb;
+    leaf->aabb       = padding > 0.f ? bvh_aabb_pad(aabb, padding) : aabb;
     leaf->user_data  = user_data;
-    leaf->height    = 0;
+    leaf->height     = 0;
     t->leaf_count++;
 
     /* empty tree */
@@ -677,6 +677,7 @@ int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float margin, void *user_data)
     }
 
     bvh_refit_and_rotate(t, new_id);
+
     return leaf_id;
 }
 
@@ -730,17 +731,17 @@ void bvh_remove(bvh_t* t, int leaf_id)
 
 /* ── public: move ────────────────────────────────────────────────────────── */
 
-bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float margin)
+bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float padding)
 {
     PICO_BVH_ASSERT(BVH_IS_LEAF(&t->nodes[leaf_id]));
 
-    bvh_aabb_t padded = margin > 0.f ? bvh_aabb_pad(new_aabb, margin) : new_aabb;
+    bvh_aabb_t padded = padding > 0.f ? bvh_aabb_pad(new_aabb, padding) : new_aabb;
 
     /* no restructuring needed if the padded AABB still contains the new one */
     if (bvh_aabb_contains(t->nodes[leaf_id].aabb, new_aabb))
     {
         /* optionally shrink if the padded box is much bigger than needed */
-        bvh_aabb_t big = bvh_aabb_pad(new_aabb, margin * 4.f);
+        bvh_aabb_t big = bvh_aabb_pad(new_aabb, padding * 4.f);
 
         if (bvh_aabb_contains(big, t->nodes[leaf_id].aabb))
         {
@@ -771,6 +772,7 @@ bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float margin)
     int new_id = bvh_insert(t, padded, 0.f, ud);
     (void)new_id;
     PICO_BVH_ASSERT(new_id == leaf_id);
+
     return true;
 }
 
@@ -951,6 +953,7 @@ static float bvh_cost_rec(const bvh_t* t, int id)
     {
         c += bvh_cost_rec(t, n->child[0]) + bvh_cost_rec(t, n->child[1]);
     }
+
     return c;
 }
 
