@@ -549,6 +549,7 @@ TEST_CASE(test_pool_growth)
     {
         float x = (float)(i % 10) * 3.f;
         float y = (float)(i / 10) * 3.f;
+
         ids[i] = bvh_insert(tree, test_make_aabb(x, y, x + 1.f, y + 1.f),
                             0.f, NULL);
     }
