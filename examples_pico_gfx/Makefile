@@ -2,7 +2,7 @@ CFLAGS = $(shell pkg-config --cflags sdl2)
 CLIBS  = $(shell pkg-config --libs sdl2)
 
 ifeq ($(OS),Windows_NT)
-    CC     = gcc # gcc produces too many spurious warnings
+    CC     = clang # gcc produces too many spurious warnings
     CFLAGS += -g -std=c11 -Wall -Wextra -Wpedantic -I .
     CLIBS  += -lmingw32 -lwinmm -lSDL2main -lSDL2 -lm
 else
