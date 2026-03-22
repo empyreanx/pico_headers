@@ -1,4 +1,5 @@
-/* bvh.h – Dynamic AABB-tree BVH (2-D)
+/**
+ * @file pico_bvh.h A 2D Dynamic AABB-tree Bounding Volume Heirarchy (BVH)
  *
  * A self-balancing bounding volume hierarchy.  Leaves hold user objects;
  * internal nodes are managed automatically.  The tree stays balanced via
@@ -6,7 +7,7 @@
  *
  * Typical usage:
  *
- *   BVH *tree = bvh_create();
+ *   BVH* tree = bvh_create();
  *
  *   int id = bvh_insert(tree, aabb, margin, user_data);
  *   bvh_move  (tree, id, new_aabb, margin);
@@ -26,82 +27,128 @@
 
 typedef struct
 {
-    float x, y;
+    float x;
+    float y;
 } bvh_vec2_t;
 
 typedef struct
 {
-    bvh_vec2_t min, max;
+    bvh_vec2_t min;
+    bvh_vec2_t max;
 } bvh_aabb_t;
 
 /* ── public types ────────────────────────────────────────────────────────── */
 
 #define BVH_NULL_ID (-1)
 
-/* Return false to stop traversal early. */
+/**
+ * @brief Return false to stop traversal early.
+ */
 typedef bool (*bvh_query_cb)(int leaf_id, void *user_data, void *ctx);
 
-/* Called for every node during bvh_walk(); depth=0 at root. */
+/**
+ * @brief Called for every node during bvh_walk(); depth=0 at root.
+ */
 typedef void (*bvh_walk_cb)(bvh_aabb_t aabb, int depth, bool is_leaf,
-                           void *user_data, void *ctx);
+                            void *user_data, void *ctx);
 
+/**
+ * @brief BVH instance
+ */
 typedef struct bvh_t bvh_t;
 
 /* ── lifecycle ───────────────────────────────────────────────────────────── */
 
+/**
+ * @brief Allocates and initializes a BVH instances
+ */
 bvh_t *bvh_create(void);
-void   bvh_destroy(bvh_t *tree);
+
+/**
+ * @brief Destroys and deallocates a BVH instance
+ */
+void bvh_destroy(bvh_t* tree);
 
 /* ── modification ────────────────────────────────────────────────────────── */
 
-/* Insert a new leaf.  The stored AABB is fattened by `margin` (pass 0 for
- * exact fit).  Returns a stable ID for future move/remove calls. */
-int  bvh_insert(bvh_t *tree, bvh_aabb_t aabb, float margin, void *user_data);
+/**
+ * @brief Inserts a new leaf.
+ *
+ * The stored AABB is padded by `margin` (pass 0 for exact fit).
+ *
+ * @returns A stable ID for future move/remove calls.
+ */
+int  bvh_insert(bvh_t* tree, bvh_aabb_t aabb, float margin, void *user_data);
 
-/* Remove a leaf. */
-void bvh_remove(bvh_t *tree, int leaf_id);
+/**
+ * @brief Remove a leaf.
+ */
+void bvh_remove(bvh_t* tree, int leaf_id);
 
-/* Update a leaf's AABB.  Returns true if the tree was restructured (the old
- * fat AABB no longer contained the new tight one). */
-bool bvh_move(bvh_t *tree, int leaf_id, bvh_aabb_t new_aabb, float margin);
+/**
+ * @brief Update a leaf's AABB.
+ * @returns true if the tree was restructured (the old padded AABB no longer
+ * contained the new tight one).
+ */
+bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float margin);
 
 /* ── queries ─────────────────────────────────────────────────────────────── */
 
-void bvh_query_aabb(const bvh_t *tree, bvh_aabb_t query,
+/**
+ * @brief Queries the tree against an AABB
+ */
+void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
                     bvh_query_cb cb, void *ctx);
-
-/* Ray: origin + t*dir, t in [0, max_t].  Use FLT_MAX for infinite ray. */
-void bvh_query_ray(const bvh_t *tree,
+/**
+ * @brief Queries the tree against a ray
+ *
+ * Ray: origin + t*dir, t in [0, max_t].  Use FLT_MAX for infinite ray.
+ */
+void bvh_query_ray(const bvh_t* tree,
                    bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
                    bvh_query_cb cb, void *ctx);
 
 /* ── accessors ───────────────────────────────────────────────────────────── */
 
-void       *bvh_user_data  (const bvh_t *tree, int leaf_id);
-bvh_aabb_t  bvh_fat_aabb   (const bvh_t *tree, int leaf_id);
-int         bvh_leaf_count (const bvh_t *tree);
+/**
+ * @brief Returns the user data from the specified leaf node
+ */
+void* bvh_user_data  (const bvh_t* tree, int leaf_id);
 
-/* Depth-first walk over every node (internal + leaf). */
-void  bvh_walk(const bvh_t *tree, bvh_walk_cb cb, void *ctx);
+/**
+ * @brief Returns the enlarged bounds from the specified leaf node
+ */
+bvh_aabb_t bvh_padded_aabb   (const bvh_t* tree, int leaf_id);
 
-/* Total surface-area cost (lower = better balanced). */
-float bvh_cost(const bvh_t *tree);
+/**
+ * @brief Returns number of leaves in the tree
+ */
+int bvh_leaf_count (const bvh_t* tree);
+
+/**
+ * @brief Depth-first walk over every node (internal + leaf).
+ */
+void  bvh_walk(const bvh_t* tree, bvh_walk_cb cb, void *ctx);
+
+/**
+ * @brief Total surface-area cost (lower = better balanced).
+ */
+float bvh_cost(const bvh_t* tree);
 
 #endif /* PICO_BVH_H */
 
 #ifdef PICO_BVH_IMPLEMENTATION
 
-/* bvh.c – Dynamic AABB-tree BVH implementation
- *
+/*
  * Design notes
  * ────────────
  * The tree is a pool-allocated binary tree stored in a flat array.
  * Every node keeps:
- *   • A "fat" AABB (tight AABB fattened by a user-supplied margin).
+ *   • A "padded" AABB (tight AABB padded by a user-supplied margin).
  *   • child[0], child[1] – BVH_NULL_ID for leaves.
- *   • parent              – BVH_NULL_ID for the root.
- *   • height              – 0 for leaves, max(child heights)+1 otherwise.
- *   • user_data           – only meaningful for leaves.
+ *   • parent             – BVH_NULL_ID for the root.
+ *   • height             – 0 for leaves, max(child heights)+1 otherwise.
+ *   • user_data          – only meaningful for leaves.
  *
  * Insertion (O(log n) expected)
  * ──────────────────────────────
@@ -155,7 +202,7 @@ float bvh_cost(const bvh_t *tree);
 
 /* ── math primitives ──────────────────────────────────────────────────────────── */
 
-static inline bvh_aabb_t bvh_aabb_fatten(bvh_aabb_t a, float m)
+static inline bvh_aabb_t bvh_aabb_pad(bvh_aabb_t a, float m)
 {
     return (bvh_aabb_t){ {a.min.x-m, a.min.y-m}, {a.max.x+m, a.max.y+m} };
 }
@@ -212,12 +259,14 @@ struct bvh_t
 
 /* ── node pool ───────────────────────────────────────────────────────────── */
 
-static void bvh_grow(bvh_t *t)
+static void bvh_grow(bvh_t* t)
 {
     int old_cap  = t->capacity;
     int new_cap  = old_cap * 2;
-    t->nodes     = realloc(t->nodes, (size_t)new_cap * sizeof(bvh_node_t));
+    t->nodes     = PICO_BVH_REALLOC(t->nodes, (size_t)new_cap * sizeof(bvh_node_t));
+
     PICO_BVH_ASSERT(t->nodes);
+
     memset(t->nodes + old_cap, 0, (size_t)(new_cap - old_cap) * sizeof(bvh_node_t));
 
     /* chain new slots onto the free list */
@@ -225,31 +274,32 @@ static void bvh_grow(bvh_t *t)
     {
         t->nodes[i].child[0] = i + 1;
     }
+
     t->nodes[new_cap - 1].child[0] = t->free_list;
     t->free_list = old_cap;
     t->capacity  = new_cap;
 }
 
-static int bvh_alloc_node(bvh_t *t)
+static int bvh_alloc_node(bvh_t* t)
 {
     if (t->free_list == BVH_NULL_ID)
     {
         bvh_grow(t);
     }
 
-    int id          = t->free_list;
-    t->free_list    = t->nodes[id].child[0];
-    bvh_node_t *n   = &t->nodes[id];
-    n->parent       = BVH_NULL_ID;
-    n->child[0]     = BVH_NULL_ID;
-    n->child[1]     = BVH_NULL_ID;
-    n->height       = 0;
-    n->user_data    = NULL;
-    n->allocated    = true;
+    int id        = t->free_list;
+    t->free_list  = t->nodes[id].child[0];
+    bvh_node_t *n = &t->nodes[id];
+    n->parent     = BVH_NULL_ID;
+    n->child[0]   = BVH_NULL_ID;
+    n->child[1]   = BVH_NULL_ID;
+    n->height     = 0;
+    n->user_data  = NULL;
+    n->allocated  = true;
     return id;
 }
 
-static void bvh_free_node(bvh_t *t, int id)
+static void bvh_free_node(bvh_t* t, int id)
 {
     PICO_BVH_ASSERT(id >= 0 && id < t->capacity);
     t->nodes[id].allocated = false;
@@ -259,11 +309,11 @@ static void bvh_free_node(bvh_t *t, int id)
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 
-static void bvh_refit(bvh_t *t, int id)
+static void bvh_refit(bvh_t* t, int id)
 {
     bvh_node_t *n   = &t->nodes[id];
     n->aabb     = bvh_aabb_union(t->nodes[n->child[0]].aabb,
-                             t->nodes[n->child[1]].aabb);
+                  t->nodes[n->child[1]].aabb);
     int h0      = t->nodes[n->child[0]].height;
     int h1      = t->nodes[n->child[1]].height;
     n->height   = 1 + (h0 > h1 ? h0 : h1);
@@ -282,9 +332,10 @@ static void bvh_refit(bvh_t *t, int id)
  * We can swap (b0 <-> C), (b1 <-> C), (c0 <-> B), or (c1 <-> B).
  * Pick the swap that most reduces A's surface area.
  */
-static void bvh_rotate(bvh_t *t, int a_id)
+static void bvh_rotate(bvh_t* t, int a_id)
 {
     bvh_node_t *A = &t->nodes[a_id];
+
     if (A->height < 2)
     {
         return;
@@ -320,6 +371,7 @@ static void bvh_rotate(bvh_t *t, int a_id)
     /* find best candidate */
     int best = -1;
     float best_cost = base_cost;
+
     for (int i = 0; i < 4; ++i)
     {
         if (costs[i] < best_cost)
@@ -337,10 +389,10 @@ static void bvh_rotate(bvh_t *t, int a_id)
     case 0:
     { /* swap B->child[0] <-> C */
         int x = B->child[0];
-        B->child[0]             = c_id;
-        t->nodes[c_id].parent   = b_id;
-        A->child[1]             = x;
-        t->nodes[x].parent      = a_id;
+        B->child[0]           = c_id;
+        t->nodes[c_id].parent = b_id;
+        A->child[1]           = x;
+        t->nodes[x].parent    = a_id;
         bvh_refit(t, b_id);
         bvh_refit(t, a_id);
         break;
@@ -348,10 +400,10 @@ static void bvh_rotate(bvh_t *t, int a_id)
     case 1:
     { /* swap B->child[1] <-> C */
         int x = B->child[1];
-        B->child[1]             = c_id;
-        t->nodes[c_id].parent   = b_id;
-        A->child[1]             = x;
-        t->nodes[x].parent      = a_id;
+        B->child[1]           = c_id;
+        t->nodes[c_id].parent = b_id;
+        A->child[1]           = x;
+        t->nodes[x].parent    = a_id;
         bvh_refit(t, b_id);
         bvh_refit(t, a_id);
         break;
@@ -359,10 +411,10 @@ static void bvh_rotate(bvh_t *t, int a_id)
     case 2:
     { /* swap C->child[0] <-> B */
         int x = C->child[0];
-        C->child[0]             = b_id;
-        t->nodes[b_id].parent   = c_id;
-        A->child[0]             = x;
-        t->nodes[x].parent      = a_id;
+        C->child[0]           = b_id;
+        t->nodes[b_id].parent = c_id;
+        A->child[0]           = x;
+        t->nodes[x].parent    = a_id;
         bvh_refit(t, c_id);
         bvh_refit(t, a_id);
         break;
@@ -370,10 +422,10 @@ static void bvh_rotate(bvh_t *t, int a_id)
     case 3:
     { /* swap C->child[1] <-> B */
         int x = C->child[1];
-        C->child[1]             = b_id;
-        t->nodes[b_id].parent   = c_id;
-        A->child[0]             = x;
-        t->nodes[x].parent      = a_id;
+        C->child[1]           = b_id;
+        t->nodes[b_id].parent = c_id;
+        A->child[0]           = x;
+        t->nodes[x].parent    = a_id;
         bvh_refit(t, c_id);
         bvh_refit(t, a_id);
         break;
@@ -382,7 +434,7 @@ static void bvh_rotate(bvh_t *t, int a_id)
 }
 
 /* Walk from `start` toward the root: bvh_refit + bvh_rotate each ancestor. */
-static void bvh_refit_and_rotate(bvh_t *t, int start)
+static void bvh_refit_and_rotate(bvh_t* t, int start)
 {
     int id = start;
     while (id != BVH_NULL_ID)
@@ -391,6 +443,7 @@ static void bvh_refit_and_rotate(bvh_t *t, int start)
         {
             bvh_refit(t, id);
         }
+
         bvh_rotate(t, id);
         id = t->nodes[id].parent;
     }
@@ -416,7 +469,8 @@ typedef struct
 typedef struct
 {
     bvh_heap_entry_t *data;
-    int               size, cap;
+    int               size;
+    int               cap;
 } bvh_min_heap_t;
 
 static void bvh_heap_push(bvh_min_heap_t *h, bvh_heap_entry_t e)
@@ -424,19 +478,24 @@ static void bvh_heap_push(bvh_min_heap_t *h, bvh_heap_entry_t e)
     if (h->size == h->cap)
     {
         h->cap  = h->cap ? h->cap * 2 : 16;
-        h->data = realloc(h->data, (size_t)h->cap * sizeof(bvh_heap_entry_t));
+        h->data = PICO_BVH_REALLOC(h->data, (size_t)h->cap * sizeof(bvh_heap_entry_t));
+
         PICO_BVH_ASSERT(h->data);
     }
+
     /* sift-up */
     int i = h->size++;
     h->data[i] = e;
+
     while (i > 0)
     {
         int p = (i - 1) / 2;
+
         if (h->data[p].lower_bound <= h->data[i].lower_bound)
         {
             break;
         }
+
         bvh_heap_entry_t tmp = h->data[p]; h->data[p] = h->data[i]; h->data[i] = tmp;
         i = p;
     }
@@ -446,6 +505,7 @@ static bvh_heap_entry_t bvh_heap_pop(bvh_min_heap_t *h)
 {
     bvh_heap_entry_t top = h->data[0];
     h->data[0] = h->data[--h->size];
+
     /* sift-down */
     int i = 0;
     for (;;)
@@ -455,22 +515,26 @@ static bvh_heap_entry_t bvh_heap_pop(bvh_min_heap_t *h)
         {
             smallest = l;
         }
+
         if (r < h->size && h->data[r].lower_bound < h->data[smallest].lower_bound)
         {
             smallest = r;
         }
+
         if (smallest == i)
         {
             break;
         }
+
         bvh_heap_entry_t tmp = h->data[i]; h->data[i] = h->data[smallest];
         h->data[smallest] = tmp;
         i = smallest;
     }
+
     return top;
 }
 
-static int bvh_best_sibling(bvh_t *t, bvh_aabb_t L_aabb)
+static int bvh_best_sibling(bvh_t* t, bvh_aabb_t L_aabb)
 {
     float L_cost = bvh_aabb_perimeter(L_aabb);
 
@@ -483,6 +547,7 @@ static int bvh_best_sibling(bvh_t *t, bvh_aabb_t L_aabb)
     while (heap.size > 0)
     {
         bvh_heap_entry_t e = bvh_heap_pop(&heap);
+
         if (e.lower_bound >= best_cost)
         {
             break;  /* prune */
@@ -504,8 +569,10 @@ static int bvh_best_sibling(bvh_t *t, bvh_aabb_t L_aabb)
             /* inherited cost that any descendant must pay */
             float inherited = e.lower_bound + direct_cost
                               - bvh_aabb_perimeter(node->aabb);
+
             /* lower-bound for children: assume they equal L (best case) */
             float lb = inherited + L_cost;
+
             if (lb < best_cost)
             {
                 bvh_heap_push(&heap, (bvh_heap_entry_t){ node->child[0], inherited });
@@ -522,12 +589,15 @@ static int bvh_best_sibling(bvh_t *t, bvh_aabb_t L_aabb)
 
 bvh_t *bvh_create(void)
 {
-    bvh_t *t   = PICO_BVH_CALLOC(1, sizeof(bvh_t));
+    bvh_t* t = PICO_BVH_CALLOC(1, sizeof(bvh_t));
     PICO_BVH_ASSERT(t);
+
     t->capacity = BVH_INITIAL_CAPACITY;
     t->nodes    = PICO_BVH_CALLOC((size_t)t->capacity, sizeof(bvh_node_t));
+
     PICO_BVH_ASSERT(t->nodes);
-    t->root      = BVH_NULL_ID;
+
+    t->root       = BVH_NULL_ID;
     t->leaf_count = 0;
 
     /* build free list */
@@ -535,29 +605,32 @@ bvh_t *bvh_create(void)
     {
         t->nodes[i].child[0] = i + 1;
     }
+
     t->nodes[t->capacity - 1].child[0] = BVH_NULL_ID;
     t->free_list = 0;
+
     return t;
 }
 
-void bvh_destroy(bvh_t *t)
+void bvh_destroy(bvh_t* t)
 {
     if (!t)
     {
         return;
     }
+
     PICO_BVH_FREE(t->nodes);
     PICO_BVH_FREE(t);
 }
 
 /* ── public: insert ──────────────────────────────────────────────────────── */
 
-int bvh_insert(bvh_t *t, bvh_aabb_t aabb, float margin, void *user_data)
+int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float margin, void *user_data)
 {
-    int leaf_id     = bvh_alloc_node(t);
+    int leaf_id      = bvh_alloc_node(t);
     bvh_node_t *leaf = &t->nodes[leaf_id];
-    leaf->aabb      = margin > 0.f ? bvh_aabb_fatten(aabb, margin) : aabb;
-    leaf->user_data = user_data;
+    leaf->aabb       = margin > 0.f ? bvh_aabb_pad(aabb, margin) : aabb;
+    leaf->user_data  = user_data;
     leaf->height    = 0;
     t->leaf_count++;
 
@@ -573,7 +646,7 @@ int bvh_insert(bvh_t *t, bvh_aabb_t aabb, float margin, void *user_data)
     int sib_id = bvh_best_sibling(t, leaf->aabb);
 
     /* create a new internal node to replace sibling */
-    int new_id          = bvh_alloc_node(t);
+    int new_id           = bvh_alloc_node(t);
     bvh_node_t *new_node = &t->nodes[new_id];
     int old_parent = t->nodes[sib_id].parent;
 
@@ -592,6 +665,7 @@ int bvh_insert(bvh_t *t, bvh_aabb_t aabb, float margin, void *user_data)
     else
     {
         bvh_node_t *op = &t->nodes[old_parent];
+
         if (op->child[0] == sib_id)
         {
             op->child[0] = new_id;
@@ -608,7 +682,7 @@ int bvh_insert(bvh_t *t, bvh_aabb_t aabb, float margin, void *user_data)
 
 /* ── public: remove ──────────────────────────────────────────────────────── */
 
-void bvh_remove(bvh_t *t, int leaf_id)
+void bvh_remove(bvh_t* t, int leaf_id)
 {
     PICO_BVH_ASSERT(leaf_id >= 0 && leaf_id < t->capacity);
     PICO_BVH_ASSERT(BVH_IS_LEAF(&t->nodes[leaf_id]));
@@ -641,6 +715,7 @@ void bvh_remove(bvh_t *t, int leaf_id)
     else
     {
         bvh_node_t *gp = &t->nodes[grandparent];
+
         if (gp->child[0] == parent_id)
         {
             gp->child[0] = sibling;
@@ -655,17 +730,18 @@ void bvh_remove(bvh_t *t, int leaf_id)
 
 /* ── public: move ────────────────────────────────────────────────────────── */
 
-bool bvh_move(bvh_t *t, int leaf_id, bvh_aabb_t new_aabb, float margin)
+bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float margin)
 {
     PICO_BVH_ASSERT(BVH_IS_LEAF(&t->nodes[leaf_id]));
 
-    bvh_aabb_t fat = margin > 0.f ? bvh_aabb_fatten(new_aabb, margin) : new_aabb;
+    bvh_aabb_t padded = margin > 0.f ? bvh_aabb_pad(new_aabb, margin) : new_aabb;
 
-    /* no restructuring needed if the fat AABB still contains the new one */
+    /* no restructuring needed if the padded AABB still contains the new one */
     if (bvh_aabb_contains(t->nodes[leaf_id].aabb, new_aabb))
     {
-        /* optionally shrink if the fat box is much bigger than needed */
-        bvh_aabb_t big = bvh_aabb_fatten(new_aabb, margin * 4.f);
+        /* optionally shrink if the padded box is much bigger than needed */
+        bvh_aabb_t big = bvh_aabb_pad(new_aabb, margin * 4.f);
+
         if (bvh_aabb_contains(big, t->nodes[leaf_id].aabb))
         {
             return false;
@@ -681,16 +757,18 @@ bool bvh_move(bvh_t *t, int leaf_id, bvh_aabb_t new_aabb, float margin)
     if (t->free_list != leaf_id)
     {
         int prev = t->free_list;
+
         while (t->nodes[prev].child[0] != leaf_id)
         {
             prev = t->nodes[prev].child[0];
         }
+
         t->nodes[prev].child[0] = t->nodes[leaf_id].child[0];
         t->nodes[leaf_id].child[0] = t->free_list;
         t->free_list = leaf_id;
     }
 
-    int new_id = bvh_insert(t, fat, 0.f, ud);
+    int new_id = bvh_insert(t, padded, 0.f, ud);
     (void)new_id;
     PICO_BVH_ASSERT(new_id == leaf_id);
     return true;
@@ -699,7 +777,7 @@ bool bvh_move(bvh_t *t, int leaf_id, bvh_aabb_t new_aabb, float margin)
 /* ── public: query (AABB) ────────────────────────────────────────────────── */
 
 /* Iterative DFS using an explicit stack to avoid recursion overhead. */
-void bvh_query_aabb(const bvh_t *t, bvh_aabb_t query, bvh_query_cb cb, void *ctx)
+void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void *ctx)
 {
     if (t->root == BVH_NULL_ID)
     {
@@ -721,6 +799,7 @@ void bvh_query_aabb(const bvh_t *t, bvh_aabb_t query, bvh_query_cb cb, void *ctx
         }
 
         const bvh_node_t *n = &t->nodes[id];
+
         if (!bvh_aabb_overlaps(n->aabb, query))
         {
             continue;
@@ -765,7 +844,9 @@ static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb,
     return tmax >= 0.f && tmin <= tmax && tmin <= max_t;
 }
 
-void bvh_query_ray(const bvh_t *t,
+#define PICO_BVH_HUGE 1e-9f
+
+void bvh_query_ray(const bvh_t* t,
                    bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
                    bvh_query_cb cb, void *ctx)
 {
@@ -777,11 +858,11 @@ void bvh_query_ray(const bvh_t *t,
     /* precompute reciprocal direction (handle zero-components) */
     bvh_vec2_t inv_dir =
     {
-        fabsf(dir.x) > 1e-9f ? 1.f / dir.x : (dir.x >= 0.f ? FLT_MAX : -FLT_MAX),
-        fabsf(dir.y) > 1e-9f ? 1.f / dir.y : (dir.y >= 0.f ? FLT_MAX : -FLT_MAX)
+        fabsf(dir.x) > PICO_BVH_HUGE ? 1.f / dir.x : (dir.x >= 0.f ? FLT_MAX : -FLT_MAX),
+        fabsf(dir.y) > PICO_BVH_HUGE ? 1.f / dir.y : (dir.y >= 0.f ? FLT_MAX : -FLT_MAX)
     };
 
-    int stack[1024];
+    int stack[1024]; // TODO: define constant
     int top = 0;
     stack[top++] = t->root;
 
@@ -817,29 +898,31 @@ void bvh_query_ray(const bvh_t *t,
 
 /* ── public: accessors ───────────────────────────────────────────────────── */
 
-void *bvh_user_data(const bvh_t *t, int leaf_id)
+void *bvh_user_data(const bvh_t* t, int leaf_id)
 {
     PICO_BVH_ASSERT(BVH_IS_LEAF(&t->nodes[leaf_id]));
     return t->nodes[leaf_id].user_data;
 }
 
-bvh_aabb_t bvh_fat_aabb(const bvh_t *t, int leaf_id)
+bvh_aabb_t bvh_padded_aabb(const bvh_t* t, int leaf_id)
 {
     return t->nodes[leaf_id].aabb;
 }
 
-int bvh_leaf_count(const bvh_t *t) { return t->leaf_count; }
+int bvh_leaf_count(const bvh_t* t) { return t->leaf_count; }
 
 /* ── public: walk ────────────────────────────────────────────────────────── */
 
-static void bvh_walk_rec(const bvh_t *t, int id, int depth, bvh_walk_cb cb, void *ctx)
+static void bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void *ctx)
 {
     if (id == BVH_NULL_ID)
     {
         return;
     }
+
     const bvh_node_t *n = &t->nodes[id];
     cb(n->aabb, depth, BVH_IS_LEAF(n), n->user_data, ctx);
+
     if (!BVH_IS_LEAF(n))
     {
         bvh_walk_rec(t, n->child[0], depth + 1, cb, ctx);
@@ -847,21 +930,23 @@ static void bvh_walk_rec(const bvh_t *t, int id, int depth, bvh_walk_cb cb, void
     }
 }
 
-void bvh_walk(const bvh_t *t, bvh_walk_cb cb, void *ctx)
+void bvh_walk(const bvh_t* t, bvh_walk_cb cb, void *ctx)
 {
     bvh_walk_rec(t, t->root, 0, cb, ctx);
 }
 
 /* ── public: cost ────────────────────────────────────────────────────────── */
 
-static float bvh_cost_rec(const bvh_t *t, int id)
+static float bvh_cost_rec(const bvh_t* t, int id)
 {
     if (id == BVH_NULL_ID)
     {
         return 0.f;
     }
+
     const bvh_node_t *n = &t->nodes[id];
     float c = bvh_aabb_perimeter(n->aabb);
+
     if (!BVH_IS_LEAF(n))
     {
         c += bvh_cost_rec(t, n->child[0]) + bvh_cost_rec(t, n->child[1]);
@@ -869,6 +954,6 @@ static float bvh_cost_rec(const bvh_t *t, int id)
     return c;
 }
 
-float bvh_cost(const bvh_t *t) { return bvh_cost_rec(t, t->root); }
+float bvh_cost(const bvh_t* t) { return bvh_cost_rec(t, t->root); }
 
 #endif // PICO_BVH_IMPLEMENTATION

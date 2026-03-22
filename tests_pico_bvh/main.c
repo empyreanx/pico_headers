@@ -114,9 +114,9 @@ TEST_CASE(test_insert_and_accessors)
     REQUIRE(bvh_leaf_count(tree) == 2);
     REQUIRE(bvh_user_data(tree, id_a) == &payload_a);
     REQUIRE(bvh_user_data(tree, id_b) == &payload_b);
-    REQUIRE(test_aabb_equal(bvh_fat_aabb(tree, id_a),
+    REQUIRE(test_aabb_equal(bvh_padded_aabb(tree, id_a),
                             test_make_aabb(-0.5f, -0.5f, 1.5f, 1.5f)));
-    REQUIRE(test_aabb_equal(bvh_fat_aabb(tree, id_b), aabb_b));
+    REQUIRE(test_aabb_equal(bvh_padded_aabb(tree, id_b), aabb_b));
 
     bvh_query_aabb(tree, test_make_aabb(-1.f, -1.f, 10.f, 10.f), test_collect_hits, &hits);
     REQUIRE(hits.count == 2);
@@ -194,13 +194,13 @@ TEST_CASE(test_move_reuses_id_and_updates_bounds)
 
     moved = bvh_move(tree, leaf_id, test_make_aabb(0.25f, 0.25f, 1.25f, 1.25f), 1.f);
     REQUIRE(!moved);
-    REQUIRE(test_aabb_equal(bvh_fat_aabb(tree, leaf_id),
+    REQUIRE(test_aabb_equal(bvh_padded_aabb(tree, leaf_id),
                             test_make_aabb(-1.f, -1.f, 2.f, 2.f)));
 
     moved = bvh_move(tree, leaf_id, test_make_aabb(10.f, 10.f, 11.f, 11.f), 1.f);
     REQUIRE(moved);
     REQUIRE(bvh_user_data(tree, leaf_id) == &payload);
-    REQUIRE(test_aabb_equal(bvh_fat_aabb(tree, leaf_id),
+    REQUIRE(test_aabb_equal(bvh_padded_aabb(tree, leaf_id),
                             test_make_aabb(9.f, 9.f, 12.f, 12.f)));
 
     bvh_query_aabb(tree, test_make_aabb(-2.f, -2.f, 2.f, 2.f), test_collect_hits, &old_hits);
@@ -296,7 +296,7 @@ TEST_CASE(test_single_leaf)
 
     REQUIRE(bvh_leaf_count(tree) == 1);
     REQUIRE(bvh_user_data(tree, id) == &payload);
-    REQUIRE(test_aabb_equal(bvh_fat_aabb(tree, id), aabb));
+    REQUIRE(test_aabb_equal(bvh_padded_aabb(tree, id), aabb));
 
     /* walk on single leaf: root is the leaf */
     walk_stats_t ws = {0};
@@ -668,7 +668,7 @@ TEST_CASE(test_fat_aabb_margin)
     float margin = 2.f;
     int id = bvh_insert(tree, tight, margin, NULL);
 
-    bvh_aabb_t fat = bvh_fat_aabb(tree, id);
+    bvh_aabb_t fat = bvh_padded_aabb(tree, id);
     REQUIRE(test_aabb_equal(fat, test_make_aabb(3.f, 3.f, 9.f, 9.f)));
 
     /* the fat AABB should be hittable even outside the tight box */
