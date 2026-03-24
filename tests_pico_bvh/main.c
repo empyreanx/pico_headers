@@ -42,7 +42,7 @@ static bool test_aabb_equal(bvh_aabb_t a, bvh_aabb_t b)
         && test_float_equal(a.max.y, b.max.y);
 }
 
-static bool test_collect_hits(int leaf_id, void *user_data, void *ctx)
+static bool test_collect_hits(int leaf_id, bvh_udata_t user_data, void *ctx)
 {
     test_hits_t *hits = ctx;
     (void)user_data;
@@ -64,7 +64,7 @@ static bool test_hits_contains(const test_hits_t *hits, int leaf_id)
 }
 
 static void test_record_walk(bvh_aabb_t aabb, int depth, bool is_leaf,
-                             void *user_data, void *ctx)
+                             bvh_udata_t user_data, void *ctx)
 {
     walk_stats_t *stats = ctx;
     (void)aabb;
@@ -107,13 +107,13 @@ TEST_CASE(test_insert_and_accessors)
     REQUIRE(tree != NULL);
     REQUIRE(bvh_leaf_count(tree) == 0);
 
-    id_a = bvh_insert(tree, aabb_a, 0.5f, &payload_a);
-    id_b = bvh_insert(tree, aabb_b, 0.f, &payload_b);
+    id_a = bvh_insert(tree, aabb_a, 0.5f, payload_a);
+    id_b = bvh_insert(tree, aabb_b, 0.f, payload_b);
 
     REQUIRE(id_a != id_b);
     REQUIRE(bvh_leaf_count(tree) == 2);
-    REQUIRE(bvh_user_data(tree, id_a) == &payload_a);
-    REQUIRE(bvh_user_data(tree, id_b) == &payload_b);
+    REQUIRE(bvh_user_data(tree, id_a) == (bvh_udata_t)payload_a);
+    REQUIRE(bvh_user_data(tree, id_b) == (bvh_udata_t)payload_b);
     REQUIRE(test_aabb_equal(bvh_padded_aabb(tree, id_a),
                             test_make_aabb(-0.5f, -0.5f, 1.5f, 1.5f)));
     REQUIRE(test_aabb_equal(bvh_padded_aabb(tree, id_b), aabb_b));
@@ -133,9 +133,9 @@ TEST_CASE(test_query_aabb_early_exit)
     test_hits_t hits = {0};
     test_hits_t empty_hits = {0};
 
-    bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, NULL);
-    bvh_insert(tree, test_make_aabb(2.f, 2.f, 3.f, 3.f), 0.f, NULL);
-    bvh_insert(tree, test_make_aabb(10.f, 10.f, 11.f, 11.f), 0.f, NULL);
+    bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, 0);
+    bvh_insert(tree, test_make_aabb(2.f, 2.f, 3.f, 3.f), 0.f, 0);
+    bvh_insert(tree, test_make_aabb(10.f, 10.f, 11.f, 11.f), 0.f, 0);
 
     hits.stop_after = 1;
     bvh_query_aabb(tree, test_make_aabb(-1.f, -1.f, 5.f, 5.f), test_collect_hits, &hits);
@@ -151,9 +151,9 @@ TEST_CASE(test_query_aabb_early_exit)
 TEST_CASE(test_query_ray)
 {
     bvh_t *tree = bvh_create();
-    int id_a = bvh_insert(tree, test_make_aabb(2.f, 0.f, 3.f, 1.f), 0.f, NULL);
-    int id_b = bvh_insert(tree, test_make_aabb(6.f, 0.f, 7.f, 1.f), 0.f, NULL);
-    int id_c = bvh_insert(tree, test_make_aabb(2.f, 3.f, 3.f, 4.f), 0.f, NULL);
+    int id_a = bvh_insert(tree, test_make_aabb(2.f, 0.f, 3.f, 1.f), 0.f, 0);
+    int id_b = bvh_insert(tree, test_make_aabb(6.f, 0.f, 7.f, 1.f), 0.f, 0);
+    int id_c = bvh_insert(tree, test_make_aabb(2.f, 3.f, 3.f, 4.f), 0.f, 0);
     test_hits_t hits = {0};
     test_hits_t short_hits = {0};
 
@@ -186,8 +186,8 @@ TEST_CASE(test_query_ray)
 TEST_CASE(test_move_reuses_id_and_updates_bounds)
 {
     bvh_t *tree = bvh_create();
-    int payload = 7;
-    int leaf_id = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 1.f, &payload);
+    bvh_udata_t payload = 7;
+    int leaf_id = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 1.f, payload);
     test_hits_t old_hits = {0};
     test_hits_t new_hits = {0};
     bool moved;
@@ -199,7 +199,7 @@ TEST_CASE(test_move_reuses_id_and_updates_bounds)
 
     moved = bvh_move(tree, leaf_id, test_make_aabb(10.f, 10.f, 11.f, 11.f), 1.f);
     REQUIRE(moved);
-    REQUIRE(bvh_user_data(tree, leaf_id) == &payload);
+    REQUIRE(bvh_user_data(tree, leaf_id) == payload);
     REQUIRE(test_aabb_equal(bvh_padded_aabb(tree, leaf_id),
                             test_make_aabb(9.f, 9.f, 12.f, 12.f)));
 
@@ -217,9 +217,9 @@ TEST_CASE(test_move_reuses_id_and_updates_bounds)
 TEST_CASE(test_remove_walk_and_cost)
 {
     bvh_t *tree = bvh_create();
-    int id_a = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, NULL);
-    int id_b = bvh_insert(tree, test_make_aabb(4.f, 0.f, 5.f, 1.f), 0.f, NULL);
-    int id_c = bvh_insert(tree, test_make_aabb(8.f, 0.f, 9.f, 1.f), 0.f, NULL);
+    int id_a = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, 0);
+    int id_b = bvh_insert(tree, test_make_aabb(4.f, 0.f, 5.f, 1.f), 0.f, 0);
+    int id_c = bvh_insert(tree, test_make_aabb(8.f, 0.f, 9.f, 1.f), 0.f, 0);
     walk_stats_t stats = {0};
     test_hits_t hits = {0};
     float cost;
@@ -290,12 +290,12 @@ TEST_CASE(test_destroy_null)
 TEST_CASE(test_single_leaf)
 {
     bvh_t *tree = bvh_create();
-    int payload = 42;
+    bvh_udata_t payload = 42;
     bvh_aabb_t aabb = test_make_aabb(1.f, 2.f, 3.f, 4.f);
-    int id = bvh_insert(tree, aabb, 0.f, &payload);
+    int id = bvh_insert(tree, aabb, 0.f, payload);
 
     REQUIRE(bvh_leaf_count(tree) == 1);
-    REQUIRE(bvh_user_data(tree, id) == &payload);
+    REQUIRE(bvh_user_data(tree, id) == payload);
     REQUIRE(test_aabb_equal(bvh_padded_aabb(tree, id), aabb));
 
     /* walk on single leaf: root is the leaf */
@@ -343,7 +343,7 @@ TEST_CASE(test_remove_all_leaves)
     {
         ids[i] = bvh_insert(tree, test_make_aabb((float)i * 3.f, 0.f,
                                                   (float)i * 3.f + 1.f, 1.f),
-                             0.f, NULL);
+                             0.f, 0);
     }
     REQUIRE(bvh_leaf_count(tree) == 4);
 
@@ -354,7 +354,7 @@ TEST_CASE(test_remove_all_leaves)
     REQUIRE(bvh_leaf_count(tree) == 0);
 
     /* the tree is reusable after removing everything */
-    int new_id = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, NULL);
+    int new_id = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, 0);
     REQUIRE(bvh_leaf_count(tree) == 1);
 
     test_hits_t hits = {0};
@@ -370,9 +370,9 @@ TEST_CASE(test_remove_all_leaves)
 TEST_CASE(test_overlapping_aabbs)
 {
     bvh_t *tree = bvh_create();
-    int id_a = bvh_insert(tree, test_make_aabb(0.f, 0.f, 5.f, 5.f), 0.f, NULL);
-    int id_b = bvh_insert(tree, test_make_aabb(3.f, 3.f, 8.f, 8.f), 0.f, NULL);
-    int id_c = bvh_insert(tree, test_make_aabb(4.f, 4.f, 6.f, 6.f), 0.f, NULL);
+    int id_a = bvh_insert(tree, test_make_aabb(0.f, 0.f, 5.f, 5.f), 0.f, 0);
+    int id_b = bvh_insert(tree, test_make_aabb(3.f, 3.f, 8.f, 8.f), 0.f, 0);
+    int id_c = bvh_insert(tree, test_make_aabb(4.f, 4.f, 6.f, 6.f), 0.f, 0);
 
     /* a query in the overlap region should find all three */
     test_hits_t hits = {0};
@@ -397,9 +397,9 @@ TEST_CASE(test_overlapping_aabbs)
 TEST_CASE(test_ray_diagonal)
 {
     bvh_t *tree = bvh_create();
-    int id_a = bvh_insert(tree, test_make_aabb(2.f, 2.f, 3.f, 3.f), 0.f, NULL);
-    int id_b = bvh_insert(tree, test_make_aabb(5.f, 5.f, 6.f, 6.f), 0.f, NULL);
-    int id_c = bvh_insert(tree, test_make_aabb(0.f, 5.f, 1.f, 6.f), 0.f, NULL);
+    int id_a = bvh_insert(tree, test_make_aabb(2.f, 2.f, 3.f, 3.f), 0.f, 0);
+    int id_b = bvh_insert(tree, test_make_aabb(5.f, 5.f, 6.f, 6.f), 0.f, 0);
+    int id_c = bvh_insert(tree, test_make_aabb(0.f, 5.f, 1.f, 6.f), 0.f, 0);
 
     /* diagonal ray from origin going (1,1) should hit a and b but not c */
     test_hits_t hits = {0};
@@ -416,7 +416,7 @@ TEST_CASE(test_ray_diagonal)
 TEST_CASE(test_ray_miss)
 {
     bvh_t *tree = bvh_create();
-    bvh_insert(tree, test_make_aabb(5.f, 5.f, 6.f, 6.f), 0.f, NULL);
+    bvh_insert(tree, test_make_aabb(5.f, 5.f, 6.f, 6.f), 0.f, 0);
 
     /* ray going in the wrong direction */
     test_hits_t h1 = {0};
@@ -443,9 +443,9 @@ TEST_CASE(test_ray_miss)
 TEST_CASE(test_ray_early_exit)
 {
     bvh_t *tree = bvh_create();
-    bvh_insert(tree, test_make_aabb(2.f, -0.5f, 3.f,  0.5f), 0.f, NULL);
-    bvh_insert(tree, test_make_aabb(5.f, -0.5f, 6.f,  0.5f), 0.f, NULL);
-    bvh_insert(tree, test_make_aabb(8.f, -0.5f, 9.f,  0.5f), 0.f, NULL);
+    bvh_insert(tree, test_make_aabb(2.f, -0.5f, 3.f,  0.5f), 0.f, 0);
+    bvh_insert(tree, test_make_aabb(5.f, -0.5f, 6.f,  0.5f), 0.f, 0);
+    bvh_insert(tree, test_make_aabb(8.f, -0.5f, 9.f,  0.5f), 0.f, 0);
 
     test_hits_t hits = {0};
     hits.stop_after = 1;
@@ -460,7 +460,7 @@ TEST_CASE(test_ray_early_exit)
 TEST_CASE(test_ray_vertical)
 {
     bvh_t *tree = bvh_create();
-    int id = bvh_insert(tree, test_make_aabb(-1.f, 3.f, 1.f, 5.f), 0.f, NULL);
+    int id = bvh_insert(tree, test_make_aabb(-1.f, 3.f, 1.f, 5.f), 0.f, 0);
 
     /* vertical ray (dir.x == 0) exercises the near-zero reciprocal path */
     test_hits_t hits = {0};
@@ -476,21 +476,21 @@ TEST_CASE(test_ray_vertical)
 TEST_CASE(test_move_among_multiple)
 {
     bvh_t *tree = bvh_create();
-    int payload_a = 1, payload_b = 2, payload_c = 3;
-    int id_a = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, &payload_a);
-    int id_b = bvh_insert(tree, test_make_aabb(5.f, 0.f, 6.f, 1.f), 0.f, &payload_b);
-    int id_c = bvh_insert(tree, test_make_aabb(10.f, 0.f, 11.f, 1.f), 0.f, &payload_c);
+    bvh_udata_t payload_a = 1, payload_b = 2, payload_c = 3;
+    int id_a = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, payload_a);
+    int id_b = bvh_insert(tree, test_make_aabb(5.f, 0.f, 6.f, 1.f), 0.f, payload_b);
+    int id_c = bvh_insert(tree, test_make_aabb(10.f, 0.f, 11.f, 1.f), 0.f, payload_c);
 
     /* move b far away */
     bvh_move(tree, id_b, test_make_aabb(50.f, 50.f, 51.f, 51.f), 0.f);
     REQUIRE(bvh_leaf_count(tree) == 3);
 
     /* a and c unchanged */
-    REQUIRE(bvh_user_data(tree, id_a) == &payload_a);
-    REQUIRE(bvh_user_data(tree, id_c) == &payload_c);
+    REQUIRE(bvh_user_data(tree, id_a) == payload_a);
+    REQUIRE(bvh_user_data(tree, id_c) == payload_c);
 
     /* b's user_data preserved */
-    REQUIRE(bvh_user_data(tree, id_b) == &payload_b);
+    REQUIRE(bvh_user_data(tree, id_b) == payload_b);
 
     /* query the old region: only a and c */
     test_hits_t h1 = {0};
@@ -515,16 +515,16 @@ TEST_CASE(test_move_among_multiple)
 TEST_CASE(test_insert_remove_reinsert)
 {
     bvh_t *tree = bvh_create();
-    int id1 = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, NULL);
-    int id2 = bvh_insert(tree, test_make_aabb(2.f, 0.f, 3.f, 1.f), 0.f, NULL);
+    int id1 = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, 0);
+    int id2 = bvh_insert(tree, test_make_aabb(2.f, 0.f, 3.f, 1.f), 0.f, 0);
 
     bvh_remove(tree, id1);
     bvh_remove(tree, id2);
     REQUIRE(bvh_leaf_count(tree) == 0);
 
     /* reinsert – IDs should come from the free list */
-    int id3 = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, NULL);
-    int id4 = bvh_insert(tree, test_make_aabb(2.f, 0.f, 3.f, 1.f), 0.f, NULL);
+    int id3 = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, 0);
+    int id4 = bvh_insert(tree, test_make_aabb(2.f, 0.f, 3.f, 1.f), 0.f, 0);
     REQUIRE(bvh_leaf_count(tree) == 2);
 
     test_hits_t hits = {0};
@@ -551,7 +551,7 @@ TEST_CASE(test_pool_growth)
         float y = (float)(i / 10) * 3.f;
 
         ids[i] = bvh_insert(tree, test_make_aabb(x, y, x + 1.f, y + 1.f),
-                            0.f, NULL);
+                            0.f, 0);
     }
     REQUIRE(bvh_leaf_count(tree) == 100);
 
@@ -567,10 +567,10 @@ TEST_CASE(test_pool_growth)
     }
 
     /* verify user_data round-trip for a sample */
-    int tag = 999;
+    bvh_udata_t tag = 999;
     int tagged_id = bvh_insert(tree, test_make_aabb(50.f, 50.f, 51.f, 51.f),
-                               0.f, &tag);
-    REQUIRE(bvh_user_data(tree, tagged_id) == &tag);
+                               0.f, tag);
+    REQUIRE(bvh_user_data(tree, tagged_id) == tag);
 
     bvh_destroy(tree);
     return true;
@@ -585,7 +585,7 @@ TEST_CASE(test_cost_decreases_or_stable_after_removal)
     {
         bvh_insert(tree, test_make_aabb((float)i * 2.f, 0.f,
                                         (float)i * 2.f + 1.f, 1.f),
-                   0.f, NULL);
+                   0.f, 0);
     }
 
     float cost_before = bvh_cost(tree);
@@ -614,10 +614,10 @@ TEST_CASE(test_cost_decreases_or_stable_after_removal)
 TEST_CASE(test_walk_user_data)
 {
     bvh_t *tree = bvh_create();
-    int vals[3] = {10, 20, 30};
-    bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, &vals[0]);
-    bvh_insert(tree, test_make_aabb(3.f, 0.f, 4.f, 1.f), 0.f, &vals[1]);
-    bvh_insert(tree, test_make_aabb(6.f, 0.f, 7.f, 1.f), 0.f, &vals[2]);
+    bvh_udata_t vals[3] = {10, 20, 30};
+    bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, vals[0]);
+    bvh_insert(tree, test_make_aabb(3.f, 0.f, 4.f, 1.f), 0.f, vals[1]);
+    bvh_insert(tree, test_make_aabb(6.f, 0.f, 7.f, 1.f), 0.f, vals[2]);
 
     /* query all leaves and verify user_data via bvh_user_data accessor */
     test_hits_t hits = {0};
@@ -627,10 +627,10 @@ TEST_CASE(test_walk_user_data)
     bool found[3] = {false, false, false};
     for (int i = 0; i < hits.count; ++i)
     {
-        int *p = bvh_user_data(tree, hits.ids[i]);
+        bvh_udata_t ud = bvh_user_data(tree, hits.ids[i]);
         for (int j = 0; j < 3; ++j)
         {
-            if (p == &vals[j])
+            if (ud == vals[j])
             {
                 found[j] = true;
             }
@@ -646,8 +646,8 @@ TEST_CASE(test_query_touching_edges)
 {
     /* AABBs that share an edge should overlap per the <= comparisons */
     bvh_t *tree = bvh_create();
-    int id_a = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, NULL);
-    int id_b = bvh_insert(tree, test_make_aabb(1.f, 0.f, 2.f, 1.f), 0.f, NULL);
+    int id_a = bvh_insert(tree, test_make_aabb(0.f, 0.f, 1.f, 1.f), 0.f, 0);
+    int id_b = bvh_insert(tree, test_make_aabb(1.f, 0.f, 2.f, 1.f), 0.f, 0);
 
     /* query exactly at the shared edge */
     test_hits_t hits = {0};
@@ -666,7 +666,7 @@ TEST_CASE(test_fat_aabb_margin)
     bvh_t *tree = bvh_create();
     bvh_aabb_t tight = test_make_aabb(5.f, 5.f, 7.f, 7.f);
     float margin = 2.f;
-    int id = bvh_insert(tree, tight, margin, NULL);
+    int id = bvh_insert(tree, tight, margin, 0);
 
     bvh_aabb_t fat = bvh_padded_aabb(tree, id);
     REQUIRE(test_aabb_equal(fat, test_make_aabb(3.f, 3.f, 9.f, 9.f)));
