@@ -209,6 +209,14 @@ float bvh_cost(const bvh_t* tree);
     #define PICO_BVH_MEMCPY memcpy
 #endif
 
+#ifndef PICO_BVH_STACK_SIZE
+    #define PICO_BVH_STACK_SIZE 1024
+#endif
+
+#define BVH_IS_LEAF(n)          ((n)->child[0] == BVH_NULL_ID)
+#define BVH_INITIAL_CAPACITY    64
+#define PICO_BVH_HUGE           1e-9f
+
 /* ── Internal Node ───────────────────────────────────────────────────────── */
 
 typedef struct
@@ -221,11 +229,7 @@ typedef struct
     bool        allocated;
 } bvh_node_t;
 
-#define BVH_IS_LEAF(n)  ((n)->child[0] == BVH_NULL_ID)
-
 /* ── Tree Structure ──────────────────────────────────────────────────────── */
-
-#define BVH_INITIAL_CAPACITY 64
 
 struct bvh_t
 {
@@ -250,8 +254,6 @@ typedef struct
     int               size;
     int               cap;
 } bvh_min_heap_t;
-
-#define PICO_BVH_HUGE 1e-9f
 
 /* ── Forward Declarations ────────────────────────────────────────────────── */
 
@@ -476,7 +478,7 @@ void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void* ctx
 
     /* stack: fixed-size.  2*height+2 suffices for a balanced tree.
      * We allocate generously; could also be dynamic. */
-    int stack[1024];
+    int stack[PICO_BVH_STACK_SIZE];
     int top = 0;
     stack[top++] = t->root;
 
@@ -529,7 +531,7 @@ void bvh_query_ray(const bvh_t* t,
         fabsf(dir.y) > PICO_BVH_HUGE ? 1.f / dir.y : (dir.y >= 0.f ? FLT_MAX : -FLT_MAX)
     };
 
-    int stack[1024]; // TODO: define constant
+    int stack[PICO_BVH_STACK_SIZE]; // TODO: define constant
     int top = 0;
     stack[top++] = t->root;
 
