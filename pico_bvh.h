@@ -24,7 +24,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Leaf node udata type
+/* ── user data type override =────────────────────────────────────────────── */
+
 #ifndef PICO_BVH_UDATA_TYPE
     #define PICO_BVH_UDATA_TYPE uint32_t
 #endif
@@ -52,13 +53,13 @@ typedef struct
 /**
  * @brief Return false to stop traversal early.
  */
-typedef bool (*bvh_query_cb)(int leaf_id, bvh_udata_t user_data, void *ctx);
+typedef bool (*bvh_query_cb)(int leaf_id, bvh_udata_t user_data, void* ctx);
 
 /**
  * @brief Called for every node during bvh_walk(); depth=0 at root.
  */
 typedef void (*bvh_walk_cb)(bvh_aabb_t aabb, int depth, bool is_leaf,
-                            bvh_udata_t user_data, void *ctx);
+                            bvh_udata_t user_data, void* ctx);
 
 /**
  * @brief BVH instance
@@ -70,7 +71,7 @@ typedef struct bvh_t bvh_t;
 /**
  * @brief Allocates and initializes a BVH instances
  */
-bvh_t *bvh_create(void);
+bvh_t* bvh_create(void);
 
 /**
  * @brief Destroys and deallocates a BVH instance
@@ -106,7 +107,7 @@ bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
  * @brief Queries the tree against an AABB
  */
 void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
-                    bvh_query_cb cb, void *ctx);
+                    bvh_query_cb cb, void* ctx);
 /**
  * @brief Queries the tree against a ray
  *
@@ -114,7 +115,7 @@ void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
  */
 void bvh_query_ray(const bvh_t* tree,
                    bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
-                   bvh_query_cb cb, void *ctx);
+                   bvh_query_cb cb, void* ctx);
 
 /* ── accessors ───────────────────────────────────────────────────────────── */
 
@@ -136,7 +137,7 @@ int bvh_leaf_count(const bvh_t* tree);
 /**
  * @brief Depth-first walk over every node (internal + leaf).
  */
-void  bvh_walk(const bvh_t* tree, bvh_walk_cb cb, void *ctx);
+void  bvh_walk(const bvh_t* tree, bvh_walk_cb cb, void* ctx);
 
 /**
  * @brief Total surface-area cost (lower = better balanced).
@@ -228,7 +229,7 @@ typedef struct
 
 struct bvh_t
 {
-    bvh_node_t *nodes;
+    bvh_node_t* nodes;
     int         capacity;
     int         root;
     int         free_list;   /* singly-linked free list via child[0] */
@@ -245,7 +246,7 @@ typedef struct
 
 typedef struct
 {
-    bvh_heap_entry_t *data;
+    bvh_heap_entry_t* data;
     int               size;
     int               cap;
 } bvh_min_heap_t;
@@ -259,22 +260,22 @@ static inline bvh_aabb_t    bvh_aabb_union(bvh_aabb_t a, bvh_aabb_t b);
 static inline float         bvh_aabb_perimeter(bvh_aabb_t a);
 static inline bool          bvh_aabb_overlaps(bvh_aabb_t a, bvh_aabb_t b);
 static inline bool          bvh_aabb_contains(bvh_aabb_t outer, bvh_aabb_t inner);
-static void                 bvh_grow(bvh_t *t);
-static int                  bvh_alloc_node(bvh_t *t);
-static void                 bvh_free_node(bvh_t *t, int id);
-static void                 bvh_refit(bvh_t *t, int id);
-static void                 bvh_rotate(bvh_t *t, int a_id);
-static void                 bvh_refit_and_rotate(bvh_t *t, int start);
-static void                 bvh_heap_push(bvh_min_heap_t *h, bvh_heap_entry_t e);
-static bvh_heap_entry_t     bvh_heap_pop(bvh_min_heap_t *h);
-static int                  bvh_best_sibling(bvh_t *t, bvh_aabb_t L_aabb);
+static void                 bvh_grow(bvh_t* t);
+static int                  bvh_alloc_node(bvh_t* t);
+static void                 bvh_free_node(bvh_t* t, int id);
+static void                 bvh_refit(bvh_t* t, int id);
+static void                 bvh_rotate(bvh_t* t, int a_id);
+static void                 bvh_refit_and_rotate(bvh_t* t, int start);
+static void                 bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t e);
+static bvh_heap_entry_t     bvh_heap_pop(bvh_min_heap_t* h);
+static int                  bvh_best_sibling(bvh_t* t, bvh_aabb_t L_aabb);
 static bool                 bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float max_t);
-static void                 bvh_walk_rec(const bvh_t *t, int id, int depth, bvh_walk_cb cb, void *ctx);
-static float                bvh_cost_rec(const bvh_t *t, int id);
+static void                 bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void* ctx);
+static float                bvh_cost_rec(const bvh_t* t, int id);
 
 /* ── public: lifecycle ───────────────────────────────────────────────────── */
 
-bvh_t *bvh_create(void)
+bvh_t* bvh_create(void)
 {
     bvh_t* t = PICO_BVH_CALLOC(1, sizeof(bvh_t));
     PICO_BVH_ASSERT(t);
@@ -334,7 +335,7 @@ int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float padding, bvh_udata_t user_data)
 
     /* create a new internal node to replace sibling */
     int new_id           = bvh_alloc_node(t);
-    bvh_node_t *new_node = &t->nodes[new_id];
+    bvh_node_t* new_node = &t->nodes[new_id];
     int old_parent = t->nodes[sib_id].parent;
 
     new_node->parent   = old_parent;
@@ -351,7 +352,7 @@ int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float padding, bvh_udata_t user_data)
     }
     else
     {
-        bvh_node_t *op = &t->nodes[old_parent];
+        bvh_node_t* op = &t->nodes[old_parent];
 
         if (op->child[0] == sib_id)
         {
@@ -387,7 +388,7 @@ void bvh_remove(bvh_t* t, int leaf_id)
     }
 
     /* find the sibling, pull it up to replace the parent */
-    bvh_node_t *parent = &t->nodes[parent_id];
+    bvh_node_t* parent = &t->nodes[parent_id];
     int sibling  = parent->child[0] == leaf_id
                  ? parent->child[1] : parent->child[0];
 
@@ -402,7 +403,7 @@ void bvh_remove(bvh_t* t, int leaf_id)
     }
     else
     {
-        bvh_node_t *gp = &t->nodes[grandparent];
+        bvh_node_t* gp = &t->nodes[grandparent];
 
         if (gp->child[0] == parent_id)
         {
@@ -466,7 +467,7 @@ bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float padding)
 /* ── public: query (AABB) ────────────────────────────────────────────────── */
 
 /* Iterative DFS using an explicit stack to avoid recursion overhead. */
-void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void *ctx)
+void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void* ctx)
 {
     if (t->root == BVH_NULL_ID)
     {
@@ -487,7 +488,7 @@ void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void *ctx
             continue;
         }
 
-        const bvh_node_t *n = &t->nodes[id];
+        const bvh_node_t* n = &t->nodes[id];
 
         if (!bvh_aabb_overlaps(n->aabb, query))
         {
@@ -514,7 +515,7 @@ void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void *ctx
 
 void bvh_query_ray(const bvh_t* t,
                    bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
-                   bvh_query_cb cb, void *ctx)
+                   bvh_query_cb cb, void* ctx)
 {
     if (t->root == BVH_NULL_ID)
     {
@@ -540,7 +541,7 @@ void bvh_query_ray(const bvh_t* t,
             continue;
         }
 
-        const bvh_node_t *n = &t->nodes[id];
+        const bvh_node_t* n = &t->nodes[id];
         if (!bvh_ray_aabb(origin, inv_dir, n->aabb, max_t))
         {
             continue;
@@ -579,7 +580,7 @@ int bvh_leaf_count(const bvh_t* t) { return t->leaf_count; }
 
 /* ── public: walk ────────────────────────────────────────────────────────── */
 
-void bvh_walk(const bvh_t* t, bvh_walk_cb cb, void *ctx)
+void bvh_walk(const bvh_t* t, bvh_walk_cb cb, void* ctx)
 {
     bvh_walk_rec(t, t->root, 0, cb, ctx);
 }
@@ -657,7 +658,7 @@ static int bvh_alloc_node(bvh_t* t)
 
     int id        = t->free_list;
     t->free_list  = t->nodes[id].child[0];
-    bvh_node_t *n = &t->nodes[id];
+    bvh_node_t* n = &t->nodes[id];
     n->parent     = BVH_NULL_ID;
     n->child[0]   = BVH_NULL_ID;
     n->child[1]   = BVH_NULL_ID;
@@ -679,7 +680,7 @@ static void bvh_free_node(bvh_t* t, int id)
 
 static void bvh_refit(bvh_t* t, int id)
 {
-    bvh_node_t *n = &t->nodes[id];
+    bvh_node_t* n = &t->nodes[id];
     n->aabb     = bvh_aabb_union(t->nodes[n->child[0]].aabb,
                   t->nodes[n->child[1]].aabb);
     int h0      = t->nodes[n->child[0]].height;
@@ -702,7 +703,7 @@ static void bvh_refit(bvh_t* t, int id)
  */
 static void bvh_rotate(bvh_t* t, int a_id)
 {
-    bvh_node_t *A = &t->nodes[a_id];
+    bvh_node_t* A = &t->nodes[a_id];
 
     if (A->height < 2)
     {
@@ -711,8 +712,8 @@ static void bvh_rotate(bvh_t* t, int a_id)
 
     int b_id = A->child[0];
     int c_id = A->child[1];
-    bvh_node_t *B  = &t->nodes[b_id];
-    bvh_node_t *C  = &t->nodes[c_id];
+    bvh_node_t* B  = &t->nodes[b_id];
+    bvh_node_t* C  = &t->nodes[c_id];
 
     float base_cost = bvh_aabb_perimeter(A->aabb);
 
@@ -829,7 +830,7 @@ static void bvh_refit_and_rotate(bvh_t* t, int start)
  * We maintain a priority queue (simple binary heap) keyed on a lower bound
  * of the induced cost to prune branches early.
  */
-static void bvh_heap_push(bvh_min_heap_t *h, bvh_heap_entry_t e)
+static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t e)
 {
     if (h->size == h->cap)
     {
@@ -857,7 +858,7 @@ static void bvh_heap_push(bvh_min_heap_t *h, bvh_heap_entry_t e)
     }
 }
 
-static bvh_heap_entry_t bvh_heap_pop(bvh_min_heap_t *h)
+static bvh_heap_entry_t bvh_heap_pop(bvh_min_heap_t* h)
 {
     bvh_heap_entry_t top = h->data[0];
     h->data[0] = h->data[--h->size];
@@ -967,14 +968,14 @@ static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb,
 
 /* ── walk helper ─────────────────────────────────────────────────────────── */
 
-static void bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void *ctx)
+static void bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void* ctx)
 {
     if (id == BVH_NULL_ID)
     {
         return;
     }
 
-    const bvh_node_t *n = &t->nodes[id];
+    const bvh_node_t* n = &t->nodes[id];
     cb(n->aabb, depth, BVH_IS_LEAF(n), n->user_data, ctx);
 
     if (!BVH_IS_LEAF(n))
@@ -993,7 +994,7 @@ static float bvh_cost_rec(const bvh_t* t, int id)
         return 0.f;
     }
 
-    const bvh_node_t *n = &t->nodes[id];
+    const bvh_node_t* n = &t->nodes[id];
     float c = bvh_aabb_perimeter(n->aabb);
 
     if (!BVH_IS_LEAF(n))
