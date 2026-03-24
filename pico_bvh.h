@@ -204,8 +204,9 @@ float bvh_cost(const bvh_t* tree);
 
 static inline bvh_aabb_t bvh_aabb_pad(bvh_aabb_t a, float m)
 {
-    return (bvh_aabb_t){ {a.min.x-m, a.min.y-m}, {a.max.x+m, a.max.y+m} };
+    return (bvh_aabb_t){ {a.min.x - m, a.min.y - m}, {a.max.x + m, a.max.y + m} };
 }
+
 static inline bvh_aabb_t bvh_aabb_union(bvh_aabb_t a, bvh_aabb_t b)
 {
     return (bvh_aabb_t){
@@ -215,15 +216,18 @@ static inline bvh_aabb_t bvh_aabb_union(bvh_aabb_t a, bvh_aabb_t b)
           a.max.y > b.max.y ? a.max.y : b.max.y }
     };
 }
+
 static inline float bvh_aabb_perimeter(bvh_aabb_t a)
 {
     return 2.f * ((a.max.x - a.min.x) + (a.max.y - a.min.y));
 }
+
 static inline bool bvh_aabb_overlaps(bvh_aabb_t a, bvh_aabb_t b)
 {
     return a.min.x <= b.max.x && a.max.x >= b.min.x
         && a.min.y <= b.max.y && a.max.y >= b.min.y;
 }
+
 static inline bool bvh_aabb_contains(bvh_aabb_t outer, bvh_aabb_t inner)
 {
     return outer.min.x <= inner.min.x && inner.max.x <= outer.max.x
@@ -510,7 +514,8 @@ static bvh_heap_entry_t bvh_heap_pop(bvh_min_heap_t *h)
     int i = 0;
     for (;;)
     {
-        int l = 2*i+1, r = 2*i+2, smallest = i;
+        int l = 2 * i + 1, r = 2 * i + 2, smallest = i;
+
         if (l < h->size && h->data[l].lower_bound < h->data[smallest].lower_bound)
         {
             smallest = l;
@@ -957,6 +962,9 @@ static float bvh_cost_rec(const bvh_t* t, int id)
     return c;
 }
 
-float bvh_cost(const bvh_t* t) { return bvh_cost_rec(t, t->root); }
+float bvh_cost(const bvh_t* t)
+{
+    return bvh_cost_rec(t, t->root);
+}
 
 #endif // PICO_BVH_IMPLEMENTATION
