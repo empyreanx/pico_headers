@@ -24,7 +24,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* ── user data type override =────────────────────────────────────────────── */
+/* ── User Data Type Override =────────────────────────────────────────────── */
 
 #ifndef PICO_BVH_UDATA_TYPE
     #define PICO_BVH_UDATA_TYPE uint32_t
@@ -32,7 +32,7 @@
 
 typedef PICO_BVH_UDATA_TYPE bvh_udata_t;
 
-/* ── math primitives =────────────────────────────────────────────────────── */
+/* ── Math Primitives =────────────────────────────────────────────────────── */
 
 typedef struct
 {
@@ -46,7 +46,7 @@ typedef struct
     bvh_vec2_t max;
 } bvh_aabb_t;
 
-/* ── public types ────────────────────────────────────────────────────────── */
+/* ── Public Types ────────────────────────────────────────────────────────── */
 
 #define BVH_NULL_ID (-1)
 
@@ -66,7 +66,7 @@ typedef void (*bvh_walk_cb)(bvh_aabb_t aabb, int depth, bool is_leaf,
  */
 typedef struct bvh_t bvh_t;
 
-/* ── lifecycle ───────────────────────────────────────────────────────────── */
+/* ── Lifecycle ───────────────────────────────────────────────────────────── */
 
 /**
  * @brief Allocates and initializes a BVH instances
@@ -78,7 +78,7 @@ bvh_t* bvh_create(void);
  */
 void bvh_destroy(bvh_t* tree);
 
-/* ── modification ────────────────────────────────────────────────────────── */
+/* ── Modification ────────────────────────────────────────────────────────── */
 
 /**
  * @brief Inserts a new leaf.
@@ -101,7 +101,7 @@ void bvh_remove(bvh_t* tree, int leaf_id);
  */
 bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
 
-/* ── queries ─────────────────────────────────────────────────────────────── */
+/* ── Queries ─────────────────────────────────────────────────────────────── */
 
 /**
  * @brief Queries the tree against an AABB
@@ -117,7 +117,7 @@ void bvh_query_ray(const bvh_t* tree,
                    bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
                    bvh_query_cb cb, void* ctx);
 
-/* ── accessors ───────────────────────────────────────────────────────────── */
+/* ── Accessors ───────────────────────────────────────────────────────────── */
 
 /**
  * @brief Returns the user data from the specified leaf node
@@ -209,7 +209,7 @@ float bvh_cost(const bvh_t* tree);
     #define PICO_BVH_MEMCPY memcpy
 #endif
 
-/* ── internal node ───────────────────────────────────────────────────────── */
+/* ── Internal Node ───────────────────────────────────────────────────────── */
 
 typedef struct
 {
@@ -223,7 +223,7 @@ typedef struct
 
 #define BVH_IS_LEAF(n)  ((n)->child[0] == BVH_NULL_ID)
 
-/* ── tree structure ──────────────────────────────────────────────────────── */
+/* ── Tree Structure ──────────────────────────────────────────────────────── */
 
 #define BVH_INITIAL_CAPACITY 64
 
@@ -236,7 +236,7 @@ struct bvh_t
     int         leaf_count;
 };
 
-/* ── best-sibling heap types ─────────────────────────────────────────────── */
+/* ── Best-Sibling Heap Types ─────────────────────────────────────────────── */
 
 typedef struct
 {
@@ -253,7 +253,7 @@ typedef struct
 
 #define PICO_BVH_HUGE 1e-9f
 
-/* ── forward declarations ────────────────────────────────────────────────── */
+/* ── Forward Declarations ────────────────────────────────────────────────── */
 
 static inline bvh_aabb_t    bvh_aabb_pad(bvh_aabb_t a, float m);
 static inline bvh_aabb_t    bvh_aabb_union(bvh_aabb_t a, bvh_aabb_t b);
@@ -273,7 +273,7 @@ static bool                 bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, 
 static void                 bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void* ctx);
 static float                bvh_cost_rec(const bvh_t* t, int id);
 
-/* ── public: lifecycle ───────────────────────────────────────────────────── */
+/* ── Public: Lifecycle ───────────────────────────────────────────────────── */
 
 bvh_t* bvh_create(void)
 {
@@ -311,7 +311,7 @@ void bvh_destroy(bvh_t* t)
     PICO_BVH_FREE(t);
 }
 
-/* ── public: insert ──────────────────────────────────────────────────────── */
+/* ── Public: Insert ──────────────────────────────────────────────────────── */
 
 int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float padding, bvh_udata_t user_data)
 {
@@ -369,7 +369,7 @@ int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float padding, bvh_udata_t user_data)
     return leaf_id;
 }
 
-/* ── public: remove ──────────────────────────────────────────────────────── */
+/* ── Public: Remove ──────────────────────────────────────────────────────── */
 
 void bvh_remove(bvh_t* t, int leaf_id)
 {
@@ -417,7 +417,7 @@ void bvh_remove(bvh_t* t, int leaf_id)
     }
 }
 
-/* ── public: move ────────────────────────────────────────────────────────── */
+/* ── Public: Move ────────────────────────────────────────────────────────── */
 
 bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float padding)
 {
@@ -464,7 +464,7 @@ bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float padding)
     return true;
 }
 
-/* ── public: query (AABB) ────────────────────────────────────────────────── */
+/* ── Public: Query (AABB) ────────────────────────────────────────────────── */
 
 /* Iterative DFS using an explicit stack to avoid recursion overhead. */
 void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void* ctx)
@@ -511,7 +511,7 @@ void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void* ctx
     }
 }
 
-/* ── public: query (ray) ─────────────────────────────────────────────────── */
+/* ── Public: Query (Ray) ─────────────────────────────────────────────────── */
 
 void bvh_query_ray(const bvh_t* t,
                    bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
@@ -563,7 +563,7 @@ void bvh_query_ray(const bvh_t* t,
     }
 }
 
-/* ── public: accessors ───────────────────────────────────────────────────── */
+/* ── Public: Accessors ───────────────────────────────────────────────────── */
 
 bvh_udata_t bvh_user_data(const bvh_t* t, int leaf_id)
 {
@@ -578,21 +578,21 @@ bvh_aabb_t bvh_padded_aabb(const bvh_t* t, int leaf_id)
 
 int bvh_leaf_count(const bvh_t* t) { return t->leaf_count; }
 
-/* ── public: walk ────────────────────────────────────────────────────────── */
+/* ── Public: Walk ────────────────────────────────────────────────────────── */
 
 void bvh_walk(const bvh_t* t, bvh_walk_cb cb, void* ctx)
 {
     bvh_walk_rec(t, t->root, 0, cb, ctx);
 }
 
-/* ── public: cost ────────────────────────────────────────────────────────── */
+/* ── Public: Cost ────────────────────────────────────────────────────────── */
 
 float bvh_cost(const bvh_t* t)
 {
     return bvh_cost_rec(t, t->root);
 }
 
-/* ── math primitives ─────────────────────────────────────────────────────── */
+/* ── Math Primitives ─────────────────────────────────────────────────────── */
 
 static inline bvh_aabb_t bvh_aabb_pad(bvh_aabb_t a, float m)
 {
@@ -626,7 +626,7 @@ static inline bool bvh_aabb_contains(bvh_aabb_t outer, bvh_aabb_t inner)
         && outer.min.y <= inner.min.y && inner.max.y <= outer.max.y;
 }
 
-/* ── node pool ───────────────────────────────────────────────────────────── */
+/* ── Node Pool ───────────────────────────────────────────────────────────── */
 
 static void bvh_grow(bvh_t* t)
 {
@@ -676,7 +676,7 @@ static void bvh_free_node(bvh_t* t, int id)
     t->free_list           = id;
 }
 
-/* ── helpers ─────────────────────────────────────────────────────────────── */
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
 
 static void bvh_refit(bvh_t* t, int id)
 {
@@ -688,7 +688,7 @@ static void bvh_refit(bvh_t* t, int id)
     n->height   = 1 + (h0 > h1 ? h0 : h1);
 }
 
-/* ── SAH rotation ────────────────────────────────────────────────────────── */
+/* ── SAH Rotation ────────────────────────────────────────────────────────── */
 /*
  * Consider all 4 possible swaps of grandchildren with the opposite child:
  *
@@ -819,7 +819,7 @@ static void bvh_refit_and_rotate(bvh_t* t, int start)
     }
 }
 
-/* ── best-sibling search (SAH) ───────────────────────────────────────────── */
+/* ── Best-Sibling Search (SAH) ───────────────────────────────────────────── */
 /*
  * Branch-and-bound traversal to find the node that, when used as a sibling
  * for the new leaf L, minimises the total induced cost increase up to root.
@@ -943,7 +943,7 @@ static int bvh_best_sibling(bvh_t* t, bvh_aabb_t L_aabb)
     return best_id;
 }
 
-/* ── ray test ────────────────────────────────────────────────────────────── */
+/* ── Ray Test ────────────────────────────────────────────────────────────── */
 /*
  * Slab test for ray vs AABB intersection.
  * Returns true if the ray hits the AABB within [0, max_t].
@@ -966,7 +966,7 @@ static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb,
     return tmax >= 0.f && tmin <= tmax && tmin <= max_t;
 }
 
-/* ── walk helper ─────────────────────────────────────────────────────────── */
+/* ── Walk Helper ─────────────────────────────────────────────────────────── */
 
 static void bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void* ctx)
 {
@@ -985,7 +985,7 @@ static void bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void
     }
 }
 
-/* ── cost helper ─────────────────────────────────────────────────────────── */
+/* ── Cost Helper ─────────────────────────────────────────────────────────── */
 
 static float bvh_cost_rec(const bvh_t* t, int id)
 {
