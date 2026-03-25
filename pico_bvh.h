@@ -66,6 +66,13 @@ typedef void (*bvh_walk_cb)(bvh_aabb_t aabb, int depth, bool is_leaf,
  */
 typedef struct bvh_t bvh_t;
 
+/* ── Helpers ────────────────────────────────────────────────────────────── */
+
+/**
+ * @brief Constructs an AABB from a position and dimensions.
+ */
+bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h);
+
 /* ── Lifecycle ───────────────────────────────────────────────────────────── */
 
 /**
@@ -595,6 +602,11 @@ float bvh_cost(const bvh_t* t)
 }
 
 /* ── Math Primitives ─────────────────────────────────────────────────────── */
+
+bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h)
+{
+    return (bvh_aabb_t){ {x, y}, {x + w, y + h} };
+}
 
 static inline bvh_aabb_t bvh_aabb_pad(bvh_aabb_t a, float m)
 {
