@@ -43,10 +43,10 @@ static bool test_aabb_equal(bvh_aabb_t a, bvh_aabb_t b)
         && test_float_equal(a.max.y, b.max.y);
 }
 
-static bool test_collect_hits(int leaf_id, bvh_udata_t user_data, void *ctx)
+static bool test_collect_hits(int leaf_id, bvh_udata_t udata, void *ctx)
 {
     test_hits_t *hits = ctx;
-    (void)user_data;
+    (void)udata;
 
     hits->ids[hits->count++] = leaf_id;
     return hits->stop_after <= 0 || hits->count < hits->stop_after;
@@ -65,11 +65,11 @@ static bool test_hits_contains(const test_hits_t *hits, int leaf_id)
 }
 
 static void test_record_walk(bvh_aabb_t aabb, int depth, bool is_leaf,
-                             bvh_udata_t user_data, void *ctx)
+                             bvh_udata_t udata, void *ctx)
 {
     walk_stats_t *stats = ctx;
     (void)aabb;
-    (void)user_data;
+    (void)udata;
 
     if (!stats->saw_first)
     {
@@ -113,8 +113,8 @@ TEST_CASE(test_insert_and_accessors)
 
     REQUIRE(id_a != id_b);
     REQUIRE(bvh_get_leaf_count(tree) == 2);
-    REQUIRE(bvh_get_user_data(tree, id_a) == &payload_a);
-    REQUIRE(bvh_get_user_data(tree, id_b) == &payload_b);
+    REQUIRE(bvh_get_udata(tree, id_a) == &payload_a);
+    REQUIRE(bvh_get_udata(tree, id_b) == &payload_b);
     REQUIRE(test_aabb_equal(bvh_get_padded_aabb(tree, id_a),
                             test_make_aabb(-0.5f, -0.5f, 1.5f, 1.5f)));
     REQUIRE(test_aabb_equal(bvh_get_padded_aabb(tree, id_b), aabb_b));
@@ -200,7 +200,7 @@ TEST_CASE(test_move_reuses_id_and_updates_bounds)
 
     moved = bvh_move(tree, leaf_id, test_make_aabb(10.f, 10.f, 11.f, 11.f), 1.f);
     REQUIRE(moved);
-    REQUIRE(bvh_get_user_data(tree, leaf_id) == &payload);
+    REQUIRE(bvh_get_udata(tree, leaf_id) == &payload);
     REQUIRE(test_aabb_equal(bvh_get_padded_aabb(tree, leaf_id),
                             test_make_aabb(9.f, 9.f, 12.f, 12.f)));
 
@@ -296,7 +296,7 @@ TEST_CASE(test_single_leaf)
     int id = bvh_insert(tree, aabb, 0.f, &payload);
 
     REQUIRE(bvh_get_leaf_count(tree) == 1);
-    REQUIRE(bvh_get_user_data(tree, id) == &payload);
+    REQUIRE(bvh_get_udata(tree, id) == &payload);
     REQUIRE(test_aabb_equal(bvh_get_padded_aabb(tree, id), aabb));
 
     /* walk on single leaf: root is the leaf */
@@ -487,11 +487,11 @@ TEST_CASE(test_move_among_multiple)
     REQUIRE(bvh_get_leaf_count(tree) == 3);
 
     /* a and c unchanged */
-    REQUIRE(bvh_get_user_data(tree, id_a) == &payload_a);
-    REQUIRE(bvh_get_user_data(tree, id_c) == &payload_c);
+    REQUIRE(bvh_get_udata(tree, id_a) == &payload_a);
+    REQUIRE(bvh_get_udata(tree, id_c) == &payload_c);
 
-    /* b's user_data preserved */
-    REQUIRE(bvh_get_user_data(tree, id_b) == &payload_b);
+    /* b's udata preserved */
+    REQUIRE(bvh_get_udata(tree, id_b) == &payload_b);
 
     /* query the old region: only a and c */
     test_hits_t h1 = {0};
@@ -567,11 +567,11 @@ TEST_CASE(test_pool_growth)
         REQUIRE(test_hits_contains(&hits, ids[i]));
     }
 
-    /* verify user_data round-trip for a sample */
+    /* verify udata round-trip for a sample */
     int tag = 999;
     int tagged_id = bvh_insert(tree, test_make_aabb(50.f, 50.f, 51.f, 51.f),
                                0.f, &tag);
-    REQUIRE(bvh_get_user_data(tree, tagged_id) == &tag);
+    REQUIRE(bvh_get_udata(tree, tagged_id) == &tag);
 
     bvh_destroy(tree);
     return true;
@@ -612,7 +612,7 @@ TEST_CASE(test_cost_decreases_or_stable_after_removal)
     return true;
 }
 
-TEST_CASE(test_walk_user_data)
+TEST_CASE(test_walk_udata)
 {
     bvh_t *tree = bvh_create();
     int vals[3] = {10, 20, 30};
@@ -620,7 +620,7 @@ TEST_CASE(test_walk_user_data)
     bvh_insert(tree, test_make_aabb(3.f, 0.f, 4.f, 1.f), 0.f, &vals[1]);
     bvh_insert(tree, test_make_aabb(6.f, 0.f, 7.f, 1.f), 0.f, &vals[2]);
 
-    /* query all leaves and verify user_data via bvh_user_data accessor */
+    /* query all leaves and verify udata via bvh_udata accessor */
     test_hits_t hits = {0};
     bvh_query_aabb(tree, test_make_aabb(-1.f, -1.f, 10.f, 2.f),
                    test_collect_hits, &hits);
@@ -628,7 +628,7 @@ TEST_CASE(test_walk_user_data)
     bool found[3] = {false, false, false};
     for (int i = 0; i < hits.count; ++i)
     {
-        bvh_udata_t ud = bvh_get_user_data(tree, hits.ids[i]);
+        bvh_udata_t ud = bvh_get_udata(tree, hits.ids[i]);
         for (int j = 0; j < 3; ++j)
         {
             if (ud == &vals[j])
@@ -703,7 +703,7 @@ TEST_SUITE(suite_bvh_cb)
     RUN_TEST_CASE(test_insert_remove_reinsert);
     RUN_TEST_CASE(test_pool_growth);
     RUN_TEST_CASE(test_cost_decreases_or_stable_after_removal);
-    RUN_TEST_CASE(test_walk_user_data);
+    RUN_TEST_CASE(test_walk_udata);
     RUN_TEST_CASE(test_query_touching_edges);
     RUN_TEST_CASE(test_fat_aabb_margin);
 }

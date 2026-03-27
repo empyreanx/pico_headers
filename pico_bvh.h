@@ -14,7 +14,7 @@
 
     BVH* tree = bvh_create();
 
-    int id = bvh_insert(tree, aabb, padding, user_data);
+    int id = bvh_insert(tree, aabb, padding, udata);
     bvh_move  (tree, id, new_aabb, padding);
     bvh_remove(tree, id);
 
@@ -32,7 +32,7 @@
 /* --- User Data Type Override =--------------------------------------------- */
 
 #ifndef PICO_BVH_UDATA_TYPE
-    #define PICO_BVH_UDATA_TYPE uint32_t
+    #define PICO_BVH_UDATA_TYPE uint64_t
 #endif
 
 typedef PICO_BVH_UDATA_TYPE bvh_udata_t;
@@ -58,13 +58,13 @@ typedef struct
 /**
  * @brief Return false to stop traversal early.
  */
-typedef bool (*bvh_query_cb)(int leaf_id, bvh_udata_t user_data, void* ctx);
+typedef bool (*bvh_query_cb)(int leaf_id, bvh_udata_t udata, void* ctx);
 
 /**
  * @brief Called for every node during bvh_walk(); depth=0 at root.
  */
 typedef void (*bvh_walk_cb)(bvh_aabb_t aabb, int depth, bool is_leaf,
-                            bvh_udata_t user_data, void* ctx);
+                            bvh_udata_t udata, void* ctx);
 
 /**
  * @brief BVH instance
@@ -99,7 +99,7 @@ void bvh_destroy(bvh_t* tree);
  *
  * @returns A stable ID for future move/remove calls.
  */
-int bvh_insert(bvh_t* tree, bvh_aabb_t aabb, float padding, bvh_udata_t user_data);
+int bvh_insert(bvh_t* tree, bvh_aabb_t aabb, float padding, bvh_udata_t udata);
 
 /**
  * @brief Remove a leaf.
@@ -134,7 +134,7 @@ void bvh_query_ray(const bvh_t* tree,
 /**
  * @brief Returns the user data from the specified leaf node
  */
-bvh_udata_t bvh_get_user_data(const bvh_t* tree, int leaf_id);
+bvh_udata_t bvh_get_udata(const bvh_t* tree, int leaf_id);
 
 /**
  * @brief Returns the enlarged bounds from the specified leaf node
@@ -169,7 +169,7 @@ float bvh_get_cost(const bvh_t* tree);
  *   • child[0], child[1] – BVH_NULL_ID for leaves.
  *   • parent             – BVH_NULL_ID for the root.
  *   • height             – 0 for leaves, max(child heights)+1 otherwise.
- *   • user_data          – only meaningful for leaves.
+ *   • udata          – only meaningful for leaves.
  *
  * Insertion (O(log n) expected)
  * ------------------------------
@@ -237,7 +237,7 @@ typedef struct
     int         parent;
     int         child[2];   /* BVH_NULL_ID for leaves */
     int         height;     /* 0 = leaf */
-    bvh_udata_t user_data;  /* valid only for leaves */
+    bvh_udata_t udata;  /* valid only for leaves */
     bool        allocated;
 } bvh_node_t;
 
@@ -327,12 +327,12 @@ void bvh_destroy(bvh_t* t)
 
 /* --- Public: Insert ------------------------------------------------------- */
 
-int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float padding, bvh_udata_t user_data)
+int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float padding, bvh_udata_t udata)
 {
     int leaf_id      = bvh_alloc_node(t);
     bvh_node_t* leaf = &t->nodes[leaf_id];
     leaf->aabb       = padding > 0.f ? bvh_aabb_pad(aabb, padding) : aabb;
-    leaf->user_data  = user_data;
+    leaf->udata  = udata;
     leaf->height     = 0;
     t->leaf_count++;
 
@@ -451,7 +451,7 @@ bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float padding)
         }
     }
 
-    bvh_udata_t ud = t->nodes[leaf_id].user_data;
+    bvh_udata_t ud = t->nodes[leaf_id].udata;
     bvh_remove(t, leaf_id);
 
     /* bvh_remove freed leaf_id (and its parent).  Ensure leaf_id sits at the
@@ -511,7 +511,7 @@ void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void* ctx
 
         if (BVH_IS_LEAF(n))
         {
-            if (!cb(id, n->user_data, ctx))
+            if (!cb(id, n->udata, ctx))
             {
                 return;
             }
@@ -563,7 +563,7 @@ void bvh_query_ray(const bvh_t* t,
 
         if (BVH_IS_LEAF(n))
         {
-            if (!cb(id, n->user_data, ctx))
+            if (!cb(id, n->udata, ctx))
             {
                 return;
             }
@@ -579,10 +579,10 @@ void bvh_query_ray(const bvh_t* t,
 
 /* --- Public: Accessors ---------------------------------------------------- */
 
-bvh_udata_t bvh_get_user_data(const bvh_t* t, int leaf_id)
+bvh_udata_t bvh_get_udata(const bvh_t* t, int leaf_id)
 {
     PICO_BVH_ASSERT(BVH_IS_LEAF(&t->nodes[leaf_id]));
-    return t->nodes[leaf_id].user_data;
+    return t->nodes[leaf_id].udata;
 }
 
 bvh_aabb_t bvh_get_padded_aabb(const bvh_t* t, int leaf_id)
@@ -682,7 +682,7 @@ static int bvh_alloc_node(bvh_t* t)
     n->child[0]   = BVH_NULL_ID;
     n->child[1]   = BVH_NULL_ID;
     n->height     = 0;
-    n->user_data  = 0;
+    n->udata  = 0;
     n->allocated  = true;
     return id;
 }
@@ -995,7 +995,7 @@ static void bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void
     }
 
     const bvh_node_t* n = &t->nodes[id];
-    cb(n->aabb, depth, BVH_IS_LEAF(n), n->user_data, ctx);
+    cb(n->aabb, depth, BVH_IS_LEAF(n), n->udata, ctx);
 
     if (!BVH_IS_LEAF(n))
     {
