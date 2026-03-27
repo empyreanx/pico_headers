@@ -134,17 +134,17 @@ void bvh_query_ray(const bvh_t* tree,
 /**
  * @brief Returns the user data from the specified leaf node
  */
-bvh_udata_t bvh_user_data(const bvh_t* tree, int leaf_id);
+bvh_udata_t bvh_get_user_data(const bvh_t* tree, int leaf_id);
 
 /**
  * @brief Returns the enlarged bounds from the specified leaf node
  */
-bvh_aabb_t bvh_padded_aabb(const bvh_t* tree, int leaf_id);
+bvh_aabb_t bvh_get_padded_aabb(const bvh_t* tree, int leaf_id);
 
 /**
  * @brief Returns number of leaves in the tree
  */
-int bvh_leaf_count(const bvh_t* tree);
+int bvh_get_leaf_count(const bvh_t* tree);
 
 /**
  * @brief Depth-first walk over every node (internal + leaf).
@@ -154,7 +154,7 @@ void  bvh_walk(const bvh_t* tree, bvh_walk_cb cb, void* ctx);
 /**
  * @brief Total surface-area cost (lower = better balanced).
  */
-float bvh_cost(const bvh_t* tree);
+float bvh_get_cost(const bvh_t* tree);
 
 #endif /* PICO_BVH_H */
 
@@ -285,7 +285,7 @@ static bvh_heap_entry_t     bvh_heap_pop(bvh_min_heap_t* h);
 static int                  bvh_best_sibling(bvh_t* t, bvh_aabb_t L_aabb);
 static bool                 bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float max_t);
 static void                 bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void* ctx);
-static float                bvh_cost_rec(const bvh_t* t, int id);
+static float                bvh_get_cost_rec(const bvh_t* t, int id);
 
 /* --- Public: Lifecycle ---------------------------------------------------- */
 
@@ -579,18 +579,18 @@ void bvh_query_ray(const bvh_t* t,
 
 /* --- Public: Accessors ---------------------------------------------------- */
 
-bvh_udata_t bvh_user_data(const bvh_t* t, int leaf_id)
+bvh_udata_t bvh_get_user_data(const bvh_t* t, int leaf_id)
 {
     PICO_BVH_ASSERT(BVH_IS_LEAF(&t->nodes[leaf_id]));
     return t->nodes[leaf_id].user_data;
 }
 
-bvh_aabb_t bvh_padded_aabb(const bvh_t* t, int leaf_id)
+bvh_aabb_t bvh_get_padded_aabb(const bvh_t* t, int leaf_id)
 {
     return t->nodes[leaf_id].aabb;
 }
 
-int bvh_leaf_count(const bvh_t* t) { return t->leaf_count; }
+int bvh_get_leaf_count(const bvh_t* t) { return t->leaf_count; }
 
 /* --- Public: Walk --------------------------------------------------------- */
 
@@ -601,9 +601,9 @@ void bvh_walk(const bvh_t* t, bvh_walk_cb cb, void* ctx)
 
 /* --- Public: Cost --------------------------------------------------------- */
 
-float bvh_cost(const bvh_t* t)
+float bvh_get_cost(const bvh_t* t)
 {
-    return bvh_cost_rec(t, t->root);
+    return bvh_get_cost_rec(t, t->root);
 }
 
 /* --- Math Primitives ------------------------------------------------------ */
@@ -1006,7 +1006,7 @@ static void bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void
 
 /* --- Cost Helper ---------------------------------------------------------- */
 
-static float bvh_cost_rec(const bvh_t* t, int id)
+static float bvh_get_cost_rec(const bvh_t* t, int id)
 {
     if (id == BVH_NULL_ID)
     {
@@ -1018,7 +1018,7 @@ static float bvh_cost_rec(const bvh_t* t, int id)
 
     if (!BVH_IS_LEAF(n))
     {
-        c += bvh_cost_rec(t, n->child[0]) + bvh_cost_rec(t, n->child[1]);
+        c += bvh_get_cost_rec(t, n->child[0]) + bvh_get_cost_rec(t, n->child[1]);
     }
 
     return c;
