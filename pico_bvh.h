@@ -1,22 +1,27 @@
 /**
- * @file pico_bvh.h A 2D Dynamic AABB-tree Bounding Volume Heirarchy (BVH)
- *
- * A self-balancing bounding volume hierarchy.  Leaves hold user objects;
- * internal nodes are managed automatically.  The tree stays balanced via
- * surface-area-heuristic (SAH) rotations after every insert / remove.
- *
- * Typical usage:
- *
- *   BVH* tree = bvh_create();
- *
- *   int id = bvh_insert(tree, aabb, padding, user_data);
- *   bvh_move  (tree, id, new_aabb, padding);
- *   bvh_remove(tree, id);
- *
- *   bvh_query_aabb(tree, query, cb, ctx);
- *   bvh_query_ray (tree, origin, dir, max_t, cb, ctx);
- *
- *   bvh_destroy(tree);
+    @file pico_bvh.h
+    @brief 2D Dynamic AABB-tree Bounding Volume Heirarchy (BVH)
+
+    ---------------------------------------------------------------------------
+    Licensing information at end of header
+    ---------------------------------------------------------------------------
+
+    A self-balancing bounding volume hierarchy. Leaves hold user objects;
+    internal nodes are managed automatically. The tree stays balanced via
+    surface-area-heuristic (SAH) rotations after every insert / remove.
+
+    Typical usage:
+
+    BVH* tree = bvh_create();
+
+    int id = bvh_insert(tree, aabb, padding, user_data);
+    bvh_move  (tree, id, new_aabb, padding);
+    bvh_remove(tree, id);
+
+    bvh_query_aabb(tree, query, cb, ctx);
+    bvh_query_ray (tree, origin, dir, max_t, cb, ctx);
+
+    bvh_destroy(tree);
  */
 #ifndef PICO_BVH_H
 #define PICO_BVH_H
@@ -24,7 +29,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* ── User Data Type Override =────────────────────────────────────────────── */
+/* --- User Data Type Override =--------------------------------------------- */
 
 #ifndef PICO_BVH_UDATA_TYPE
     #define PICO_BVH_UDATA_TYPE uint32_t
@@ -32,7 +37,7 @@
 
 typedef PICO_BVH_UDATA_TYPE bvh_udata_t;
 
-/* ── Math Primitives =────────────────────────────────────────────────────── */
+/* --- Math Primitives ------------------------------------------------------ */
 
 typedef struct
 {
@@ -46,7 +51,7 @@ typedef struct
     bvh_vec2_t max;
 } bvh_aabb_t;
 
-/* ── Public Types ────────────────────────────────────────────────────────── */
+/* --- Public Types --------------------------------------------------------- */
 
 #define BVH_NULL_ID (-1)
 
@@ -66,14 +71,14 @@ typedef void (*bvh_walk_cb)(bvh_aabb_t aabb, int depth, bool is_leaf,
  */
 typedef struct bvh_t bvh_t;
 
-/* ── Helpers ────────────────────────────────────────────────────────────── */
+/* --- Helpers -------------------------------------------------------------- */
 
 /**
  * @brief Constructs an AABB from a position and dimensions.
  */
 bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h);
 
-/* ── Lifecycle ───────────────────────────────────────────────────────────── */
+/* --- Lifecycle ------------------------------------------------------------ */
 
 /**
  * @brief Allocates and initializes a BVH instances
@@ -85,7 +90,7 @@ bvh_t* bvh_create(void);
  */
 void bvh_destroy(bvh_t* tree);
 
-/* ── Modification ────────────────────────────────────────────────────────── */
+/* --- Modification --------------------------------------------------------- */
 
 /**
  * @brief Inserts a new leaf.
@@ -108,7 +113,7 @@ void bvh_remove(bvh_t* tree, int leaf_id);
  */
 bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
 
-/* ── Queries ─────────────────────────────────────────────────────────────── */
+/* --- Queries -------------------------------------------------------------- */
 
 /**
  * @brief Queries the tree against an AABB
@@ -124,7 +129,7 @@ void bvh_query_ray(const bvh_t* tree,
                    bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
                    bvh_query_cb cb, void* ctx);
 
-/* ── Accessors ───────────────────────────────────────────────────────────── */
+/* --- Accessors ------------------------------------------------------------ */
 
 /**
  * @brief Returns the user data from the specified leaf node
@@ -157,7 +162,7 @@ float bvh_cost(const bvh_t* tree);
 
 /*
  * Design notes
- * ────────────
+ * ------------
  * The tree is a pool-allocated binary tree stored in a flat array.
  * Every node keeps:
  *   • A "padded" AABB (tight AABB padded by a user-supplied padding).
@@ -167,7 +172,7 @@ float bvh_cost(const bvh_t* tree);
  *   • user_data          – only meaningful for leaves.
  *
  * Insertion (O(log n) expected)
- * ──────────────────────────────
+ * ------------------------------
  * We pick the best sibling for a new leaf using the surface-area heuristic:
  * the sibling that minimises the total induced cost increase walking back to
  * the root.  This is the exact O(log n) algorithm described by:
@@ -179,7 +184,7 @@ float bvh_cost(const bvh_t* tree);
  *   2. Apply one SAH rotation at each ancestor to reduce surface-area cost.
  *
  * Rotations (SAH balance)
- * ────────────────────────
+ * ------------------------
  * At each internal node we consider swapping one of its grandchildren with
  * the other child.  If any swap reduces the node's induced surface area we
  * apply it.  This keeps the tree height near O(log n) without a full rebuild.
@@ -224,7 +229,7 @@ float bvh_cost(const bvh_t* tree);
 #define BVH_INITIAL_CAPACITY    64
 #define PICO_BVH_HUGE           1e-9f
 
-/* ── Internal Node ───────────────────────────────────────────────────────── */
+/* --- Internal Node -------------------------------------------------------- */
 
 typedef struct
 {
@@ -236,7 +241,7 @@ typedef struct
     bool        allocated;
 } bvh_node_t;
 
-/* ── Tree Structure ──────────────────────────────────────────────────────── */
+/* --- Tree Structure ------------------------------------------------------ */
 
 struct bvh_t
 {
@@ -247,7 +252,7 @@ struct bvh_t
     int         leaf_count;
 };
 
-/* ── Best-Sibling Heap Types ─────────────────────────────────────────────── */
+/* --- Best-Sibling Heap Types ---------------------------------------------- */
 
 typedef struct
 {
@@ -262,7 +267,7 @@ typedef struct
     int               cap;
 } bvh_min_heap_t;
 
-/* ── Forward Declarations ────────────────────────────────────────────────── */
+/* --- Forward Declarations ------------------------------------------------- */
 
 static inline bvh_aabb_t    bvh_aabb_pad(bvh_aabb_t a, float m);
 static inline bvh_aabb_t    bvh_aabb_union(bvh_aabb_t a, bvh_aabb_t b);
@@ -282,7 +287,7 @@ static bool                 bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, 
 static void                 bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void* ctx);
 static float                bvh_cost_rec(const bvh_t* t, int id);
 
-/* ── Public: Lifecycle ───────────────────────────────────────────────────── */
+/* --- Public: Lifecycle ---------------------------------------------------- */
 
 bvh_t* bvh_create(void)
 {
@@ -320,7 +325,7 @@ void bvh_destroy(bvh_t* t)
     PICO_BVH_FREE(t);
 }
 
-/* ── Public: Insert ──────────────────────────────────────────────────────── */
+/* --- Public: Insert ------------------------------------------------------- */
 
 int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float padding, bvh_udata_t user_data)
 {
@@ -378,7 +383,7 @@ int bvh_insert(bvh_t* t, bvh_aabb_t aabb, float padding, bvh_udata_t user_data)
     return leaf_id;
 }
 
-/* ── Public: Remove ──────────────────────────────────────────────────────── */
+/* --- Public: Remove ------------------------------------------------------- */
 
 void bvh_remove(bvh_t* t, int leaf_id)
 {
@@ -426,7 +431,7 @@ void bvh_remove(bvh_t* t, int leaf_id)
     }
 }
 
-/* ── Public: Move ────────────────────────────────────────────────────────── */
+/* --- Public: Move --------------------------------------------------------- */
 
 bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float padding)
 {
@@ -473,7 +478,7 @@ bool bvh_move(bvh_t* t, int leaf_id, bvh_aabb_t new_aabb, float padding)
     return true;
 }
 
-/* ── Public: Query (AABB) ────────────────────────────────────────────────── */
+/* --- Public: Query (AABB) ------------------------------------------------- */
 
 /* Iterative DFS using an explicit stack to avoid recursion overhead. */
 void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void* ctx)
@@ -520,7 +525,7 @@ void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void* ctx
     }
 }
 
-/* ── Public: Query (Ray) ─────────────────────────────────────────────────── */
+/* --- Public: Query (Ray) -------------------------------------------------- */
 
 void bvh_query_ray(const bvh_t* t,
                    bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
@@ -572,7 +577,7 @@ void bvh_query_ray(const bvh_t* t,
     }
 }
 
-/* ── Public: Accessors ───────────────────────────────────────────────────── */
+/* --- Public: Accessors ---------------------------------------------------- */
 
 bvh_udata_t bvh_user_data(const bvh_t* t, int leaf_id)
 {
@@ -587,21 +592,21 @@ bvh_aabb_t bvh_padded_aabb(const bvh_t* t, int leaf_id)
 
 int bvh_leaf_count(const bvh_t* t) { return t->leaf_count; }
 
-/* ── Public: Walk ────────────────────────────────────────────────────────── */
+/* --- Public: Walk --------------------------------------------------------- */
 
 void bvh_walk(const bvh_t* t, bvh_walk_cb cb, void* ctx)
 {
     bvh_walk_rec(t, t->root, 0, cb, ctx);
 }
 
-/* ── Public: Cost ────────────────────────────────────────────────────────── */
+/* --- Public: Cost --------------------------------------------------------- */
 
 float bvh_cost(const bvh_t* t)
 {
     return bvh_cost_rec(t, t->root);
 }
 
-/* ── Math Primitives ─────────────────────────────────────────────────────── */
+/* --- Math Primitives ------------------------------------------------------ */
 
 bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h)
 {
@@ -640,7 +645,7 @@ static inline bool bvh_aabb_contains(bvh_aabb_t outer, bvh_aabb_t inner)
         && outer.min.y <= inner.min.y && inner.max.y <= outer.max.y;
 }
 
-/* ── Node Pool ───────────────────────────────────────────────────────────── */
+/* --- Node Pool ------------------------------------------------------------ */
 
 static void bvh_grow(bvh_t* t)
 {
@@ -690,7 +695,7 @@ static void bvh_free_node(bvh_t* t, int id)
     t->free_list           = id;
 }
 
-/* ── Helpers ─────────────────────────────────────────────────────────────── */
+/* --- Helpers -------------------------------------------------------------- */
 
 static void bvh_refit(bvh_t* t, int id)
 {
@@ -702,7 +707,7 @@ static void bvh_refit(bvh_t* t, int id)
     n->height   = 1 + (h0 > h1 ? h0 : h1);
 }
 
-/* ── SAH Rotation ────────────────────────────────────────────────────────── */
+/* --- SAH Rotation --------------------------------------------------------- */
 /*
  * Consider all 4 possible swaps of grandchildren with the opposite child:
  *
@@ -833,7 +838,7 @@ static void bvh_refit_and_rotate(bvh_t* t, int start)
     }
 }
 
-/* ── Best-Sibling Search (SAH) ───────────────────────────────────────────── */
+/* --- Best-Sibling Search (SAH) -------------------------------------------- */
 /*
  * Branch-and-bound traversal to find the node that, when used as a sibling
  * for the new leaf L, minimises the total induced cost increase up to root.
@@ -957,7 +962,7 @@ static int bvh_best_sibling(bvh_t* t, bvh_aabb_t L_aabb)
     return best_id;
 }
 
-/* ── Ray Test ────────────────────────────────────────────────────────────── */
+/* --- Ray Test ------------------------------------------------------------- */
 /*
  * Slab test for ray vs AABB intersection.
  * Returns true if the ray hits the AABB within [0, max_t].
@@ -980,7 +985,7 @@ static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb,
     return tmax >= 0.f && tmin <= tmax && tmin <= max_t;
 }
 
-/* ── Walk Helper ─────────────────────────────────────────────────────────── */
+/* --- Walk Helper ---------------------------------------------------------- */
 
 static void bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void* ctx)
 {
@@ -999,7 +1004,7 @@ static void bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void
     }
 }
 
-/* ── Cost Helper ─────────────────────────────────────────────────────────── */
+/* --- Cost Helper ---------------------------------------------------------- */
 
 static float bvh_cost_rec(const bvh_t* t, int id)
 {
@@ -1020,3 +1025,53 @@ static float bvh_cost_rec(const bvh_t* t, int id)
 }
 
 #endif // PICO_BVH_IMPLEMENTATION
+
+/*
+    ---------------------------------------------------------------------------
+    This software is available under two licenses (A) or (B). You may choose
+    either one as you wish:
+    ---------------------------------------------------------------------------
+
+    (A) The MIT No Attribution License
+
+    Copyright (c) 2026 James McLean
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the “Software”),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so.
+
+    THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    IN THE SOFTWARE.
+
+    ---------------------------------------------------------------------------
+
+    (B) Public Domain (www.unlicense.org)
+
+    This is free and unencumbered software released into the public domain.
+
+    Anyone is free to copy, modify, publish, use, compile, sell, or distribute
+    this software, either in source code form or as a compiled binary, for any
+    purpose, commercial or non-commercial, and by any means.
+
+    In jurisdictions that recognize copyright laws, the author or authors of
+    this software dedicate any and all copyright interest in the software to the
+    public domain. We make this dedication for the benefit of the public at
+    large and to the detriment of our heirs and successors. We intend this
+    dedication to be an overt act of relinquishment in perpetuity of all present
+    and future rights to this software under copyright law.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+    ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
