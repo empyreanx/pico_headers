@@ -291,11 +291,11 @@ static float                bvh_get_cost_rec(const bvh_t* t, int id);
 
 bvh_t* bvh_create(void)
 {
-    bvh_t* t = PICO_BVH_CALLOC(1, sizeof(bvh_t));
+    bvh_t* t = (bvh_t*)PICO_BVH_CALLOC(1, sizeof(bvh_t));
     PICO_BVH_ASSERT(t);
 
     t->capacity = BVH_INITIAL_CAPACITY;
-    t->nodes    = PICO_BVH_CALLOC((size_t)t->capacity, sizeof(bvh_node_t));
+    t->nodes    = (bvh_node_t*)PICO_BVH_CALLOC((size_t)t->capacity, sizeof(bvh_node_t));
 
     PICO_BVH_ASSERT(t->nodes);
 
@@ -651,7 +651,7 @@ static void bvh_grow(bvh_t* t)
 {
     int old_cap  = t->capacity;
     int new_cap  = old_cap * 2;
-    t->nodes     = PICO_BVH_REALLOC(t->nodes, (size_t)new_cap * sizeof(bvh_node_t));
+    t->nodes     = (bvh_node_t*)PICO_BVH_REALLOC(t->nodes, (size_t)new_cap * sizeof(bvh_node_t));
 
     PICO_BVH_ASSERT(t->nodes);
 
@@ -854,7 +854,8 @@ static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t e)
     if (h->size == h->cap)
     {
         h->cap  = h->cap ? h->cap * 2 : 16;
-        h->data = PICO_BVH_REALLOC(h->data, (size_t)h->cap * sizeof(bvh_heap_entry_t));
+        h->data = (bvh_heap_entry_t*)PICO_BVH_REALLOC(h->data,
+                                    (size_t)h->cap * sizeof(bvh_heap_entry_t));
 
         PICO_BVH_ASSERT(h->data);
     }
