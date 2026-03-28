@@ -1561,6 +1561,8 @@ void pg_update_texture(pg_texture_t* texture, char* data, int width, int height)
     img_data.subimage[0][0].ptr = data;
     img_data.subimage[0][0].size = (size_t)(width * height);
     sg_update_image(texture->handle, &img_data);
+    texture->width = width;
+    texture->height = height;
 }
 
 uint32_t pg_get_texture_id(const pg_texture_t* texture)
