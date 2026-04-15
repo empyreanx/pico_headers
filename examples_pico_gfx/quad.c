@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
     // Create texture from bitmap
 
     size_t size = w * h * c;
-    pg_texture_t* tex = pg_create_texture(ctx, w, h, bitmap, size, NULL);
+    pg_texture_t* tex = pg_create_texture(ctx, w, h, PG_PIXEL_FORMAT_RGBA, bitmap, size, NULL);
 
     assert(tex && c == 4);
 
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
     pg_buffer_t* index_buffer = pg_create_index_buffer(ctx, PG_USAGE_STATIC, indices, 6, 6);
 
     // Create render target (another texture)
-    pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, NULL);
+    pg_texture_t* target = pg_create_render_texture(ctx, pixel_w, pixel_h, PG_PIXEL_FORMAT_RGBA, NULL);
 
     // Default pipeline
     pg_pipeline_t* pipeline = pg_create_pipeline(ctx, shader, &(pg_pipeline_opts_t)

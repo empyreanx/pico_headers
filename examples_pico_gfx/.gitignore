@@ -1,6 +1,7 @@
 quad
 scenegraph
 particles
+text
 *.o
 *.trace
 gmon.out

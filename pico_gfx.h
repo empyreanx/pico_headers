@@ -508,6 +508,18 @@ typedef enum
 } pg_vertex_format_t;
 
 /**
+ * @brief Texture pixel formats
+ */
+typedef enum
+{
+    PG_PIXEL_FORMAT_DEFAULT,
+    PG_PIXEL_FORMAT_RED,
+    PG_PIXEL_FORMAT_RGBA,
+    PG_PIXEL_FORMAT_BGRA,
+    PG_PIXEL_FORMAT_SRGBA,
+} pg_pixel_format_t;
+
+/**
  * @brief Vertex buffer description
  */
 typedef struct
@@ -593,6 +605,7 @@ typedef struct pg_texture_opts_t
  */
 pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
                                 int width, int height,
+                                pg_pixel_format_t format,
                                 const uint8_t* data, size_t size,
                                 const pg_texture_opts_t* opts);
 
@@ -605,6 +618,7 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
  */
 pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
                                        int width, int height,
+                                       pg_pixel_format_t format,
                                        const pg_texture_opts_t* opts);
 
 /**
@@ -809,6 +823,7 @@ static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor);
 static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq);
 static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format);
 static sg_usage pg_map_usage(pg_buffer_usage_t format);
+static sg_pixel_format pg_map_pixel_format(pg_pixel_format_t format);
 static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type);
 
 static void pg_log_sg(const char* tag,              // e.g. 'sg'
@@ -954,6 +969,7 @@ struct pg_texture_t
 {
     pg_ctx_t* ctx;
     int width, height;
+    pg_pixel_format_t format;
     bool target;
     sg_image handle;
     sg_image depth_handle;
@@ -1464,6 +1480,7 @@ void pg_set_uniform_block(pg_shader_t* shader,
 
 pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
                                 int width, int height,
+                                pg_pixel_format_t format,
                                 const uint8_t* data, size_t size,
                                 const pg_texture_opts_t* opts)
 {
@@ -1478,10 +1495,11 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
     PICO_GFX_ASSERT(opts->mipmaps >= 0);
 
     pg_texture_t* texture = PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
+    texture->format = format;
 
     sg_image_desc desc = { 0 };
 
-    desc.pixel_format = SG_PIXELFORMAT_RGBA8;
+    desc.pixel_format = pg_map_pixel_format(format);
 
     desc.width  = texture->width  = width;
     desc.height = texture->height = height;
@@ -1500,6 +1518,7 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
 
 pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
                                        int width, int height,
+                                       pg_pixel_format_t format,
                                        const pg_texture_opts_t* opts)
 {
     PICO_GFX_ASSERT(width > 0);
@@ -1511,12 +1530,12 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
     PICO_GFX_ASSERT(opts->mipmaps >= 0);
 
     pg_texture_t* texture = PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
+    texture->format = format;
 
     sg_image_desc desc = { 0 };
 
     desc.render_target = true;
-    desc.pixel_format = SG_PIXELFORMAT_RGBA8;
-
+    desc.pixel_format = pg_map_pixel_format(format);
     desc.width  = texture->width  = width;
     desc.height = texture->height = height;
 
@@ -1926,6 +1945,19 @@ static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format)
         case PG_VERTEX_FORMAT_HALF2:     return SG_VERTEXFORMAT_HALF2;
         case PG_VERTEX_FORMAT_HALF4:     return SG_VERTEXFORMAT_HALF4;
         default: PICO_GFX_ASSERT(false); return SG_VERTEXFORMAT_INVALID;
+    }
+}
+
+static sg_pixel_format pg_map_pixel_format(pg_pixel_format_t format)
+{
+    switch (format)
+    {
+        case PG_PIXEL_FORMAT_DEFAULT: return SG_PIXELFORMAT_RGBA8;
+        case PG_PIXEL_FORMAT_RED:     return SG_PIXELFORMAT_R8;
+        case PG_PIXEL_FORMAT_RGBA:    return SG_PIXELFORMAT_RGBA8;
+        case PG_PIXEL_FORMAT_BGRA:    return SG_PIXELFORMAT_BGRA8;
+        case PG_PIXEL_FORMAT_SRGBA:   return SG_PIXELFORMAT_SRGB8A8;
+        default: PICO_GFX_ASSERT(false); return SG_PIXELFORMAT_NONE;
     }
 }
 

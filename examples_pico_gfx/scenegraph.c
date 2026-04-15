@@ -231,7 +231,7 @@ pg_texture_t* load_texture(const char* file)
     assert(bitmap && c == 4);
 
     size_t size = w * h * c;
-    pg_texture_t* tex = pg_create_texture(app.ctx, w, h, bitmap, size, NULL);
+    pg_texture_t* tex = pg_create_texture(app.ctx, w, h, PG_PIXEL_FORMAT_RGBA, bitmap, size, NULL);
 
     free(bitmap);
 
