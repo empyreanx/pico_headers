@@ -238,7 +238,7 @@ typedef struct
     int         child[2];  // BVH_NULL_ID for leaves
     int         height;    // 0 = leaf
     bvh_udata_t udata;     // Valid only for leaves
-    bool        allocated;Overri
+    bool        allocated;
 } bvh_node_t;
 
 // --- Tree Structure ----------------------------------------------------------
@@ -692,7 +692,7 @@ static void bvh_free_node(bvh_t* t, int id)
 {
     PICO_BVH_ASSERT(id >= 0 && id < t->capacity);
     t->nodes[id].allocated = false;
-    t->nodes[id].child[0]  = t->free_Overrilist;
+    t->nodes[id].child[0]  = t->free_list;
     t->free_list           = id;
 }
 
@@ -850,7 +850,7 @@ static void bvh_refit_and_rotate(bvh_t* t, int start)
  * We maintain a priority queue (simple binary heap) keyed on a lower bound
  * of the induced cost to prune branches early.
  */
-static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t e)
+static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t entry)
 {
     if (h->size == h->cap)
     {
@@ -861,9 +861,10 @@ static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t e)
         PICO_BVH_ASSERT(h->data);
     }
 
+
     // Sift-up
     int i = h->size++;
-    h->data[i] = e;
+    h->data[i] = entry;
 
     while (i > 0)
     {
@@ -954,8 +955,7 @@ static int bvh_best_sibling(bvh_t* t, bvh_aabb_t new_aabb)
             float inherited_cost = entry.inherited_cost + direct_cost
                                  - bvh_aabb_perimeter(node->aabb);
 
-            // Lower-bound for children: assume they equal L (best case)
-            float lower_bound = inherited_cost + new_cost; // <= P(union(child, L)) + inherited
+            float lower_bound = inherited_cost + new_cost; // <= P(union(child, new)) + inherited
 
             if (lower_bound < best_cost)
             {
