@@ -856,31 +856,24 @@ static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t entry)
     {
         h->cap  = h->cap ? h->cap * 2 : 16;
         h->data = (bvh_heap_entry_t*)PICO_BVH_REALLOC(h->data,
-                                    (size_t)h->cap * sizeof(bvh_heap_entry_t));
+                                    (size_t)(h->cap + 1) * sizeof(bvh_heap_entry_t));
 
         PICO_BVH_ASSERT(h->data);
     }
 
+    h->data[0] = (bvh_heap_entry_t){ 0, 0.f };
 
     // Sift-up
     int i = h->size++;
-    h->data[i] = entry;
 
-    while (i > 0)
+    while (h->data[i / 2].inherited_cost > entry.inherited_cost)
     {
-        int p = (i - 1) / 2;
 
-        if (h->data[p].inherited_cost <= h->data[i].inherited_cost)
-        {
-            break;
-        }
-
-        bvh_heap_entry_t tmp = h->data[p];
-        h->data[p] = h->data[i];
-        h->data[i] = tmp;
-
-        i = p;
+        h->data[i] = h->data[i / 2];
+        i = i / 2;
     }
+
+    h->data[i] = entry;
 }
 
 static bvh_heap_entry_t bvh_heap_pop(bvh_min_heap_t* h)
