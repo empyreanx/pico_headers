@@ -861,7 +861,7 @@ static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t entry)
         PICO_BVH_ASSERT(h->data);
     }
 
-    h->data[0] = (bvh_heap_entry_t){ 0, 0.f };
+    h->data[0] = (bvh_heap_entry_t){ -1, 0.f };
 
     // Sift-up
     int i = h->size++;
@@ -878,35 +878,32 @@ static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t entry)
 
 static bvh_heap_entry_t bvh_heap_pop(bvh_min_heap_t* h)
 {
-    bvh_heap_entry_t top = h->data[0];
-    h->data[0] = h->data[--h->size];
+    bvh_heap_entry_t top = h->data[1];
+    bvh_heap_entry_t last = h->data[h->size--];
 
-    // Sift-down
-    int i = 0;
-    while (true)
+    int i = 1;
+
+    while (i * 2 <= h->size)
     {
-        int l = 2 * i + 1;
-        int r = 2 * i + 2;
-        int smallest = i;
+        int child = i * 2;
 
-        if (l < h->size && h->data[l].inherited_cost < h->data[smallest].inherited_cost)
+        if (child != h->size)
         {
-            smallest = l;
+            if (h->data[child + 1].inherited_cost < h->data[child].inherited_cost)
+                child += 1;
         }
 
-        if (r < h->size && h->data[r].inherited_cost < h->data[smallest].inherited_cost)
+        if (last.inherited_cost > h->data[child].inherited_cost)
         {
-            smallest = r;
+            h->data[i] = h->data[child];
+            i = child;
         }
-
-        if (smallest == i)
+        else
         {
             break;
         }
 
-        bvh_heap_entry_t tmp = h->data[i]; h->data[i] = h->data[smallest];
-        h->data[smallest] = tmp;
-        i = smallest;
+        h->data[i] = last;
     }
 
     return top;

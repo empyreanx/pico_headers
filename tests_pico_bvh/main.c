@@ -531,6 +531,7 @@ TEST_CASE(test_insert_remove_reinsert)
     test_hits_t hits = {0};
     bvh_query_aabb(tree, test_make_aabb(-1.f, -1.f, 4.f, 2.f),
                    test_collect_hits, &hits);
+
     REQUIRE(hits.count == 2);
     REQUIRE(test_hits_contains(&hits, id3));
     REQUIRE(test_hits_contains(&hits, id4));
