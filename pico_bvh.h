@@ -856,21 +856,27 @@ static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t entry)
     {
         h->cap  = h->cap ? h->cap * 2 : 16;
         h->data = (bvh_heap_entry_t*)PICO_BVH_REALLOC(h->data,
-                                    (size_t)(h->cap + 1) * sizeof(bvh_heap_entry_t));
+                                    (size_t)h->cap * sizeof(bvh_heap_entry_t));
 
         PICO_BVH_ASSERT(h->data);
     }
 
-    h->data[0] = (bvh_heap_entry_t){ -1, 0.f };
+    PICO_BVH_ASSERT(h->size < h->cap);
 
     // Sift-up
     int i = h->size++;
 
-    while (h->data[i / 2].inherited_cost > entry.inherited_cost)
+    while (i > 0)
     {
+        int parent = (i - 1) / 2;
 
-        h->data[i] = h->data[i / 2];
-        i = i / 2;
+        if (h->data[parent].inherited_cost <= entry.inherited_cost)
+        {
+            break;
+        }
+
+        h->data[i] = h->data[parent];
+        i = parent;
     }
 
     h->data[i] = entry;
@@ -878,34 +884,46 @@ static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t entry)
 
 static bvh_heap_entry_t bvh_heap_pop(bvh_min_heap_t* h)
 {
-    bvh_heap_entry_t top = h->data[1];
-    bvh_heap_entry_t last = h->data[h->size--];
+    PICO_BVH_ASSERT(h->size > 0);
 
-    int i = 1;
+    bvh_heap_entry_t top  = h->data[0];
+    bvh_heap_entry_t last = h->data[--h->size];
 
-    while (i * 2 <= h->size)
+    if (h->size == 0)
     {
-        int child = i * 2;
+        return top;
+    }
 
-        if (child != h->size)
-        {
-            if (h->data[child + 1].inherited_cost < h->data[child].inherited_cost)
-                child += 1;
-        }
+    int i = 0;
 
-        if (last.inherited_cost > h->data[child].inherited_cost)
-        {
-            h->data[i] = h->data[child];
-            i = child;
-        }
-        else
+    while (true)
+    {
+        int left = i * 2 + 1;
+
+        if (left >= h->size)
         {
             break;
         }
 
-        h->data[i] = last;
+        int right = left + 1;
+        int child = left;
+
+        if (right < h->size
+            && h->data[right].inherited_cost < h->data[left].inherited_cost)
+        {
+            child = right;
+        }
+
+        if (h->data[child].inherited_cost >= last.inherited_cost)
+        {
+            break;
+        }
+
+        h->data[i] = h->data[child];
+        i = child;
     }
 
+    h->data[i] = last;
     return top;
 }
 
