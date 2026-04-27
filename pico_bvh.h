@@ -6,22 +6,65 @@
     Licensing information at end of header
     ---------------------------------------------------------------------------
 
-    A self-balancing bounding volume hierarchy. Leaves hold user objects;
-    internal nodes are managed automatically. The tree stays balanced via
-    surface-area-heuristic (SAH) rotations after every insert / remove.
+    Overview
+    --------
 
-    Typical usage:
+    This header implements a dynamic 2D AABB tree for broad-phase spatial
+    queries. Each inserted object becomes a leaf node, while internal nodes
+    are maintained automatically to bound their descendants.
 
-    BVH* tree = bvh_create();
+    The tree is incrementally rebalanced using SAH-based local rotations,
+    which keeps query/update costs near logarithmic in typical workloads.
 
-    int id = bvh_insert(tree, aabb, padding, udata);
-    bvh_move  (tree, id, new_aabb, padding);
-    bvh_remove(tree, id);
+    Features
+    --------
 
-    bvh_query_aabb(tree, query, cb, ctx);
-    bvh_query_ray (tree, origin, dir, max_t, cb, ctx);
+    - Written in C99
+    - Broad-phase AABB and ray queries with early-out callbacks.
+    - Dynamic insert, remove, and move operations for 2D AABBs.
+    - SAH-guided sibling selection and local rotations for practical balance.
+    - Configurable leaf padding to reduce reinsertion churn.
+    - User-defined per-leaf payload type via `PICO_BVH_UDATA_TYPE`.
 
-    bvh_destroy(tree);
+    Core Concepts
+
+    -------------
+    - Leaf handle: `bvh_insert` returns an integer ID used by `bvh_move`,
+        `bvh_remove`, and accessor functions.
+    - Padded bounds: leaves store an expanded AABB (tight bounds + padding)
+        to reduce reinsertion churn for small object motion.
+    - User payload: `bvh_udata_t` is user-defined via `PICO_BVH_UDATA_TYPE`
+        (defaults to `uint64_t`).
+
+    Typical Workflow
+    ----------------
+
+    1) Create tree
+        bvh_t* tree = bvh_create();
+    2) Insert and keep returned IDs
+        int id = bvh_insert(tree, aabb, padding, udata);
+    3) Update or remove by ID
+        bvh_move(tree, id, new_aabb, padding);
+        bvh_remove(tree, id);
+    4) Query with callbacks
+        bvh_query_aabb(tree, query, cb, ctx);
+        bvh_query_ray(tree, origin, dir, max_t, cb, ctx);
+    5) Destroy when done
+        bvh_destroy(tree);
+
+    Query Semantics
+
+    ---------------
+    - AABB and ray queries are broad-phase: they report overlapping leaves.
+    - Callbacks may return false to stop traversal early.
+    - AABBs that touch at edges are considered overlapping.
+
+    Complexity Notes
+    ----------------
+
+    - Insert/remove/move: O(log n) expected.
+    - Query: O(log n + k) expected, where k is number of reported leaves.
+    - Worst-case behavior can degrade if bounds distributions are pathological.
  */
 #ifndef PICO_BVH_H
 #define PICO_BVH_H
