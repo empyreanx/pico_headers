@@ -100,11 +100,20 @@ typedef struct
 
 /**
  * @brief Return false to stop traversal early.
+ * @param leaf_id Leaf handle for the candidate hit.
+ * @param udata User payload stored in that leaf.
+ * @param ctx User-provided context pointer passed through query calls.
+ * @return true to continue traversal, false to stop early.
  */
 typedef bool (*bvh_query_cb)(int leaf_id, bvh_udata_t udata, void* ctx);
 
 /**
  * @brief Called for every node during bvh_walk(); depth=0 at root.
+ * @param aabb Node bounds.
+ * @param depth Tree depth (0 for root).
+ * @param is_leaf true for leaf nodes, false for internal nodes.
+ * @param udata Leaf payload for leaf nodes; unspecified for internal nodes.
+ * @param ctx User-provided context pointer passed through bvh_walk.
  */
 typedef void (*bvh_walk_cb)(bvh_aabb_t aabb, int depth, bool is_leaf,
                             bvh_udata_t udata, void* ctx);
@@ -118,6 +127,11 @@ typedef struct bvh_t bvh_t;
 
 /**
  * @brief Constructs an AABB from a position and dimensions.
+ * @param x Minimum x coordinate.
+ * @param y Minimum y coordinate.
+ * @param w Width (added to x to form max.x).
+ * @param h Height (added to y to form max.y).
+ * @return Constructed AABB.
  */
 bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h);
 
@@ -125,11 +139,13 @@ bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h);
 
 /**
  * @brief Allocates and initializes a BVH instances
+ * @return New BVH handle, or NULL on allocation failure.
  */
 bvh_t* bvh_create(void);
 
 /**
  * @brief Destroys and deallocates a BVH instance
+ * @param tree BVH instance to destroy (must not be NULL).
  */
 void bvh_destroy(bvh_t* tree);
 
@@ -140,17 +156,27 @@ void bvh_destroy(bvh_t* tree);
  *
  * The stored AABB is padded by `padding` (pass 0 for exact fit).
  *
+ * @param tree BVH instance to modify.
+ * @param aabb Tight bounds for the new leaf.
+ * @param padding Margin added on all sides before storing the leaf bounds.
+ * @param udata User payload associated with this leaf.
  * @returns A stable ID for future move/remove calls.
  */
 int bvh_insert(bvh_t* tree, bvh_aabb_t aabb, float padding, bvh_udata_t udata);
 
 /**
  * @brief Remove a leaf.
+ * @param tree BVH instance to modify.
+ * @param leaf_id ID previously returned by bvh_insert.
  */
 void bvh_remove(bvh_t* tree, int leaf_id);
 
 /**
  * @brief Update a leaf's AABB.
+ * @param tree BVH instance to modify.
+ * @param leaf_id ID previously returned by bvh_insert.
+ * @param new_aabb New tight bounds for the leaf.
+ * @param padding Margin added on all sides before storing the leaf bounds.
  * @returns true if the tree was restructured (the old padded AABB no longer
  * contained the new tight one).
  */
@@ -160,6 +186,10 @@ bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
 
 /**
  * @brief Queries the tree against an AABB
+ * @param tree BVH instance to query.
+ * @param query Query AABB in world space.
+ * @param cb Callback invoked for each overlapping leaf.
+ * @param ctx User-provided context pointer passed to cb.
  */
 void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
                     bvh_query_cb cb, void* ctx);
@@ -167,6 +197,12 @@ void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
  * @brief Queries the tree against a ray
  *
  * Ray: origin + t*dir, t in [0, max_t].  Use FLT_MAX for infinite ray.
+ * @param tree BVH instance to query.
+ * @param origin Ray origin.
+ * @param dir Ray direction (not required to be normalized).
+ * @param max_t Maximum ray distance along dir.
+ * @param cb Callback invoked for each overlapping leaf AABB.
+ * @param ctx User-provided context pointer passed to cb.
  */
 void bvh_query_ray(const bvh_t* tree,
                    bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
@@ -176,26 +212,39 @@ void bvh_query_ray(const bvh_t* tree,
 
 /**
  * @brief Returns the user data from the specified leaf node
+ * @param tree BVH instance to read from.
+ * @param leaf_id ID previously returned by bvh_insert.
+ * @return User payload stored in that leaf.
  */
 bvh_udata_t bvh_get_udata(const bvh_t* tree, int leaf_id);
 
 /**
  * @brief Returns the enlarged bounds from the specified leaf node
+ * @param tree BVH instance to read from.
+ * @param leaf_id ID previously returned by bvh_insert.
+ * @return Stored padded AABB for that leaf.
  */
 bvh_aabb_t bvh_get_padded_aabb(const bvh_t* tree, int leaf_id);
 
 /**
  * @brief Returns number of leaves in the tree
+ * @param tree BVH instance to read from.
+ * @return Number of currently allocated leaves.
  */
 int bvh_get_leaf_count(const bvh_t* tree);
 
 /**
  * @brief Depth-first walk over every node (internal + leaf).
+ * @param tree BVH instance to walk.
+ * @param cb Callback invoked once per node.
+ * @param ctx User-provided context pointer passed to cb.
  */
 void  bvh_walk(const bvh_t* tree, bvh_walk_cb cb, void* ctx);
 
 /**
  * @brief Total surface-area cost (lower = better balanced).
+ * @param tree BVH instance to evaluate.
+ * @return Sum of perimeters for all nodes in the tree.
  */
 float bvh_get_cost(const bvh_t* tree);
 
