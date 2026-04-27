@@ -1,6 +1,6 @@
 /**
     @file pico_bvh.h
-    @brief 2D Dynamic AABB-tree Bounding Volume Heirarchy (BVH)
+    @brief 2D Dynamic Bounding Volume Heirarchy (BVH)
 
     ---------------------------------------------------------------------------
     Licensing information at end of header
