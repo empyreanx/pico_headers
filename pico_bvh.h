@@ -557,6 +557,7 @@ void bvh_query_ray(const bvh_t* t,
         }
 
         const bvh_node_t* n = &t->nodes[id];
+
         if (!bvh_ray_aabb(origin, inv_dir, n->aabb, max_t))
         {
             continue;
@@ -683,7 +684,7 @@ static int bvh_alloc_node(bvh_t* t)
     n->child[0]   = BVH_NULL_ID;
     n->child[1]   = BVH_NULL_ID;
     n->height     = 0;
-    n->udata  = 0;
+    n->udata      = 0;
     n->allocated  = true;
     return id;
 }
@@ -737,24 +738,23 @@ static void bvh_rotate(bvh_t* t, int a_id)
 
     float base_cost = bvh_aabb_perimeter(A->aabb);
 
-    // Candidate costs: union of the node that stays with its new sibling
+    // Candidate costs
     float costs[4] = { FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX };
 
-    // Swap b0 <-> C  →  A.child[0]=C, B.child[0]=old-C, B.child[1]=b1
     if (!BVH_IS_LEAF(B))
     {
         costs[0] = bvh_aabb_perimeter(bvh_aabb_union(C->aabb,
-                       t->nodes[B->child[1]].aabb));  // New B cost
+                       t->nodes[B->child[1]].aabb));  // Swap b0 <-> C
         costs[1] = bvh_aabb_perimeter(bvh_aabb_union(C->aabb,
                        t->nodes[B->child[0]].aabb));  // Swap b1 <-> C
     }
-    // Swap c0 <-> B  →  A.child[1]=B, C.child[0]=old-B, C.child[1]=c1
+
     if (!BVH_IS_LEAF(C))
     {
         costs[2] = bvh_aabb_perimeter(bvh_aabb_union(B->aabb,
-                       t->nodes[C->child[1]].aabb));
+                       t->nodes[C->child[1]].aabb)); // Swap c0 <-> B
         costs[3] = bvh_aabb_perimeter(bvh_aabb_union(B->aabb,
-                       t->nodes[C->child[0]].aabb));
+                       t->nodes[C->child[0]].aabb)); // Swap c1 <-> B
     }
 
     // Find best candidate
@@ -765,7 +765,8 @@ static void bvh_rotate(bvh_t* t, int a_id)
     {
         if (costs[i] < best_cost)
         {
-            best_cost = costs[i]; best = i;
+            best_cost = costs[i];
+            best = i;
         }
     }
 
@@ -787,6 +788,7 @@ static void bvh_rotate(bvh_t* t, int a_id)
             bvh_refit(t, a_id);
             break;
         }
+
         case 1:
         { // Swap B->child[1] <-> C
             int x = B->child[1];
@@ -798,6 +800,7 @@ static void bvh_rotate(bvh_t* t, int a_id)
             bvh_refit(t, a_id);
             break;
         }
+
         case 2:
         { // Swap C->child[0] <-> B
             int x = C->child[0];
@@ -809,6 +812,7 @@ static void bvh_rotate(bvh_t* t, int a_id)
             bvh_refit(t, a_id);
             break;
         }
+
         case 3:
         { // Swap C->child[1] <-> B
             int x = C->child[1];
