@@ -1,6 +1,6 @@
 /**
     @file pico_bvh.h
-    @brief 2D Dynamic AABB-tree Bounding Volume Heirarchy (BVH)
+    @brief A Dynamic 2D Bounding Volume Heirarchy (BVH) Library
 
     ---------------------------------------------------------------------------
     Licensing information at end of header
@@ -253,34 +253,34 @@ float bvh_get_cost(const bvh_t* tree);
 #ifdef PICO_BVH_IMPLEMENTATION
 
 /*
- * Design notes
- * ------------
- * The tree is a pool-allocated binary tree stored in a flat array.
- * Every node keeps:
- *   • A "padded" AABB (tight AABB padded by a user-supplied padding).
- *   • child[0], child[1] - BVH_NULL_ID for leaves.
- *   • parent             - BVH_NULL_ID for the root.
- *   • height             - 0 for leaves, max(child heights)+1 otherwise.
- *   • udata              - only meaningful for leaves.
- *
- * Insertion (O(log n) expected)
- * ------------------------------
- * We pick the best sibling for a new leaf using the surface-area heuristic:
- * the sibling that minimises the total induced cost increase walking back to
- * the root.  This is the exact O(log n) algorithm described by:
- * Bittner et al. "Fast, Effective BVH Updates for Animated Scenes" (2015)
- * (also used by Box2D's b2DynamicTree).
- *
- * After every insertion / removal we walk back to the root and:
- *   1. Refit the ancestor AABBs.
- *   2. Apply one SAH rotation at each ancestor to reduce surface-area cost.
- *
- * Rotations (SAH balance)
- * ------------------------
- * At each internal node we consider swapping one of its grandchildren with
- * the other child.  If any swap reduces the node's induced surface area we
- * apply it.  This keeps the tree height near O(log n) without a full rebuild.
- */
+    Design notes
+    ------------
+    The tree is a pool-allocated binary tree stored in a flat array.
+    Every node keeps:
+        • A "padded" AABB (tight AABB padded by a user-supplied padding).
+        • child[0], child[1] - BVH_NULL_ID for leaves.
+        • parent             - BVH_NULL_ID for the root.
+        • height             - 0 for leaves, max(child heights)+1 otherwise.
+        • udata              - only meaningful for leaves.
+
+    Insertion (O(log n) expected)
+    ------------------------------
+    We pick the best sibling for a new leaf using the surface-area heuristic:
+    the sibling that minimises the total induced cost increase walking back to
+    the root.  This is the exact O(log n) algorithm described by:
+    Bittner et al. "Fast, Effective BVH Updates for Animated Scenes" (2015)
+    (also used by Box2D's b2DynamicTree).
+
+    After every insertion / removal we walk back to the root and:
+        1. Refit the ancestor AABBs.
+        2. Apply one SAH rotation at each ancestor to reduce surface-area cost.
+
+    Rotations (SAH balance)
+    ------------------------
+    At each internal node we consider swapping one of its grandchildren with
+    the other child.  If any swap reduces the node's induced surface area we
+    apply it.  This keeps the tree height near O(log n) without a full rebuild.
+*/
 
 #include <float.h>
 #include <math.h>
@@ -803,41 +803,41 @@ static void bvh_refit(bvh_t* t, int id)
 
 // --- SAH Rotation ------------------------------------------------------------
 /*
- * Local tree at A before rotation:
- *
- *                  A
- *                /   \
- *               B     C
- *              / \   / \
- *            b0  b1 c0  c1
- *
- * We evaluate 4 one-step rotations (swapping a grandchild with the opposite
- * subtree) and keep only the one that reduces perimeter(A) the most. Only two
- * cases are considered for brevity.
- *
- * Candidate 0 (costs[0]): swap b0 <-> C
- *
- *                  A
- *                /   \
- *               B     b0
- *              / \
- *             C  b1
- *            / \
- *          c0  c1
- *
- *
- * Candidate 2 (costs[2]): swap c0 <-> B
- *
- *                  A
- *                /   \
- *               c0    C
- *                    / \
- *                   B  c1
- *                  / \
- *                b0  b11
- *
- * We evaluate all valid candidates and apply the one that gives the largest
- * reduction in perimeter(A). If none improves cost, no rotation is applied.
+    Local tree at A before rotation:
+
+                     A
+                   /   \
+                  B     C
+                 / \   / \
+               b0  b1 c0  c1
+
+    We evaluate 4 one-step rotations (swapping a grandchild with the opposite
+    subtree) and keep only the one that reduces perimeter(A) the most. Only two
+    cases are considered for brevity.
+
+    Candidate 0 (costs[0]): swap b0 <-> C
+
+                     A
+                   /   \
+                  B     b0
+                 / \
+                C  b1
+               / \
+             c0  c1
+
+
+    Candidate 2 (costs[2]): swap c0 <-> B
+
+                     A
+                   /   \
+                  c0    C
+                       / \
+                      B  c1
+                     / \
+                   b0  b11
+
+    We evaluate all valid candidates and apply the one that gives the largest
+    reduction in perimeter(A). If none improves cost, no rotation is applied.
  */
 static void bvh_rotate(bvh_t* t, int a_id)
 {
@@ -962,14 +962,14 @@ static void bvh_refit_and_rotate(bvh_t* t, int start)
 
 // --- Best-Sibling Search (SAH) -----------------------------------------------
 /*
- * Branch-and-bound traversal to find the node that, when used as a sibling
- * for the new leaf nl, minimises the total induced cost increase up to root.
- *
- * induced_cost(node) = cost(union(node, nl)) - cost(node)
- *                    + sum of [cost(union(anc, nl)) - cost(anc)] for each ancestor
- *
- * We maintain a priority queue (simple binary heap) keyed on a lower bound
- * of the induced cost to prune branches early.
+    Branch-and-bound traversal to find the node that, when used as a sibling
+    for the new leaf nl, minimises the total induced cost increase up to root.
+
+    induced_cost(node) = cost(union(node, nl)) - cost(node)
+                       + sum of [cost(union(anc, nl)) - cost(anc)] for each ancestor
+
+    We maintain a priority queue (simple binary heap) keyed on a lower bound
+    of the induced cost to prune branches early.
  */
 static void bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t entry)
 {
@@ -1099,10 +1099,9 @@ static int bvh_best_sibling(bvh_t* t, bvh_aabb_t new_aabb)
 }
 
 // --- Ray Test ----------------------------------------------------------------
-/*
- * Slab test for ray vs AABB intersection.
- * Returns true if the ray hits the AABB within [0, t_max].
- */
+
+//Slab test for ray vs AABB intersection.
+//Returns true if the ray hits the AABB within [0, t_max].
 static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float t_max)
 {
     float tx1 = (aabb.min.x - origin.x) * inv_dir.x;
