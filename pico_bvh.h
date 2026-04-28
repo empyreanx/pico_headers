@@ -48,7 +48,7 @@
         bvh_remove(tree, id);
     4) Query with callbacks
         bvh_query_aabb(tree, query, cb, ctx);
-        bvh_query_ray(tree, origin, dir, max_t, cb, ctx);
+        bvh_query_ray(tree, origin, dir, t_max, cb, ctx);
     5) Destroy when done
         bvh_destroy(tree);
 
@@ -196,16 +196,16 @@ void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
 /**
  * @brief Queries the tree against a ray
  *
- * Ray: origin + t*dir, t in [0, max_t].  Use FLT_MAX for infinite ray.
+ * Ray: origin + t*dir, t in [0, t_max].  Use FLT_MAX for infinite ray.
  * @param tree BVH instance to query.
  * @param origin Ray origin.
  * @param dir Ray direction; it does not need to be normalized.
- * @param max_t Maximum parametric distance along the ray.
+ * @param t_max Maximum parametric distance along the ray.
  * @param cb Callback invoked for each overlapping leaf.
  * @param ctx User-provided context pointer passed to cb.
  */
 void bvh_query_ray(const bvh_t* tree,
-                   bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
+                   bvh_vec2_t origin, bvh_vec2_t dir, float t_max,
                    bvh_query_cb cb, void* ctx);
 
 // --- Accessors ---------------------------------------------------------------
@@ -375,7 +375,7 @@ static void                 bvh_refit_and_rotate(bvh_t* t, int start);
 static void                 bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t e);
 static bvh_heap_entry_t     bvh_heap_pop(bvh_min_heap_t* h);
 static int                  bvh_best_sibling(bvh_t* t, bvh_aabb_t new_aabb);
-static bool                 bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float max_t);
+static bool                 bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float t_max);
 static void                 bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void* ctx);
 static float                bvh_get_cost_rec(const bvh_t* t, int id);
 
@@ -621,7 +621,7 @@ void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void* ctx
 // --- Public: Query (Ray) -----------------------------------------------------
 
 void bvh_query_ray(const bvh_t* t,
-                   bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
+                   bvh_vec2_t origin, bvh_vec2_t dir, float t_max,
                    bvh_query_cb cb, void* ctx)
 {
     if (t->root == BVH_NULL_ID)
@@ -650,7 +650,7 @@ void bvh_query_ray(const bvh_t* t,
 
         const bvh_node_t* n = &t->nodes[id];
 
-        if (!bvh_ray_aabb(origin, inv_dir, n->aabb, max_t))
+        if (!bvh_ray_aabb(origin, inv_dir, n->aabb, t_max))
         {
             continue;
         }
@@ -1101,9 +1101,9 @@ static int bvh_best_sibling(bvh_t* t, bvh_aabb_t new_aabb)
 // --- Ray Test ----------------------------------------------------------------
 /*
  * Slab test for ray vs AABB intersection.
- * Returns true if the ray hits the AABB within [0, max_t].
+ * Returns true if the ray hits the AABB within [0, t_max].
  */
-static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float max_t)
+static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float t_max)
 {
     float tx1 = (aabb.min.x - origin.x) * inv_dir.x;
     float tx2 = (aabb.max.x - origin.x) * inv_dir.x;
@@ -1118,7 +1118,7 @@ static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb,
     tmin = tmin > tymin ? tmin : tymin;
     tmax = tmax < tymax ? tmax : tymax;
 
-    return tmax >= 0.f && tmin <= tmax && tmin <= max_t;
+    return tmax >= 0.f && tmin <= tmax && tmin <= t_max;
 }
 
 // --- Walk Helper -------------------------------------------------------------
