@@ -1,6 +1,6 @@
 /**
     @file pico_bvh.h
-    @brief Dynamic 2D Bounding Volume Heirarchy (BVH)
+    @brief 2D Dynamic AABB-tree Bounding Volume Heirarchy (BVH)
 
     ---------------------------------------------------------------------------
     Licensing information at end of header
@@ -48,7 +48,7 @@
         bvh_remove(tree, id);
     4) Query with callbacks
         bvh_query_aabb(tree, query, cb, ctx);
-        bvh_query_ray(tree, origin, dir, t_max, cb, ctx);
+        bvh_query_ray(tree, origin, dir, max_t, cb, ctx);
     5) Destroy when done
         bvh_destroy(tree);
 
@@ -100,11 +100,20 @@ typedef struct
 
 /**
  * @brief Return false to stop traversal early.
+ * @param leaf_id Leaf handle for the candidate hit.
+ * @param udata User payload stored in that leaf.
+ * @param ctx User-provided context pointer passed through query calls.
+ * @return true to continue traversal, false to stop early.
  */
 typedef bool (*bvh_query_cb)(int leaf_id, bvh_udata_t udata, void* ctx);
 
 /**
  * @brief Called for every node during bvh_walk(); depth=0 at root.
+ * @param aabb Node bounds.
+ * @param depth Tree depth, where 0 is the root.
+ * @param is_leaf true for leaf nodes, false for internal nodes.
+ * @param udata User payload for leaf nodes; unspecified for internal nodes.
+ * @param ctx User-provided context pointer passed through bvh_walk.
  */
 typedef void (*bvh_walk_cb)(bvh_aabb_t aabb, int depth, bool is_leaf,
                             bvh_udata_t udata, void* ctx);
@@ -118,6 +127,11 @@ typedef struct bvh_t bvh_t;
 
 /**
  * @brief Constructs an AABB from a position and dimensions.
+ * @param x Minimum x coordinate.
+ * @param y Minimum y coordinate.
+ * @param w Width added to x to form max.x.
+ * @param h Height added to y to form max.y.
+ * @return Constructed AABB.
  */
 bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h);
 
@@ -125,11 +139,13 @@ bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h);
 
 /**
  * @brief Allocates and initializes a BVH instances
+ * @return New BVH instance, or NULL on allocation failure.
  */
 bvh_t* bvh_create(void);
 
 /**
  * @brief Destroys and deallocates a BVH instance
+ * @param tree BVH instance to destroy.
  */
 void bvh_destroy(bvh_t* tree);
 
@@ -140,18 +156,28 @@ void bvh_destroy(bvh_t* tree);
  *
  * The stored AABB is padded by `padding` (pass 0 for exact fit).
  *
- * @returns A stable ID for future move/remove calls.
+ * @param tree BVH instance to modify.
+ * @param aabb Tight bounds for the new leaf.
+ * @param padding Margin added on all sides before storing the leaf bounds.
+ * @param udata User payload associated with the leaf.
+ * @return A stable ID for future move/remove calls.
  */
 int bvh_insert(bvh_t* tree, bvh_aabb_t aabb, float padding, bvh_udata_t udata);
 
 /**
  * @brief Remove a leaf.
+ * @param tree BVH instance to modify.
+ * @param leaf_id ID previously returned by bvh_insert.
  */
 void bvh_remove(bvh_t* tree, int leaf_id);
 
 /**
  * @brief Update a leaf's AABB.
- * @returns true if the tree was restructured (the old padded AABB no longer
+ * @param tree BVH instance to modify.
+ * @param leaf_id ID previously returned by bvh_insert.
+ * @param new_aabb New tight bounds for the leaf.
+ * @param padding Margin added on all sides before storing the leaf bounds.
+ * @return true if the tree was restructured (the old padded AABB no longer
  * contained the new tight one).
  */
 bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
@@ -160,42 +186,65 @@ bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
 
 /**
  * @brief Queries the tree against an AABB
+ * @param tree BVH instance to query.
+ * @param query Query AABB in world space.
+ * @param cb Callback invoked for each overlapping leaf.
+ * @param ctx User-provided context pointer passed to cb.
  */
 void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
                     bvh_query_cb cb, void* ctx);
 /**
  * @brief Queries the tree against a ray
  *
- * Ray: origin + t*dir, t in [0, t_max].  Use FLT_MAX for infinite ray.
+ * Ray: origin + t*dir, t in [0, max_t].  Use FLT_MAX for infinite ray.
+ * @param tree BVH instance to query.
+ * @param origin Ray origin.
+ * @param dir Ray direction; it does not need to be normalized.
+ * @param max_t Maximum parametric distance along the ray.
+ * @param cb Callback invoked for each overlapping leaf.
+ * @param ctx User-provided context pointer passed to cb.
  */
 void bvh_query_ray(const bvh_t* tree,
-                   bvh_vec2_t origin, bvh_vec2_t dir, float t_max,
+                   bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
                    bvh_query_cb cb, void* ctx);
 
 // --- Accessors ---------------------------------------------------------------
 
 /**
  * @brief Returns the user data from the specified leaf node
+ * @param tree BVH instance to read from.
+ * @param leaf_id ID previously returned by bvh_insert.
+ * @return User payload stored in that leaf.
  */
 bvh_udata_t bvh_get_udata(const bvh_t* tree, int leaf_id);
 
 /**
  * @brief Returns the enlarged bounds from the specified leaf node
+ * @param tree BVH instance to read from.
+ * @param leaf_id ID previously returned by bvh_insert.
+ * @return Stored padded AABB for that leaf.
  */
 bvh_aabb_t bvh_get_padded_aabb(const bvh_t* tree, int leaf_id);
 
 /**
  * @brief Returns number of leaves in the tree
+ * @param tree BVH instance to read from.
+ * @return Number of currently allocated leaves.
  */
 int bvh_get_leaf_count(const bvh_t* tree);
 
 /**
  * @brief Depth-first walk over every node (internal + leaf).
+ * @param tree BVH instance to walk.
+ * @param cb Callback invoked once per node.
+ * @param ctx User-provided context pointer passed to cb.
  */
 void  bvh_walk(const bvh_t* tree, bvh_walk_cb cb, void* ctx);
 
 /**
  * @brief Total surface-area cost (lower = better balanced).
+ * @param tree BVH instance to evaluate.
+ * @return Sum of node perimeters in the tree.
  */
 float bvh_get_cost(const bvh_t* tree);
 
@@ -326,7 +375,7 @@ static void                 bvh_refit_and_rotate(bvh_t* t, int start);
 static void                 bvh_heap_push(bvh_min_heap_t* h, bvh_heap_entry_t e);
 static bvh_heap_entry_t     bvh_heap_pop(bvh_min_heap_t* h);
 static int                  bvh_best_sibling(bvh_t* t, bvh_aabb_t new_aabb);
-static bool                 bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float t_max);
+static bool                 bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float max_t);
 static void                 bvh_walk_rec(const bvh_t* t, int id, int depth, bvh_walk_cb cb, void* ctx);
 static float                bvh_get_cost_rec(const bvh_t* t, int id);
 
@@ -572,7 +621,7 @@ void bvh_query_aabb(const bvh_t* t, bvh_aabb_t query, bvh_query_cb cb, void* ctx
 // --- Public: Query (Ray) -----------------------------------------------------
 
 void bvh_query_ray(const bvh_t* t,
-                   bvh_vec2_t origin, bvh_vec2_t dir, float t_max,
+                   bvh_vec2_t origin, bvh_vec2_t dir, float max_t,
                    bvh_query_cb cb, void* ctx)
 {
     if (t->root == BVH_NULL_ID)
@@ -601,7 +650,7 @@ void bvh_query_ray(const bvh_t* t,
 
         const bvh_node_t* n = &t->nodes[id];
 
-        if (!bvh_ray_aabb(origin, inv_dir, n->aabb, t_max))
+        if (!bvh_ray_aabb(origin, inv_dir, n->aabb, max_t))
         {
             continue;
         }
@@ -1052,9 +1101,9 @@ static int bvh_best_sibling(bvh_t* t, bvh_aabb_t new_aabb)
 // --- Ray Test ----------------------------------------------------------------
 /*
  * Slab test for ray vs AABB intersection.
- * Returns true if the ray hits the AABB within [0, t_max].
+ * Returns true if the ray hits the AABB within [0, max_t].
  */
-static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float t_max)
+static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb, float max_t)
 {
     float tx1 = (aabb.min.x - origin.x) * inv_dir.x;
     float tx2 = (aabb.max.x - origin.x) * inv_dir.x;
@@ -1069,7 +1118,7 @@ static bool bvh_ray_aabb(bvh_vec2_t origin, bvh_vec2_t inv_dir, bvh_aabb_t aabb,
     tmin = tmin > tymin ? tmin : tymin;
     tmax = tmax < tymax ? tmax : tymax;
 
-    return tmax >= 0.f && tmin <= tmax && tmin <= t_max;
+    return tmax >= 0.f && tmin <= tmax && tmin <= max_t;
 }
 
 // --- Walk Helper -------------------------------------------------------------
