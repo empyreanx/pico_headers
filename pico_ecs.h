@@ -1214,16 +1214,12 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
         }
         else
         {
-            // As a minor optimization, check if the system excludes components
-            if (!ecs_bitset_is_zero(&sys_data->exclude_bits))
+            // Just remove the entity from the sparse set if its components
+            // no longer match
+            if (ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
             {
-                // Just remove the entity from the sparse set if its components
-                // no longer match
-                if (ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
-                {
-                    if (sys_data->remove_cb)
-                        sys_data->remove_cb(ecs, entity, sys_data->udata);
-                }
+                if (sys_data->remove_cb)
+                    sys_data->remove_cb(ecs, entity, sys_data->udata);
             }
         }
     }
@@ -1266,19 +1262,15 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
         }
         else
         {
-            // As a minor optimization, check if the system excludes components
-            if (!ecs_bitset_is_zero(&sys_data->exclude_bits))
+            // Since we are updating the active system, we need to protect
+            // the sparse set. Thus, if the entity is in the set, queue
+            // a remove command
+            if (ecs_sparse_set_find(&sys_data->entity_ids, entity.id, NULL))
             {
-                // Since we are updating the active system, we need to protect
-                // the sparse set. Thus, if the entity is in the set, queue
-                // a remove command
-                if (ecs_sparse_set_find(&sys_data->entity_ids, entity.id, NULL))
-                {
-                    if (sys_data->remove_cb)
-                        sys_data->remove_cb(ecs, entity, sys_data->udata);
+                if (sys_data->remove_cb)
+                    sys_data->remove_cb(ecs, entity, sys_data->udata);
 
-                    ecs_id_array_push(ecs, &ecs->remove_queue, entity.id);
-                }
+                ecs_id_array_push(ecs, &ecs->remove_queue, entity.id);
             }
         }
     }
