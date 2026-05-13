@@ -537,9 +537,6 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 
 #endif // PICO_ECS_H
 
-// TODO remove
-#define PICO_ECS_IMPLEMENTATION
-
 #ifdef PICO_ECS_IMPLEMENTATION // Define once
 
 #ifndef PICO_ECS_MAX_COMPONENTS
