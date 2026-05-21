@@ -51,7 +51,7 @@
         int val = 42;
         emitter_emit(emitter, EVT_JUMP, &val);  // prints "jumped! value=42"
 
-        emitter_free(emitter);
+        emitter_destroy(emitter);
 
     Usage:
     ------
@@ -66,13 +66,15 @@
     Macros:
     -------
 
-    - PICO_EMITTER_MAX_LISTENERS (default: 8)
-      Maximum number of listeners per event type. Must be defined before
+    - PICO_EMITTER_INIT_CAPACITY (default: 8)
+      Initial listener capacity per event slot. Slots grow automatically
+      beyond this limit by doubling. Must be defined before
       EVENTEMITTER_IMPLEMENTATION.
 
-    - PICO_EMITTER_MALLOC(size)  (default: malloc)
-    - PICO_EMITTER_FREE(ptr)     (default: free)
-    - PICO_EMITTER_ASSERT(expr)  (default: assert)
+    - PICO_EMITTER_MALLOC(size)   (default: malloc)
+    - PICO_EMITTER_REALLOC(p,sz)  (default: realloc)
+    - PICO_EMITTER_FREE(ptr)      (default: free)
+    - PICO_EMITTER_ASSERT(expr)   (default: assert)
       Must be defined before EVENTEMITTER_IMPLEMENTATION.
 */
 
@@ -115,7 +117,7 @@ emitter_t* emitter_create(int num_events);
  *
  * @param emitter The emitter to destroy. Must not be NULL.
  */
-void emitter_free(emitter_t* emitter);
+void emitter_destroy(emitter_t* emitter);
 
 /**
  * @brief Subscribes a listener to an event.
@@ -201,8 +203,8 @@ int emitter_count(const emitter_t* emitter, int event);
  * Configuration
  */
 
-#ifndef PICO_EMITTER_MAX_LISTENERS
-#define PICO_EMITTER_MAX_LISTENERS 8
+#ifndef PICO_EMITTER_INIT_CAPACITY
+#define PICO_EMITTER_INIT_CAPACITY 8
 #endif
 
 #ifdef NDEBUG
@@ -216,30 +218,34 @@ int emitter_count(const emitter_t* emitter, int event);
 
 #ifndef PICO_EMITTER_MALLOC
     #include <stdlib.h>
-    #define PICO_EMITTER_MALLOC(size) malloc(size)
-    #define PICO_EMITTER_FREE(ptr)    free(ptr)
+    #define PICO_EMITTER_MALLOC(size)    malloc(size)
+    #define PICO_EMITTER_REALLOC(p, sz)  realloc(p, sz)
+    #define PICO_EMITTER_FREE(ptr)       free(ptr)
 #endif
 
 /*
  * Internal aliases
  */
 
-#define EMITTER_MAX_LISTENERS PICO_EMITTER_MAX_LISTENERS
+#define EMITTER_INIT_CAPACITY PICO_EMITTER_INIT_CAPACITY
 #define EMITTER_ASSERT        PICO_EMITTER_ASSERT
 #define EMITTER_MALLOC        PICO_EMITTER_MALLOC
+#define EMITTER_REALLOC       PICO_EMITTER_REALLOC
 #define EMITTER_FREE          PICO_EMITTER_FREE
 
 /*
  * Per-event listener slot. Uses a struct-of-arrays layout so that function
  * pointers are contiguous in memory, improving cache performance during emit.
+ * Arrays are heap-allocated and grow by doubling when capacity is exceeded.
  */
 typedef struct
 {
-    emitter_listener_fn listeners[EMITTER_MAX_LISTENERS]; // function pointers
-    void*   udatas[EMITTER_MAX_LISTENERS];    // corresponding user data
-    uint8_t once[EMITTER_MAX_LISTENERS];      // 1 = fire-once flag
-    int     count;                       // active listener count
-    bool    emitting;                    // true while iterating
+    emitter_listener_fn* listeners; // function pointers
+    void**               udatas;    // corresponding user data
+    uint8_t*             once;      // 1 = fire-once flag
+    int                  count;     // active listener count
+    int                  capacity;  // allocated capacity
+    bool                 emitting;  // true while iterating
 } emitter_slot_t;
 
 struct emitter_emitter_s
@@ -247,6 +253,29 @@ struct emitter_emitter_s
     emitter_slot_t* events;
     int num_events;
 };
+
+/*
+ * Grows a slot's listener arrays by doubling capacity.
+ */
+static void emitter_grow_slot(emitter_slot_t* slot)
+{
+    int new_cap = slot->capacity == 0 ? EMITTER_INIT_CAPACITY : slot->capacity * 2;
+
+    emitter_listener_fn* l = (emitter_listener_fn*)EMITTER_REALLOC(slot->listeners,
+                                                   (size_t)new_cap * sizeof(emitter_listener_fn));
+    EMITTER_ASSERT(l != NULL);
+    slot->listeners = l;
+
+    void** u = (void**)EMITTER_REALLOC(slot->udatas, (size_t)new_cap * sizeof(void*));
+    EMITTER_ASSERT(u != NULL);
+    slot->udatas = u;
+
+    uint8_t* o = (uint8_t*)EMITTER_REALLOC(slot->once, (size_t)new_cap * sizeof(uint8_t));
+    EMITTER_ASSERT(o != NULL);
+    slot->once = o;
+
+    slot->capacity = new_cap;
+}
 
 /*
  * Removes NULL-tombstoned entries from a slot after emit or emitter_off.
@@ -282,7 +311,10 @@ static void emitter_subscribe(emitter_t* emitter, int event,
 
     emitter_slot_t* slot = &emitter->events[event];
 
-    EMITTER_ASSERT(slot->count < EMITTER_MAX_LISTENERS);
+    if (slot->count == slot->capacity)
+    {
+        emitter_grow_slot(slot);
+    }
 
     slot->listeners[slot->count] = listener;
     slot->udatas[slot->count]    = udata;
@@ -316,9 +348,16 @@ emitter_t* emitter_create(int num_events)
     return emitter;
 }
 
-void emitter_free(emitter_t* emitter)
+void emitter_destroy(emitter_t* emitter)
 {
     EMITTER_ASSERT(emitter != NULL);
+
+    for (int i = 0; i < emitter->num_events; i++)
+    {
+        EMITTER_FREE(emitter->events[i].listeners);
+        EMITTER_FREE(emitter->events[i].udatas);
+        EMITTER_FREE(emitter->events[i].once);
+    }
 
     EMITTER_FREE(emitter->events);
     EMITTER_FREE(emitter);

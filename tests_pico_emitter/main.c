@@ -49,7 +49,7 @@ TEST_CASE(test_create_free)
 {
     emitter_t* em = emitter_create(4);
     REQUIRE(em != NULL);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -59,7 +59,7 @@ TEST_CASE(test_emitter_count_starts_at_zero)
     REQUIRE(emitter_count(em, 0) == 0);
     REQUIRE(emitter_count(em, 1) == 0);
     REQUIRE(emitter_count(em, 2) == 0);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -71,7 +71,7 @@ TEST_CASE(test_emitter_on_increases_count)
     emitter_on(em, 0, listener_inc, NULL);
     REQUIRE(emitter_count(em, 0) == 2);
     REQUIRE(emitter_count(em, 1) == 0);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -82,7 +82,7 @@ TEST_CASE(test_emit_calls_listener)
     emitter_on(em, 0, listener_inc, NULL);
     emitter_emit(em, 0, NULL);
     REQUIRE(g_call_count == 1);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -95,7 +95,7 @@ TEST_CASE(test_emit_calls_multiple_listeners)
     emitter_on(em, 0, listener_inc, NULL);
     emitter_emit(em, 0, NULL);
     REQUIRE(g_call_count == 3);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -107,7 +107,7 @@ TEST_CASE(test_emit_passes_data)
     int payload = 99;
     emitter_emit(em, 0, &payload);
     REQUIRE(result == 99);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -119,7 +119,7 @@ TEST_CASE(test_emit_passes_udata)
     emitter_on(em, 0, listener_store_udata, &counter);
     emitter_emit(em, 0, NULL);
     REQUIRE(counter == 2);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -136,7 +136,7 @@ TEST_CASE(test_emit_fires_in_order)
     REQUIRE(g_call_order[0] == 10);
     REQUIRE(g_call_order[1] == 20);
     REQUIRE(g_call_order[2] == 30);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -145,7 +145,7 @@ TEST_CASE(test_emit_no_listeners_is_safe)
     emitter_t* em = emitter_create(2);
     emitter_emit(em, 0, NULL);
     emitter_emit(em, 1, NULL);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -162,7 +162,7 @@ TEST_CASE(test_events_are_independent)
     REQUIRE(g_call_count == 1);
     emitter_emit(em, 2, NULL);
     REQUIRE(g_call_count == 3);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -175,7 +175,7 @@ TEST_CASE(test_emitter_off_removes_listener)
     REQUIRE(emitter_count(em, 0) == 0);
     emitter_emit(em, 0, NULL);
     REQUIRE(g_call_count == 0);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -189,7 +189,7 @@ TEST_CASE(test_emitter_off_removes_first_match_only)
     REQUIRE(emitter_count(em, 0) == 1);
     emitter_emit(em, 0, NULL);
     REQUIRE(g_call_count == 1);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -198,7 +198,7 @@ TEST_CASE(test_emitter_off_unregistered_is_safe)
     emitter_t* em = emitter_create(1);
     /* Should not assert/crash when listener is not registered. */
     emitter_off(em, 0, listener_inc);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -212,7 +212,7 @@ TEST_CASE(test_emitter_off_all_removes_all)
     REQUIRE(emitter_count(em, 0) == 0);
     emitter_emit(em, 0, NULL);
     REQUIRE(g_call_count == 0);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -226,7 +226,7 @@ TEST_CASE(test_emitter_once_fires_once)
     emitter_emit(em, 0, NULL);
     REQUIRE(g_call_count == 1);
     REQUIRE(emitter_count(em, 0) == 0);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -240,7 +240,7 @@ TEST_CASE(test_emitter_once_and_on_together)
     REQUIRE(g_call_count == 2);
     emitter_emit(em, 0, NULL); /* only persistent fires */
     REQUIRE(g_call_count == 3);
-    emitter_free(em);
+    emitter_destroy(em);
     return true;
 }
 
@@ -270,7 +270,7 @@ TEST_CASE(test_emitter_off_during_emit)
     REQUIRE(g_call_count == 2);
     /* First listener removed itself; only the second remains. */
     REQUIRE(emitter_count(g_emitter_safe, 0) == 1);
-    emitter_free(g_emitter_safe);
+    emitter_destroy(g_emitter_safe);
     g_emitter_safe = NULL;
     return true;
 }
@@ -294,7 +294,7 @@ TEST_CASE(test_emitter_off_all_during_emit)
     /* First callback fires and calls emitter_off_all; remaining two are skipped. */
     REQUIRE(g_call_count == 1);
     REQUIRE(emitter_count(g_emitter_safe, 0) == 0);
-    emitter_free(g_emitter_safe);
+    emitter_destroy(g_emitter_safe);
     g_emitter_safe = NULL;
     return true;
 }
@@ -318,7 +318,7 @@ TEST_CASE(test_emitter_on_during_emit_not_called)
     /* Next emit fires both. */
     emitter_emit(g_emitter_safe, 0, NULL);
     REQUIRE(g_call_count == 3);
-    emitter_free(g_emitter_safe);
+    emitter_destroy(g_emitter_safe);
     g_emitter_safe = NULL;
     return true;
 }
@@ -341,7 +341,7 @@ TEST_CASE(test_emitter_once_reregister_during_emit)
     REQUIRE(emitter_count(g_emitter_safe, 0) == 1);
     emitter_emit(g_emitter_safe, 0, NULL); /* fires again */
     REQUIRE(g_call_count == 2);
-    emitter_free(g_emitter_safe);
+    emitter_destroy(g_emitter_safe);
     g_emitter_safe = NULL;
     return true;
 }
