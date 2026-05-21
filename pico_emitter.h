@@ -71,10 +71,11 @@
       beyond this limit by doubling. Must be defined before
       PICO_EMITTER_IMPLEMENTATION.
 
-    - PICO_EMITTER_MALLOC(size)   (default: malloc)
-    - PICO_EMITTER_REALLOC(p,sz)  (default: realloc)
-    - PICO_EMITTER_FREE(ptr)      (default: free)
-    - PICO_EMITTER_ASSERT(expr)   (default: assert)
+    - PICO_EMITTER_MALLOC(size)        (default: malloc)
+    - PICO_EMITTER_REALLOC(p,sz)       (default: realloc)
+    - PICO_EMITTER_FREE(ptr)           (default: free)
+    - PICO_EMITTER_MEMCPY(dst,src,n)   (default: memcpy)
+    - PICO_EMITTER_ASSERT(expr)        (default: assert)
       Must be defined before PICO_EMITTER_IMPLEMENTATION.
 */
 
@@ -258,14 +259,18 @@ void queued_emitter_off_all(queued_emitter_t* qe, int event);
 /**
  * @brief Enqueues an event for deferred dispatch.
  *
- * The data pointer is stored by reference; the pointed-to object must remain
- * valid until queued_emitter_flush is called.
+ * If data is non-NULL and data_size is greater than zero, the payload is
+ * copied into the emitter's internal arena. The caller does not need to keep
+ * the pointed-to object alive after this call returns.
  *
- * @param qe    The queued emitter. Must not be NULL.
- * @param event Event ID in [0, num_events).
- * @param data  Optional event payload forwarded to each listener. May be NULL.
+ * @param qe        The queued emitter. Must not be NULL.
+ * @param event     Event ID in [0, num_events).
+ * @param data      Optional event payload. May be NULL.
+ * @param data_size Size in bytes of the object pointed to by data. Pass 0
+ *                  when data is NULL or when a pointer-only reference is
+ *                  intentionally stored without copying.
  */
-void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data);
+void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data, size_t data_size);
 
 /**
  * @brief Dispatches all queued events in FIFO order and clears the queue.
@@ -294,8 +299,9 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
 
 #ifdef PICO_EMITTER_IMPLEMENTATION
 
-#include <stdint.h>  // uint8_t
-#include <string.h>  // memset
+#include <stdint.h>   // uint8_t
+#include <stdalign.h> // alignof
+#include <string.h>   // memset
 
 /*
  * Configuration
@@ -321,6 +327,10 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
     #define PICO_EMITTER_FREE(ptr)       free(ptr)
 #endif
 
+#ifndef PICO_EMITTER_MEMCPY
+    #define PICO_EMITTER_MEMCPY(dst, src, n) memcpy(dst, src, n)
+#endif
+
 /*
  * Internal aliases
  */
@@ -330,6 +340,7 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
 #define EMITTER_MALLOC        PICO_EMITTER_MALLOC
 #define EMITTER_REALLOC       PICO_EMITTER_REALLOC
 #define EMITTER_FREE          PICO_EMITTER_FREE
+#define EMITTER_MEMCPY        PICO_EMITTER_MEMCPY
 
 /*
  * Per-event listener slot. Uses a struct-of-arrays layout so that function
@@ -351,6 +362,25 @@ struct emitter_emitter_s
     emitter_slot_t* events;
     int num_events;
 };
+
+/* --------------------------------------------------------------------------
+ * Arena allocator types
+ * -------------------------------------------------------------------------- */
+
+typedef struct arena_block_s
+{
+    uint8_t*              memory;
+    size_t                size;
+    size_t                offset;
+    struct arena_block_s* next;
+} arena_block_t;
+
+typedef struct arena_s
+{
+    arena_block_t* first;
+    arena_block_t* current;
+    size_t         block_size;
+} arena_t;
 
 /*
  * Grows a slot's listener arrays by doubling capacity.
@@ -419,6 +449,19 @@ static void emitter_subscribe(emitter_t* emitter, int event,
     slot->once[slot->count]      = once;
     slot->count++;
 }
+
+/* --------------------------------------------------------------------------
+ * Arena forward declarations
+ * -------------------------------------------------------------------------- */
+
+static arena_block_t* arena_block_create(size_t size);
+static bool           arena_init(arena_t* arena, size_t initial_block_size);
+static bool           arena_grow(arena_t* arena, size_t min_size);
+static uintptr_t      arena_align_forward(uintptr_t ptr, size_t align);
+static void*          arena_alloc_align(arena_t* arena, size_t size, size_t align);
+static void*          arena_alloc(arena_t* arena, size_t size);
+static void           arena_reset(arena_t* arena);
+static void           arena_destroy(arena_t* arena);
 
 emitter_t* emitter_create(int num_events)
 {
@@ -602,6 +645,7 @@ int emitter_count(const emitter_t* emitter, int event)
 struct queued_emitter_s
 {
     emitter_t*   emitter;
+    arena_t      arena;
     int*         events;
     const void** datas;
     int          count;
@@ -612,15 +656,20 @@ static void queued_emitter_grow(queued_emitter_t* qe)
 {
     int new_cap = qe->capacity == 0 ? EMITTER_INIT_CAPACITY : qe->capacity * 2;
 
-    int* events = (int*)EMITTER_REALLOC(qe->events, (size_t)new_cap * sizeof(int));
-    EMITTER_ASSERT(events != NULL);
-    qe->events = events;
+    int*         new_events = (int*)arena_alloc(&qe->arena, (size_t)new_cap * sizeof(int));
+    const void** new_datas  = (const void**)arena_alloc(&qe->arena, (size_t)new_cap * sizeof(const void*));
 
-    const void** datas = (const void**)EMITTER_REALLOC(qe->datas,
-                                       (size_t)new_cap * sizeof(const void*));
-    EMITTER_ASSERT(datas != NULL);
-    qe->datas = datas;
+    EMITTER_ASSERT(new_events != NULL);
+    EMITTER_ASSERT(new_datas  != NULL);
 
+    if (qe->count > 0)
+    {
+        EMITTER_MEMCPY(new_events, qe->events, (size_t)qe->count * sizeof(int));
+        EMITTER_MEMCPY(new_datas,  qe->datas,  (size_t)qe->count * sizeof(const void*));
+    }
+
+    qe->events   = new_events;
+    qe->datas    = new_datas;
     qe->capacity = new_cap;
 }
 
@@ -643,6 +692,15 @@ queued_emitter_t* queued_emitter_create(int num_events)
         return NULL;
     }
 
+    size_t init_block = (size_t)EMITTER_INIT_CAPACITY * (sizeof(int) + sizeof(const void*));
+
+    if (!arena_init(&qe->arena, init_block))
+    {
+        emitter_destroy(qe->emitter);
+        EMITTER_FREE(qe);
+        return NULL;
+    }
+
     qe->events   = NULL;
     qe->datas    = NULL;
     qe->count    = 0;
@@ -656,8 +714,7 @@ void queued_emitter_destroy(queued_emitter_t* qe)
     EMITTER_ASSERT(qe != NULL);
 
     emitter_destroy(qe->emitter);
-    EMITTER_FREE(qe->events);
-    EMITTER_FREE(qe->datas);
+    arena_destroy(&qe->arena);
     EMITTER_FREE(qe);
 }
 
@@ -685,7 +742,7 @@ void queued_emitter_off_all(queued_emitter_t* qe, int event)
     emitter_off_all(qe->emitter, event);
 }
 
-void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data)
+void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data, size_t data_size)
 {
     EMITTER_ASSERT(qe != NULL);
     EMITTER_ASSERT(event >= 0 && event < qe->emitter->num_events);
@@ -695,8 +752,18 @@ void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data)
         queued_emitter_grow(qe);
     }
 
+    const void* stored = NULL;
+
+    if (data != NULL && data_size > 0)
+    {
+        void* copy = arena_alloc(&qe->arena, data_size);
+        EMITTER_ASSERT(copy != NULL);
+        EMITTER_MEMCPY(copy, data, data_size);
+        stored = copy;
+    }
+
     qe->events[qe->count] = event;
-    qe->datas[qe->count]  = data;
+    qe->datas[qe->count]  = stored;
     qe->count++;
 }
 
@@ -712,22 +779,181 @@ void queued_emitter_flush(queued_emitter_t* qe)
         emitter_emit(qe->emitter, qe->events[i], qe->datas[i]);
     }
 
-    // Shift any events added during flush to the front.
     int remaining = qe->count - flush_count;
 
-    for (int i = 0; i < remaining; i++)
+    if (remaining == 0)
     {
-        qe->events[i] = qe->events[flush_count + i];
-        qe->datas[i]  = qe->datas[flush_count + i];
+        // Common case: reset the arena, reclaiming all event-queue memory at once.
+        arena_reset(&qe->arena);
+        qe->events   = NULL;
+        qe->datas    = NULL;
+        qe->count    = 0;
+        qe->capacity = 0;
     }
+    else
+    {
+        // Events were enqueued during flush; copy them to fresh arena allocations
+        // so the flushed region is logically released. The arena will be fully
+        // reset on the next flush that completes with no remaining events.
+        int*         src_events = qe->events + flush_count;
+        const void** src_datas  = qe->datas  + flush_count;
 
-    qe->count = remaining;
+        int*         new_events = (int*)arena_alloc(&qe->arena,
+                                      (size_t)remaining * sizeof(int));
+
+        const void** new_datas  = (const void**)arena_alloc(&qe->arena,
+                                      (size_t)remaining * sizeof(const void*));
+
+        EMITTER_ASSERT(new_events != NULL && new_datas != NULL);
+
+        EMITTER_MEMCPY(new_events, src_events, (size_t)remaining * sizeof(int));
+        EMITTER_MEMCPY(new_datas,  src_datas,  (size_t)remaining * sizeof(const void*));
+
+        qe->events   = new_events;
+        qe->datas    = new_datas;
+        qe->count    = remaining;
+        qe->capacity = remaining;
+    }
 }
 
 int queued_emitter_count(const queued_emitter_t* qe, int event)
 {
     EMITTER_ASSERT(qe != NULL);
     return emitter_count(qe->emitter, event);
+}
+
+/* ==========================================================================
+ * Arena allocator
+ * ========================================================================== */
+
+static arena_block_t* arena_block_create(size_t size)
+{
+    arena_block_t* block = (arena_block_t*)EMITTER_MALLOC(sizeof(arena_block_t));
+
+    if (!block)
+        return NULL;
+
+    block->memory = (uint8_t*)EMITTER_MALLOC(size);
+
+    if (!block->memory)
+    {
+        EMITTER_FREE(block);
+        return NULL;
+    }
+
+    block->size   = size;
+    block->offset = 0;
+    block->next   = NULL;
+
+    return block;
+}
+
+static bool arena_init(arena_t* arena, size_t initial_block_size)
+{
+    arena_block_t* block = arena_block_create(initial_block_size);
+
+    if (!block)
+        return false;
+
+    arena->first      = block;
+    arena->current    = block;
+    arena->block_size = initial_block_size;
+
+    return true;
+}
+
+static bool arena_grow(arena_t* arena, size_t min_size)
+{
+    size_t new_size = arena->block_size;
+
+    while (new_size < min_size)
+    {
+        new_size *= 2;
+    }
+
+    arena_block_t* block = arena_block_create(new_size);
+
+    if (!block)
+        return false;
+
+    arena->current->next = block;
+    arena->current       = block;
+
+    return true;
+}
+
+static uintptr_t arena_align_forward(uintptr_t ptr, size_t align)
+{
+    uintptr_t mask = (uintptr_t)align - 1;
+    return (ptr + mask) & ~mask;
+}
+
+static void* arena_alloc_align(arena_t* arena, size_t size, size_t align)
+{
+    if ((align & (align - 1)) != 0)
+        return NULL; // align must be a power of two
+
+    arena_block_t* block = arena->current;
+
+    uintptr_t base      = (uintptr_t)block->memory;
+    uintptr_t ptr       = base + block->offset;
+    uintptr_t aligned   = arena_align_forward(ptr, align);
+    size_t    new_offset = (aligned - base) + size;
+
+    if (new_offset > block->size)
+    {
+        size_t required = size + align;
+
+        if (!arena_grow(arena, required))
+            return NULL;
+
+        block      = arena->current;
+        base       = (uintptr_t)block->memory;
+        aligned    = arena_align_forward(base, align);
+        new_offset = (aligned - base) + size;
+    }
+
+    block->offset = new_offset;
+
+    return (void*)aligned;
+}
+
+static void* arena_alloc(arena_t* arena, size_t size)
+{
+    return arena_alloc_align(arena, size, alignof(max_align_t));
+}
+
+static void arena_reset(arena_t* arena)
+{
+    arena_block_t* block = arena->first->next;
+
+    while (block)
+    {
+        arena_block_t* next = block->next;
+        EMITTER_FREE(block->memory);
+        EMITTER_FREE(block);
+        block = next;
+    }
+
+    arena->first->next   = NULL;
+    arena->first->offset = 0;
+    arena->current       = arena->first;
+}
+
+static void arena_destroy(arena_t* arena)
+{
+    arena_block_t* block = arena->first;
+
+    while (block)
+    {
+        arena_block_t* next = block->next;
+        EMITTER_FREE(block->memory);
+        EMITTER_FREE(block);
+        block = next;
+    }
+
+    arena->first   = NULL;
+    arena->current = NULL;
 }
 
 #endif // PICO_EMITTER_IMPLEMENTATION

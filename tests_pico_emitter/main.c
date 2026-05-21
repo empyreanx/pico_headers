@@ -43,6 +43,23 @@ static void listener_read_data(const void* data, void* udata)
     *dst = *(int*)data;
 }
 
+typedef struct { int x; int y; float z; } test_vec3_t;
+
+static void listener_read_vec3(const void* data, void* udata)
+{
+    test_vec3_t* dst = (test_vec3_t*)udata;
+    *dst = *(const test_vec3_t*)data;
+}
+
+static int g_read_results[16];
+static int g_read_count = 0;
+
+static void listener_append_data(const void* data, void* udata)
+{
+    (void)udata;
+    g_read_results[g_read_count++] = *(const int*)data;
+}
+
 /* Tests -------------------------------------------------------------------- */
 
 TEST_CASE(test_create_free)
@@ -389,7 +406,7 @@ TEST_CASE(test_queued_emit_deferred)
     reset_counters();
     queued_emitter_t* qe = queued_emitter_create(1);
     queued_emitter_on(qe, 0, listener_inc, NULL);
-    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_emit(qe, 0, NULL, 0);
     REQUIRE(g_call_count == 0); /* not fired yet */
     queued_emitter_destroy(qe);
     return true;
@@ -400,7 +417,7 @@ TEST_CASE(test_queued_flush_dispatches)
     reset_counters();
     queued_emitter_t* qe = queued_emitter_create(1);
     queued_emitter_on(qe, 0, listener_inc, NULL);
-    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_emit(qe, 0, NULL, 0);
     queued_emitter_flush(qe);
     REQUIRE(g_call_count == 1);
     queued_emitter_destroy(qe);
@@ -415,9 +432,9 @@ TEST_CASE(test_queued_flush_order)
     queued_emitter_on(qe, 0, listener_record_order, &ids[0]);
     queued_emitter_on(qe, 1, listener_record_order, &ids[1]);
     queued_emitter_on(qe, 2, listener_record_order, &ids[2]);
-    queued_emitter_emit(qe, 0, NULL);
-    queued_emitter_emit(qe, 1, NULL);
-    queued_emitter_emit(qe, 2, NULL);
+    queued_emitter_emit(qe, 0, NULL, 0);
+    queued_emitter_emit(qe, 1, NULL, 0);
+    queued_emitter_emit(qe, 2, NULL, 0);
     queued_emitter_flush(qe);
     REQUIRE(g_order_count   == 3);
     REQUIRE(g_call_order[0] == 10);
@@ -432,7 +449,7 @@ TEST_CASE(test_queued_flush_clears_queue)
     reset_counters();
     queued_emitter_t* qe = queued_emitter_create(1);
     queued_emitter_on(qe, 0, listener_inc, NULL);
-    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_emit(qe, 0, NULL, 0);
     queued_emitter_flush(qe);
     REQUIRE(g_call_count == 1);
     queued_emitter_flush(qe); /* second flush does nothing */
@@ -447,7 +464,7 @@ TEST_CASE(test_queued_passes_data)
     queued_emitter_t* qe = queued_emitter_create(1);
     queued_emitter_on(qe, 0, listener_read_data, &result);
     int payload = 77;
-    queued_emitter_emit(qe, 0, &payload);
+    queued_emitter_emit(qe, 0, &payload, sizeof(payload));
     queued_emitter_flush(qe);
     REQUIRE(result == 77);
     queued_emitter_destroy(qe);
@@ -459,8 +476,8 @@ TEST_CASE(test_queued_once)
     reset_counters();
     queued_emitter_t* qe = queued_emitter_create(1);
     queued_emitter_once(qe, 0, listener_inc, NULL);
-    queued_emitter_emit(qe, 0, NULL);
-    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_emit(qe, 0, NULL, 0);
+    queued_emitter_emit(qe, 0, NULL, 0);
     queued_emitter_flush(qe);
     REQUIRE(g_call_count == 1);
     REQUIRE(queued_emitter_count(qe, 0) == 0);
@@ -474,7 +491,7 @@ TEST_CASE(test_queued_off)
     queued_emitter_t* qe = queued_emitter_create(1);
     queued_emitter_on(qe, 0, listener_inc, NULL);
     queued_emitter_off(qe, 0, listener_inc);
-    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_emit(qe, 0, NULL, 0);
     queued_emitter_flush(qe);
     REQUIRE(g_call_count == 0);
     queued_emitter_destroy(qe);
@@ -488,7 +505,7 @@ TEST_CASE(test_queued_off_all)
     queued_emitter_on(qe, 0, listener_inc, NULL);
     queued_emitter_on(qe, 0, listener_inc, NULL);
     queued_emitter_off_all(qe, 0);
-    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_emit(qe, 0, NULL, 0);
     queued_emitter_flush(qe);
     REQUIRE(g_call_count == 0);
     queued_emitter_destroy(qe);
@@ -501,7 +518,7 @@ static void queued_listener_enqueues(const void* data, void* udata)
 {
     (void)data;
     (void)udata;
-    queued_emitter_emit(g_qe_safe, 0, NULL);
+    queued_emitter_emit(g_qe_safe, 0, NULL, 0);
     g_call_count++;
 }
 
@@ -510,13 +527,99 @@ TEST_CASE(test_queued_emit_during_flush_deferred)
     reset_counters();
     g_qe_safe = queued_emitter_create(1);
     queued_emitter_on(g_qe_safe, 0, queued_listener_enqueues, NULL);
-    queued_emitter_emit(g_qe_safe, 0, NULL);
+    queued_emitter_emit(g_qe_safe, 0, NULL, 0);
     queued_emitter_flush(g_qe_safe); /* fires; listener re-enqueues */
     REQUIRE(g_call_count == 1);      /* only the original event fired */
     queued_emitter_flush(g_qe_safe); /* fires the re-enqueued event */
     REQUIRE(g_call_count == 2);
     queued_emitter_destroy(g_qe_safe);
     g_qe_safe = NULL;
+    return true;
+}
+
+/* Proves copy semantics: mutating the source after enqueue must not affect the
+ * value received by the listener. */
+TEST_CASE(test_queued_data_copied_not_referenced)
+{
+    int result = 0;
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_read_data, &result);
+    int payload = 42;
+    queued_emitter_emit(qe, 0, &payload, sizeof(payload));
+    payload = 999; /* mutate original after enqueue */
+    queued_emitter_flush(qe);
+    REQUIRE(result == 42); /* must see the copied value, not 999 */
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+/* Larger struct payload: exercises arena alignment and multi-field copy. */
+TEST_CASE(test_queued_large_payload)
+{
+    test_vec3_t result = { 0, 0, 0.0f };
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_read_vec3, &result);
+    test_vec3_t payload = { 10, 20, 3.5f };
+    queued_emitter_emit(qe, 0, &payload, sizeof(payload));
+    queued_emitter_flush(qe);
+    REQUIRE(result.x == 10);
+    REQUIRE(result.y == 20);
+    REQUIRE(result.z == 3.5f);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+/* Queue more than EMITTER_INIT_CAPACITY events to force arena grow. */
+TEST_CASE(test_queued_many_events_arena_grow)
+{
+    reset_counters();
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_inc, NULL);
+    for (int i = 0; i < 24; i++)
+        queued_emitter_emit(qe, 0, NULL, 0);
+    queued_emitter_flush(qe);
+    REQUIRE(g_call_count == 24);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+/* Arena reset and reuse: flush, re-emit, flush again. */
+TEST_CASE(test_queued_arena_reuse_after_flush)
+{
+    int result = 0;
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_read_data, &result);
+    int payload = 11;
+    queued_emitter_emit(qe, 0, &payload, sizeof(payload));
+    queued_emitter_flush(qe);
+    REQUIRE(result == 11);
+    payload = 22;
+    result  = 0;
+    queued_emitter_emit(qe, 0, &payload, sizeof(payload));
+    queued_emitter_flush(qe);
+    REQUIRE(result == 22);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+/* Multiple events with distinct payloads each get an independent arena copy. */
+TEST_CASE(test_queued_multiple_payloads_independent)
+{
+    g_read_count = 0;
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_append_data, NULL);
+    int vals[4] = { 1, 2, 3, 4 };
+    for (int i = 0; i < 4; i++)
+        queued_emitter_emit(qe, 0, &vals[i], sizeof(int));
+    for (int i = 0; i < 4; i++) /* mutate sources before flush */
+        vals[i] = 0;
+    queued_emitter_flush(qe);
+    REQUIRE(g_read_count      == 4);
+    REQUIRE(g_read_results[0] == 1);
+    REQUIRE(g_read_results[1] == 2);
+    REQUIRE(g_read_results[2] == 3);
+    REQUIRE(g_read_results[3] == 4);
+    queued_emitter_destroy(qe);
     return true;
 }
 
@@ -534,6 +637,11 @@ TEST_SUITE(suite_queued_emitter)
     RUN_TEST_CASE(test_queued_off);
     RUN_TEST_CASE(test_queued_off_all);
     RUN_TEST_CASE(test_queued_emit_during_flush_deferred);
+    RUN_TEST_CASE(test_queued_data_copied_not_referenced);
+    RUN_TEST_CASE(test_queued_large_payload);
+    RUN_TEST_CASE(test_queued_many_events_arena_grow);
+    RUN_TEST_CASE(test_queued_arena_reuse_after_flush);
+    RUN_TEST_CASE(test_queued_multiple_payloads_independent);
 }
 
 int main(void)
