@@ -14,7 +14,7 @@
     - Tiny memory footprint
     - Simple and minimalistic API
     - Listeners subscribe to integer-keyed event types
-    - Fire-once (em_once) listener support
+    - Fire-once (emitter_once) listener support
     - Safe removal of listeners from within callbacks
     - Permissive licensing (zlib or public domain)
 
@@ -26,7 +26,7 @@
     [0, num_events). Multiple listeners can be registered per event and are
     invoked in registration order when the event is emitted.
 
-    Listeners may safely call em_on, em_once, em_off, and em_off_all from
+    Listeners may safely call emitter_on, emitter_once, emitter_off, and emitter_off_all from
     within a callback. Newly registered listeners take effect on the next
     emit. Removals take effect after the current emit returns.
 
@@ -35,31 +35,31 @@
 
     Define event IDs:
 
-    > typedef enum { EVT_JUMP, EVT_LAND, EVT_COUNT } my_event_t;
+        typedef enum { EVT_JUMP, EVT_LAND, EVT_COUNT } my_event_t;
 
     Create an emitter, subscribe, emit, and tear down:
 
-    > void on_jump(const void* data, void* udata)
-    > {
-    >     printf("jumped! value=%d\n", *(int*)data);
-    > }
-    >
-    > emitter_t* emitter = em_create(EVT_COUNT);
-    >
-    > em_on(emitter, EVT_JUMP, on_jump, NULL);
-    >
-    > int val = 42;
-    > em_emit(emitter, EVT_JUMP, &val);  // prints "jumped! value=42"
-    >
-    > em_free(emitter);
+        void on_jump(const void* data, void* udata)
+        {
+            printf("jumped! value=%d\n", *(int*)data);
+        }
+
+        emitter_t* emitter = emitter_create(EVT_COUNT);
+
+        emitter_on(emitter, EVT_JUMP, on_jump, NULL);
+
+        int val = 42;
+        emitter_emit(emitter, EVT_JUMP, &val);  // prints "jumped! value=42"
+
+        emitter_free(emitter);
 
     Usage:
     ------
 
     To use this library in your project, add the following
 
-    > #define EVENTEMITTER_IMPLEMENTATION
-    > #include "pico_emitter.h"
+        #define EVENTEMITTER_IMPLEMENTATION
+        #include "pico_emitter.h"
 
     to a source file (once), then simply include the header normally.
 
@@ -79,8 +79,8 @@
 #ifndef PICO_EMITTER_H
 #define PICO_EMITTER_H
 
-#include <stdbool.h> /* bool, true, false */
-#include <stddef.h>  /* NULL */
+#include <stdbool.h> // bool, true, false
+#include <stddef.h>  // NULL
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,12 +92,12 @@ extern "C" {
  * @param data  Read-only event payload supplied by the emitter. May be NULL.
  * @param udata User data registered alongside the listener. May be NULL.
  */
-typedef void (*em_listener_fn)(const void* data, void* udata);
+typedef void (*emitter_listener_fn)(const void* data, void* udata);
 
 /**
  * @brief Event emitter context (opaque).
  */
-typedef struct em_emitter_s emitter_t;
+typedef struct emitter_emitter_s emitter_t;
 
 /**
  * @brief Creates an event emitter that supports the given number of event types.
@@ -108,14 +108,14 @@ typedef struct em_emitter_s emitter_t;
  *
  * @returns A pointer to the new emitter, or NULL if allocation failed.
  */
-emitter_t* em_create(int num_events);
+emitter_t* emitter_create(int num_events);
 
 /**
  * @brief Destroys the emitter and frees all associated memory.
  *
  * @param emitter The emitter to destroy. Must not be NULL.
  */
-void em_free(emitter_t* emitter);
+void emitter_free(emitter_t* emitter);
 
 /**
  * @brief Subscribes a listener to an event.
@@ -128,7 +128,7 @@ void em_free(emitter_t* emitter);
  * @param listener Callback to invoke. Must not be NULL.
  * @param udata    Arbitrary pointer forwarded to the callback. May be NULL.
  */
-void em_on(emitter_t* emitter, int event, em_listener_fn listener, void* udata);
+void emitter_on(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata);
 
 /**
  * @brief Subscribes a listener that fires exactly once, then unsubscribes.
@@ -141,19 +141,19 @@ void em_on(emitter_t* emitter, int event, em_listener_fn listener, void* udata);
  * @param listener Callback to invoke. Must not be NULL.
  * @param udata    Arbitrary pointer forwarded to the callback. May be NULL.
  */
-void em_once(emitter_t* emitter, int event, em_listener_fn listener, void* udata);
+void emitter_once(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata);
 
 /**
  * @brief Unsubscribes the first listener whose function pointer matches.
  *
- * If the same function was registered multiple times, call em_off once per
+ * If the same function was registered multiple times, call emitter_off once per
  * registration to remove each occurrence individually.
  *
  * @param emitter  The emitter. Must not be NULL.
  * @param event    Event ID in [0, num_events).
  * @param listener The function pointer to remove. Must not be NULL.
  */
-void em_off(emitter_t* emitter, int event, em_listener_fn listener);
+void emitter_off(emitter_t* emitter, int event, emitter_listener_fn listener);
 
 /**
  * @brief Removes all listeners subscribed to an event.
@@ -161,7 +161,7 @@ void em_off(emitter_t* emitter, int event, em_listener_fn listener);
  * @param emitter The emitter. Must not be NULL.
  * @param event   Event ID in [0, num_events).
  */
-void em_off_all(emitter_t* emitter, int event);
+void emitter_off_all(emitter_t* emitter, int event);
 
 /**
  * @brief Emits an event, invoking all registered listeners in order.
@@ -174,7 +174,7 @@ void em_off_all(emitter_t* emitter, int event);
  * @param event   Event ID in [0, num_events).
  * @param data    Optional event payload forwarded to each listener. May be NULL.
  */
-void em_emit(emitter_t* emitter, int event, const void* data);
+void emitter_emit(emitter_t* emitter, int event, const void* data);
 
 /**
  * @brief Returns the number of listeners currently subscribed to an event.
@@ -184,18 +184,18 @@ void em_emit(emitter_t* emitter, int event, const void* data);
  *
  * @returns The listener count for the given event.
  */
-int em_count(const emitter_t* emitter, int event);
+int emitter_count(const emitter_t* emitter, int event);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* PICO_EMITTER_H */
+#endif // PICO_EMITTER_H
 
 #ifdef EVENTEMITTER_IMPLEMENTATION
 
-#include <stdint.h>  /* uint8_t */
-#include <string.h>  /* memset */
+#include <stdint.h>  // uint8_t
+#include <string.h>  // memset
 
 /*
  * Configuration
@@ -224,10 +224,10 @@ int em_count(const emitter_t* emitter, int event);
  * Internal aliases
  */
 
-#define EM_MAX_LISTENERS PICO_EMITTER_MAX_LISTENERS
-#define EM_ASSERT        PICO_EMITTER_ASSERT
-#define EM_MALLOC        PICO_EMITTER_MALLOC
-#define EM_FREE          PICO_EMITTER_FREE
+#define EMITTER_MAX_LISTENERS PICO_EMITTER_MAX_LISTENERS
+#define EMITTER_ASSERT        PICO_EMITTER_ASSERT
+#define EMITTER_MALLOC        PICO_EMITTER_MALLOC
+#define EMITTER_FREE          PICO_EMITTER_FREE
 
 /*
  * Per-event listener slot. Uses a struct-of-arrays layout so that function
@@ -235,23 +235,23 @@ int em_count(const emitter_t* emitter, int event);
  */
 typedef struct
 {
-    em_listener_fn listeners[EM_MAX_LISTENERS]; /* function pointers         */
-    void*          udatas[EM_MAX_LISTENERS];    /* corresponding user data   */
-    uint8_t        once[EM_MAX_LISTENERS];      /* 1 = fire-once flag        */
-    int            count;                       /* active listener count     */
-    bool           emitting;                    /* true while iterating      */
-} em_slot_t;
+    emitter_listener_fn listeners[EMITTER_MAX_LISTENERS]; // function pointers
+    void*   udatas[EMITTER_MAX_LISTENERS];    // corresponding user data
+    uint8_t once[EMITTER_MAX_LISTENERS];      // 1 = fire-once flag
+    int     count;                       // active listener count
+    bool    emitting;                    // true while iterating
+} emitter_slot_t;
 
-struct em_emitter_s
+struct emitter_emitter_s
 {
-    em_slot_t* events;
-    int        num_events;
+    emitter_slot_t* events;
+    int num_events;
 };
 
 /*
- * Removes NULL-tombstoned entries from a slot after emit or em_off.
+ * Removes NULL-tombstoned entries from a slot after emit or emitter_off.
  */
-static void em_compact(em_slot_t* slot)
+static void emitter_compact(emitter_slot_t* slot)
 {
     int dst = 0;
 
@@ -270,19 +270,19 @@ static void em_compact(em_slot_t* slot)
 }
 
 /*
- * Internal helper for both em_on and em_once.
+ * Internal helper for both emitter_on and emitter_once.
  */
-static void em_subscribe(emitter_t* emitter, int event,
-                         em_listener_fn listener, void* udata,
+static void emitter_subscribe(emitter_t* emitter, int event,
+                         emitter_listener_fn listener, void* udata,
                          uint8_t once)
 {
-    EM_ASSERT(emitter  != NULL);
-    EM_ASSERT(event    >= 0 && event < emitter->num_events);
-    EM_ASSERT(listener != NULL);
+    EMITTER_ASSERT(emitter  != NULL);
+    EMITTER_ASSERT(event    >= 0 && event < emitter->num_events);
+    EMITTER_ASSERT(listener != NULL);
 
-    em_slot_t* slot = &emitter->events[event];
+    emitter_slot_t* slot = &emitter->events[event];
 
-    EM_ASSERT(slot->count < EM_MAX_LISTENERS);
+    EMITTER_ASSERT(slot->count < EMITTER_MAX_LISTENERS);
 
     slot->listeners[slot->count] = listener;
     slot->udatas[slot->count]    = udata;
@@ -290,57 +290,57 @@ static void em_subscribe(emitter_t* emitter, int event,
     slot->count++;
 }
 
-emitter_t* em_create(int num_events)
+emitter_t* emitter_create(int num_events)
 {
-    EM_ASSERT(num_events > 0);
+    EMITTER_ASSERT(num_events > 0);
 
-    emitter_t* emitter = (emitter_t*)EM_MALLOC(sizeof(emitter_t));
+    emitter_t* emitter = (emitter_t*)EMITTER_MALLOC(sizeof(emitter_t));
 
     if (!emitter)
     {
         return NULL;
     }
 
-    emitter->events = (em_slot_t*)EM_MALLOC((size_t)num_events * sizeof(em_slot_t));
+    emitter->events = (emitter_slot_t*)EMITTER_MALLOC((size_t)num_events * sizeof(emitter_slot_t));
 
     if (!emitter->events)
     {
-        EM_FREE(emitter);
+        EMITTER_FREE(emitter);
         return NULL;
     }
 
-    memset(emitter->events, 0, (size_t)num_events * sizeof(em_slot_t));
+    memset(emitter->events, 0, (size_t)num_events * sizeof(emitter_slot_t));
 
     emitter->num_events = num_events;
 
     return emitter;
 }
 
-void em_free(emitter_t* emitter)
+void emitter_free(emitter_t* emitter)
 {
-    EM_ASSERT(emitter != NULL);
+    EMITTER_ASSERT(emitter != NULL);
 
-    EM_FREE(emitter->events);
-    EM_FREE(emitter);
+    EMITTER_FREE(emitter->events);
+    EMITTER_FREE(emitter);
 }
 
-void em_on(emitter_t* emitter, int event, em_listener_fn listener, void* udata)
+void emitter_on(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata)
 {
-    em_subscribe(emitter, event, listener, udata, 0);
+    emitter_subscribe(emitter, event, listener, udata, 0);
 }
 
-void em_once(emitter_t* emitter, int event, em_listener_fn listener, void* udata)
+void emitter_once(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata)
 {
-    em_subscribe(emitter, event, listener, udata, 1);
+    emitter_subscribe(emitter, event, listener, udata, 1);
 }
 
-void em_off(emitter_t* emitter, int event, em_listener_fn listener)
+void emitter_off(emitter_t* emitter, int event, emitter_listener_fn listener)
 {
-    EM_ASSERT(emitter  != NULL);
-    EM_ASSERT(event    >= 0 && event < emitter->num_events);
-    EM_ASSERT(listener != NULL);
+    EMITTER_ASSERT(emitter  != NULL);
+    EMITTER_ASSERT(event    >= 0 && event < emitter->num_events);
+    EMITTER_ASSERT(listener != NULL);
 
-    em_slot_t* slot = &emitter->events[event];
+    emitter_slot_t* slot = &emitter->events[event];
 
     for (int i = 0; i < slot->count; i++)
     {
@@ -351,12 +351,12 @@ void em_off(emitter_t* emitter, int event, em_listener_fn listener)
 
         if (slot->emitting)
         {
-            /* Tombstone; em_emit will compact after iteration. */
+            // Tombstone; emitter_emit will compact after iteration.
             slot->listeners[i] = NULL;
         }
         else
         {
-            /* Compact in-place immediately. */
+            // Compact in-place immediately.
             for (int j = i; j < slot->count - 1; j++)
             {
                 slot->listeners[j] = slot->listeners[j + 1];
@@ -367,20 +367,20 @@ void em_off(emitter_t* emitter, int event, em_listener_fn listener)
             slot->count--;
         }
 
-        return; /* Remove first match only. */
+        return; // Remove first match only.
     }
 }
 
-void em_off_all(emitter_t* emitter, int event)
+void emitter_off_all(emitter_t* emitter, int event)
 {
-    EM_ASSERT(emitter != NULL);
-    EM_ASSERT(event   >= 0 && event < emitter->num_events);
+    EMITTER_ASSERT(emitter != NULL);
+    EMITTER_ASSERT(event   >= 0 && event < emitter->num_events);
 
-    em_slot_t* slot = &emitter->events[event];
+    emitter_slot_t* slot = &emitter->events[event];
 
     if (slot->emitting)
     {
-        /* Tombstone all; em_emit will compact after iteration. */
+        // Tombstone all; emitter_emit will compact after iteration.
         for (int i = 0; i < slot->count; i++)
         {
             slot->listeners[i] = NULL;
@@ -392,12 +392,12 @@ void em_off_all(emitter_t* emitter, int event)
     }
 }
 
-void em_emit(emitter_t* emitter, int event, const void* data)
+void emitter_emit(emitter_t* emitter, int event, const void* data)
 {
-    EM_ASSERT(emitter != NULL);
-    EM_ASSERT(event   >= 0 && event < emitter->num_events);
+    EMITTER_ASSERT(emitter != NULL);
+    EMITTER_ASSERT(event   >= 0 && event < emitter->num_events);
 
-    em_slot_t* slot = &emitter->events[event];
+    emitter_slot_t* slot = &emitter->events[event];
 
     /*
      * Capture the count before iterating so that listeners added during emit
@@ -410,11 +410,11 @@ void em_emit(emitter_t* emitter, int event, const void* data)
 
     for (int i = 0; i < count; i++)
     {
-        em_listener_fn fn = slot->listeners[i];
+        emitter_listener_fn fn = slot->listeners[i];
 
         if (!fn)
         {
-            /* Tombstoned by em_off or em_off_all from a prior callback. */
+            // Tombstoned by emitter_off or emitter_off_all from a prior callback.
             needs_compact = true;
             continue;
         }
@@ -433,7 +433,7 @@ void em_emit(emitter_t* emitter, int event, const void* data)
 
         /*
          * The listener may have tombstoned itself (or a later slot) via
-         * em_off during the callback. Check whether this slot became NULL
+         * emitter_off during the callback. Check whether this slot became NULL
          * after the call.
          */
         if (slot->listeners[i] == NULL)
@@ -446,19 +446,19 @@ void em_emit(emitter_t* emitter, int event, const void* data)
 
     if (needs_compact)
     {
-        em_compact(slot);
+        emitter_compact(slot);
     }
 }
 
-int em_count(const emitter_t* emitter, int event)
+int emitter_count(const emitter_t* emitter, int event)
 {
-    EM_ASSERT(emitter != NULL);
-    EM_ASSERT(event   >= 0 && event < emitter->num_events);
+    EMITTER_ASSERT(emitter != NULL);
+    EMITTER_ASSERT(event   >= 0 && event < emitter->num_events);
 
     return emitter->events[event].count;
 }
 
-#endif /* EVENTEMITTER_IMPLEMENTATION */
+#endif // EVENTEMITTER_IMPLEMENTATION
 
 /*
     ----------------------------------------------------------------------------
