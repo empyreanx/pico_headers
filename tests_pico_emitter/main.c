@@ -346,7 +346,7 @@ TEST_CASE(test_emitter_once_reregister_during_emit)
     return true;
 }
 
-/* Test suite --------------------------------------------------------------- */
+/* Test suite (emitter) ----------------------------------------------------- */
 
 TEST_SUITE(suite_emitter)
 {
@@ -372,10 +372,175 @@ TEST_SUITE(suite_emitter)
     RUN_TEST_CASE(test_emitter_once_reregister_during_emit);
 }
 
+/* --------------------------------------------------------------------------
+ * Queued emitter tests
+ * -------------------------------------------------------------------------- */
+
+TEST_CASE(test_queued_create_destroy)
+{
+    queued_emitter_t* qe = queued_emitter_create(4);
+    REQUIRE(qe != NULL);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+TEST_CASE(test_queued_emit_deferred)
+{
+    reset_counters();
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_inc, NULL);
+    queued_emitter_emit(qe, 0, NULL);
+    REQUIRE(g_call_count == 0); /* not fired yet */
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+TEST_CASE(test_queued_flush_dispatches)
+{
+    reset_counters();
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_inc, NULL);
+    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_flush(qe);
+    REQUIRE(g_call_count == 1);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+TEST_CASE(test_queued_flush_order)
+{
+    reset_counters();
+    int ids[3] = { 10, 20, 30 };
+    queued_emitter_t* qe = queued_emitter_create(3);
+    queued_emitter_on(qe, 0, listener_record_order, &ids[0]);
+    queued_emitter_on(qe, 1, listener_record_order, &ids[1]);
+    queued_emitter_on(qe, 2, listener_record_order, &ids[2]);
+    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_emit(qe, 1, NULL);
+    queued_emitter_emit(qe, 2, NULL);
+    queued_emitter_flush(qe);
+    REQUIRE(g_order_count   == 3);
+    REQUIRE(g_call_order[0] == 10);
+    REQUIRE(g_call_order[1] == 20);
+    REQUIRE(g_call_order[2] == 30);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+TEST_CASE(test_queued_flush_clears_queue)
+{
+    reset_counters();
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_inc, NULL);
+    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_flush(qe);
+    REQUIRE(g_call_count == 1);
+    queued_emitter_flush(qe); /* second flush does nothing */
+    REQUIRE(g_call_count == 1);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+TEST_CASE(test_queued_passes_data)
+{
+    int result = 0;
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_read_data, &result);
+    int payload = 77;
+    queued_emitter_emit(qe, 0, &payload);
+    queued_emitter_flush(qe);
+    REQUIRE(result == 77);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+TEST_CASE(test_queued_once)
+{
+    reset_counters();
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_once(qe, 0, listener_inc, NULL);
+    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_flush(qe);
+    REQUIRE(g_call_count == 1);
+    REQUIRE(queued_emitter_count(qe, 0) == 0);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+TEST_CASE(test_queued_off)
+{
+    reset_counters();
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_inc, NULL);
+    queued_emitter_off(qe, 0, listener_inc);
+    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_flush(qe);
+    REQUIRE(g_call_count == 0);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+TEST_CASE(test_queued_off_all)
+{
+    reset_counters();
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_inc, NULL);
+    queued_emitter_on(qe, 0, listener_inc, NULL);
+    queued_emitter_off_all(qe, 0);
+    queued_emitter_emit(qe, 0, NULL);
+    queued_emitter_flush(qe);
+    REQUIRE(g_call_count == 0);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+static queued_emitter_t* g_qe_safe = NULL;
+
+static void queued_listener_enqueues(const void* data, void* udata)
+{
+    (void)data;
+    (void)udata;
+    queued_emitter_emit(g_qe_safe, 0, NULL);
+    g_call_count++;
+}
+
+TEST_CASE(test_queued_emit_during_flush_deferred)
+{
+    reset_counters();
+    g_qe_safe = queued_emitter_create(1);
+    queued_emitter_on(g_qe_safe, 0, queued_listener_enqueues, NULL);
+    queued_emitter_emit(g_qe_safe, 0, NULL);
+    queued_emitter_flush(g_qe_safe); /* fires; listener re-enqueues */
+    REQUIRE(g_call_count == 1);      /* only the original event fired */
+    queued_emitter_flush(g_qe_safe); /* fires the re-enqueued event */
+    REQUIRE(g_call_count == 2);
+    queued_emitter_destroy(g_qe_safe);
+    g_qe_safe = NULL;
+    return true;
+}
+
+/* Test suite (queued emitter) ---------------------------------------------- */
+
+TEST_SUITE(suite_queued_emitter)
+{
+    RUN_TEST_CASE(test_queued_create_destroy);
+    RUN_TEST_CASE(test_queued_emit_deferred);
+    RUN_TEST_CASE(test_queued_flush_dispatches);
+    RUN_TEST_CASE(test_queued_flush_order);
+    RUN_TEST_CASE(test_queued_flush_clears_queue);
+    RUN_TEST_CASE(test_queued_passes_data);
+    RUN_TEST_CASE(test_queued_once);
+    RUN_TEST_CASE(test_queued_off);
+    RUN_TEST_CASE(test_queued_off_all);
+    RUN_TEST_CASE(test_queued_emit_during_flush_deferred);
+}
+
 int main(void)
 {
     pu_display_colors(true);
     RUN_TEST_SUITE(suite_emitter);
+    RUN_TEST_SUITE(suite_queued_emitter);
     pu_print_stats();
     return pu_test_failed();
 }

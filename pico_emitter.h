@@ -188,6 +188,104 @@ void emitter_emit(emitter_t* emitter, int event, const void* data);
  */
 int emitter_count(const emitter_t* emitter, int event);
 
+/* --------------------------------------------------------------------------
+ * Queued emitter
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @brief Queued event emitter context (opaque).
+ *
+ * Wraps an emitter_t and stores events in a buffer instead of dispatching
+ * them immediately. Buffered events are dispatched in FIFO order when
+ * queued_emitter_flush is called. Subscription functions delegate directly
+ * to the underlying emitter.
+ */
+typedef struct queued_emitter_s queued_emitter_t;
+
+/**
+ * @brief Creates a queued emitter supporting the given number of event types.
+ *
+ * @param num_events Positive number of distinct event types.
+ *
+ * @returns A pointer to the new queued emitter, or NULL if allocation failed.
+ */
+queued_emitter_t* queued_emitter_create(int num_events);
+
+/**
+ * @brief Destroys the queued emitter and discards any unflushed events.
+ *
+ * @param qe The queued emitter. Must not be NULL.
+ */
+void queued_emitter_destroy(queued_emitter_t* qe);
+
+/**
+ * @brief Subscribes a persistent listener to an event.
+ *
+ * @param qe       The queued emitter. Must not be NULL.
+ * @param event    Event ID in [0, num_events).
+ * @param listener Callback to invoke. Must not be NULL.
+ * @param udata    Arbitrary pointer forwarded to the callback. May be NULL.
+ */
+void queued_emitter_on(queued_emitter_t* qe, int event, emitter_listener_fn listener, void* udata);
+
+/**
+ * @brief Subscribes a listener that fires exactly once, then unsubscribes.
+ *
+ * @param qe       The queued emitter. Must not be NULL.
+ * @param event    Event ID in [0, num_events).
+ * @param listener Callback to invoke. Must not be NULL.
+ * @param udata    Arbitrary pointer forwarded to the callback. May be NULL.
+ */
+void queued_emitter_once(queued_emitter_t* qe, int event, emitter_listener_fn listener, void* udata);
+
+/**
+ * @brief Unsubscribes the first listener whose function pointer matches.
+ *
+ * @param qe       The queued emitter. Must not be NULL.
+ * @param event    Event ID in [0, num_events).
+ * @param listener The function pointer to remove. Must not be NULL.
+ */
+void queued_emitter_off(queued_emitter_t* qe, int event, emitter_listener_fn listener);
+
+/**
+ * @brief Removes all listeners subscribed to an event.
+ *
+ * @param qe    The queued emitter. Must not be NULL.
+ * @param event Event ID in [0, num_events).
+ */
+void queued_emitter_off_all(queued_emitter_t* qe, int event);
+
+/**
+ * @brief Enqueues an event for deferred dispatch.
+ *
+ * The data pointer is stored by reference; the pointed-to object must remain
+ * valid until queued_emitter_flush is called.
+ *
+ * @param qe    The queued emitter. Must not be NULL.
+ * @param event Event ID in [0, num_events).
+ * @param data  Optional event payload forwarded to each listener. May be NULL.
+ */
+void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data);
+
+/**
+ * @brief Dispatches all queued events in FIFO order and clears the queue.
+ *
+ * Events enqueued by listeners during flush are deferred to the next call.
+ *
+ * @param qe The queued emitter. Must not be NULL.
+ */
+void queued_emitter_flush(queued_emitter_t* qe);
+
+/**
+ * @brief Returns the number of listeners currently subscribed to an event.
+ *
+ * @param qe    The queued emitter. Must not be NULL.
+ * @param event Event ID in [0, num_events).
+ *
+ * @returns The listener count for the given event.
+ */
+int queued_emitter_count(const queued_emitter_t* qe, int event);
+
 #ifdef __cplusplus
 }
 #endif
@@ -495,6 +593,141 @@ int emitter_count(const emitter_t* emitter, int event)
     EMITTER_ASSERT(event   >= 0 && event < emitter->num_events);
 
     return emitter->events[event].count;
+}
+
+/* ==========================================================================
+ * Queued emitter
+ * ========================================================================== */
+
+struct queued_emitter_s
+{
+    emitter_t*   emitter;
+    int*         events;
+    const void** datas;
+    int          count;
+    int          capacity;
+};
+
+static void queued_emitter_grow(queued_emitter_t* qe)
+{
+    int new_cap = qe->capacity == 0 ? EMITTER_INIT_CAPACITY : qe->capacity * 2;
+
+    int* events = (int*)EMITTER_REALLOC(qe->events, (size_t)new_cap * sizeof(int));
+    EMITTER_ASSERT(events != NULL);
+    qe->events = events;
+
+    const void** datas = (const void**)EMITTER_REALLOC(qe->datas,
+                                       (size_t)new_cap * sizeof(const void*));
+    EMITTER_ASSERT(datas != NULL);
+    qe->datas = datas;
+
+    qe->capacity = new_cap;
+}
+
+queued_emitter_t* queued_emitter_create(int num_events)
+{
+    EMITTER_ASSERT(num_events > 0);
+
+    queued_emitter_t* qe = (queued_emitter_t*)EMITTER_MALLOC(sizeof(queued_emitter_t));
+
+    if (!qe)
+    {
+        return NULL;
+    }
+
+    qe->emitter = emitter_create(num_events);
+
+    if (!qe->emitter)
+    {
+        EMITTER_FREE(qe);
+        return NULL;
+    }
+
+    qe->events   = NULL;
+    qe->datas    = NULL;
+    qe->count    = 0;
+    qe->capacity = 0;
+
+    return qe;
+}
+
+void queued_emitter_destroy(queued_emitter_t* qe)
+{
+    EMITTER_ASSERT(qe != NULL);
+
+    emitter_destroy(qe->emitter);
+    EMITTER_FREE(qe->events);
+    EMITTER_FREE(qe->datas);
+    EMITTER_FREE(qe);
+}
+
+void queued_emitter_on(queued_emitter_t* qe, int event, emitter_listener_fn listener, void* udata)
+{
+    EMITTER_ASSERT(qe != NULL);
+    emitter_on(qe->emitter, event, listener, udata);
+}
+
+void queued_emitter_once(queued_emitter_t* qe, int event, emitter_listener_fn listener, void* udata)
+{
+    EMITTER_ASSERT(qe != NULL);
+    emitter_once(qe->emitter, event, listener, udata);
+}
+
+void queued_emitter_off(queued_emitter_t* qe, int event, emitter_listener_fn listener)
+{
+    EMITTER_ASSERT(qe != NULL);
+    emitter_off(qe->emitter, event, listener);
+}
+
+void queued_emitter_off_all(queued_emitter_t* qe, int event)
+{
+    EMITTER_ASSERT(qe != NULL);
+    emitter_off_all(qe->emitter, event);
+}
+
+void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data)
+{
+    EMITTER_ASSERT(qe != NULL);
+    EMITTER_ASSERT(event >= 0 && event < qe->emitter->num_events);
+
+    if (qe->count == qe->capacity)
+    {
+        queued_emitter_grow(qe);
+    }
+
+    qe->events[qe->count] = event;
+    qe->datas[qe->count]  = data;
+    qe->count++;
+}
+
+void queued_emitter_flush(queued_emitter_t* qe)
+{
+    EMITTER_ASSERT(qe != NULL);
+
+    // Capture count so that events enqueued during flush are deferred.
+    int flush_count = qe->count;
+
+    for (int i = 0; i < flush_count; i++)
+    {
+        emitter_emit(qe->emitter, qe->events[i], qe->datas[i]);
+    }
+
+    // Shift any events added during flush to the front.
+    int remaining = qe->count - flush_count;
+
+    for (int i = 0; i < remaining; i++)
+    {
+        qe->events[i] = qe->events[flush_count + i];
+        qe->datas[i]  = qe->datas[flush_count + i];
+    }
+
+    qe->count = remaining;
+}
+
+int queued_emitter_count(const queued_emitter_t* qe, int event)
+{
+    EMITTER_ASSERT(qe != NULL);
+    return emitter_count(qe->emitter, event);
 }
 
 #endif // EVENTEMITTER_IMPLEMENTATION
