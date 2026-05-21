@@ -58,7 +58,7 @@
 
     To use this library in your project, add the following
 
-        #define EVENTEMITTER_IMPLEMENTATION
+        #define PICO_EMITTER_IMPLEMENTATION
         #include "pico_emitter.h"
 
     to a source file (once), then simply include the header normally.
@@ -69,13 +69,13 @@
     - PICO_EMITTER_INIT_CAPACITY (default: 8)
       Initial listener capacity per event slot. Slots grow automatically
       beyond this limit by doubling. Must be defined before
-      EVENTEMITTER_IMPLEMENTATION.
+      PICO_EMITTER_IMPLEMENTATION.
 
     - PICO_EMITTER_MALLOC(size)   (default: malloc)
     - PICO_EMITTER_REALLOC(p,sz)  (default: realloc)
     - PICO_EMITTER_FREE(ptr)      (default: free)
     - PICO_EMITTER_ASSERT(expr)   (default: assert)
-      Must be defined before EVENTEMITTER_IMPLEMENTATION.
+      Must be defined before PICO_EMITTER_IMPLEMENTATION.
 */
 
 #ifndef PICO_EMITTER_H
@@ -292,7 +292,7 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
 
 #endif // PICO_EMITTER_H
 
-#ifdef EVENTEMITTER_IMPLEMENTATION
+#ifdef PICO_EMITTER_IMPLEMENTATION
 
 #include <stdint.h>  // uint8_t
 #include <string.h>  // memset
@@ -730,7 +730,7 @@ int queued_emitter_count(const queued_emitter_t* qe, int event)
     return emitter_count(qe->emitter, event);
 }
 
-#endif // EVENTEMITTER_IMPLEMENTATION
+#endif // PICO_EMITTER_IMPLEMENTATION
 
 /*
     ----------------------------------------------------------------------------

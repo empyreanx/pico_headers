@@ -1,4 +1,4 @@
-#define EVENTEMITTER_IMPLEMENTATION
+#define PICO_EMITTER_IMPLEMENTATION
 #include "../pico_emitter.h"
 
 #define PICO_UNIT_IMPLEMENTATION
