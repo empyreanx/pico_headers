@@ -602,6 +602,36 @@ TEST_CASE(test_queued_arena_reuse_after_flush)
     return true;
 }
 
+/* queued_emitter_emit_typed deduces payload size from the pointer type; the
+ * listener must receive the copied value even after the source is mutated. */
+TEST_CASE(test_queued_typed_emit_deduces_size)
+{
+    int result = 0;
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_read_data, &result);
+    int payload = 55;
+    queued_emitter_emit_typed(qe, 0, &payload);
+    payload = 999; /* mutate after enqueue */
+    queued_emitter_flush(qe);
+    REQUIRE(result == 55); /* copied value, not 999 */
+    queued_emitter_destroy(qe);
+    return true;
+}
+
+/* Passing NULL to queued_emitter_emit_typed must not crash; the listener
+ * receives a NULL data pointer. */
+TEST_CASE(test_queued_typed_emit_null_is_safe)
+{
+    reset_counters();
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_inc, NULL);
+    queued_emitter_emit_typed(qe, 0, (int*)NULL);
+    queued_emitter_flush(qe);
+    REQUIRE(g_call_count == 1);
+    queued_emitter_destroy(qe);
+    return true;
+}
+
 /* Multiple events with distinct payloads each get an independent arena copy. */
 TEST_CASE(test_queued_multiple_payloads_independent)
 {
@@ -642,6 +672,8 @@ TEST_SUITE(suite_queued_emitter)
     RUN_TEST_CASE(test_queued_many_events_arena_grow);
     RUN_TEST_CASE(test_queued_arena_reuse_after_flush);
     RUN_TEST_CASE(test_queued_multiple_payloads_independent);
+    RUN_TEST_CASE(test_queued_typed_emit_deduces_size);
+    RUN_TEST_CASE(test_queued_typed_emit_null_is_safe);
 }
 
 int main(void)

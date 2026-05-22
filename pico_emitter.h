@@ -274,6 +274,29 @@ void queued_emitter_off_all(queued_emitter_t* qe, int event);
 void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data, size_t data_size);
 
 /**
+ * @brief Convenience macro that enqueues a typed event without an explicit size argument.
+ *
+ * Equivalent to calling queued_emitter_emit with `sizeof(*ptr)` as the data
+ * size. The payload size is deduced at compile time from the pointer's type,
+ * so no per-event registration is required.
+ *
+ * When @p ptr is NULL, `sizeof(*ptr)` is still evaluated at compile time
+ * (sizeof does not evaluate its operand), and queued_emitter_emit treats a
+ * NULL data pointer as no-payload regardless of the size argument, so no
+ * copy is performed.
+ *
+ * @note @p ptr must not be a `void*`; the compiler cannot apply `sizeof` to
+ *       an incomplete type. Use queued_emitter_emit directly when the payload
+ *       is untyped or the size is not derivable from the pointer type.
+ *
+ * @param qe    The queued emitter. Must not be NULL.
+ * @param event Event ID in [0, num_events).
+ * @param ptr   Typed pointer to the event payload, or NULL for no payload.
+ */
+#define queued_emitter_emit_typed(qe, event, ptr) \
+    (queued_emitter_emit((qe), (event), (ptr), sizeof(*(ptr))))
+
+/**
  * @brief Dispatches all queued events in FIFO order and clears the queue.
  *
  * Events enqueued by listeners during flush are deferred to the next call.
