@@ -75,6 +75,7 @@
     - PICO_EMITTER_REALLOC(p,sz)       (default: realloc)
     - PICO_EMITTER_FREE(ptr)           (default: free)
     - PICO_EMITTER_MEMCPY(dst,src,n)   (default: memcpy)
+    - PICO_EMITTER_MEMSET(dst,val,n)   (default: memset)
     - PICO_EMITTER_ASSERT(expr)        (default: assert)
       Must be defined before PICO_EMITTER_IMPLEMENTATION.
 */
@@ -301,14 +302,14 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
 
 #include <stdint.h>   // uint8_t
 #include <stdalign.h> // alignof
-#include <string.h>   // memset
+#include <string.h>   // memset, memcpy
 
 /*
  * Configuration
  */
 
 #ifndef PICO_EMITTER_INIT_CAPACITY
-#define PICO_EMITTER_INIT_CAPACITY 8
+    #define PICO_EMITTER_INIT_CAPACITY 8
 #endif
 
 #ifdef NDEBUG
@@ -328,7 +329,13 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
 #endif
 
 #ifndef PICO_EMITTER_MEMCPY
+    #include <string.h>
     #define PICO_EMITTER_MEMCPY(dst, src, n) memcpy(dst, src, n)
+#endif
+
+#ifndef PICO_EMITTER_MEMSET
+    #include <string.h>
+    #define PICO_EMITTER_MEMSET(dst, val, n) memset(dst, val, n)
 #endif
 
 /*
@@ -341,6 +348,7 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
 #define EMITTER_REALLOC       PICO_EMITTER_REALLOC
 #define EMITTER_FREE          PICO_EMITTER_FREE
 #define EMITTER_MEMCPY        PICO_EMITTER_MEMCPY
+#define EMITTER_MEMSET        PICO_EMITTER_MEMSET
 
 /*
  * Per-event listener slot. Uses a struct-of-arrays layout so that function
@@ -382,78 +390,14 @@ typedef struct arena_s
     size_t         block_size;
 } arena_t;
 
-/*
- * Grows a slot's listener arrays by doubling capacity.
- */
-static void emitter_grow_slot(emitter_slot_t* slot)
-{
-    int new_cap = slot->capacity == 0 ? EMITTER_INIT_CAPACITY : slot->capacity * 2;
-
-    emitter_listener_fn* l = (emitter_listener_fn*)EMITTER_REALLOC(slot->listeners,
-                                                   (size_t)new_cap * sizeof(emitter_listener_fn));
-    EMITTER_ASSERT(l != NULL);
-    slot->listeners = l;
-
-    void** u = (void**)EMITTER_REALLOC(slot->udatas, (size_t)new_cap * sizeof(void*));
-    EMITTER_ASSERT(u != NULL);
-    slot->udatas = u;
-
-    uint8_t* o = (uint8_t*)EMITTER_REALLOC(slot->once, (size_t)new_cap * sizeof(uint8_t));
-    EMITTER_ASSERT(o != NULL);
-    slot->once = o;
-
-    slot->capacity = new_cap;
-}
-
-/*
- * Removes NULL-tombstoned entries from a slot after emit or emitter_off.
- */
-static void emitter_compact(emitter_slot_t* slot)
-{
-    int dst = 0;
-
-    for (int src = 0; src < slot->count; src++)
-    {
-        if (slot->listeners[src] != NULL)
-        {
-            slot->listeners[dst] = slot->listeners[src];
-            slot->udatas[dst]    = slot->udatas[src];
-            slot->once[dst]      = slot->once[src];
-            dst++;
-        }
-    }
-
-    slot->count = dst;
-}
-
-/*
- * Internal helper for both emitter_on and emitter_once.
- */
-static void emitter_subscribe(emitter_t* emitter, int event,
-                         emitter_listener_fn listener, void* udata,
-                         uint8_t once)
-{
-    EMITTER_ASSERT(emitter  != NULL);
-    EMITTER_ASSERT(event    >= 0 && event < emitter->num_events);
-    EMITTER_ASSERT(listener != NULL);
-
-    emitter_slot_t* slot = &emitter->events[event];
-
-    if (slot->count == slot->capacity)
-    {
-        emitter_grow_slot(slot);
-    }
-
-    slot->listeners[slot->count] = listener;
-    slot->udatas[slot->count]    = udata;
-    slot->once[slot->count]      = once;
-    slot->count++;
-}
-
 /* --------------------------------------------------------------------------
- * Arena forward declarations
+ * Forward declarations
  * -------------------------------------------------------------------------- */
 
+static void           emitter_grow_slot(emitter_slot_t* slot);
+static void           emitter_compact(emitter_slot_t* slot);
+static void           emitter_subscribe(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata, uint8_t once);
+static void           queued_emitter_grow(queued_emitter_t* qe);
 static arena_block_t* arena_block_create(size_t size);
 static bool           arena_init(arena_t* arena, size_t initial_block_size);
 static bool           arena_grow(arena_t* arena, size_t min_size);
@@ -482,7 +426,7 @@ emitter_t* emitter_create(int num_events)
         return NULL;
     }
 
-    memset(emitter->events, 0, (size_t)num_events * sizeof(emitter_slot_t));
+    EMITTER_MEMSET(emitter->events, 0, (size_t)num_events * sizeof(emitter_slot_t));
 
     emitter->num_events = num_events;
 
@@ -653,22 +597,6 @@ struct queued_emitter_s
     int          capacity;
 };
 
-static void queued_emitter_grow(queued_emitter_t* qe)
-{
-    int new_cap = qe->capacity == 0 ? EMITTER_INIT_CAPACITY : qe->capacity * 2;
-
-    int* events = (int*)EMITTER_REALLOC(qe->events, (size_t)new_cap * sizeof(int));
-    EMITTER_ASSERT(events != NULL);
-    qe->events = events;
-
-    const void** datas = (const void**)EMITTER_REALLOC(qe->datas,
-                                       (size_t)new_cap * sizeof(const void*));
-    EMITTER_ASSERT(datas != NULL);
-    qe->datas = datas;
-
-    qe->capacity = new_cap;
-}
-
 queued_emitter_t* queued_emitter_create(int num_events)
 {
     EMITTER_ASSERT(num_events > 0);
@@ -812,6 +740,94 @@ int queued_emitter_count(const queued_emitter_t* qe, int event)
 {
     EMITTER_ASSERT(qe != NULL);
     return emitter_count(qe->emitter, event);
+}
+
+/* ==========================================================================
+ * Static helpers -- emitter
+ * ========================================================================== */
+
+/*
+ * Grows a slot's listener arrays by doubling capacity.
+ */
+static void emitter_grow_slot(emitter_slot_t* slot)
+{
+    int new_cap = slot->capacity == 0 ? EMITTER_INIT_CAPACITY : slot->capacity * 2;
+
+    emitter_listener_fn* l = (emitter_listener_fn*)EMITTER_REALLOC(slot->listeners, (size_t)new_cap * sizeof(emitter_listener_fn));
+    void**               u = (void**)              EMITTER_REALLOC(slot->udatas,    (size_t)new_cap * sizeof(void*));
+    uint8_t*             o = (uint8_t*)            EMITTER_REALLOC(slot->once,      (size_t)new_cap * sizeof(uint8_t));
+
+    EMITTER_ASSERT(l != NULL);
+    EMITTER_ASSERT(u != NULL);
+    EMITTER_ASSERT(o != NULL);
+
+    slot->listeners = l;
+    slot->udatas    = u;
+    slot->once      = o;
+    slot->capacity  = new_cap;
+}
+/*
+ * Removes NULL-tombstoned entries from a slot after emit or emitter_off.
+ */
+static void emitter_compact(emitter_slot_t* slot)
+{
+    int dst = 0;
+
+    for (int src = 0; src < slot->count; src++)
+    {
+        if (slot->listeners[src] != NULL)
+        {
+            slot->listeners[dst] = slot->listeners[src];
+            slot->udatas[dst]    = slot->udatas[src];
+            slot->once[dst]      = slot->once[src];
+            dst++;
+        }
+    }
+
+    slot->count = dst;
+}
+
+/*
+ * Internal helper for both emitter_on and emitter_once.
+ */
+static void emitter_subscribe(emitter_t* emitter, int event,
+                              emitter_listener_fn listener, void* udata,
+                              uint8_t once)
+{
+    EMITTER_ASSERT(emitter  != NULL);
+    EMITTER_ASSERT(event    >= 0 && event < emitter->num_events);
+    EMITTER_ASSERT(listener != NULL);
+
+    emitter_slot_t* slot = &emitter->events[event];
+
+    if (slot->count == slot->capacity)
+    {
+        emitter_grow_slot(slot);
+    }
+
+    slot->listeners[slot->count] = listener;
+    slot->udatas[slot->count]    = udata;
+    slot->once[slot->count]      = once;
+    slot->count++;
+}
+
+/* ==========================================================================
+ * Static helpers -- queued emitter
+ * ========================================================================== */
+
+static void queued_emitter_grow(queued_emitter_t* qe)
+{
+    int new_cap = qe->capacity == 0 ? EMITTER_INIT_CAPACITY : qe->capacity * 2;
+
+    int*         events = (int*)        EMITTER_REALLOC(qe->events, (size_t)new_cap * sizeof(int));
+    const void** datas  = (const void**)EMITTER_REALLOC(qe->datas,  (size_t)new_cap * sizeof(const void*));
+
+    EMITTER_ASSERT(events != NULL);
+    EMITTER_ASSERT(datas  != NULL);
+
+    qe->events   = events;
+    qe->datas    = datas;
+    qe->capacity = new_cap;
 }
 
 /* ==========================================================================
