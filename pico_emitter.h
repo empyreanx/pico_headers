@@ -645,7 +645,8 @@ int emitter_count(const emitter_t* emitter, int event)
 struct queued_emitter_s
 {
     emitter_t*   emitter;
-    arena_t      arena;
+    arena_t      arenas[2];  /* ping-pong pair */
+    int          write_arena; /* index of the arena new emits write into */
     int*         events;
     const void** datas;
     int          count;
@@ -656,20 +657,15 @@ static void queued_emitter_grow(queued_emitter_t* qe)
 {
     int new_cap = qe->capacity == 0 ? EMITTER_INIT_CAPACITY : qe->capacity * 2;
 
-    int*         new_events = (int*)arena_alloc(&qe->arena, (size_t)new_cap * sizeof(int));
-    const void** new_datas  = (const void**)arena_alloc(&qe->arena, (size_t)new_cap * sizeof(const void*));
+    int* events = (int*)EMITTER_REALLOC(qe->events, (size_t)new_cap * sizeof(int));
+    EMITTER_ASSERT(events != NULL);
+    qe->events = events;
 
-    EMITTER_ASSERT(new_events != NULL);
-    EMITTER_ASSERT(new_datas  != NULL);
+    const void** datas = (const void**)EMITTER_REALLOC(qe->datas,
+                                       (size_t)new_cap * sizeof(const void*));
+    EMITTER_ASSERT(datas != NULL);
+    qe->datas = datas;
 
-    if (qe->count > 0)
-    {
-        EMITTER_MEMCPY(new_events, qe->events, (size_t)qe->count * sizeof(int));
-        EMITTER_MEMCPY(new_datas,  qe->datas,  (size_t)qe->count * sizeof(const void*));
-    }
-
-    qe->events   = new_events;
-    qe->datas    = new_datas;
     qe->capacity = new_cap;
 }
 
@@ -692,19 +688,28 @@ queued_emitter_t* queued_emitter_create(int num_events)
         return NULL;
     }
 
-    size_t init_block = (size_t)EMITTER_INIT_CAPACITY * (sizeof(int) + sizeof(const void*));
+    size_t init_block = (size_t)EMITTER_INIT_CAPACITY * sizeof(void*);
 
-    if (!arena_init(&qe->arena, init_block))
+    if (!arena_init(&qe->arenas[0], init_block))
     {
         emitter_destroy(qe->emitter);
         EMITTER_FREE(qe);
         return NULL;
     }
 
-    qe->events   = NULL;
-    qe->datas    = NULL;
-    qe->count    = 0;
-    qe->capacity = 0;
+    if (!arena_init(&qe->arenas[1], init_block))
+    {
+        arena_destroy(&qe->arenas[0]);
+        emitter_destroy(qe->emitter);
+        EMITTER_FREE(qe);
+        return NULL;
+    }
+
+    qe->write_arena = 0;
+    qe->events      = NULL;
+    qe->datas       = NULL;
+    qe->count       = 0;
+    qe->capacity    = 0;
 
     return qe;
 }
@@ -714,7 +719,10 @@ void queued_emitter_destroy(queued_emitter_t* qe)
     EMITTER_ASSERT(qe != NULL);
 
     emitter_destroy(qe->emitter);
-    arena_destroy(&qe->arena);
+    arena_destroy(&qe->arenas[0]);
+    arena_destroy(&qe->arenas[1]);
+    EMITTER_FREE(qe->events);
+    EMITTER_FREE(qe->datas);
     EMITTER_FREE(qe);
 }
 
@@ -756,7 +764,7 @@ void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data, size
 
     if (data != NULL && data_size > 0)
     {
-        void* copy = arena_alloc(&qe->arena, data_size);
+        void* copy = arena_alloc(&qe->arenas[qe->write_arena], data_size);
         EMITTER_ASSERT(copy != NULL);
         EMITTER_MEMCPY(copy, data, data_size);
         stored = copy;
@@ -771,49 +779,33 @@ void queued_emitter_flush(queued_emitter_t* qe)
 {
     EMITTER_ASSERT(qe != NULL);
 
-    // Capture count so that events enqueued during flush are deferred.
     int flush_count = qe->count;
+    int read_arena  = qe->write_arena;
+
+    /* Flip write arena before dispatching so that nested emits during flush
+     * copy payload into the other arena. Their data pointers remain valid
+     * after the read arena is reset below. */
+    qe->write_arena = 1 - read_arena;
 
     for (int i = 0; i < flush_count; i++)
     {
         emitter_emit(qe->emitter, qe->events[i], qe->datas[i]);
     }
 
+    /* Shift deferred events (enqueued during flush) to the front.
+     * events/datas are heap-resident so no arena pointer fixup is needed. */
     int remaining = qe->count - flush_count;
 
-    if (remaining == 0)
+    for (int i = 0; i < remaining; i++)
     {
-        // Common case: reset the arena, reclaiming all event-queue memory at once.
-        arena_reset(&qe->arena);
-        qe->events   = NULL;
-        qe->datas    = NULL;
-        qe->count    = 0;
-        qe->capacity = 0;
+        qe->events[i] = qe->events[flush_count + i];
+        qe->datas[i]  = qe->datas[flush_count + i];
     }
-    else
-    {
-        // Events were enqueued during flush; copy them to fresh arena allocations
-        // so the flushed region is logically released. The arena will be fully
-        // reset on the next flush that completes with no remaining events.
-        int*         src_events = qe->events + flush_count;
-        const void** src_datas  = qe->datas  + flush_count;
 
-        int*         new_events = (int*)arena_alloc(&qe->arena,
-                                      (size_t)remaining * sizeof(int));
+    qe->count = remaining;
 
-        const void** new_datas  = (const void**)arena_alloc(&qe->arena,
-                                      (size_t)remaining * sizeof(const void*));
-
-        EMITTER_ASSERT(new_events != NULL && new_datas != NULL);
-
-        EMITTER_MEMCPY(new_events, src_events, (size_t)remaining * sizeof(int));
-        EMITTER_MEMCPY(new_datas,  src_datas,  (size_t)remaining * sizeof(const void*));
-
-        qe->events   = new_events;
-        qe->datas    = new_datas;
-        qe->count    = remaining;
-        qe->capacity = remaining;
-    }
+    /* All dispatched payloads are consumed — O(1) reset of the read arena. */
+    arena_reset(&qe->arenas[read_arena]);
 }
 
 int queued_emitter_count(const queued_emitter_t* qe, int event)
