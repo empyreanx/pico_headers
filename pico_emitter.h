@@ -9,7 +9,7 @@
     Features:
     ---------
 
-    - Written in C99 and compatible with C++
+    - Written in C11 and compatible with C++11
     - Single header library for easy integration into any build system
     - Tiny memory footprint
     - Simple and minimalistic API
@@ -323,13 +323,13 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
 
 #ifdef PICO_EMITTER_IMPLEMENTATION
 
-#include <stdint.h>   // uint8_t
 #include <stdalign.h> // alignof
+#include <stdint.h>   // uint8_t
 #include <string.h>   // memset, memcpy
 
-/*
+/* --------------------------------------------------------------------------
  * Configuration
- */
+ * -------------------------------------------------------------------------- */
 
 #ifndef PICO_EMITTER_INIT_CAPACITY
     #define PICO_EMITTER_INIT_CAPACITY 8
@@ -361,9 +361,9 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
     #define PICO_EMITTER_MEMSET(dst, val, n) memset(dst, val, n)
 #endif
 
-/*
+/* --------------------------------------------------------------------------
  * Internal aliases
- */
+ * -------------------------------------------------------------------------- */
 
 #define EMITTER_INIT_CAPACITY PICO_EMITTER_INIT_CAPACITY
 #define EMITTER_ASSERT        PICO_EMITTER_ASSERT
@@ -372,6 +372,10 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
 #define EMITTER_FREE          PICO_EMITTER_FREE
 #define EMITTER_MEMCPY        PICO_EMITTER_MEMCPY
 #define EMITTER_MEMSET        PICO_EMITTER_MEMSET
+
+/* --------------------------------------------------------------------------
+ * Emitter types
+ * -------------------------------------------------------------------------- */
 
 /*
  * Per-event listener slot. Uses a struct-of-arrays layout so that function
@@ -382,7 +386,7 @@ typedef struct
 {
     emitter_listener_fn* listeners; // function pointers
     void**               udatas;    // corresponding user data
-    uint8_t*             once;      // 1 = fire-once flag
+    bool*                once;      // fire-once flag
     int                  count;     // active listener count
     int                  capacity;  // allocated capacity
     bool                 emitting;  // true while iterating
@@ -419,7 +423,7 @@ typedef struct arena_s
 
 static void           emitter_grow_slot(emitter_slot_t* slot);
 static void           emitter_compact(emitter_slot_t* slot);
-static void           emitter_subscribe(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata, uint8_t once);
+static void           emitter_subscribe(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata, bool once);
 static void           queued_emitter_grow(queued_emitter_t* qe);
 static arena_block_t* arena_block_create(size_t size);
 static bool           arena_init(arena_t* arena, size_t initial_block_size);
@@ -429,6 +433,10 @@ static void*          arena_alloc_align(arena_t* arena, size_t size, size_t alig
 static void*          arena_alloc(arena_t* arena, size_t size);
 static void           arena_reset(arena_t* arena);
 static void           arena_destroy(arena_t* arena);
+
+/* --------------------------------------------------------------------------
+ * Emitter public API implementation
+ * -------------------------------------------------------------------------- */
 
 emitter_t* emitter_create(int num_events)
 {
@@ -473,12 +481,12 @@ void emitter_destroy(emitter_t* emitter)
 
 void emitter_on(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata)
 {
-    emitter_subscribe(emitter, event, listener, udata, 0);
+    emitter_subscribe(emitter, event, listener, udata, false);
 }
 
 void emitter_once(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata)
 {
-    emitter_subscribe(emitter, event, listener, udata, 1);
+    emitter_subscribe(emitter, event, listener, udata, true);
 }
 
 void emitter_off(emitter_t* emitter, int event, emitter_listener_fn listener)
@@ -605,20 +613,24 @@ int emitter_count(const emitter_t* emitter, int event)
     return emitter->events[event].count;
 }
 
-/* ==========================================================================
- * Queued emitter
- * ========================================================================== */
+/* --------------------------------------------------------------------------
+ * Queued Emitter types
+ * -------------------------------------------------------------------------- */
 
 struct queued_emitter_s
 {
     emitter_t*   emitter;
-    arena_t      arenas[2];  /* ping-pong pair */
-    int          write_arena; /* index of the arena new emits write into */
+    arena_t      arenas[2];    // ping-pong pair
+    int          write_arena;  // index of the arena new emits write into
     int*         events;
     const void** datas;
     int          count;
     int          capacity;
 };
+
+/* --------------------------------------------------------------------------
+ * Queued Emitter public API implementation
+ * -------------------------------------------------------------------------- */
 
 queued_emitter_t* queued_emitter_create(int num_events)
 {
@@ -755,7 +767,7 @@ void queued_emitter_flush(queued_emitter_t* qe)
 
     qe->count = remaining;
 
-    /* All dispatched payloads are consumed — O(1) reset of the read arena. */
+    // All dispatched payloads are consumed — O(1) reset of the read arena.
     arena_reset(&qe->arenas[read_arena]);
 }
 
@@ -765,9 +777,9 @@ int queued_emitter_count(const queued_emitter_t* qe, int event)
     return emitter_count(qe->emitter, event);
 }
 
-/* ==========================================================================
- * Static helpers -- emitter
- * ========================================================================== */
+/* --------------------------------------------------------------------------
+ * Emitter static helpers
+ * -------------------------------------------------------------------------- */
 
 /*
  * Grows a slot's listener arrays by doubling capacity.
@@ -778,7 +790,7 @@ static void emitter_grow_slot(emitter_slot_t* slot)
 
     emitter_listener_fn* l = (emitter_listener_fn*)EMITTER_REALLOC(slot->listeners, (size_t)new_cap * sizeof(emitter_listener_fn));
     void**               u = (void**)              EMITTER_REALLOC(slot->udatas,    (size_t)new_cap * sizeof(void*));
-    uint8_t*             o = (uint8_t*)            EMITTER_REALLOC(slot->once,      (size_t)new_cap * sizeof(uint8_t));
+    bool*                o = (bool*)               EMITTER_REALLOC(slot->once,      (size_t)new_cap * sizeof(bool));
 
     EMITTER_ASSERT(l != NULL);
     EMITTER_ASSERT(u != NULL);
@@ -789,6 +801,7 @@ static void emitter_grow_slot(emitter_slot_t* slot)
     slot->once      = o;
     slot->capacity  = new_cap;
 }
+
 /*
  * Removes NULL-tombstoned entries from a slot after emit or emitter_off.
  */
@@ -815,7 +828,7 @@ static void emitter_compact(emitter_slot_t* slot)
  */
 static void emitter_subscribe(emitter_t* emitter, int event,
                               emitter_listener_fn listener, void* udata,
-                              uint8_t once)
+                              bool once)
 {
     EMITTER_ASSERT(emitter  != NULL);
     EMITTER_ASSERT(event    >= 0 && event < emitter->num_events);
@@ -834,9 +847,9 @@ static void emitter_subscribe(emitter_t* emitter, int event,
     slot->count++;
 }
 
-/* ==========================================================================
- * Static helpers -- queued emitter
- * ========================================================================== */
+/* --------------------------------------------------------------------------
+ * Queued Emitter static helpers
+ * -------------------------------------------------------------------------- */
 
 static void queued_emitter_grow(queued_emitter_t* qe)
 {
@@ -853,9 +866,9 @@ static void queued_emitter_grow(queued_emitter_t* qe)
     qe->capacity = new_cap;
 }
 
-/* ==========================================================================
- * Arena allocator
- * ========================================================================== */
+/* --------------------------------------------------------------------------
+ * Arena allocator implementation
+ * -------------------------------------------------------------------------- */
 
 static arena_block_t* arena_block_create(size_t size)
 {
