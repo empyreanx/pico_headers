@@ -53,6 +53,14 @@
 
         emitter_destroy(emitter);
 
+    Revision History:
+    -----------------
+
+    - 0.1 (2026/05/23):
+        - Immediate and queued event emitter
+        - Fire-once listener support
+        - Safe listener mutation from within callbacks
+
     Usage:
     ------
 
