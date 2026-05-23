@@ -109,7 +109,7 @@ typedef void (*emitter_listener_fn)(const void* data, void* udata);
 /**
  * @brief Event emitter context (opaque).
  */
-typedef struct emitter_emitter_s emitter_t;
+typedef struct emitter_s emitter_t;
 
 /**
  * @brief Creates an event emitter that supports the given number of event types.
