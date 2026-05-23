@@ -400,7 +400,7 @@ typedef struct
     bool                 emitting;  // true while iterating
 } emitter_slot_t;
 
-struct emitter_emitter_s
+struct emitter_s
 {
     emitter_slot_t* events;
     int num_events;
