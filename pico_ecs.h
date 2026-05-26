@@ -151,8 +151,9 @@
     Constants:
     --------
 
-    - PICO_ECS_MAX_COMPONENTS (default: 32)
-    - PICO_ECS_MAX_SYSTEMS    (default: 16)
+    - PICO_ECS_MAX_COMPONENTS  (default: 32)
+    - PICO_ECS_MAX_SYSTEMS     (default: 16)
+    - PICO_ECS_COMP_BLOCK_SIZE (default: 64)
 
     Must be defined before PICO_ECS_IMPLEMENTATION
 */
@@ -547,6 +548,10 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 #define PICO_ECS_MAX_SYSTEMS 16
 #endif
 
+#ifndef PICO_ECS_COMP_BLOCK_SIZE
+#define PICO_ECS_COMP_BLOCK_SIZE 64
+#endif
+
 #ifdef NDEBUG
     #define PICO_ECS_ASSERT(expr) ((void)0)
 #else
@@ -572,13 +577,14 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
  *  Aliases
  *============================================================================*/
 
-#define ECS_ASSERT          PICO_ECS_ASSERT
-#define ECS_MAX_COMPONENTS  PICO_ECS_MAX_COMPONENTS
-#define ECS_MAX_SYSTEMS     PICO_ECS_MAX_SYSTEMS
-#define ECS_MALLOC          PICO_ECS_MALLOC
-#define ECS_REALLOC         PICO_ECS_REALLOC
-#define ECS_FREE            PICO_ECS_FREE
-#define ECS_MEMSET          PICO_ECS_MEMSET
+#define ECS_ASSERT           PICO_ECS_ASSERT
+#define ECS_MAX_COMPONENTS   PICO_ECS_MAX_COMPONENTS
+#define ECS_MAX_SYSTEMS      PICO_ECS_MAX_SYSTEMS
+#define ECS_COMP_BLOCK_SIZE  PICO_ECS_COMP_BLOCK_SIZE
+#define ECS_MALLOC           PICO_ECS_MALLOC
+#define ECS_REALLOC          PICO_ECS_REALLOC
+#define ECS_FREE             PICO_ECS_FREE
+#define ECS_MEMSET           PICO_ECS_MEMSET
 
 /*=============================================================================
  *  Data structures
@@ -619,9 +625,10 @@ typedef struct
 
 typedef struct
 {
-    size_t capacity;
-    size_t size; // component size
-    void*  data;
+    size_t  block_count;    // number of allocated blocks
+    size_t  block_capacity; // capacity of the blocks[] pointer array
+    size_t  comp_size;      // size of one component in bytes
+    void**  blocks;         // array of pointers to fixed-size blocks
 } ecs_comp_array_t;
 
 typedef struct
@@ -1150,11 +1157,12 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
 
-    // Return pointer to component
-    //  eid0,  eid1   eid2, ...
-    // [comp0, comp1, comp2, ...]
+    // Map entity ID to block and slot within that block.
+    // Blocks are never reallocated, so returned pointers remain stable.
     ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp.id];
-    return (char*)comp_array->data + (comp_array->size * entity.id);
+    size_t block = entity.id / ECS_COMP_BLOCK_SIZE;
+    size_t slot  = entity.id % ECS_COMP_BLOCK_SIZE;
+    return (char*)comp_array->blocks[block] + (comp_array->comp_size * slot);
 }
 
 
@@ -1181,7 +1189,7 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     void* comp_ptr = ecs_get(ecs, entity, comp);
 
     // Zero component
-    ECS_MEMSET(comp_ptr, 0, comp_array->size);
+    ECS_MEMSET(comp_ptr, 0, comp_array->comp_size);
 
     // Call constructor
     if (comp_data->constructor)
@@ -1343,7 +1351,9 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
                 // Get component pointer directly without ecs_get to avoid
                 // ready assertion, since entity may be queued for destruction
                 ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp_id];
-                void* comp_ptr = (char*)comp_array->data + (comp_array->size * entity_id);
+                size_t block   = entity_id / ECS_COMP_BLOCK_SIZE;
+                size_t slot    = entity_id % ECS_COMP_BLOCK_SIZE;
+                void* comp_ptr = (char*)comp_array->blocks[block] + (comp_array->comp_size * slot);
                 ecs_entity_t entity = ecs_make_entity(entity_id);
 
                 comp->destructor(ecs, entity, comp_ptr);
@@ -1856,11 +1866,23 @@ static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size
 
     ECS_MEMSET(array, 0, sizeof(ecs_comp_array_t));
 
-    array->capacity = capacity;
-    array->size = size;
+    array->comp_size = size;
 
-    ECS_ASSERT(ecs_is_valid_capacity(capacity, size));
-    array->data = ECS_MALLOC(capacity * size, ecs->mem_ctx);
+    size_t initial_blocks = (capacity + ECS_COMP_BLOCK_SIZE - 1) / ECS_COMP_BLOCK_SIZE;
+    if (initial_blocks == 0) initial_blocks = 1;
+
+    array->block_capacity = initial_blocks;
+    array->block_count    = initial_blocks;
+
+    ECS_ASSERT(ecs_is_valid_capacity(initial_blocks, sizeof(void*)));
+    array->blocks = (void**)ECS_MALLOC(initial_blocks * sizeof(void*), ecs->mem_ctx);
+
+    for (size_t i = 0; i < initial_blocks; i++)
+    {
+        ECS_ASSERT(ecs_is_valid_capacity(ECS_COMP_BLOCK_SIZE, size));
+        array->blocks[i] = ECS_MALLOC(ECS_COMP_BLOCK_SIZE * size, ecs->mem_ctx);
+        ECS_MEMSET(array->blocks[i], 0, ECS_COMP_BLOCK_SIZE * size);
+    }
 }
 
 static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array)
@@ -1870,7 +1892,10 @@ static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array)
 
     (void)ecs;
 
-    ECS_FREE(array->data, ecs->mem_ctx);
+    for (size_t i = 0; i < array->block_count; i++)
+        ECS_FREE(array->blocks[i], ecs->mem_ctx);
+
+    ECS_FREE(array->blocks, ecs->mem_ctx);
 }
 
 static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, ecs_id_t id)
@@ -1879,20 +1904,29 @@ static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, ecs_id_t 
     ECS_ASSERT(ecs_is_not_null(array));
     ECS_ASSERT(ecs_is_valid_id(id));
 
-    (void)ecs;
+    size_t required_block = id / ECS_COMP_BLOCK_SIZE;
 
-    if (id >= array->capacity)
+    while (required_block >= array->block_count)
     {
-        // Note that since a valid id doesn't have its high bit set, and
-        // capacity is in terms of elements, doubling the capacity won't wrap
-        do {
-            array->capacity *= 2;
-        } while (id >= array->capacity);
+        // Grow the block pointer array if necessary. This only moves pointers,
+        // never the block data itself, so existing component pointers remain valid.
+        if (array->block_count == array->block_capacity)
+        {
+            size_t old_capacity = array->block_capacity;
+            array->block_capacity *= 2;
 
-        ECS_ASSERT(ecs_is_valid_capacity(array->capacity, array->size));
-        array->data = ECS_REALLOC(array->data,
-                                  array->capacity * array->size,
-                                  ecs->mem_ctx);
+            ECS_ASSERT(ecs_is_valid_capacity(array->block_capacity, sizeof(void*)));
+            array->blocks = (void**)ecs_realloc_zero(ecs,
+                                                     array->blocks,
+                                                     old_capacity * sizeof(void*),
+                                                     array->block_capacity * sizeof(void*));
+        }
+
+        // Allocate and zero a new block
+        ECS_ASSERT(ecs_is_valid_capacity(ECS_COMP_BLOCK_SIZE, array->comp_size));
+        void* block = ECS_MALLOC(ECS_COMP_BLOCK_SIZE * array->comp_size, ecs->mem_ctx);
+        ECS_MEMSET(block, 0, ECS_COMP_BLOCK_SIZE * array->comp_size);
+        array->blocks[array->block_count++] = block;
     }
 }
 
