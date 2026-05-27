@@ -1893,7 +1893,9 @@ static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array)
     (void)ecs;
 
     for (size_t i = 0; i < array->block_count; i++)
+    {
         ECS_FREE(array->blocks[i], ecs->mem_ctx);
+    }
 
     ECS_FREE(array->blocks, ecs->mem_ctx);
 }
@@ -1913,13 +1915,16 @@ static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, ecs_id_t 
         if (array->block_count == array->block_capacity)
         {
             size_t old_capacity = array->block_capacity;
-            array->block_capacity *= 2;
+            size_t new_capacity = old_capacity * 2;
 
             ECS_ASSERT(ecs_is_valid_capacity(array->block_capacity, sizeof(void*)));
             array->blocks = (void**)ecs_realloc_zero(ecs,
                                                      array->blocks,
                                                      old_capacity * sizeof(void*),
-                                                     array->block_capacity * sizeof(void*));
+                                                     new_capacity * sizeof(void*));
+
+
+            array->block_capacity = new_capacity;
         }
 
         // Allocate and zero a new block
