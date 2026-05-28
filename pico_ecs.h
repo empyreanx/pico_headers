@@ -629,7 +629,7 @@ typedef struct
     size_t  block_capacity; // capacity of the blocks[] pointer array
     size_t  comp_size;      // size of one component in bytes
     void**  blocks;         // array of pointers to fixed-size blocks
-} ecs_comp_array_t;
+} ecs_comp_blocks_t;
 
 typedef struct
 {
@@ -667,7 +667,7 @@ struct ecs_s
     size_t             entity_count;
     size_t             next_entity_id;
     ecs_comp_data_t    comps[ECS_MAX_COMPONENTS];
-    ecs_comp_array_t   comp_arrays[ECS_MAX_COMPONENTS];
+    ecs_comp_blocks_t   comp_blocks[ECS_MAX_COMPONENTS];
     size_t             comp_count;
     ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
     size_t             system_count;
@@ -747,9 +747,9 @@ static int    ecs_id_array_size(ecs_id_array_t* pool);
 /*=============================================================================
  * Component array functions
  *============================================================================*/
-static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size, size_t capacity);
-static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array);
-static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, ecs_id_t id);
+static void ecs_comp_blocks_init(ecs_t* ecs, ecs_comp_blocks_t* array, size_t size, size_t capacity);
+static void ecs_comp_blocks_free(ecs_t* ecs, ecs_comp_blocks_t* array);
+static void ecs_comp_blocks_resize(ecs_t* ecs, ecs_comp_blocks_t* array, ecs_id_t id);
 
 /*=============================================================================
  * Validation functions
@@ -821,8 +821,8 @@ void ecs_free(ecs_t* ecs)
 
     for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
     {
-        ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp_id];
-        ecs_comp_array_free(ecs, comp_array);
+        ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp_id];
+        ecs_comp_blocks_free(ecs, comp_blocks);
     }
 
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
@@ -871,8 +871,8 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
 
     ecs_comp_t comp = ecs_make_comp(ecs->comp_count);
 
-    ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp.id];
-    ecs_comp_array_init(ecs, comp_array, size, ecs->entity_count);
+    ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
+    ecs_comp_blocks_init(ecs, comp_blocks, size, ecs->entity_count);
 
     ecs->comps[comp.id].constructor = constructor;
     ecs->comps[comp.id].destructor = destructor;
@@ -1159,10 +1159,10 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 
     // Map entity ID to block and slot within that block.
     // Blocks are never reallocated, so returned pointers remain stable.
-    ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp.id];
+    ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
     size_t block = entity.id / ECS_COMP_BLOCK_SIZE;
     size_t slot  = entity.id % ECS_COMP_BLOCK_SIZE;
-    return (char*)comp_array->blocks[block] + (comp_array->comp_size * slot);
+    return (char*)comp_blocks->blocks[block] + (comp_blocks->comp_size * slot);
 }
 
 
@@ -1179,17 +1179,17 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
     // Load component
-    ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp.id];
+    ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
     // Grow the component array
-    ecs_comp_array_resize(ecs, comp_array, entity.id);
+    ecs_comp_blocks_resize(ecs, comp_blocks, entity.id);
 
     // Get pointer to component
     void* comp_ptr = ecs_get(ecs, entity, comp);
 
     // Zero component
-    ECS_MEMSET(comp_ptr, 0, comp_array->comp_size);
+    ECS_MEMSET(comp_ptr, 0, comp_blocks->comp_size);
 
     // Call constructor
     if (comp_data->constructor)
@@ -1350,10 +1350,10 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
             {
                 // Get component pointer directly without ecs_get to avoid
                 // ready assertion, since entity may be queued for destruction
-                ecs_comp_array_t* comp_array = &ecs->comp_arrays[comp_id];
+                ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp_id];
                 size_t block   = entity_id / ECS_COMP_BLOCK_SIZE;
                 size_t slot    = entity_id % ECS_COMP_BLOCK_SIZE;
-                void* comp_ptr = (char*)comp_array->blocks[block] + (comp_array->comp_size * slot);
+                void* comp_ptr = (char*)comp_blocks->blocks[block] + (comp_blocks->comp_size * slot);
                 ecs_entity_t entity = ecs_make_entity(entity_id);
 
                 comp->destructor(ecs, entity, comp_ptr);
@@ -1857,14 +1857,14 @@ static inline int ecs_id_array_size(ecs_id_array_t* array)
     return array->size;
 }
 
-static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size, size_t capacity)
+static void ecs_comp_blocks_init(ecs_t* ecs, ecs_comp_blocks_t* array, size_t size, size_t capacity)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
 
     (void)ecs;
 
-    ECS_MEMSET(array, 0, sizeof(ecs_comp_array_t));
+    ECS_MEMSET(array, 0, sizeof(ecs_comp_blocks_t));
 
     array->comp_size = size;
 
@@ -1885,7 +1885,7 @@ static void ecs_comp_array_init(ecs_t* ecs, ecs_comp_array_t* array, size_t size
     }
 }
 
-static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array)
+static void ecs_comp_blocks_free(ecs_t* ecs, ecs_comp_blocks_t* array)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
@@ -1900,7 +1900,7 @@ static void ecs_comp_array_free(ecs_t* ecs, ecs_comp_array_t* array)
     ECS_FREE(array->blocks, ecs->mem_ctx);
 }
 
-static void ecs_comp_array_resize(ecs_t* ecs, ecs_comp_array_t* array, ecs_id_t id)
+static void ecs_comp_blocks_resize(ecs_t* ecs, ecs_comp_blocks_t* array, ecs_id_t id)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(array));
