@@ -718,11 +718,6 @@ static inline ecs_system_t ecs_make_system(ecs_id_t id);
 static void* ecs_realloc_zero(ecs_t* ecs, void* ptr, size_t old_size, size_t new_size);
 
 /*=============================================================================
- * Calls destructors on all components of the entity
- *============================================================================*/
-static void ecs_destruct(ecs_t* ecs, ecs_id_t entity);
-
-/*=============================================================================
  * Tests if entity is active (created)
  *============================================================================*/
 static inline bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id);
@@ -1866,6 +1861,8 @@ static inline void ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* array, ecs_id_t
 static inline ecs_id_t ecs_id_array_pop(ecs_id_array_t* array)
 {
     ECS_ASSERT(ecs_is_not_null(array));
+    ECS_ASSERT(array->size > 0);
+
     return array->data[--array->size];
 }
 
