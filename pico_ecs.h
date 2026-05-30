@@ -1106,6 +1106,14 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     ECS_ASSERT(ecs_is_valid_id(entity.id));
     ECS_ASSERT(ecs_is_active(ecs, entity.id));
 
+    if (!ecs_is_active(ecs, entity.id))
+        return;
+
+    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
+    ecs_bitset_t comp_bits = entity_data->comp_bits;
+
+    ECS_MEMSET(&entity_data->comp_bits, 0, sizeof(ecs_bitset_t));
+
     if (ecs->active_system >= 0)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
@@ -1115,13 +1123,12 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         return;
     }
 
-    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
-
     for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
     {
-        if (ecs_bitset_test(&entity_data->comp_bits, comp_id))
+        if (ecs_bitset_test(&comp_bits, comp_id))
         {
             ecs_comp_data_t* comp_data = &ecs->comps[comp_id];
+
             if (comp_data->on_remove)
             {
                 ecs_comp_t comp = ecs_make_comp(comp_id);
@@ -1129,8 +1136,6 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
             }
         }
     }
-
-    ECS_MEMSET(&entity_data->comp_bits, 0, sizeof(ecs_bitset_t));
 
     ecs_sync_systems(ecs, entity.id);
 
@@ -1166,8 +1171,10 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // Map entity ID to block and slot within that block.
     // Blocks are never reallocated, so returned pointers remain stable.
     ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
+
     size_t block = entity.id / ECS_COMP_BLOCK_SIZE;
     size_t slot  = entity.id % ECS_COMP_BLOCK_SIZE;
+
     return (char*)comp_blocks->blocks[block] + (comp_blocks->comp_size * slot);
 }
 
@@ -1178,6 +1185,9 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ECS_ASSERT(ecs_is_valid_component_id(comp.id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
+
+    if (ecs_has(ecs, entity, comp))
+        return;
 
     // Load entity data
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
@@ -1223,6 +1233,9 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ECS_ASSERT(ecs_is_valid_component_id(comp.id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
+
+    if (!ecs_has(ecs, entity, comp))
+        return;
 
     // Load entity data
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
@@ -1343,96 +1356,6 @@ static inline bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id)
 }
 
 /*=============================================================================
- * Calls destructors on all components of the entity
- *============================================================================*/
-#if 0
- static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
-{
-    // Load entity
-    ecs_entity_data_t* entity = &ecs->entities[entity_id];
-
-    // Loop through components and call the destructors
-    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
-    {
-        if (ecs_bitset_test(&entity->comp_bits, comp_id))
-        {
-            ecs_comp_data_t* comp = &ecs->comps[comp_id];
-
-            if (comp->destructor)
-            {
-                // Get component pointer directly without ecs_get to avoid
-                // ready assertion, since entity may be queued for destruction
-                ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp_id];
-                size_t block   = entity_id / ECS_COMP_BLOCK_SIZE;
-                size_t slot    = entity_id % ECS_COMP_BLOCK_SIZE;
-                void* comp_ptr = (char*)comp_blocks->blocks[block] + (comp_blocks->comp_size * slot);
-                ecs_entity_t entity = ecs_make_entity(entity_id);
-
-                comp->destructor(ecs, entity, comp_ptr);
-            }
-        }
-    }
-}
-#endif
-
-/*=============================================================================
- * Functions to flush destroyed entity and removed component
- *============================================================================*/
-#if 0
- static void ecs_flush_added(ecs_t* ecs, ecs_id_t sys_id)
-{
-    ecs_id_array_t* queue = &ecs->add_queue;
-
-    for (size_t i = 0; i < queue->size; i++)
-    {
-        ecs_id_t entity_id = queue->data[i];
-
-        ECS_ASSERT(ecs_is_active(ecs, entity_id));
-        ecs_sparse_set_add(ecs, &ecs->systems[sys_id].entity_ids, entity_id);
-    }
-
-    queue->size = 0;
-}
-
- static void ecs_flush_removed(ecs_t* ecs, ecs_id_t sys_id)
-{
-    ecs_id_array_t* remove_queue = &ecs->remove_queue;
-
-    for (size_t i = 0; i < remove_queue->size; i++)
-    {
-        ecs_id_t entity_id = remove_queue->data[i];
-
-        ECS_ASSERT(ecs_is_active(ecs, entity_id));
-        ecs_sparse_set_remove(&ecs->systems[sys_id].entity_ids, entity_id);
-    }
-
-    remove_queue->size = 0;
-}
-
-static void ecs_flush_destroyed(ecs_t* ecs, ecs_id_t sys_id)
-{
-    ecs_id_array_t* destroy_queue = &ecs->destroy_queue;
-
-    for (size_t i = 0; i < destroy_queue->size; i++)
-    {
-        ecs_id_t entity_id = destroy_queue->data[i];
-
-        ECS_ASSERT(ecs_is_active(ecs, entity_id));
-        ecs_sparse_set_remove(&ecs->systems[sys_id].entity_ids, entity_id);
-
-        // Push entity ID into pool
-        ecs_id_array_t* pool = &ecs->entity_pool;
-        ecs_id_array_push(ecs, pool, entity_id);
-
-        // Reset entity (sets bitset to 0 and, active and ready to false)
-        ECS_MEMSET(&ecs->entities[entity_id], 0, sizeof(ecs_entity_data_t));
-    }
-
-    destroy_queue->size = 0;
-}
-#endif
-
-/*=============================================================================
  * Command queue implementation
  *============================================================================*/
 static void ecs_cmd_array_init(ecs_t* ecs, ecs_cmd_array_t* queue, size_t capacity)
@@ -1482,10 +1405,6 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
-    // Temporarily clear active_system so the public functions called below
-    // take the immediate (non-deferred) path.
-    ecs->active_system = -1;
-
     ecs_cmd_array_t* queue = &ecs->cmd_queue;
 
     for (size_t i = 0; i < queue->size; ++i)
@@ -1505,6 +1424,7 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
             case ECS_CMD_ADD:
                 if (ecs_is_ready(ecs, cmd->entity))
                 {
+                    ecs_bitset_flip(&ecs->entities[cmd->entity.id].comp_bits, cmd->comp.id, false);
                     ecs_add(ecs, cmd->entity, cmd->comp);
                 }
                 break;
@@ -1512,6 +1432,7 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
             case ECS_CMD_REMOVE:
                 if (ecs_is_ready(ecs, cmd->entity))
                 {
+                    ecs_bitset_flip(&ecs->entities[cmd->entity.id].comp_bits, cmd->comp.id, true);
                     ecs_remove(ecs, cmd->entity, cmd->comp);
                 }
                 break;
