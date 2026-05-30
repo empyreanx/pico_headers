@@ -1117,6 +1117,19 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
 
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
+    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
+    {
+        if (ecs_bitset_test(&entity_data->comp_bits, comp_id))
+        {
+            ecs_comp_data_t* comp_data = &ecs->comps[comp_id];
+            if (comp_data->on_remove)
+            {
+                ecs_comp_t comp = ecs_make_comp(comp_id);
+                comp_data->on_remove(ecs, entity, comp, comp_data->udata);
+            }
+        }
+    }
+
     ECS_MEMSET(&entity_data->comp_bits, 0, sizeof(ecs_bitset_t));
 
     ecs_sync_systems(ecs, entity.id);
@@ -1484,6 +1497,7 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
             case ECS_CMD_DESTROY:
                 if (ecs_is_active(ecs, cmd->entity.id))
                 {
+                    ecs->entities[cmd->entity.id].ready = true;
                     ecs_destroy(ecs, cmd->entity);
                 }
                 break;

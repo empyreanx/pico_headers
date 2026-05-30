@@ -26,9 +26,9 @@ typedef struct
 void setup()
 {
     ecs = ecs_new(MIN_ENTITIES, NULL);
-    comp1 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL);
-    comp2 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL);
-    comp3 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL);
+    comp1 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL, NULL, NULL);
+    comp2 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL, NULL, NULL);
+    comp3 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL, NULL, NULL);
 }
 
 void teardown()
@@ -42,8 +42,8 @@ TEST_CASE(test_reset)
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1, NULL);
-        ecs_add(ecs, entity, comp2, NULL);
+        ecs_add(ecs, entity, comp1);
+        ecs_add(ecs, entity, comp2);
         REQUIRE(ecs_is_ready(ecs, entity));
     }
 
@@ -142,11 +142,11 @@ TEST_CASE(test_exclude)
     ecs_require_component(ecs, sys2, comp2);
 
     ecs_entity_t entity1 = ecs_create(ecs);
-    ecs_add(ecs, entity1, comp1, NULL);
-    ecs_add(ecs, entity1, comp2, NULL);
+    ecs_add(ecs, entity1, comp1);
+    ecs_add(ecs, entity1, comp2);
 
     ecs_entity_t entity2 = ecs_create(ecs);
-    ecs_add(ecs, entity2, comp2, NULL);
+    ecs_add(ecs, entity2, comp2);
 
     ecs_run_system(ecs, sys1, 0);
     ecs_run_system(ecs, sys2, 0);
@@ -183,7 +183,7 @@ TEST_CASE(test_exclude)
     ECS_MEMSET(&state2, 0, sizeof(exclude_sys_state_t));
 
     // Adding comp1 to entity2 causes it to be removed from the system
-    ecs_add(ecs, entity2, comp1, NULL);
+    ecs_add(ecs, entity2, comp1);
 
     ecs_run_system(ecs, sys1, 0);
     ecs_run_system(ecs, sys2, 0);
@@ -236,11 +236,11 @@ TEST_CASE(test_exclude_remove_system)
     ecs_require_component(ecs, sys2, comp2);
 
     ecs_entity_t entity1 = ecs_create(ecs);
-    ecs_add(ecs, entity1, comp1, NULL);
-    ecs_add(ecs, entity1, comp2, NULL);
+    ecs_add(ecs, entity1, comp1);
+    ecs_add(ecs, entity1, comp2);
 
     ecs_entity_t entity2 = ecs_create(ecs);
-    ecs_add(ecs, entity2, comp2, NULL);
+    ecs_add(ecs, entity2, comp2);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
     REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 2);
@@ -262,7 +262,7 @@ ecs_ret_t add_exclude_system(ecs_t* ecs,
 
     for (size_t i = 0; i < entity_count; i++)
     {
-        ecs_add(ecs, entities[i], comp1, NULL);
+        ecs_add(ecs, entities[i], comp1);
     }
 
     return 0;
@@ -288,11 +288,11 @@ TEST_CASE(test_exclude_add_system)
     ecs_require_component(ecs, sys2, comp2);
 
     ecs_entity_t entity1 = ecs_create(ecs);
-    ecs_add(ecs, entity1, comp1, NULL);
-    ecs_add(ecs, entity1, comp2, NULL);
+    ecs_add(ecs, entity1, comp1);
+    ecs_add(ecs, entity1, comp2);
 
     ecs_entity_t entity2 = ecs_create(ecs);
-    ecs_add(ecs, entity2, comp2, NULL);
+    ecs_add(ecs, entity2, comp2);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
     REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 2);
@@ -311,45 +311,42 @@ typedef struct
     bool used;
 } test_args_t;
 
-void constructor(ecs_t* ecs, ecs_entity_t entity, void* ptr, void* args)
+static void constructor(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp_handle, void* udata)
 {
-    (void)ecs;
-    (void)entity;
-    (void)args;
+    (void)udata;
 
-    test_args_t* test_args = args;
-
-    comp_t* comp = ptr;
-    comp->used = test_args->used;
+    comp_t* comp = ecs_get(ecs, entity, comp_handle);
+    comp->used = true;
 }
 
 TEST_CASE(test_constructor)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), constructor, NULL);
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), constructor, NULL, NULL, NULL);
 
     ecs_entity_t entity = ecs_create(ecs);
-    comp_t* comp = ecs_add(ecs, entity, comp_type, &(test_args_t){ true });
+    ecs_add(ecs, entity, comp_type);
+    comp_t* comp = ecs_get(ecs, entity, comp_type);
 
     REQUIRE(comp->used);
 
     return true;
 }
 
-void destructor(ecs_t* ecs, ecs_entity_t entity, void* ptr)
+static void destructor(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp_handle, void* udata)
 {
-    (void)ecs;
-    (void)entity;
+    (void)udata;
 
-    comp_t* comp = ptr;
+    comp_t* comp = ecs_get(ecs, entity, comp_handle);
     comp->used = false;
 }
 
 TEST_CASE(test_destructor_remove)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), constructor, destructor);
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), constructor, destructor, NULL, NULL);
 
     ecs_entity_t entity = ecs_create(ecs);
-    comp_t* comp = ecs_add(ecs, entity, comp_type, &(test_args_t){ true });
+    ecs_add(ecs, entity, comp_type);
+    comp_t* comp = ecs_get(ecs, entity, comp_type);
     ecs_remove(ecs, entity, comp_type);
 
     REQUIRE(!comp->used);
@@ -359,10 +356,11 @@ TEST_CASE(test_destructor_remove)
 
 TEST_CASE(test_destructor_destroy)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), constructor, destructor);
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), constructor, destructor, NULL, NULL);
 
     ecs_entity_t entity = ecs_create(ecs);
-    comp_t* comp = ecs_add(ecs, entity, comp_type, &(test_args_t){ true });
+    ecs_add(ecs, entity, comp_type);
+    comp_t* comp = ecs_get(ecs, entity, comp_type);
     ecs_destroy(ecs, entity);
 
     REQUIRE(!ecs_is_ready(ecs, entity));
@@ -399,14 +397,14 @@ TEST_CASE(test_add_remove)
     REQUIRE(!ecs_has(ecs, entity, comp2));
 
     // Add a component
-    ecs_add(ecs, entity, comp1, NULL);
+    ecs_add(ecs, entity, comp1);
 
     // Verify that the entity has one component and not the other
     REQUIRE(ecs_has(ecs, entity, comp1));
     REQUIRE(!ecs_has(ecs, entity, comp2));
 
     // Add a second component to the entity
-    ecs_add(ecs, entity, comp2, NULL);
+    ecs_add(ecs, entity, comp2);
 
     // Verify that the entity has both components
     REQUIRE(ecs_has(ecs, entity, comp1));
@@ -476,18 +474,18 @@ TEST_CASE(test_add_systems)
     REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 0);
 
     // Add a component to entity 1
-    ecs_add(ecs, entity1, comp1, NULL);
+    ecs_add(ecs, entity1, comp1);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
     REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 0);
 
     // Add components to entity 2
-    ecs_add(ecs, entity2, comp1, NULL);
+    ecs_add(ecs, entity2, comp1);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 2);
     REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 0);
 
-    ecs_add(ecs, entity2, comp2, NULL);
+    ecs_add(ecs, entity2, comp2);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 2);
     REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 1);
@@ -506,8 +504,8 @@ TEST_CASE(test_remove)
     ecs_entity_t entity1 = ecs_create(ecs);
 
     // Add components to the entity
-    ecs_add(ecs, entity1, comp1, NULL);
-    ecs_add(ecs, entity1, comp2, NULL);
+    ecs_add(ecs, entity1, comp1);
+    ecs_add(ecs, entity1, comp2);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
 
@@ -520,9 +518,9 @@ TEST_CASE(test_remove)
 
     ecs_entity_t entity2 = ecs_create(ecs);
 
-    ecs_add(ecs, entity2, comp1, NULL);
-    ecs_add(ecs, entity2, comp2, NULL);
-    ecs_add(ecs, entity2, comp3, NULL);
+    ecs_add(ecs, entity2, comp1);
+    ecs_add(ecs, entity2, comp2);
+    ecs_add(ecs, entity2, comp3);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
 
@@ -563,8 +561,8 @@ TEST_CASE(test_destroy_system)
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1, NULL);
-        ecs_add(ecs, entity, comp2, NULL);
+        ecs_add(ecs, entity, comp1);
+        ecs_add(ecs, entity, comp2);
         REQUIRE(ecs_is_ready(ecs, entity));
     }
 
@@ -586,8 +584,8 @@ TEST_CASE(test_destroy)
     ecs_entity_t entity = ecs_create(ecs);
 
     // Add components to entity
-    ecs_add(ecs, entity, comp1, NULL);
-    ecs_add(ecs, entity, comp2, NULL);
+    ecs_add(ecs, entity, comp1);
+    ecs_add(ecs, entity, comp2);
 
     REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
 
@@ -634,8 +632,8 @@ TEST_CASE(test_remove_system)
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1, NULL);
-        ecs_add(ecs, entity, comp2, NULL);
+        ecs_add(ecs, entity, comp1);
+        ecs_add(ecs, entity, comp2);
         REQUIRE(ecs_is_ready(ecs, entity));
     }
 
@@ -655,13 +653,13 @@ ecs_ret_t queue_add_system(ecs_t* ecs,
     (void)entity_count;
     (void)udata;
 
-    for (size_t i = 0; i < MIN_ENTITIES + 256; i++)
+    for (size_t i = 0; i < MIN_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1, NULL);
+        ecs_add(ecs, entity, comp1);
     }
 
-    return ecs_get_system_entity_count(ecs, sys1);
+    return 0;
 }
 
 TEST_CASE(test_queue_add)
@@ -669,11 +667,10 @@ TEST_CASE(test_queue_add)
     sys1 = ecs_define_system(ecs, 0, queue_add_system, NULL, NULL, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
-    size_t inner_count = ecs_run_system(ecs, sys1, 0);
-    size_t outer_count = ecs_get_system_entity_count(ecs, sys1);
+    ecs_run_system(ecs, sys1, 0);
+    size_t count = ecs_get_system_entity_count(ecs, sys1);
 
-    REQUIRE(outer_count == inner_count + 256);
-
+    REQUIRE(count == MIN_ENTITIES);
     return true;
 }
 
@@ -703,7 +700,7 @@ TEST_CASE(test_queue_remove)
 
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
-        ecs_add(ecs, ecs_create(ecs), comp1, NULL);
+        ecs_add(ecs, ecs_create(ecs), comp1);
     }
 
     size_t inner_count = ecs_run_system(ecs, sys1, 0);
@@ -740,7 +737,7 @@ TEST_CASE(test_queue_destroy)
 
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
-        ecs_add(ecs, ecs_create(ecs), comp1, NULL);
+        ecs_add(ecs, ecs_create(ecs), comp1);
     }
 
     size_t inner_count = ecs_run_system(ecs, sys1, 0);
@@ -763,7 +760,8 @@ TEST_CASE(test_enable_disable)
     ecs_entity_t entity = ecs_create(ecs);
 
     // Add component to entity
-    comp_t* comp = ecs_add(ecs, entity, comp1, NULL);
+    ecs_add(ecs, entity, comp1);
+    comp_t* comp = ecs_get(ecs, entity, comp1);
     comp->used = false;
 
     // Run system
@@ -837,7 +835,7 @@ TEST_CASE(test_add_remove_callbacks)
     ecs_run_system(ecs, sys1, 0);
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp1, NULL);
+    ecs_add(ecs, entity, comp1);
     ecs_destroy(ecs, entity);
 
     REQUIRE(added);
@@ -938,7 +936,7 @@ TEST_CASE(test_set_system_callbacks)
 
     // Create entity to trigger callbacks
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp1, NULL);
+    ecs_add(ecs, entity, comp1);
     REQUIRE(added);
 
     ecs_destroy(ecs, entity);
