@@ -582,8 +582,13 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
     #define PICO_ECS_MEMSET memset
 #endif
 
+#ifndef PICO_ECS_MEMCPY
+    #include <string.h>
+    #define PICO_ECS_MEMCPY memcpy
+#endif
+
 /*=============================================================================
- *  Aliases
+ *  Aliases>
  *============================================================================*/
 
 #define ECS_ASSERT           PICO_ECS_ASSERT
@@ -594,6 +599,7 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 #define ECS_REALLOC          PICO_ECS_REALLOC
 #define ECS_FREE             PICO_ECS_FREE
 #define ECS_MEMSET           PICO_ECS_MEMSET
+#define ECS_MEMCPY           PICO_ECS_MEMCPY
 
 /*=============================================================================
  *  Data structures
@@ -652,6 +658,7 @@ typedef struct
     ecs_on_add_fn on_add;
     ecs_on_remove_fn on_remove;
     ecs_on_set_fn on_set;
+    size_t size;
     void* udata;
 } ecs_comp_data_t;
 
@@ -888,6 +895,7 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
     ecs->comps[comp.id].on_add = on_add;
     ecs->comps[comp.id].on_remove = on_remove;
     ecs->comps[comp.id].on_set = on_set;
+    ecs->comps[comp.id].size = size;
     ecs->comps[comp.id].udata = udata;
 
     ecs->comp_count++;
@@ -1072,6 +1080,24 @@ bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity)
     ECS_ASSERT(ecs_is_not_null(ecs));
 
     return ecs->entities[entity.id].ready;
+}
+
+void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_id(entity.id));
+    ECS_ASSERT(ecs_is_valid_component_id(comp.id));
+    ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
+
+    if (!ecs_has(ecs, entity, comp))
+        return;
+
+    void* comp_ptr = ecs_get(ecs, entity, comp);
+
+    ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
+
+    ECS_MEMCPY(comp_ptr, data, comp_data->size);
 }
 
 void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
