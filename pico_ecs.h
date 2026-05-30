@@ -1179,6 +1179,13 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
 
+    // Load entity data
+    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
+
+    // Set entity component bit that determines which systems this entity
+    // belongs to
+    ecs_bitset_flip(&entity_data->comp_bits, comp.id, true);
+
     if (ecs->active_system >= 0)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
@@ -1187,9 +1194,6 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         cmd->comp      = comp;
         return;
     }
-
-    // Load entity data
-    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
     // Load component
     ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
@@ -1208,10 +1212,6 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     if (comp_data->on_add)
         comp_data->on_add(ecs, entity, comp, comp_data->udata);
 
-    // Set entity component bit that determines which systems this entity
-    // belongs to
-    ecs_bitset_flip(&entity_data->comp_bits, comp.id, true);
-
     // Add/remove entity to/from systems based on matching criteria
     ecs_sync_systems(ecs, entity.id);
 }
@@ -1224,6 +1224,13 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
 
+    // Load entity data
+    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
+
+    // Set entity component bit that determines which systems this entity
+    // belongs to
+    ecs_bitset_flip(&entity_data->comp_bits, comp.id, false);
+
     if (ecs->active_system >= 0)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
@@ -1233,18 +1240,11 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         return;
     }
 
-    // Load entity data
-    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
-
     // Fire callback
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
     if (comp_data->on_remove)
         comp_data->on_remove(ecs, entity, comp, comp_data->udata);
-
-    // Set entity component bit that determines which systems this entity
-    // belongs to
-    ecs_bitset_flip(&entity_data->comp_bits, comp.id, false);
 
     // Add/remove entity to/from systems based on matching criteria
     ecs_sync_systems(ecs, entity.id);
