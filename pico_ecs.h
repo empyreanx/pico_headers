@@ -258,10 +258,10 @@ void ecs_reset(ecs_t* ecs);
  * @param entity The entity being constructed
  * @param ptr    The pointer to the component
  */
-typedef void (*ecs_constructor_fn)(ecs_t* ecs,
-                                   ecs_entity_t entity,
-                                   void* comp_ptr,
-                                   void* args);
+typedef void (*ecs_on_add_fn)(ecs_t* ecs,
+                              ecs_entity_t entity,
+                              ecs_comp_t comp,
+                              void* udata);
 
 /**
  * @brief Called when a component is destroyed (via ecs_remove or ecs_destroy)
@@ -270,9 +270,16 @@ typedef void (*ecs_constructor_fn)(ecs_t* ecs,
  * @param entity The entity being destoryed
  * @param ptr    The pointer to the component
  */
-typedef void (*ecs_destructor_fn)(ecs_t* ecs,
-                                  ecs_entity_t entity,
-                                  void* comp_ptr);
+typedef void (*ecs_on_remove_fn)(ecs_t* ecs,
+                                 ecs_entity_t entity,
+                                 ecs_comp_t comp,
+                                 void* udata);
+
+
+typedef void (*ecs_on_set_fn)(ecs_t* ecs,
+                              ecs_entity_t entity,
+                              ecs_comp_t comp,
+                              void* udata);
 
 /**
  * @brief Defines a component
@@ -280,17 +287,19 @@ typedef void (*ecs_destructor_fn)(ecs_t* ecs,
  * Defines a component with the specfied size in bytes. Components define the
  * game state (usually contained within structs) and are manipulated by systems.
  *
- * @param ecs         The ECS context
- * @param size        The number of bytes to allocate for each component instance
- * @param constructor Called when a component is created (disabled if NULL)
- * @param destructor  Called when a component is destroyed (disabled if NULL)
- * @param udata       Data passed to callbacks (can be NULL)
- * @returns           A component handle
+ * @param ecs       The ECS context
+ * @param size      The number of bytes to allocate for each component instance
+ * @param on_add    Called when a component is created (disabled if NULL)
+ * @param on_remove Called when a component is destroyed (disabled if NULL)
+ * @param udata     Data passed to callbacks (can be NULL)
+ * @returns         A component handle
  */
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 size_t size,
-                                ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor);
+                                ecs_on_add_fn on_add_cb,
+                                ecs_on_remove_fn on_remove_cb,
+                                ecs_on_set_fn on_set_cb,
+                                void* udata);
 
 /**
  * @brief System callback
@@ -315,7 +324,7 @@ typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
  * @param entity The entity being added
  * @param udata  The user data passed to the callback
  */
-typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
+typedef void (*ecs_on_join_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 
 /**
  * @brief Called when an entity is removed from a system
@@ -324,7 +333,7 @@ typedef void (*ecs_added_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @param entity The enitty being removed
  * @param udata  The user data passed to the callback
  */
-typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
+typedef void (*ecs_on_leave_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 
 /**
  * @brief Defines a system
@@ -344,8 +353,8 @@ typedef void (*ecs_removed_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_mask_t mask,
                                ecs_system_fn system_cb,
-                               ecs_added_fn add_cb,
-                               ecs_removed_fn remove_cb,
+                               ecs_on_join_fn on_join,
+                               ecs_on_leave_fn on_leave,
                                void* udata);
 /**
  * @brief Entities are processed by the target system if they have all of the
@@ -395,8 +404,8 @@ void ecs_disable_system(ecs_t* ecs, ecs_system_t sys);
 void ecs_set_system_callbacks(ecs_t* ecs,
                               ecs_system_t sys,
                               ecs_system_fn system_cb,
-                              ecs_added_fn add_cb,
-                              ecs_removed_fn remove_cb);
+                              ecs_on_join_fn on_join,
+                              ecs_on_leave_fn on_leave);
 
 /**
  * @brief Sets the user data for a system
@@ -477,7 +486,7 @@ bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * @returns The component data
  */
-void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args);
+void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Gets a component instance associated with an entity
@@ -640,8 +649,10 @@ typedef struct
 
 typedef struct
 {
-    ecs_constructor_fn constructor;
-    ecs_destructor_fn  destructor;
+    ecs_on_add_fn on_add;
+    ecs_on_remove_fn on_remove;
+    ecs_on_set_fn on_set;
+    void* udata;
 } ecs_comp_data_t;
 
 typedef struct
@@ -650,28 +661,47 @@ typedef struct
     ecs_sparse_set_t entity_ids;
     ecs_mask_t       mask;
     ecs_system_fn    system_cb;
-    ecs_added_fn     add_cb;
-    ecs_removed_fn   remove_cb;
+    ecs_on_join_fn   on_join;
+    ecs_on_leave_fn  on_leave;
     ecs_bitset_t     require_bits;
     ecs_bitset_t     exclude_bits;
     void*            udata;
 } ecs_sys_data_t;
 
+typedef enum
+{
+    ECS_CMD_DESTROY,
+    ECS_CMD_ADD,
+    ECS_CMD_REMOVE,
+} ecs_cmd_type_t;
+
+typedef struct
+{
+    ecs_cmd_type_t type;
+    ecs_entity_t   entity;
+    ecs_comp_t     comp;
+} ecs_cmd_t;
+
+typedef struct
+{
+    ecs_cmd_t* data;
+    size_t     size;
+    size_t     capacity;
+} ecs_cmd_array_t;
+
 struct ecs_s
 {
     ecs_id_array_t     entity_pool;
-    ecs_id_array_t     add_queue;
-    ecs_id_array_t     remove_queue;
-    ecs_id_array_t     destroy_queue;
     ecs_entity_data_t* entities;
     size_t             entity_count;
     size_t             next_entity_id;
     ecs_comp_data_t    comps[ECS_MAX_COMPONENTS];
-    ecs_comp_blocks_t   comp_blocks[ECS_MAX_COMPONENTS];
+    ecs_comp_blocks_t  comp_blocks[ECS_MAX_COMPONENTS];
     size_t             comp_count;
     ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
     size_t             system_count;
     int                active_system;
+    ecs_cmd_array_t    cmd_queue;
     void*              mem_ctx;
 };
 
@@ -698,11 +728,12 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity);
 static inline bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
- * Functions to flush destroyed entities and removed component
+ * Command queue functions
  *============================================================================*/
-static void ecs_flush_added(ecs_t* ecs, ecs_id_t sys_id);
-static void ecs_flush_removed(ecs_t* ecs, ecs_id_t sys_id);
-static void ecs_flush_destroyed(ecs_t* ecs, ecs_id_t sys_id);
+static void  ecs_cmd_array_init(ecs_t* ecs, ecs_cmd_array_t* queueueue, size_t capacity);
+static void  ecs_cmd_array_free(ecs_t* ecs, ecs_cmd_array_t* queueueue);
+static ecs_cmd_t* ecs_cmd_array_push(ecs_t* ecs, ecs_cmd_array_t* queueueue);
+static void  ecs_cmd_flush_queue(ecs_t* ecs);
 
 /*=============================================================================
  * Bitset functions
@@ -742,7 +773,7 @@ static void   ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* pool, size_t capacit
 static void   ecs_id_array_free(ecs_t* ecs, ecs_id_array_t* pool);
 static inline void  ecs_id_array_push(ecs_t* ecs, ecs_id_array_t* pool, ecs_id_t id);
 static inline ecs_id_t ecs_id_array_pop(ecs_id_array_t* pool);
-static int    ecs_id_array_size(ecs_id_array_t* pool);
+static inline size_t ecs_id_array_size(ecs_id_array_t* pool);
 
 /*=============================================================================
  * Component array functions
@@ -788,10 +819,10 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
     ecs->mem_ctx        = mem_ctx;
 
     // Initialize entity pool and queues
-    ecs_id_array_init(ecs, &ecs->entity_pool,   entity_count);
-    ecs_id_array_init(ecs, &ecs->add_queue,     entity_count);
-    ecs_id_array_init(ecs, &ecs->remove_queue,  entity_count);
-    ecs_id_array_init(ecs, &ecs->destroy_queue, entity_count);
+    ecs_id_array_init(ecs, &ecs->entity_pool, entity_count);
+
+    // Initialize deferred command queue
+    ecs_cmd_array_init(ecs, &ecs->cmd_queue, entity_count);
 
     // Allocate entity array
     ECS_ASSERT(ecs_is_valid_capacity(ecs->entity_count, sizeof(ecs_entity_data_t)));
@@ -808,16 +839,8 @@ void ecs_free(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
-    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
-    {
-        if (ecs->entities[entity_id].active)
-            ecs_destruct(ecs, entity_id);
-    }
-
     ecs_id_array_free(ecs, &ecs->entity_pool);
-    ecs_id_array_free(ecs, &ecs->add_queue);
-    ecs_id_array_free(ecs, &ecs->remove_queue);
-    ecs_id_array_free(ecs, &ecs->destroy_queue);
+    ecs_cmd_array_free(ecs, &ecs->cmd_queue);
 
     for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
     {
@@ -839,16 +862,7 @@ void ecs_reset(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
-    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_count; entity_id++)
-    {
-        if (ecs->entities[entity_id].active)
-            ecs_destruct(ecs, entity_id);
-    }
-
     ecs->entity_pool.size   = 0;
-    ecs->add_queue.size     = 0;
-    ecs->destroy_queue.size = 0;
-    ecs->remove_queue.size  = 0;
 
     ECS_MEMSET(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
 
@@ -862,8 +876,10 @@ void ecs_reset(ecs_t* ecs)
 
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 size_t size,
-                                ecs_constructor_fn constructor,
-                                ecs_destructor_fn destructor)
+                                ecs_on_add_fn on_add,
+                                ecs_on_remove_fn on_remove,
+                                ecs_on_set_fn on_set,
+                                void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
@@ -874,8 +890,10 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
     ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
     ecs_comp_blocks_init(ecs, comp_blocks, size, ecs->entity_count);
 
-    ecs->comps[comp.id].constructor = constructor;
-    ecs->comps[comp.id].destructor = destructor;
+    ecs->comps[comp.id].on_add = on_add;
+    ecs->comps[comp.id].on_remove = on_remove;
+    ecs->comps[comp.id].on_set = on_set;
+    ecs->comps[comp.id].udata = udata;
 
     ecs->comp_count++;
 
@@ -885,8 +903,8 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
 ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_mask_t mask,
                                ecs_system_fn system_cb,
-                               ecs_added_fn add_cb,
-                               ecs_removed_fn remove_cb,
+                               ecs_on_join_fn on_join,
+                               ecs_on_leave_fn on_leave,
                                void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
@@ -901,8 +919,8 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
     sys_data->active = true;
     sys_data->mask = mask;
     sys_data->system_cb = system_cb;
-    sys_data->add_cb = add_cb;
-    sys_data->remove_cb = remove_cb;
+    sys_data->on_join = on_join;
+    sys_data->on_leave = on_leave;
     sys_data->udata = udata;
 
     ecs->system_count++;
@@ -959,8 +977,8 @@ void ecs_disable_system(ecs_t* ecs, ecs_system_t sys)
 void ecs_set_system_callbacks(ecs_t* ecs,
                               ecs_system_t sys,
                               ecs_system_fn system_cb,
-                              ecs_added_fn add_cb,
-                              ecs_removed_fn remove_cb)
+                              ecs_on_join_fn on_join,
+                              ecs_on_leave_fn on_leave)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -969,8 +987,8 @@ void ecs_set_system_callbacks(ecs_t* ecs,
 
     ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
     sys_data->system_cb = system_cb;
-    sys_data->add_cb = add_cb;
-    sys_data->remove_cb = remove_cb;
+    sys_data->on_join = on_join;
+    sys_data->on_leave = on_leave;
 }
 
 void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata)
@@ -1067,72 +1085,26 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     ECS_ASSERT(ecs_is_valid_id(entity.id));
     ECS_ASSERT(ecs_is_active(ecs, entity.id));
 
-    // Load entity data
-    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
-
-    // Remove entity from systems
-    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
-    {
-        // Skip if the system is active and matches the current system ID. This
-        // system will be processed below
-        if (ecs->active_system == (int)sys_id)
-            continue;
-
-        ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
-
-        // Test to see if entity's components matches the system
-        if (ecs_entity_system_test(&sys_data->require_bits,
-                                   &sys_data->exclude_bits,
-                                   &entity_data->comp_bits))
-        {
-            // Directly remove from sparse set since no system is being
-            // processed
-            if (ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
-            {
-                if (sys_data->remove_cb)
-                    sys_data->remove_cb(ecs, entity, sys_data->udata);
-            }
-        }
-    }
-
-    // True if a system is being processed
     if (ecs->active_system >= 0)
     {
-        ecs_sys_data_t* sys_data = &ecs->systems[ecs->active_system];
-
-            // Test to see if entity's components matches the system
-        if (ecs_entity_system_test(&sys_data->require_bits,
-                                   &sys_data->exclude_bits,
-                                   &entity_data->comp_bits))
-        {
-            // Since a system is being processed we need to protect its sparse
-            // set, so we queue a removed command
-            if (ecs_sparse_set_find(&sys_data->entity_ids, entity.id, NULL))
-            {
-                if (sys_data->remove_cb)
-                    sys_data->remove_cb(ecs, entity, sys_data->udata);
-
-                ecs_id_array_push(ecs, &ecs->destroy_queue, entity.id);
-
-                entity_data->ready = false;
-                entity_data->active = true;
-            }
-        }
+        ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
+        cmd->type   = ECS_CMD_DESTROY;
+        cmd->entity = entity;
+        ecs->entities[entity.id].ready = false;
+        return;
     }
 
-    // Call destructors on entity components
-    ecs_destruct(ecs, entity.id);
+    ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
 
-    // If a system is not active, then clean up
-    if (ecs->active_system < 0)
-    {
-        // Push entity ID into pool
-        ecs_id_array_t* pool = &ecs->entity_pool;
-        ecs_id_array_push(ecs, pool, entity.id);
+    ECS_MEMSET(&entity_data->comp_bits, 0, sizeof(ecs_bitset_t));
 
-        // Reset entity (sets bitset to 0 and, active and ready to false)
-        ECS_MEMSET(entity_data, 0, sizeof(ecs_entity_data_t));
-    }
+    ecs_sync_systems(ecs, entity.id);
+
+    ecs_id_array_t* pool = &ecs->entity_pool;
+    ecs_id_array_push(ecs, pool, entity.id);
+
+    entity_data->active = false;
+    entity_data->ready = false;
 }
 
 bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
@@ -1165,15 +1137,22 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     return (char*)comp_blocks->blocks[block] + (comp_blocks->comp_size * slot);
 }
 
-
-
-void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
+void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_id(entity.id));
     ECS_ASSERT(ecs_is_valid_component_id(comp.id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
     ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
+
+    if (ecs->active_system >= 0)
+    {
+        ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
+        cmd->type      = ECS_CMD_ADD;
+        cmd->entity    = entity;
+        cmd->comp      = comp;
+        return;
+    }
 
     // Load entity data
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
@@ -1192,8 +1171,8 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     ECS_MEMSET(comp_ptr, 0, comp_blocks->comp_size);
 
     // Call constructor
-    if (comp_data->constructor)
-        comp_data->constructor(ecs, entity, comp_ptr, args);
+    if (comp_data->on_add)
+        comp_data->on_add(ecs, entity, comp, comp_data->udata);
 
     // Set entity component bit that determines which systems this entity
     // belongs to
@@ -1201,9 +1180,6 @@ void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
 
     // Add/remove entity to/from systems based on matching criteria
     ecs_sync_systems(ecs, entity.id);
-
-    // Return component
-    return comp_ptr;
 }
 
 void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
@@ -1214,8 +1190,23 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
 
+    if (ecs->active_system >= 0)
+    {
+        ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
+        cmd->type   = ECS_CMD_REMOVE;
+        cmd->entity = entity;
+        cmd->comp   = comp;
+        return;
+    }
+
     // Load entity data
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
+
+    // Fire callback
+    ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
+
+    if (comp_data->on_remove)
+        comp_data->on_remove(ecs, entity, comp, comp_data->udata);
 
     // Set entity component bit that determines which systems this entity
     // belongs to
@@ -1223,18 +1214,6 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 
     // Add/remove entity to/from systems based on matching criteria
     ecs_sync_systems(ecs, entity.id);
-
-    // Destroy component
-    ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
-
-    if (comp_data->destructor)
-    {
-        void* comp_ptr = ecs_get(ecs, entity, comp);
-        comp_data->destructor(ecs, entity, comp_ptr);
-    }
-
-    // Reset the relevant component mask bit
-    ecs_bitset_flip(&entity_data->comp_bits, comp.id, false);
 }
 
 ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
@@ -1258,11 +1237,9 @@ ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
                      sys_data->entity_ids.size,
                      sys_data->udata);
 
-    ecs_flush_added(ecs, sys.id);
-    ecs_flush_removed(ecs, sys.id);
-    ecs_flush_destroyed(ecs, sys.id);
-
     ecs->active_system = -1;
+
+    ecs_cmd_flush_queue(ecs);
 
     return code;
 }
@@ -1334,7 +1311,8 @@ static inline bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id)
 /*=============================================================================
  * Calls destructors on all components of the entity
  *============================================================================*/
-static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
+#if 0
+ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
 {
     // Load entity
     ecs_entity_data_t* entity = &ecs->entities[entity_id];
@@ -1361,11 +1339,13 @@ static void ecs_destruct(ecs_t* ecs, ecs_id_t entity_id)
         }
     }
 }
+#endif
 
 /*=============================================================================
  * Functions to flush destroyed entity and removed component
  *============================================================================*/
-static void ecs_flush_added(ecs_t* ecs, ecs_id_t sys_id)
+#if 0
+ static void ecs_flush_added(ecs_t* ecs, ecs_id_t sys_id)
 {
     ecs_id_array_t* queue = &ecs->add_queue;
 
@@ -1416,7 +1396,95 @@ static void ecs_flush_destroyed(ecs_t* ecs, ecs_id_t sys_id)
 
     destroy_queue->size = 0;
 }
+#endif
 
+/*=============================================================================
+ * Command queue implementation
+ *============================================================================*/
+static void ecs_cmd_array_init(ecs_t* ecs, ecs_cmd_array_t* queue, size_t capacity)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(queue));
+    ECS_ASSERT(capacity > 0);
+
+    (void)ecs;
+
+    queue->size     = 0;
+    queue->capacity = capacity;
+    queue->data     = (ecs_cmd_t*)ECS_MALLOC(capacity * sizeof(ecs_cmd_t), ecs->mem_ctx);
+
+    ECS_ASSERT(ecs_is_not_null(queue->data));
+}
+
+static void ecs_cmd_array_free(ecs_t* ecs, ecs_cmd_array_t* queue)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(queue));
+    ECS_FREE(queue->data, ecs->mem_ctx);
+}
+
+static ecs_cmd_t* ecs_cmd_array_push(ecs_t* ecs, ecs_cmd_array_t* queue)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(queue));
+
+    if (queue->size == queue->capacity)
+    {
+        size_t new_capacity = queue->capacity * 2;
+
+        ECS_ASSERT(ecs_is_valid_capacity(new_capacity, sizeof(ecs_cmd_t)));
+        queue->data = (ecs_cmd_t*)ECS_REALLOC(queue->data,
+                                              new_capacity * sizeof(ecs_cmd_t),
+                                              ecs->mem_ctx);
+        queue->capacity = new_capacity;
+    }
+
+    ecs_cmd_t* cmd = &queue->data[queue->size++];
+    ECS_MEMSET(cmd, 0, sizeof(ecs_cmd_t));
+    return cmd;
+}
+
+static void ecs_cmd_flush_queue(ecs_t* ecs)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+
+    // Temporarily clear active_system so the public functions called below
+    // take the immediate (non-deferred) path.
+    ecs->active_system = -1;
+
+    ecs_cmd_array_t* queue = &ecs->cmd_queue;
+
+    for (size_t i = 0; i < queue->size; ++i)
+    {
+        ecs_cmd_t* cmd = &queue->data[i];
+
+        switch (cmd->type)
+        {
+            case ECS_CMD_DESTROY:
+                if (ecs_is_active(ecs, cmd->entity.id))
+                {
+                    ecs_destroy(ecs, cmd->entity);
+                }
+                break;
+
+            case ECS_CMD_ADD:
+                if (ecs_is_ready(ecs, cmd->entity))
+                {
+                    ecs_add(ecs, cmd->entity, cmd->comp);
+                }
+                break;
+
+            case ECS_CMD_REMOVE:
+                if (ecs_is_ready(ecs, cmd->entity))
+                {
+                    ecs_remove(ecs, cmd->entity, cmd->comp);
+                }
+                break;
+        }
+    }
+
+    queue->size = 0;
+}
 
 /*=============================================================================
  * Bitset functions
@@ -1726,8 +1794,8 @@ static void ecs_sync_systems(ecs_t* ecs, ecs_id_t entity_id)
             // Add the entity directly to the sparse set
             if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity_id))
             {
-                if (sys_data->add_cb)
-                    sys_data->add_cb(ecs, ecs_make_entity(entity_id), sys_data->udata);
+                if (sys_data->on_join)
+                    sys_data->on_join(ecs, ecs_make_entity(entity_id), sys_data->udata);
             }
         }
         else
@@ -1736,59 +1804,8 @@ static void ecs_sync_systems(ecs_t* ecs, ecs_id_t entity_id)
             // no longer match
             if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id))
             {
-                if (sys_data->remove_cb)
-                    sys_data->remove_cb(ecs, ecs_make_entity(entity_id), sys_data->udata);
-            }
-        }
-    }
-
-    // True if a system is running
-    if (ecs->active_system >= 0)
-    {
-        // Load active system data
-        ecs_sys_data_t* sys_data = &ecs->systems[ecs->active_system];
-
-        // Test to see if entity's components matches the system
-        if (ecs_entity_system_test(&sys_data->require_bits,
-                                   &sys_data->exclude_bits,
-                                   &entity_data->comp_bits))
-        {
-            ecs_sparse_set_t* set = &sys_data->entity_ids;
-
-            // If the sparse set has room to grow without allocation,
-            // directly add the entity
-            if (set->size < set->capacity)
-            {
-                // Add the entity directly to the sparse set
-                if (ecs_sparse_set_add(ecs, set, entity_id))
-                {
-                    if (sys_data->add_cb)
-                        sys_data->add_cb(ecs, ecs_make_entity(entity_id), sys_data->udata);
-                }
-            }
-            else
-            {
-                // The sparse set is full, so queue an add command
-                if (!ecs_sparse_set_find(set, entity_id, NULL))
-                {
-                    if (sys_data->add_cb)
-                        sys_data->add_cb(ecs, ecs_make_entity(entity_id), sys_data->udata);
-
-                    ecs_id_array_push(ecs, &ecs->add_queue, entity_id);
-                }
-            }
-        }
-        else
-        {
-            // Since we are updating the active system, we need to protect
-            // the sparse set. Thus, if the entity is in the set, queue
-            // a remove command
-            if (ecs_sparse_set_find(&sys_data->entity_ids, entity_id, NULL))
-            {
-                if (sys_data->remove_cb)
-                    sys_data->remove_cb(ecs, ecs_make_entity(entity_id), sys_data->udata);
-
-                ecs_id_array_push(ecs, &ecs->remove_queue, entity_id);
+                if (sys_data->on_leave)
+                    sys_data->on_leave(ecs, ecs_make_entity(entity_id), sys_data->udata);
             }
         }
     }
@@ -1852,7 +1869,7 @@ static inline ecs_id_t ecs_id_array_pop(ecs_id_array_t* array)
     return array->data[--array->size];
 }
 
-static inline int ecs_id_array_size(ecs_id_array_t* array)
+static inline size_t ecs_id_array_size(ecs_id_array_t* array)
 {
     return array->size;
 }
