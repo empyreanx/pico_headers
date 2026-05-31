@@ -767,7 +767,7 @@ static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
                                    ecs_bitset_t* entity_bits);
 
 static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id);
-static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id, ecs_bitset_t* comp_bits);
+static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
  * ID array functions
@@ -1113,8 +1113,6 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
     ecs_bitset_t comp_bits = entity_data->comp_bits;
 
-    ECS_MEMSET(&entity_data->comp_bits, 0, sizeof(ecs_bitset_t));
-
     if (ecs->active_system >= 0)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
@@ -1138,13 +1136,12 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         }
     }
 
-    ecs_sync_destroy(ecs, entity.id, &comp_bits);
+    ecs_sync_destroy(ecs, entity.id);
 
     ecs_id_array_t* pool = &ecs->entity_pool;
     ecs_id_array_push(ecs, pool, entity.id);
 
-    entity_data->active = false;
-    entity_data->ready = false;
+    ECS_MEMSET(&entity_data->comp_bits, 0, sizeof(ecs_bitset_t));
 }
 
 bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
@@ -1917,7 +1914,7 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id)
     }
 }
 
-static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id, ecs_bitset_t* comp_bits)
+static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id)
 {
     // Load entity data
     ecs_entity_data_t* entity_data = &ecs->entities[entity_id];
@@ -1930,7 +1927,7 @@ static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id, ecs_bitset_t* comp_
         // Test to see if entity's components matches the system
         if (ecs_entity_system_test(&sys_data->require_bits,
                                    &sys_data->exclude_bits,
-                                   comp_bits))
+                                   &entity_data->comp_bits))
         {
             // Directly remove from sparse set since no system is being
             // processed
