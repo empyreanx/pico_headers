@@ -707,7 +707,7 @@ struct ecs_s
     size_t             comp_count;
     ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
     size_t             system_count;
-    int                active_system;
+    bool               system_is_active;
     ecs_cmd_array_t    cmd_queue;
     void*              mem_ctx;
 };
@@ -816,10 +816,10 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     ECS_MEMSET(ecs, 0, sizeof(ecs_t));
 
-    ecs->entity_count   = (entity_count > 0) ? entity_count : 1;
-    ecs->next_entity_id = 0;
-    ecs->active_system  = -1;
-    ecs->mem_ctx        = mem_ctx;
+    ecs->entity_count     = (entity_count > 0) ? entity_count : 1;
+    ecs->next_entity_id   = 0;
+    ecs->system_is_active = false;
+    ecs->mem_ctx          = mem_ctx;
 
     // Initialize entity pool and queues
     ecs_id_array_init(ecs, &ecs->entity_pool, entity_count);
@@ -1113,7 +1113,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
     ecs_bitset_t comp_bits = entity_data->comp_bits;
 
-    if (ecs->active_system >= 0)
+    if (ecs->system_is_active)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type   = ECS_CMD_DESTROY;
@@ -1198,7 +1198,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // belongs to
     ecs_bitset_flip(&entity_data->comp_bits, comp.id, true);
 
-    if (ecs->active_system >= 0)
+    if (ecs->system_is_active)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type      = ECS_CMD_ADD;
@@ -1246,7 +1246,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // belongs to
     ecs_bitset_flip(&entity_data->comp_bits, comp.id, false);
 
-    if (ecs->active_system >= 0)
+    if (ecs->system_is_active)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type   = ECS_CMD_REMOVE;
@@ -1279,14 +1279,14 @@ ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
     if (0 != sys_data->mask && !(sys_data->mask & mask))
         return 0;
 
-    ecs->active_system = (int)sys.id;
+    ecs->system_is_active = true;
 
     ecs_ret_t code = sys_data->system_cb(ecs,
                      sys_data->entity_ids.dense,
                      sys_data->entity_ids.size,
                      sys_data->udata);
 
-    ecs->active_system = -1;
+    ecs->system_is_active = false;
 
     ecs_cmd_flush_queue(ecs);
 
