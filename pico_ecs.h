@@ -1142,6 +1142,8 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     ecs_id_array_push(ecs, pool, entity.id);
 
     ECS_MEMSET(&entity_data->comp_bits, 0, sizeof(ecs_bitset_t));
+    entity_data->active = false;
+    entity_data->ready  = false;
 }
 
 bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
@@ -1149,10 +1151,12 @@ bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_id(entity.id));
     ECS_ASSERT(ecs_is_valid_component_id(comp.id));
-    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
 
     // Load entity data
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
+
+    if (!entity_data->ready)
+        return false;
 
     // Return true if the component belongs to the entity
     return ecs_bitset_test(&entity_data->comp_bits, comp.id);
