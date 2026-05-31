@@ -1588,6 +1588,156 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set)
 
 #endif // ECS_MAX_COMPONENTS
 
+#include <stdalign.h>
+
+typedef struct arena_block_s
+{
+    uint8_t*              memory;
+    size_t                size;
+    size_t                offset;
+    struct arena_block_s* next;
+} arena_block_t;
+
+typedef struct arena_s
+{
+    ecs_t* ecs;
+    arena_block_t* first;
+    arena_block_t* current;
+    size_t         block_size;
+} arena_t;
+
+static arena_block_t* arena_block_create(ecs_t* ecs, size_t size)
+{
+    (void)ecs;
+
+    arena_block_t* block = (arena_block_t*)ECS_MALLOC(sizeof(arena_block_t), ecs->mem_ctx);
+
+    if (!block)
+        return NULL;
+
+    block->memory = (uint8_t*)ECS_MALLOC(size, ecs->mem_ctx);
+
+    if (!block->memory)
+    {
+        ECS_FREE(block, ecs->mem_ctx);
+        return NULL;
+    }
+
+    block->size   = size;
+    block->offset = 0;
+    block->next   = NULL;
+
+    return block;
+}
+
+static bool arena_init(ecs_t* ecs, arena_t* arena, size_t initial_block_size)
+{
+    arena_block_t* block = arena_block_create(ecs, initial_block_size);
+
+    if (!block)
+        return false;
+
+    arena->first      = block;
+    arena->current    = block;
+    arena->block_size = initial_block_size;
+
+    return true;
+}
+
+static bool arena_grow(ecs_t* ecs, arena_t* arena, size_t min_size)
+{
+    size_t new_size = arena->block_size;
+
+    while (new_size < min_size)
+    {
+        new_size *= 2;
+    }
+
+    arena_block_t* block = arena_block_create(ecs, new_size);
+
+    if (!block)
+        return false;
+
+    arena->current->next = block;
+    arena->current       = block;
+
+    return true;
+}
+
+static uintptr_t arena_align_forward(uintptr_t ptr, size_t align)
+{
+    uintptr_t mask = (uintptr_t)align - 1;
+    return (ptr + mask) & ~mask;
+}
+
+static void* arena_alloc_align(ecs_t* ecs, arena_t* arena, size_t size, size_t align)
+{
+    if ((align & (align - 1)) != 0)
+        return NULL; // align must be a power of two
+
+    arena_block_t* block = arena->current;
+
+    uintptr_t base      = (uintptr_t)block->memory;
+    uintptr_t ptr       = base + block->offset;
+    uintptr_t aligned   = arena_align_forward(ptr, align);
+    size_t    new_offset = (aligned - base) + size;
+
+    if (new_offset > block->size)
+    {
+        size_t required = size + align;
+
+        if (!arena_grow(ecs, arena, required))
+            return NULL;
+
+        block      = arena->current;
+        base       = (uintptr_t)block->memory;
+        aligned    = arena_align_forward(base, align);
+        new_offset = (aligned - base) + size;
+    }
+
+    block->offset = new_offset;
+
+    return (void*)aligned;
+}
+
+static void* arena_alloc(ecs_t* ecs, arena_t* arena, size_t size)
+{
+    return arena_alloc_align(ecs, arena, size, alignof(max_align_t));
+}
+
+static void arena_reset(ecs_t* ecs, arena_t* arena)
+{
+    arena_block_t* block = arena->first->next;
+
+    while (block)
+    {
+        arena_block_t* next = block->next;
+        ECS_FREE(block->memory, ecs->mem_ctx);
+        ECS_FREE(block, ecs->mem_ctx);
+        block = next;
+    }
+
+    arena->first->next   = NULL;
+    arena->first->offset = 0;
+    arena->current       = arena->first;
+}
+
+static void arena_destroy(ecs_t* ecs, arena_t* arena)
+{
+    arena_block_t* block = arena->first;
+
+    while (block)
+    {
+        arena_block_t* next = block->next;
+        ECS_FREE(block->memory, ecs->mem_ctx);
+        ECS_FREE(block, ecs->mem_ctx);
+        block = next;
+    }
+
+    arena->first   = NULL;
+    arena->current = NULL;
+}
+
 /*=============================================================================
  * Sparse set functions
  *============================================================================*/
