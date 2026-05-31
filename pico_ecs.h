@@ -587,6 +587,8 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
     #define PICO_ECS_MEMCPY memcpy
 #endif
 
+#include <stdalign.h>
+
 /*=============================================================================
  *  Aliases>
  *============================================================================*/
@@ -619,6 +621,22 @@ typedef struct
 } ecs_bitset_t;
 
 #endif // ECS_MAX_COMPONENTS
+
+typedef struct ecs_arena_block_s
+{
+    uint8_t*              memory;
+    size_t                size;
+    size_t                offset;
+    struct ecs_arena_block_s* next;
+} ecs_arena_block_t;
+
+typedef struct ecs_arena_s
+{
+    ecs_t* ecs;
+    ecs_arena_block_t* first;
+    ecs_arena_block_t* current;
+    size_t block_size;
+} ecs_arena_t;
 
 // Data-structure for a packed array implementation that provides O(1) functions
 // for adding, removing, and accessing entity IDs
@@ -677,9 +695,10 @@ typedef struct
 
 typedef enum
 {
-    ECS_CMD_DESTROY,
     ECS_CMD_ADD,
     ECS_CMD_REMOVE,
+    ECS_CMD_SET,
+    ECS_CMD_DESTROY,
 } ecs_cmd_type_t;
 
 typedef struct
@@ -687,6 +706,7 @@ typedef struct
     ecs_cmd_type_t type;
     ecs_entity_t   entity;
     ecs_comp_t     comp;
+    void*          data;
 } ecs_cmd_t;
 
 typedef struct
@@ -707,8 +727,9 @@ struct ecs_s
     size_t             comp_count;
     ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
     size_t             system_count;
-    bool               system_is_active;
+    bool               system_active;
     ecs_cmd_array_t    cmd_queue;
+    ecs_arena_t        arena;
     void*              mem_ctx;
 };
 
@@ -748,6 +769,18 @@ static inline ecs_bitset_t ecs_bitset_or(ecs_bitset_t* set1, ecs_bitset_t* set2)
 static inline ecs_bitset_t ecs_bitset_not(ecs_bitset_t* set);
 static inline bool ecs_bitset_equal(ecs_bitset_t* set1, ecs_bitset_t* set2);
 static inline bool ecs_bitset_true(ecs_bitset_t* set);
+
+/*=============================================================================
+ * Arena functions
+ *============================================================================*/
+static ecs_arena_block_t* ecs_arena_block_create(ecs_t* ecs, size_t size);
+static bool ecs_arena_init(ecs_t* ecs, ecs_arena_t* arena, size_t initial_block_size);
+static bool ecs_arena_grow(ecs_t* ecs, ecs_arena_t* arena, size_t min_size);
+static uintptr_t ecs_arena_align_forward(uintptr_t ptr, size_t align);
+static void* ecs_arena_alloc_align(ecs_t* ecs, ecs_arena_t* arena, size_t size, size_t align);
+static void* ecs_arena_alloc(ecs_t* ecs, ecs_arena_t* arena, size_t size);
+static void ecs_arena_reset(ecs_t* ecs, ecs_arena_t* arena);
+static void ecs_arena_destroy(ecs_t* ecs, ecs_arena_t* arena);
 
 /*=============================================================================
  * Sparse set functions
@@ -818,7 +851,7 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     ecs->entity_count     = (entity_count > 0) ? entity_count : 1;
     ecs->next_entity_id   = 0;
-    ecs->system_is_active = false;
+    ecs->system_active = false;
     ecs->mem_ctx          = mem_ctx;
 
     // Initialize entity pool and queues
@@ -835,6 +868,8 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
     // Zero entity array
     ECS_MEMSET(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
 
+    ecs_arena_init(ecs, &ecs->arena, 512);
+
     return ecs;
 }
 
@@ -844,6 +879,7 @@ void ecs_free(ecs_t* ecs)
 
     ecs_id_array_free(ecs, &ecs->entity_pool);
     ecs_cmd_array_free(ecs, &ecs->cmd_queue);
+    ecs_arena_destroy(ecs, &ecs->arena);
 
     for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
     {
@@ -1094,11 +1130,25 @@ void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data)
     if (!ecs_has(ecs, entity, comp))
         return;
 
-    void* comp_ptr = ecs_get(ecs, entity, comp);
-
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
+    if (ecs->system_active)
+    {
+        ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
+        cmd->type   = ECS_CMD_SET;
+        cmd->entity = entity;
+        cmd->comp = comp;
+        cmd->data = ecs_arena_alloc(ecs, &ecs->arena, comp_data->size);
+        ECS_MEMCPY(cmd->data, data, comp_data->size);
+        return;
+    }
+
+    void* comp_ptr = ecs_get(ecs, entity, comp);
     ECS_MEMCPY(comp_ptr, data, comp_data->size);
+
+    // Callback
+    if (comp_data->on_set)
+        comp_data->on_set(ecs, entity, comp, comp_data->udata);
 }
 
 void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
@@ -1113,7 +1163,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
     ecs_bitset_t comp_bits = entity_data->comp_bits;
 
-    if (ecs->system_is_active)
+    if (ecs->system_active)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type   = ECS_CMD_DESTROY;
@@ -1198,7 +1248,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // belongs to
     ecs_bitset_flip(&entity_data->comp_bits, comp.id, true);
 
-    if (ecs->system_is_active)
+    if (ecs->system_active)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type      = ECS_CMD_ADD;
@@ -1246,7 +1296,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // belongs to
     ecs_bitset_flip(&entity_data->comp_bits, comp.id, false);
 
-    if (ecs->system_is_active)
+    if (ecs->system_active)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type   = ECS_CMD_REMOVE;
@@ -1279,16 +1329,17 @@ ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
     if (0 != sys_data->mask && !(sys_data->mask & mask))
         return 0;
 
-    ecs->system_is_active = true;
+    ecs->system_active = true;
 
     ecs_ret_t code = sys_data->system_cb(ecs,
                      sys_data->entity_ids.dense,
                      sys_data->entity_ids.size,
                      sys_data->udata);
 
-    ecs->system_is_active = false;
+    ecs->system_active = false;
 
     ecs_cmd_flush_queue(ecs);
+    ecs_arena_reset(ecs, &ecs->arena);
 
     return code;
 }
@@ -1419,14 +1470,6 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
 
         switch (cmd->type)
         {
-            case ECS_CMD_DESTROY:
-                if (ecs_is_active(ecs, cmd->entity.id))
-                {
-                    ecs->entities[cmd->entity.id].ready = true;
-                    ecs_destroy(ecs, cmd->entity);
-                }
-                break;
-
             case ECS_CMD_ADD:
                 if (ecs_is_ready(ecs, cmd->entity))
                 {
@@ -1440,6 +1483,21 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
                 {
                     ecs_bitset_flip(&ecs->entities[cmd->entity.id].comp_bits, cmd->comp.id, true);
                     ecs_remove(ecs, cmd->entity, cmd->comp);
+                }
+                break;
+
+            case ECS_CMD_SET:
+                if (ecs_is_ready(ecs, cmd->entity))
+                {
+                    ecs_set(ecs, cmd->entity, cmd->comp, cmd->data);
+                }
+                break;
+
+            case ECS_CMD_DESTROY:
+                if (ecs_is_active(ecs, cmd->entity.id))
+                {
+                    ecs->entities[cmd->entity.id].ready = true;
+                    ecs_destroy(ecs, cmd->entity);
                 }
                 break;
         }
@@ -1590,29 +1648,11 @@ static inline bool ecs_bitset_true(ecs_bitset_t* set)
 
 #endif // ECS_MAX_COMPONENTS
 
-#include <stdalign.h>
-
-typedef struct arena_block_s
-{
-    uint8_t*              memory;
-    size_t                size;
-    size_t                offset;
-    struct arena_block_s* next;
-} arena_block_t;
-
-typedef struct arena_s
-{
-    ecs_t* ecs;
-    arena_block_t* first;
-    arena_block_t* current;
-    size_t         block_size;
-} arena_t;
-
-static arena_block_t* arena_block_create(ecs_t* ecs, size_t size)
+static ecs_arena_block_t* ecs_arena_block_create(ecs_t* ecs, size_t size)
 {
     (void)ecs;
 
-    arena_block_t* block = (arena_block_t*)ECS_MALLOC(sizeof(arena_block_t), ecs->mem_ctx);
+    ecs_arena_block_t* block = (ecs_arena_block_t*)ECS_MALLOC(sizeof(ecs_arena_block_t), ecs->mem_ctx);
 
     if (!block)
         return NULL;
@@ -1632,9 +1672,9 @@ static arena_block_t* arena_block_create(ecs_t* ecs, size_t size)
     return block;
 }
 
-static bool arena_init(ecs_t* ecs, arena_t* arena, size_t initial_block_size)
+static bool ecs_arena_init(ecs_t* ecs, ecs_arena_t* arena, size_t initial_block_size)
 {
-    arena_block_t* block = arena_block_create(ecs, initial_block_size);
+    ecs_arena_block_t* block = ecs_arena_block_create(ecs, initial_block_size);
 
     if (!block)
         return false;
@@ -1646,7 +1686,7 @@ static bool arena_init(ecs_t* ecs, arena_t* arena, size_t initial_block_size)
     return true;
 }
 
-static bool arena_grow(ecs_t* ecs, arena_t* arena, size_t min_size)
+static bool ecs_arena_grow(ecs_t* ecs, ecs_arena_t* arena, size_t min_size)
 {
     size_t new_size = arena->block_size;
 
@@ -1655,7 +1695,7 @@ static bool arena_grow(ecs_t* ecs, arena_t* arena, size_t min_size)
         new_size *= 2;
     }
 
-    arena_block_t* block = arena_block_create(ecs, new_size);
+    ecs_arena_block_t* block = ecs_arena_block_create(ecs, new_size);
 
     if (!block)
         return false;
@@ -1666,34 +1706,34 @@ static bool arena_grow(ecs_t* ecs, arena_t* arena, size_t min_size)
     return true;
 }
 
-static uintptr_t arena_align_forward(uintptr_t ptr, size_t align)
+static uintptr_t ecs_arena_align_forward(uintptr_t ptr, size_t align)
 {
     uintptr_t mask = (uintptr_t)align - 1;
     return (ptr + mask) & ~mask;
 }
 
-static void* arena_alloc_align(ecs_t* ecs, arena_t* arena, size_t size, size_t align)
+static void* ecs_arena_alloc_align(ecs_t* ecs, ecs_arena_t* arena, size_t size, size_t align)
 {
     if ((align & (align - 1)) != 0)
         return NULL; // align must be a power of two
 
-    arena_block_t* block = arena->current;
+    ecs_arena_block_t* block = arena->current;
 
     uintptr_t base      = (uintptr_t)block->memory;
     uintptr_t ptr       = base + block->offset;
-    uintptr_t aligned   = arena_align_forward(ptr, align);
+    uintptr_t aligned   = ecs_arena_align_forward(ptr, align);
     size_t    new_offset = (aligned - base) + size;
 
     if (new_offset > block->size)
     {
         size_t required = size + align;
 
-        if (!arena_grow(ecs, arena, required))
+        if (!ecs_arena_grow(ecs, arena, required))
             return NULL;
 
         block      = arena->current;
         base       = (uintptr_t)block->memory;
-        aligned    = arena_align_forward(base, align);
+        aligned    = ecs_arena_align_forward(base, align);
         new_offset = (aligned - base) + size;
     }
 
@@ -1702,18 +1742,20 @@ static void* arena_alloc_align(ecs_t* ecs, arena_t* arena, size_t size, size_t a
     return (void*)aligned;
 }
 
-static void* arena_alloc(ecs_t* ecs, arena_t* arena, size_t size)
+static void* ecs_arena_alloc(ecs_t* ecs, ecs_arena_t* arena, size_t size)
 {
-    return arena_alloc_align(ecs, arena, size, alignof(max_align_t));
+    return ecs_arena_alloc_align(ecs, arena, size, alignof(max_align_t));
 }
 
-static void arena_reset(ecs_t* ecs, arena_t* arena)
+static void ecs_arena_reset(ecs_t* ecs, ecs_arena_t* arena)
 {
-    arena_block_t* block = arena->first->next;
+    (void)ecs;
+
+    ecs_arena_block_t* block = arena->first->next;
 
     while (block)
     {
-        arena_block_t* next = block->next;
+        ecs_arena_block_t* next = block->next;
         ECS_FREE(block->memory, ecs->mem_ctx);
         ECS_FREE(block, ecs->mem_ctx);
         block = next;
@@ -1724,13 +1766,15 @@ static void arena_reset(ecs_t* ecs, arena_t* arena)
     arena->current       = arena->first;
 }
 
-static void arena_destroy(ecs_t* ecs, arena_t* arena)
+static void ecs_arena_destroy(ecs_t* ecs, ecs_arena_t* arena)
 {
-    arena_block_t* block = arena->first;
+    (void)ecs;
+
+    ecs_arena_block_t* block = arena->first;
 
     while (block)
     {
-        arena_block_t* next = block->next;
+        ecs_arena_block_t* next = block->next;
         ECS_FREE(block->memory, ecs->mem_ctx);
         ECS_FREE(block, ecs->mem_ctx);
         block = next;
