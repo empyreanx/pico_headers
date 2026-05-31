@@ -1,7 +1,7 @@
 #ifndef SYSTEMS_H
 #define SYSTEMS_H
 
-#include "pico_ecs.h"
+#include "../../pico_ecs.h"
 
 struct game_s;
 

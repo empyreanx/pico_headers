@@ -1,8 +1,8 @@
 #ifndef TILEMAP_H
 #define TILEMAP_H
 
-#include "game.h"
 #include "levels.h"
+#include "map.h"
 #include "math.h"
 
 struct game_s;

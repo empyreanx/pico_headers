@@ -1,11 +1,11 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "../../pico_ecs.h"
+
 #include "components.h"
 #include "systems.h"
 #include "tilemaps.h"
-
-#include "pico_ecs.h"
 
 enum
 {

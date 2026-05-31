@@ -1,19 +1,9 @@
 #ifndef LEVELS_H
 #define LEVELS_H
 
+#include "components.h"
 #include "math.h"
-
-typedef struct
-{
-    pos_t pos;
-    dim_t dim;
-} room_t;
-
-typedef struct
-{
-    int corner_count;
-    pos_t* corners;
-} tunnel_t;
+#include "map.h"
 
 typedef struct
 {
