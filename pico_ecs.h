@@ -732,9 +732,9 @@ static inline bool ecs_is_active(ecs_t* ecs, ecs_id_t entity_id);
 /*=============================================================================
  * Command queue functions
  *============================================================================*/
-static void  ecs_cmd_array_init(ecs_t* ecs, ecs_cmd_array_t* queueueue, size_t capacity);
-static void  ecs_cmd_array_free(ecs_t* ecs, ecs_cmd_array_t* queueueue);
-static ecs_cmd_t* ecs_cmd_array_push(ecs_t* ecs, ecs_cmd_array_t* queueueue);
+static void  ecs_cmd_array_init(ecs_t* ecs, ecs_cmd_array_t* queue, size_t capacity);
+static void  ecs_cmd_array_free(ecs_t* ecs, ecs_cmd_array_t* queue);
+static ecs_cmd_t* ecs_cmd_array_push(ecs_t* ecs, ecs_cmd_array_t* queue);
 static void  ecs_cmd_flush_queue(ecs_t* ecs);
 
 /*=============================================================================
@@ -1378,12 +1378,16 @@ static void ecs_cmd_array_free(ecs_t* ecs, ecs_cmd_array_t* queue)
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(queue));
     ECS_FREE(queue->data, ecs->mem_ctx);
+    (void)ecs;
+    (void)queue;
 }
 
 static ecs_cmd_t* ecs_cmd_array_push(ecs_t* ecs, ecs_cmd_array_t* queue)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(queue));
+
+    (void)ecs;
 
     if (queue->size == queue->capacity)
     {

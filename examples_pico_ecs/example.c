@@ -69,16 +69,16 @@ ecs_system_t System3;
 // Register components
 void register_components(ecs_t* ecs)
 {
-    PosComp  = ecs_define_component(ecs, sizeof(pos_t),  NULL, NULL);
-    VelComp  = ecs_define_component(ecs, sizeof(vel_t),  NULL, NULL);
-    RectComp = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComp  = ecs_define_component(ecs, sizeof(pos_t),  NULL, NULL, NULL, NULL);
+    VelComp  = ecs_define_component(ecs, sizeof(vel_t),  NULL, NULL, NULL, NULL);
+    RectComp = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL, NULL, NULL);
 }
 
 // System that prints the entity IDs of entities associated with this system
 ecs_ret_t system_update(ecs_t* ecs,
-                       ecs_entity_t* entities,
-                       size_t entity_count,
-                       void* udata)
+                        ecs_entity_t* entities,
+                        size_t entity_count,
+                        void* udata)
 {
     (void)ecs;
     (void)udata;
@@ -135,23 +135,23 @@ int main()
     printf("---------------------------------------------------------------\n");
 
     printf("PosComp added to: %lu\n", e1.id);
-    ecs_add(ecs, e1, PosComp, NULL);
+    ecs_add(ecs, e1, PosComp);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %lu\n",  e2.id);
     printf("VeloComp added to: %lu\n", e2.id);
 
-    ecs_add(ecs, e2, PosComp, NULL);
-    ecs_add(ecs, e2, VelComp, NULL);
+    ecs_add(ecs, e2, PosComp);
+    ecs_add(ecs, e2, VelComp);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %lu\n",  e3.id);
     printf("VeloComp added to: %lu\n", e3.id);
     printf("RectComp added to: %lu\n", e3.id);
 
-    ecs_add(ecs, e3, PosComp, NULL);
-    ecs_add(ecs, e3, VelComp, NULL);
-    ecs_add(ecs, e3, RectComp, NULL);
+    ecs_add(ecs, e3, PosComp);
+    ecs_add(ecs, e3, VelComp);
+    ecs_add(ecs, e3, RectComp);
 
     printf("---------------------------------------------------------------\n");
 

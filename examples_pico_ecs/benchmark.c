@@ -133,8 +133,8 @@ static void setup()
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
     // Register two new components
-    PosComponent  = ecs_define_component(ecs, sizeof(v2d_t),  NULL, NULL);
-    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComponent  = ecs_define_component(ecs, sizeof(v2d_t),  NULL, NULL, NULL, NULL);
+    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL, NULL, NULL);
 }
 
 static void setup_destroy_with_two_components()
@@ -142,14 +142,14 @@ static void setup_destroy_with_two_components()
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    PosComponent  = ecs_define_component(ecs, sizeof(v2d_t),  NULL, NULL);
-    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComponent  = ecs_define_component(ecs, sizeof(v2d_t),  NULL, NULL, NULL, NULL);
+    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL, NULL, NULL);
 
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, PosComponent, NULL);
-        ecs_add(ecs, entity, RectComponent, NULL);
+        ecs_add(ecs, entity, PosComponent);
+        ecs_add(ecs, entity, RectComponent);
     }
 }
 
@@ -157,10 +157,10 @@ static void setup_three_systems_min()
 {
     ecs = ecs_new(MIN_ENTITIES, NULL);
 
-    PosComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
-    DirComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
-    ComflabComponent = ecs_define_component(ecs, sizeof(comflab_t), NULL, NULL);
-    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL, NULL, NULL);
+    DirComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL, NULL, NULL);
+    ComflabComponent = ecs_define_component(ecs, sizeof(comflab_t), NULL, NULL, NULL, NULL);
+    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL, NULL, NULL);
 
     MovementSystem = ecs_define_system(ecs, 0, movement_system, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
@@ -177,10 +177,10 @@ static void setup_three_systems_max()
 {
     ecs = ecs_new(MAX_ENTITIES, NULL);
 
-    PosComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
-    DirComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
-    ComflabComponent = ecs_define_component(ecs, sizeof(comflab_t), NULL, NULL);
-    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL);
+    PosComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL, NULL, NULL);
+    DirComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL, NULL, NULL);
+    ComflabComponent = ecs_define_component(ecs, sizeof(comflab_t), NULL, NULL, NULL, NULL);
+    RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL, NULL, NULL);
 
     MovementSystem = ecs_define_system(ecs, 0, movement_system, NULL, NULL, NULL);
     ecs_require_component(ecs, MovementSystem, PosComponent);
@@ -205,7 +205,7 @@ static void setup_get()
 {
     // Create ECS instance
     ecs = ecs_new(MIN_ENTITIES, NULL);
-    PosComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL);
+    PosComponent = ecs_define_component(ecs, sizeof(v2d_t), NULL, NULL, NULL, NULL);
 
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
@@ -213,7 +213,7 @@ static void setup_get()
         ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, PosComponent);
     }
 }
 
@@ -334,8 +334,8 @@ static void bench_destroy()
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, PosComponent, NULL);
-        ecs_add(ecs, entity, RectComponent, NULL);
+        ecs_add(ecs, entity, PosComponent);
+        ecs_add(ecs, entity, RectComponent);
     }
 
     ecs_run_system(ecs, DestroySystem, 0);
@@ -358,8 +358,8 @@ static void bench_create_with_two_components()
         ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        ecs_add(ecs, entity, PosComponent, NULL);
-        ecs_add(ecs, entity, RectComponent, NULL);
+        ecs_add(ecs, entity, PosComponent);
+        ecs_add(ecs, entity, RectComponent);
     }
 }
 
@@ -369,7 +369,7 @@ static void bench_add_remove()
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, PosComponent);
         ecs_remove(ecs, entity, PosComponent);
     }
 }
@@ -383,8 +383,10 @@ static void bench_add_assign()
         ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        v2d_t*  pos  = (v2d_t*) ecs_add(ecs, entity, PosComponent,  NULL);
-        rect_t* rect = (rect_t*)ecs_add(ecs, entity, RectComponent, NULL);
+        ecs_add(ecs, entity, PosComponent);
+        ecs_add(ecs, entity, RectComponent);
+        v2d_t*  pos  = ecs_get(ecs, entity, PosComponent);
+        rect_t* rect = ecs_get(ecs, entity, RectComponent);
 
         // Set concrete component values
         *pos  = (v2d_t) { 1, 2 };
@@ -413,13 +415,17 @@ static void bench_three_systems()
         ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        v2d_t*  pos    = ecs_add(ecs, entity, PosComponent, NULL);
-        v2d_t*  dir    = ecs_add(ecs, entity, DirComponent, NULL);
-        rect_t* bounds = ecs_add(ecs, entity, RectComponent, NULL);
+        ecs_add(ecs, entity, PosComponent);
+        ecs_add(ecs, entity, DirComponent);
+        ecs_add(ecs, entity, RectComponent);
+        v2d_t*  pos    = ecs_get(ecs, entity, PosComponent);
+        v2d_t*  dir    = ecs_get(ecs, entity, DirComponent);
+        rect_t* bounds = ecs_get(ecs, entity, RectComponent);
 
         if (i % 2 == 0)
         {
-            comflab_t* comflab = ecs_add(ecs, entity, ComflabComponent, NULL);
+            ecs_add(ecs, entity, ComflabComponent);
+            comflab_t* comflab = ecs_get(ecs, entity, ComflabComponent);
             *comflab = (comflab_t){ 0 };
         }
 
