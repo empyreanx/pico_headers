@@ -1137,7 +1137,28 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         }
     }
 
-    ecs_sync_systems(ecs, entity.id);
+
+    // Remove entity from systems
+    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    {
+        ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
+
+        // Test to see if entity's components matches the system
+        if (ecs_entity_system_test(&sys_data->require_bits,
+                                   &sys_data->exclude_bits,
+                                   &comp_bits))
+        {
+            // Directly remove from sparse set since no system is being
+            // processed
+            if (ecs_sparse_set_remove(&sys_data->entity_ids, entity.id))
+            {
+                if (sys_data->on_leave)
+                    sys_data->on_leave(ecs, entity, sys_data->udata);
+            }
+        }
+    }
+
+    //ecs_sync_systems(ecs, entity.id);
 
     ecs_id_array_t* pool = &ecs->entity_pool;
     ecs_id_array_push(ecs, pool, entity.id);
