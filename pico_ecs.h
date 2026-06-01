@@ -795,9 +795,9 @@ static inline bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
  * System entity add/remove functions
  *============================================================================*/
 
-static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
-                                   ecs_bitset_t* exclude_bits,
-                                   ecs_bitset_t* entity_bits);
+static bool ecs_entity_system_test(ecs_bitset_t require_bits,
+                                   ecs_bitset_t exclude_bits,
+                                   ecs_bitset_t entity_bits);
 
 static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
 static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id);
@@ -1909,10 +1909,16 @@ static inline bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
  * System entity add/remove functions
  *============================================================================*/
 
-static inline bool ecs_entity_system_test(ecs_bitset_t* require_bits,
-                                          ecs_bitset_t* exclude_bits,
-                                          ecs_bitset_t* entity_bits)
+static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
+                                          ecs_bitset_t exclude_bits,
+                                          ecs_bitset_t entity_bits)
 {
+    if (entity_bits & exclude_bits)
+    return false;
+
+    return (entity_bits & require_bits) == require_bits;
+
+    #if 0
     if (!ecs_bitset_is_zero(exclude_bits))
     {
         ecs_bitset_t overlap = ecs_bitset_and(entity_bits, exclude_bits);
@@ -1925,6 +1931,7 @@ static inline bool ecs_entity_system_test(ecs_bitset_t* require_bits,
 
     ecs_bitset_t entity_and_require = ecs_bitset_and(entity_bits, require_bits);
     return ecs_bitset_equal(&entity_and_require, require_bits);
+    #endif
 }
 
 static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
@@ -1944,9 +1951,9 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
             continue;
 
         // Test to see if entity's components matches the system
-        if (ecs_entity_system_test(&sys_data->require_bits,
-                                   &sys_data->exclude_bits,
-                                   &entity_data->comp_bits))
+        if (ecs_entity_system_test(sys_data->require_bits,
+                                   sys_data->exclude_bits,
+                                   entity_data->comp_bits))
         {
             // Add the entity directly to the sparse set
             if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity_id))
