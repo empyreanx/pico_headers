@@ -1913,15 +1913,15 @@ static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
                                           ecs_bitset_t exclude_bits,
                                           ecs_bitset_t entity_bits)
 {
+#if ECS_MAX_COMPONENTS <= 64
     if (entity_bits & exclude_bits)
-    return false;
+        return false;
 
     return (entity_bits & require_bits) == require_bits;
-
-    #if 0
-    if (!ecs_bitset_is_zero(exclude_bits))
+#else
+    if (!ecs_bitset_is_zero(&exclude_bits))
     {
-        ecs_bitset_t overlap = ecs_bitset_and(entity_bits, exclude_bits);
+        ecs_bitset_t overlap = ecs_bitset_and(&entity_bits, &exclude_bits);
 
         if (ecs_bitset_true(&overlap))
         {
@@ -1929,9 +1929,9 @@ static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
         }
     }
 
-    ecs_bitset_t entity_and_require = ecs_bitset_and(entity_bits, require_bits);
-    return ecs_bitset_equal(&entity_and_require, require_bits);
-    #endif
+    ecs_bitset_t entity_and_require = ecs_bitset_and(&entity_bits, &require_bits);
+    return ecs_bitset_equal(&entity_and_require, &require_bits);
+#endif
 }
 
 static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
