@@ -799,7 +799,7 @@ static bool ecs_entity_system_test(ecs_bitset_t* require_bits,
                                    ecs_bitset_t* exclude_bits,
                                    ecs_bitset_t* entity_bits);
 
-static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id);
+static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
 static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
@@ -1275,7 +1275,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         comp_data->on_add(ecs, entity, comp, comp_data->udata);
 
     // Add/remove entity to/from systems based on matching criteria
-    ecs_sync_add_remove(ecs, entity.id);
+    ecs_sync_add_remove(ecs, entity.id, comp.id);
 }
 
 void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
@@ -1312,7 +1312,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         comp_data->on_remove(ecs, entity, comp, comp_data->udata);
 
     // Add/remove entity to/from systems based on matching criteria
-    ecs_sync_add_remove(ecs, entity.id);
+    ecs_sync_add_remove(ecs, entity.id, comp.id);
 }
 
 ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
@@ -1927,7 +1927,7 @@ static inline bool ecs_entity_system_test(ecs_bitset_t* require_bits,
     return ecs_bitset_equal(&entity_and_require, require_bits);
 }
 
-static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id)
+static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     // Load entity data
     ecs_entity_data_t* entity_data = &ecs->entities[entity_id];
@@ -1936,6 +1936,12 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id)
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
+
+        // Skip systems that don't reference the changed component --
+        // their match result cannot have changed
+        if (!ecs_bitset_test(&sys_data->require_bits, comp_id) &&
+            !ecs_bitset_test(&sys_data->exclude_bits, comp_id))
+            continue;
 
         // Test to see if entity's components matches the system
         if (ecs_entity_system_test(&sys_data->require_bits,
