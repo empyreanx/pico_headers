@@ -1,6 +1,6 @@
 CC      = gcc
 MAKE   = make
-CFLAGS = -g -std=c99 -Wall -Wextra -Wpedantic -I ../.. #-Weverything
+CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic -I ../.. #-Weverything
 DEPS   = ../../pico_ecs.h
 SRCS   = game.c       \
          components.c \

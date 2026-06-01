@@ -233,11 +233,14 @@ ecs_ret_t movement_system(ecs_t* ecs,
         // Get entity ID
         ecs_entity_t entity = entities[i];
 
-        v2d_t* pos = ecs_get(ecs, entity, PosComponent);
-        v2d_t* dir = ecs_get(ecs, entity, DirComponent);
+        const v2d_t* pos = ecs_get(ecs, entity, PosComponent);
+        const v2d_t* dir = ecs_get(ecs, entity, DirComponent);
 
-        pos->x += pos->x + dir->x * 1.f / 60.f;
-        pos->y += pos->y + dir->y * 1.f / 60.f;
+        ecs_set(ecs, entity, PosComponent, &(v2d_t)
+        {
+            pos->x + pos->x + dir->y * 1.f / 60.f,
+            pos->y + pos->y + dir->y * 1.f / 60.f,
+        });
     }
 
     return 0;
@@ -255,10 +258,11 @@ ecs_ret_t comflab_system(ecs_t* ecs,
         // Get entity ID
         ecs_entity_t entity = entities[i];
 
-        comflab_t* comflab = ecs_get(ecs, entity, ComflabComponent);
-        comflab->thingy *= 1.000001f;
-    	comflab->mingy = !comflab->mingy;
-	    comflab->dingy++;
+        comflab_t comflab = *(comflab_t*)ecs_get(ecs, entity, ComflabComponent);
+        comflab.thingy *= 1.000001f;
+    	comflab.mingy = !comflab.mingy;
+	    comflab.dingy++;
+        ecs_set(ecs, entity, ComflabComponent, &comflab);
     }
 
     return 0;
@@ -276,12 +280,8 @@ ecs_ret_t bounds_system(ecs_t* ecs,
         // Get entity ID
         ecs_entity_t entity = entities[i];
 
-        rect_t* bounds = ecs_get(ecs, entity, RectComponent);
-
-        bounds->x = 1;
-        bounds->y = 1;
-        bounds->w = 1;
-        bounds->h = 1;
+        rect_t bounds = { 1, 1, 1, 1 };
+        ecs_set(ecs, entity, RectComponent, &bounds);
     }
 
     return 0;
@@ -385,12 +385,9 @@ static void bench_add_assign()
         // Add components
         ecs_add(ecs, entity, PosComponent);
         ecs_add(ecs, entity, RectComponent);
-        v2d_t*  pos  = ecs_get(ecs, entity, PosComponent);
-        rect_t* rect = ecs_get(ecs, entity, RectComponent);
-
         // Set concrete component values
-        *pos  = (v2d_t) { 1, 2 };
-        *rect = (rect_t){ 1, 2, 3, 4 };
+        ecs_set(ecs, entity, PosComponent,  &(v2d_t) { 1, 2 });
+        ecs_set(ecs, entity, RectComponent, &(rect_t){ 1, 2, 3, 4 });
     }
 }
 
@@ -418,21 +415,17 @@ static void bench_three_systems()
         ecs_add(ecs, entity, PosComponent);
         ecs_add(ecs, entity, DirComponent);
         ecs_add(ecs, entity, RectComponent);
-        v2d_t*  pos    = ecs_get(ecs, entity, PosComponent);
-        v2d_t*  dir    = ecs_get(ecs, entity, DirComponent);
-        rect_t* bounds = ecs_get(ecs, entity, RectComponent);
 
         if (i % 2 == 0)
         {
             ecs_add(ecs, entity, ComflabComponent);
-            comflab_t* comflab = ecs_get(ecs, entity, ComflabComponent);
-            *comflab = (comflab_t){ 0 };
+            ecs_set(ecs, entity, ComflabComponent, &(comflab_t){ 0 });
         }
 
         // Set concrete component values
-        *pos    = (v2d_t)  { 0 };
-        *dir    = (v2d_t)  { 0 };
-        *bounds = (rect_t) { 0 };
+        ecs_set(ecs, entity, PosComponent,  &(v2d_t) { 0 });
+        ecs_set(ecs, entity, DirComponent,  &(v2d_t) { 0 });
+        ecs_set(ecs, entity, RectComponent, &(rect_t){ 0 });
     }
 
     // Run the system

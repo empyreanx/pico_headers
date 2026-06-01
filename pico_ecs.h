@@ -1470,6 +1470,13 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
 
         switch (cmd->type)
         {
+            case ECS_CMD_SET:
+                if (ecs_is_ready(ecs, cmd->entity))
+                {
+                    ecs_set(ecs, cmd->entity, cmd->comp, cmd->data);
+                }
+                break;
+
             case ECS_CMD_ADD:
                 if (ecs_is_ready(ecs, cmd->entity))
                 {
@@ -1483,13 +1490,6 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
                 {
                     ecs_bitset_flip(&ecs->entities[cmd->entity.id].comp_bits, cmd->comp.id, true);
                     ecs_remove(ecs, cmd->entity, cmd->comp);
-                }
-                break;
-
-            case ECS_CMD_SET:
-                if (ecs_is_ready(ecs, cmd->entity))
-                {
-                    ecs_set(ecs, cmd->entity, cmd->comp, cmd->data);
                 }
                 break;
 
