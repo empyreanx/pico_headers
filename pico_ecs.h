@@ -1970,26 +1970,15 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
 
 static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id)
 {
-    // Load entity data
-    ecs_entity_data_t* entity_data = &ecs->entities[entity_id];
-
     // Remove entity from systems
     for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
     {
         ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
-        // Test to see if entity's components matches the system
-        if (ecs_entity_system_test(&sys_data->require_bits,
-                                   &sys_data->exclude_bits,
-                                   &entity_data->comp_bits))
+        if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id))
         {
-            // Directly remove from sparse set since no system is being
-            // processed
-            if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id))
-            {
-                if (sys_data->on_leave)
-                    sys_data->on_leave(ecs, ecs_make_entity(entity_id), sys_data->udata);
-            }
+            if (sys_data->on_leave)
+                sys_data->on_leave(ecs, ecs_make_entity(entity_id), sys_data->udata);
         }
     }
 }

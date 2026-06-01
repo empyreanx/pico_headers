@@ -233,14 +233,11 @@ ecs_ret_t movement_system(ecs_t* ecs,
         // Get entity ID
         ecs_entity_t entity = entities[i];
 
-        const v2d_t* pos = ecs_get(ecs, entity, PosComponent);
-        const v2d_t* dir = ecs_get(ecs, entity, DirComponent);
+        v2d_t* pos = ecs_get(ecs, entity, PosComponent);
+        v2d_t* dir = ecs_get(ecs, entity, DirComponent);
 
-        ecs_set(ecs, entity, PosComponent, &(v2d_t)
-        {
-            pos->x + pos->x + dir->y * 1.f / 60.f,
-            pos->y + pos->y + dir->y * 1.f / 60.f,
-        });
+        pos->x += pos->x + dir->y * 1.f / 60.f;
+        pos->y += pos->y + dir->y * 1.f / 60.f;
     }
 
     return 0;
@@ -258,11 +255,10 @@ ecs_ret_t comflab_system(ecs_t* ecs,
         // Get entity ID
         ecs_entity_t entity = entities[i];
 
-        comflab_t comflab = *(comflab_t*)ecs_get(ecs, entity, ComflabComponent);
-        comflab.thingy *= 1.000001f;
-    	comflab.mingy = !comflab.mingy;
-	    comflab.dingy++;
-        ecs_set(ecs, entity, ComflabComponent, &comflab);
+        comflab_t* comflab = (comflab_t*)ecs_get(ecs, entity, ComflabComponent);
+        comflab->thingy *= 1.000001f;
+    	comflab->mingy = !comflab->mingy;
+	    comflab->dingy++;
     }
 
     return 0;
