@@ -979,15 +979,17 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
     ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
     ecs_comp_blocks_init(ecs, comp_blocks, size, ecs->entity_count);
 
-    ECS_MEMSET(&ecs->comps[comp.id], 0, sizeof(ecs_comp_data_t));
-    ecs->comps[comp.id].size = size;
+    ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
+
+    ECS_MEMSET(comp_data, 0, sizeof(ecs_comp_data_t));
+    comp_data->size = size;
 
     if (params)
     {
-        ecs->comps[comp.id].on_add = params->on_add_cb;
-        ecs->comps[comp.id].on_remove = params->on_remove_cb;
-        ecs->comps[comp.id].on_set = params->on_set_cb;
-        ecs->comps[comp.id].udata = params->udata;
+        comp_data->on_add = params->on_add_cb;
+        comp_data->on_remove = params->on_remove_cb;
+        comp_data->on_set = params->on_set_cb;
+        comp_data->udata = params->udata;
     }
 
     ecs->comp_count++;
