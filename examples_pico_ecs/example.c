@@ -69,9 +69,9 @@ ecs_system_t System3;
 // Register components
 void register_components(ecs_t* ecs)
 {
-    PosComp  = ecs_define_component(ecs, sizeof(pos_t),  NULL, NULL, NULL, NULL);
-    VelComp  = ecs_define_component(ecs, sizeof(vel_t),  NULL, NULL, NULL, NULL);
-    RectComp = ecs_define_component(ecs, sizeof(rect_t), NULL, NULL, NULL, NULL);
+    PosComp  = ecs_define_component(ecs, sizeof(pos_t),  NULL);
+    VelComp  = ecs_define_component(ecs, sizeof(vel_t),  NULL);
+    RectComp = ecs_define_component(ecs, sizeof(rect_t), NULL);
 }
 
 // System that prints the entity IDs of entities associated with this system
@@ -97,9 +97,9 @@ ecs_ret_t system_update(ecs_t* ecs,
 void register_systems(ecs_t* ecs)
 {
     // Register systems
-    System1 = ecs_define_system(ecs, 0, system_update, NULL, NULL, NULL);
-    System2 = ecs_define_system(ecs, 0, system_update, NULL, NULL, NULL);
-    System3 = ecs_define_system(ecs, 0, system_update, NULL, NULL, NULL);
+    System1 = ecs_define_system(ecs, system_update, NULL);
+    System2 = ecs_define_system(ecs, system_update, NULL);
+    System3 = ecs_define_system(ecs, system_update, NULL);
 
     // System1 requires PosComp compnents
     ecs_require_component(ecs, System1, PosComp);
