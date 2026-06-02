@@ -305,23 +305,22 @@ TEST_CASE(test_exclude_add_system)
     return true;
 }
 
-
 typedef struct
 {
     bool used;
 } test_args_t;
 
-static void constructor(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp_handle, void* udata)
+static void comp_on_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* udata)
 {
     (void)udata;
 
-    comp_t* comp = ecs_get(ecs, entity, comp_handle);
-    comp->used = true;
+    comp_t* comp_ptr = ecs_get(ecs, entity, comp);
+    comp_ptr->used = true;
 }
 
-TEST_CASE(test_constructor)
+TEST_CASE(test_on_add)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), constructor, NULL, NULL, NULL);
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), comp_on_add, NULL, NULL, NULL);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type);
@@ -332,17 +331,17 @@ TEST_CASE(test_constructor)
     return true;
 }
 
-static void destructor(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp_handle, void* udata)
+static void comp_on_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* udata)
 {
     (void)udata;
 
-    comp_t* comp = ecs_get(ecs, entity, comp_handle);
-    comp->used = false;
+    comp_t* comp_ptr = ecs_get(ecs, entity, comp);
+    comp_ptr->used = false;
 }
 
-TEST_CASE(test_destructor_remove)
+TEST_CASE(test_on_remove)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), constructor, destructor, NULL, NULL);
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), comp_on_add, comp_on_remove, NULL, NULL);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type);
@@ -356,7 +355,7 @@ TEST_CASE(test_destructor_remove)
 
 TEST_CASE(test_destructor_destroy)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), constructor, destructor, NULL, NULL);
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), comp_on_add, comp_on_remove, NULL, NULL);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type);
@@ -997,8 +996,8 @@ static TEST_SUITE(suite_ecs)
     RUN_TEST_CASE(test_exclude);
     RUN_TEST_CASE(test_exclude_remove_system);
     RUN_TEST_CASE(test_exclude_add_system);
-    RUN_TEST_CASE(test_constructor);
-    RUN_TEST_CASE(test_destructor_remove);
+    RUN_TEST_CASE(test_on_add);
+    RUN_TEST_CASE(test_on_remove);
     RUN_TEST_CASE(test_destructor_destroy);
     RUN_TEST_CASE(test_create_destroy);
     RUN_TEST_CASE(test_add_remove);
