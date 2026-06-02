@@ -287,7 +287,7 @@ typedef void (*ecs_on_remove_fn)(ecs_t* ecs,
 typedef void (*ecs_on_set_fn)(ecs_t* ecs,
                               ecs_entity_t entity,
                               ecs_comp_t comp,
-                              void* udata)
+                              void* udata);
 
 /**
  * @brief Optional parameters for component definition
