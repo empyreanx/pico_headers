@@ -500,6 +500,19 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
+ * @brief Copies data into a component instance associated with an entity
+ *
+ * If the entity does not have the component this is a no-op. If called during
+ * system iteration the operation is deferred until after the system completes.
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity
+ * @param comp   The component
+ * @param data   Pointer to the data to copy into the component
+ */
+void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data);
+
+/**
  * @brief Destroys an entity
  *
  * Destroys an entity, releasing resources and returning it to the pool.

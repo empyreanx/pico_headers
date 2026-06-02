@@ -61,6 +61,7 @@ TEST_SUITE(suite_components);
 TEST_SUITE(suite_systems);
 TEST_SUITE(suite_exclude);
 TEST_SUITE(suite_deferred);
+TEST_SUITE(suite_set);
 TEST_SUITE(suite_validation);
 
 int main ()
@@ -72,6 +73,7 @@ int main ()
     RUN_TEST_SUITE(suite_systems);
     RUN_TEST_SUITE(suite_exclude);
     RUN_TEST_SUITE(suite_deferred);
+    RUN_TEST_SUITE(suite_set);
     RUN_TEST_SUITE(suite_validation);
     pu_print_stats();
     return pu_test_failed();
