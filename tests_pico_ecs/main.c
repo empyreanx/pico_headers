@@ -28,11 +28,40 @@ void teardown()
     ecs = NULL;
 }
 
+TEST_CASE(test_capacity_validation)
+{
+    // capacity with the high bit set is not valid
+    REQUIRE(ecs_is_valid_capacity(SIZE_MAX >> 8, 1 << 7));
+    REQUIRE(!ecs_is_valid_capacity((SIZE_MAX >> 8) + 1, 1 << 7));
+    REQUIRE(!ecs_is_valid_capacity(SIZE_MAX >> 8, 1 << 8));
+
+    // capacity with the high bit set is not valid
+    REQUIRE(ecs_is_valid_capacity((SIZE_MAX >> 1), 1));
+    REQUIRE(!ecs_is_valid_capacity((SIZE_MAX >> 1) + 1, 1));
+
+    // zero capacity is invalid
+    REQUIRE(!ecs_is_valid_capacity(0, 16));
+    REQUIRE(!ecs_is_valid_capacity(16, 0));
+    REQUIRE(!ecs_is_valid_capacity(0, 0));
+
+    // normal cases
+    REQUIRE(ecs_is_valid_capacity(500, 128));
+    REQUIRE(ecs_is_valid_capacity(1000, 8));
+
+    return true;
+}
+
+TEST_SUITE(suite_validation)
+{
+    RUN_TEST_CASE(test_capacity_validation);
+}
+
 TEST_SUITE(suite_entity);
 TEST_SUITE(suite_components);
 TEST_SUITE(suite_systems);
 TEST_SUITE(suite_exclude);
 TEST_SUITE(suite_deferred);
+TEST_SUITE(suite_validation);
 
 int main ()
 {
@@ -43,7 +72,7 @@ int main ()
     RUN_TEST_SUITE(suite_systems);
     RUN_TEST_SUITE(suite_exclude);
     RUN_TEST_SUITE(suite_deferred);
-    //RUN_TEST_SUITE(suite_validation);
+    RUN_TEST_SUITE(suite_validation);
     pu_print_stats();
     return pu_test_failed();
 }
