@@ -276,16 +276,38 @@ typedef void (*ecs_on_remove_fn)(ecs_t* ecs,
                                  void* udata);
 
 
+/**
+ * @brief Called when a component's data is set (via ecs_set)
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity whose component was set
+ * @param comp   The component that was set
+ * @param udata  The user data passed to the callback
+ */
 typedef void (*ecs_on_set_fn)(ecs_t* ecs,
                               ecs_entity_t entity,
                               ecs_comp_t comp,
                               void* udata);
 
+/**
+ * @brief Called when an entity is destroyed (via ecs_destroy)
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity being destroyed
+ * @param udata  The user data passed to the callback
+ */
 typedef void (*ecs_on_destroy_fn)(ecs_t* ecs,
                                   ecs_entity_t entity,
-                                  ecs_comp_t comp,
                                   void* udata);
 
+/**
+ * @brief Optional parameters for component definition
+ *
+ * @param on_add_cb    Called when a component is added to an entity (can be NULL)
+ * @param on_remove_cb Called when a component is removed from an entity (can be NULL)
+ * @param on_set_cb    Called when a component's data is set via ecs_set (can be NULL)
+ * @param udata        User data passed to callbacks (can be NULL)
+ */
 typedef struct
 {
     ecs_on_add_fn on_add_cb;
@@ -297,15 +319,13 @@ typedef struct
 /**
  * @brief Defines a component
  *
- * Defines a component with the specfied size in bytes. Components define the
+ * Defines a component with the specified size in bytes. Components define the
  * game state (usually contained within structs) and are manipulated by systems.
  *
- * @param ecs       The ECS context
- * @param size      The number of bytes to allocate for each component instance
- * @param on_add    Called when a component is created (disabled if NULL)
- * @param on_remove Called when a component is destroyed (disabled if NULL)
- * @param udata     Data passed to callbacks (can be NULL)
- * @returns         A component handle
+ * @param ecs    The ECS context
+ * @param size   The number of bytes to allocate for each component instance
+ * @param params Optional parameters for callbacks and user data (can be NULL)
+ * @returns      A component handle
  */
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                size_t size,
@@ -345,6 +365,15 @@ typedef void (*ecs_on_join_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  */
 typedef void (*ecs_on_leave_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 
+/**
+ * @brief Optional parameters for system definition
+ *
+ * @param mask        Bitmask that assigns the system to one or more categories.
+ *                    A value of 0 means the system matches all categories.
+ * @param on_join_cb  Called when an entity is added to the system (can be NULL)
+ * @param on_leave_cb Called when an entity is removed from the system (can be NULL)
+ * @param udata       User data passed to callbacks (can be NULL)
+ */
 typedef struct
 {
     ecs_mask_t mask;
@@ -360,13 +389,9 @@ typedef struct
  * core logic of a game by manipulating game state as defined by components.
  *
  * @param ecs       The ECS context
- * @param mask      Bitmask that determines which categories the system belongs
-                    to. A value of 0 matches all categories
  * @param system_cb Callback that is fired every update
- * @param add_cb    Called when an entity is added to the system (can be NULL)
- * @param remove_cb Called when an entity is removed from the system (can be NULL)
- * @param udata     The user data pssed to the callbacks
- * @returns         A system handlea
+ * @param params    Optional parameters for mask, join/leave callbacks, and user data (can be NULL)
+ * @returns         A system handle
  */
 ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_system_fn system_cb,
