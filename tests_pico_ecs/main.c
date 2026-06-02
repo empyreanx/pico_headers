@@ -17,9 +17,9 @@ ecs_system_t sys2;
 void setup()
 {
     ecs = ecs_new(MIN_ENTITIES, NULL);
-    comp1 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL, NULL, NULL);
-    comp2 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL, NULL, NULL);
-    comp3 = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL, NULL, NULL);
+    comp1 = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    comp2 = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    comp3 = ecs_define_component(ecs, sizeof(comp_t), NULL);
 }
 
 void teardown()

@@ -101,7 +101,7 @@ TEST_CASE(test_set_on_set_callback)
 {
     set_callback_called = false;
 
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL, comp_on_set, NULL);
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t){ .on_set_cb = comp_on_set });
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type);
@@ -117,7 +117,7 @@ TEST_CASE(test_set_on_set_callback)
 
 TEST_CASE(test_set_deferred)
 {
-    sys1 = ecs_define_system(ecs, 0, set_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, set_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
     ecs_entity_t entity = ecs_create(ecs);
@@ -153,12 +153,11 @@ TEST_CASE(test_set_deferred_fires_callback)
 {
     deferred_cb_called = false;
 
-    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL,
-                                              on_set_deferred, NULL);
+    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t){ .on_set_cb = on_set_deferred });
 
     set_args_t args = { .comp = comp_cb, .data = { .used = true } };
 
-    sys1 = ecs_define_system(ecs, 0, set_system_with_args, NULL, NULL, &args);
+    sys1 = ecs_define_system(ecs, set_system_with_args, &(ecs_sys_params_t){ .udata = &args });
     ecs_require_component(ecs, sys1, comp_cb);
 
     ecs_entity_t entity = ecs_create(ecs);

@@ -281,6 +281,19 @@ typedef void (*ecs_on_set_fn)(ecs_t* ecs,
                               ecs_comp_t comp,
                               void* udata);
 
+typedef void (*ecs_on_destroy_fn)(ecs_t* ecs,
+                                  ecs_entity_t entity,
+                                  ecs_comp_t comp,
+                                  void* udata);
+
+typedef struct
+{
+    ecs_on_add_fn on_add_cb;
+    ecs_on_remove_fn on_remove_cb;
+    ecs_on_set_fn on_set_cb;
+    void* udata;
+} ecs_comp_params_t;
+
 /**
  * @brief Defines a component
  *
@@ -295,11 +308,8 @@ typedef void (*ecs_on_set_fn)(ecs_t* ecs,
  * @returns         A component handle
  */
 ecs_comp_t ecs_define_component(ecs_t* ecs,
-                                size_t size,
-                                ecs_on_add_fn on_add_cb,
-                                ecs_on_remove_fn on_remove_cb,
-                                ecs_on_set_fn on_set_cb,
-                                void* udata);
+                               size_t size,
+                               const ecs_comp_params_t* params);
 
 /**
  * @brief System callback
@@ -335,6 +345,14 @@ typedef void (*ecs_on_join_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  */
 typedef void (*ecs_on_leave_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
 
+typedef struct
+{
+    ecs_mask_t mask;
+    ecs_on_join_fn on_join_cb;
+    ecs_on_leave_fn on_leave_cb;
+    void* udata;
+} ecs_sys_params_t;
+
 /**
  * @brief Defines a system
  *
@@ -347,15 +365,12 @@ typedef void (*ecs_on_leave_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @param system_cb Callback that is fired every update
  * @param add_cb    Called when an entity is added to the system (can be NULL)
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
- * @param udata     The user data passed to the callbacks
- * @returns         A system handle
+ * @param udata     The user data pssed to the callbacks
+ * @returns         A system handlea
  */
 ecs_system_t ecs_define_system(ecs_t* ecs,
-                               ecs_mask_t mask,
                                ecs_system_fn system_cb,
-                               ecs_on_join_fn on_join,
-                               ecs_on_leave_fn on_leave,
-                               void* udata);
+                               const ecs_sys_params_t* params);
 /**
  * @brief Entities are processed by the target system if they have all of the
  * the components required by the system
@@ -928,10 +943,7 @@ void ecs_reset(ecs_t* ecs)
 
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 size_t size,
-                                ecs_on_add_fn on_add,
-                                ecs_on_remove_fn on_remove,
-                                ecs_on_set_fn on_set,
-                                void* udata)
+                                const ecs_comp_params_t* params)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
@@ -942,11 +954,16 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
     ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
     ecs_comp_blocks_init(ecs, comp_blocks, size, ecs->entity_count);
 
-    ecs->comps[comp.id].on_add = on_add;
-    ecs->comps[comp.id].on_remove = on_remove;
-    ecs->comps[comp.id].on_set = on_set;
+    ECS_MEMSET(&ecs->comps[comp.id], 0, sizeof(ecs_comp_data_t));
     ecs->comps[comp.id].size = size;
-    ecs->comps[comp.id].udata = udata;
+
+    if (params)
+    {
+        ecs->comps[comp.id].on_add = params->on_add_cb;
+        ecs->comps[comp.id].on_remove = params->on_remove_cb;
+        ecs->comps[comp.id].on_set = params->on_set_cb;
+        ecs->comps[comp.id].udata = params->udata;
+    }
 
     ecs->comp_count++;
 
@@ -954,11 +971,8 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
 }
 
 ecs_system_t ecs_define_system(ecs_t* ecs,
-                               ecs_mask_t mask,
                                ecs_system_fn system_cb,
-                               ecs_on_join_fn on_join,
-                               ecs_on_leave_fn on_leave,
-                               void* udata)
+                               const ecs_sys_params_t* params)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->system_count < ECS_MAX_SYSTEMS);
@@ -967,14 +981,20 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
     ecs_system_t sys = ecs_make_system(ecs->system_count);
     ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
 
+    ECS_MEMSET(sys_data, 0, sizeof(ecs_sys_data_t));
+
     ecs_sparse_set_init(ecs, &sys_data->entity_ids, ecs->entity_count);
 
-    sys_data->active = true;
-    sys_data->mask = mask;
     sys_data->system_cb = system_cb;
-    sys_data->on_join = on_join;
-    sys_data->on_leave = on_leave;
-    sys_data->udata = udata;
+    sys_data->active = true;
+
+    if (params)
+    {
+        sys_data->mask = params->mask;
+        sys_data->on_join = params->on_join_cb;
+        sys_data->on_leave = params->on_leave_cb;
+        sys_data->udata = params->udata;
+    }
 
     ecs->system_count++;
 

@@ -138,7 +138,7 @@ static ecs_ret_t set_then_destroy_system(ecs_t* ecs,
 
 TEST_CASE(test_destroy_system)
 {
-    sys1 = ecs_define_system(ecs, 0, destroy_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, destroy_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
     ecs_require_component(ecs, sys1, comp2);
 
@@ -159,7 +159,7 @@ TEST_CASE(test_destroy_system)
 
 TEST_CASE(test_remove_system)
 {
-    sys1 = ecs_define_system(ecs, 0, remove_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, remove_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
     ecs_require_component(ecs, sys1, comp2);
 
@@ -180,7 +180,7 @@ TEST_CASE(test_remove_system)
 
 TEST_CASE(test_queue_add)
 {
-    sys1 = ecs_define_system(ecs, 0, queue_add_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, queue_add_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
     ecs_run_system(ecs, sys1, 0);
@@ -192,7 +192,7 @@ TEST_CASE(test_queue_add)
 
 TEST_CASE(test_queue_remove)
 {
-    sys1 = ecs_define_system(ecs, 0, queue_remove_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, queue_remove_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
     for (size_t i = 0; i < MAX_ENTITIES; i++)
@@ -211,7 +211,7 @@ TEST_CASE(test_queue_remove)
 
 TEST_CASE(test_queue_destroy)
 {
-    sys1 = ecs_define_system(ecs, 0, queue_destroy_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, queue_destroy_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
     for (size_t i = 0; i < MAX_ENTITIES; i++)
@@ -232,9 +232,8 @@ TEST_CASE(test_queue_set_dead_entity)
 {
     set_then_destroy_cb_called = false;
 
-    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL,
-                                              on_set_before_destroy, NULL);
-    sys1 = ecs_define_system(ecs, 0, set_then_destroy_system, NULL, NULL, &comp_cb);
+    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t){ .on_set_cb = on_set_before_destroy });
+    sys1 = ecs_define_system(ecs, set_then_destroy_system, &(ecs_sys_params_t){ .udata = &comp_cb });
     ecs_require_component(ecs, sys1, comp_cb);
 
     ecs_entity_t entity = ecs_create(ecs);

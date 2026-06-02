@@ -208,10 +208,10 @@ static ecs_ret_t add_exclude_system(ecs_t* ecs,
 TEST_CASE(test_add_systems)
 {
     // Set up systems
-    sys1 = ecs_define_system(ecs, 0, dummy_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, dummy_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
-    sys2 = ecs_define_system(ecs, 0, dummy_system, NULL, NULL, NULL);
+    sys2 = ecs_define_system(ecs, dummy_system, NULL);
     ecs_require_component(ecs, sys2, comp1);
     ecs_require_component(ecs, sys2, comp2);
 
@@ -245,7 +245,7 @@ TEST_CASE(test_add_systems)
 TEST_CASE(test_remove)
 {
     // Set up system
-    sys1 = ecs_define_system(ecs, 0, dummy_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, dummy_system, NULL);
     ecs_require_component(ecs, sys1, comp1); // Entity must have at least
     ecs_require_component(ecs, sys1, comp2); // component 1 and 2 to match
 
@@ -285,7 +285,7 @@ TEST_CASE(test_remove)
 TEST_CASE(test_destroy)
 {
     // Set up system
-    sys1 = ecs_define_system(ecs, 0, dummy_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, dummy_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
     ecs_require_component(ecs, sys1, comp2);
 
@@ -313,7 +313,7 @@ TEST_CASE(test_destroy)
 TEST_CASE(test_enable_disable)
 {
     // Set up system
-    sys1 = ecs_define_system(ecs, 0, comp_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, comp_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
     // Create entity
@@ -358,7 +358,7 @@ TEST_CASE(test_system_mask)
 {
     bool run = false;
 
-    sys1 = ecs_define_system(ecs, (1 << 0) | (1 << 1), mask_test_system, NULL, NULL, &run);
+    sys1 = ecs_define_system(ecs, mask_test_system, &(ecs_sys_params_t){ .mask = (1 << 0) | (1 << 1), .udata = &run });
 
     ecs_run_system(ecs, sys1, 0);
 
@@ -393,7 +393,7 @@ TEST_CASE(test_add_remove_callbacks)
     added = false;
     removed = false;
 
-    sys1 = ecs_define_system(ecs, 0, empty_system, on_add, on_remove, NULL);
+    sys1 = ecs_define_system(ecs, empty_system, &(ecs_sys_params_t){ .on_join_cb = on_add, .on_leave_cb = on_remove });
 
     ecs_require_component(ecs, sys1, comp1);
 
@@ -415,7 +415,7 @@ TEST_CASE(test_set_system_callbacks)
     added = false;
     removed = false;
 
-    sys1 = ecs_define_system(ecs, 0, ret_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, ret_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
     // Test initial system callback works
@@ -441,7 +441,7 @@ TEST_CASE(test_set_system_callbacks)
 TEST_CASE(test_system_udata)
 {
     int test_value = 42;
-    sys1 = ecs_define_system(ecs, 0, empty_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, empty_system, NULL);
 
     // Test setting udata
     ecs_set_system_udata(ecs, sys1, &test_value);
@@ -463,10 +463,10 @@ TEST_CASE(test_system_udata)
 
 TEST_CASE(test_run_systems)
 {
-    sys1 = ecs_define_system(ecs, 0, comp_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, comp_system, NULL);
     ecs_require_component(ecs, sys1, comp1);
 
-    sys2 = ecs_define_system(ecs, 0, comp_system, NULL, NULL, NULL);
+    sys2 = ecs_define_system(ecs, comp_system, NULL);
     ecs_require_component(ecs, sys2, comp2);
 
     ecs_entity_t entity1 = ecs_create(ecs);
@@ -488,7 +488,7 @@ TEST_CASE(test_run_systems)
 
 TEST_CASE(test_get_set_system_mask)
 {
-    sys1 = ecs_define_system(ecs, (1 << 2), dummy_system, NULL, NULL, NULL);
+    sys1 = ecs_define_system(ecs, dummy_system, &(ecs_sys_params_t){ .mask = (1 << 2) });
 
     REQUIRE(ecs_get_system_mask(ecs, sys1) == (ecs_mask_t)(1 << 2));
 
@@ -527,20 +527,16 @@ TEST_CASE(test_exclude)
     memset(&state1, 0, sizeof(exclude_sys_state_t));
     memset(&state2, 0, sizeof(exclude_sys_state_t));
 
-    ecs_system_t sys1 = ecs_define_system(ecs, 0,
+    ecs_system_t sys1 = ecs_define_system(ecs,
                                             exclude_system,
-                                            exclude_add_cb,
-                                            exclude_remove_cb,
-                                            &state1);
+                                            &(ecs_sys_params_t){ .on_join_cb = exclude_add_cb, .on_leave_cb = exclude_remove_cb, .udata = &state1 });
 
     ecs_require_component(ecs, sys1, comp2);
     ecs_exclude_component(ecs, sys1, comp1);
 
-    ecs_system_t sys2 = ecs_define_system(ecs, 0,
+    ecs_system_t sys2 = ecs_define_system(ecs,
                                             exclude_system,
-                                            exclude_add_cb,
-                                            exclude_remove_cb,
-                                            &state2);
+                                            &(ecs_sys_params_t){ .on_join_cb = exclude_add_cb, .on_leave_cb = exclude_remove_cb, .udata = &state2 });
 
     ecs_require_component(ecs, sys2, comp2);
 
@@ -606,19 +602,15 @@ TEST_CASE(test_exclude)
 
 TEST_CASE(test_exclude_remove_system)
 {
-    ecs_system_t sys1 = ecs_define_system(ecs, 0,
+    ecs_system_t sys1 = ecs_define_system(ecs,
                                           remove_exclude_system,
-                                          NULL,
-                                          NULL,
                                           NULL);
 
     ecs_require_component(ecs, sys1, comp2);
     ecs_exclude_component(ecs, sys1, comp1);
 
-    ecs_system_t sys2 = ecs_define_system(ecs, 0,
+    ecs_system_t sys2 = ecs_define_system(ecs,
                                           remove_exclude_system,
-                                          NULL,
-                                          NULL,
                                           NULL);
 
     ecs_require_component(ecs, sys2, comp2);
@@ -643,19 +635,15 @@ TEST_CASE(test_exclude_remove_system)
 
 TEST_CASE(test_exclude_add_system)
 {
-    ecs_system_t sys1 = ecs_define_system(ecs, 0,
+    ecs_system_t sys1 = ecs_define_system(ecs,
                                           add_exclude_system,
-                                          NULL,
-                                          NULL,
                                           NULL);
 
     ecs_require_component(ecs, sys1, comp2);
     ecs_exclude_component(ecs, sys1, comp1);
 
-    ecs_system_t sys2 = ecs_define_system(ecs, 0,
+    ecs_system_t sys2 = ecs_define_system(ecs,
                                           add_exclude_system,
-                                          NULL,
-                                          NULL,
                                           NULL);
 
     ecs_require_component(ecs, sys2, comp2);
