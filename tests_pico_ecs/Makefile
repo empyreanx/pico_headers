@@ -6,9 +6,9 @@ ifeq ($(UNAME_S),Darwin)
     CC = clang
 endif
 
-SRCS   = main.c
+SRCS   = main.c entity.c systems.c deferred.c
 
-DEPS   = ../pico_ecs.h
+DEPS   = ../pico_ecs.h common.h
 OBJS   = $(SRCS:.c=.o)
 
 all: tests
