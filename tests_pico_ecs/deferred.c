@@ -232,8 +232,14 @@ TEST_CASE(test_queue_set_dead_entity)
 {
     set_then_destroy_cb_called = false;
 
-    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t){ .on_set_cb = on_set_before_destroy });
-    sys1 = ecs_define_system(ecs, set_then_destroy_system, &(ecs_sys_params_t){ .udata = &comp_cb });
+    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t)
+    {
+        .on_set_cb = on_set_before_destroy
+    });
+    sys1 = ecs_define_system(ecs, set_then_destroy_system, &(ecs_sys_params_t)
+    {
+        .udata = &comp_cb
+    });
     ecs_require_component(ecs, sys1, comp_cb);
 
     ecs_entity_t entity = ecs_create(ecs);

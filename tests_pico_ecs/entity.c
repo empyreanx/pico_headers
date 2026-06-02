@@ -185,7 +185,10 @@ TEST_SUITE(suite_entity)
 
 TEST_CASE(test_on_add)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t){ .on_add_cb = comp_on_add });
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t)
+    {
+        .on_add_cb = comp_on_add
+    });
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type);
@@ -198,7 +201,11 @@ TEST_CASE(test_on_add)
 
 TEST_CASE(test_on_remove)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t){ .on_add_cb = comp_on_add, .on_remove_cb = comp_on_remove });
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t)
+    {
+        .on_add_cb = comp_on_add,
+        .on_remove_cb = comp_on_remove
+    });
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type);
@@ -212,7 +219,11 @@ TEST_CASE(test_on_remove)
 
 TEST_CASE(test_destructor_destroy)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t){ .on_add_cb = comp_on_add, .on_remove_cb = comp_on_remove });
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t)
+    {
+        .on_add_cb = comp_on_add,
+        .on_remove_cb = comp_on_remove
+    });
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type);

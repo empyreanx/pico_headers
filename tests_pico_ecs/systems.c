@@ -358,7 +358,11 @@ TEST_CASE(test_system_mask)
 {
     bool run = false;
 
-    sys1 = ecs_define_system(ecs, mask_test_system, &(ecs_sys_params_t){ .mask = (1 << 0) | (1 << 1), .udata = &run });
+    sys1 = ecs_define_system(ecs, mask_test_system, &(ecs_sys_params_t)
+    {
+        .mask = (1 << 0) | (1 << 1),
+        .udata = &run
+    });
 
     ecs_run_system(ecs, sys1, 0);
 
@@ -393,7 +397,11 @@ TEST_CASE(test_add_remove_callbacks)
     added = false;
     removed = false;
 
-    sys1 = ecs_define_system(ecs, empty_system, &(ecs_sys_params_t){ .on_join_cb = on_add, .on_leave_cb = on_remove });
+    sys1 = ecs_define_system(ecs, empty_system, &(ecs_sys_params_t)
+    {
+        .on_join_cb = on_add,
+        .on_leave_cb = on_remove
+    });
 
     ecs_require_component(ecs, sys1, comp1);
 
@@ -488,7 +496,10 @@ TEST_CASE(test_run_systems)
 
 TEST_CASE(test_get_set_system_mask)
 {
-    sys1 = ecs_define_system(ecs, dummy_system, &(ecs_sys_params_t){ .mask = (1 << 2) });
+    sys1 = ecs_define_system(ecs, dummy_system, &(ecs_sys_params_t)
+    {
+        .mask = (1 << 2)
+    });
 
     REQUIRE(ecs_get_system_mask(ecs, sys1) == (ecs_mask_t)(1 << 2));
 
@@ -529,14 +540,24 @@ TEST_CASE(test_exclude)
 
     ecs_system_t sys1 = ecs_define_system(ecs,
                                             exclude_system,
-                                            &(ecs_sys_params_t){ .on_join_cb = exclude_add_cb, .on_leave_cb = exclude_remove_cb, .udata = &state1 });
+                                            &(ecs_sys_params_t)
+                                            {
+                                                .on_join_cb = exclude_add_cb,
+                                                .on_leave_cb = exclude_remove_cb,
+                                                .udata = &state1
+                                            });
 
     ecs_require_component(ecs, sys1, comp2);
     ecs_exclude_component(ecs, sys1, comp1);
 
     ecs_system_t sys2 = ecs_define_system(ecs,
                                             exclude_system,
-                                            &(ecs_sys_params_t){ .on_join_cb = exclude_add_cb, .on_leave_cb = exclude_remove_cb, .udata = &state2 });
+                                            &(ecs_sys_params_t)
+                                            {
+                                                .on_join_cb = exclude_add_cb,
+                                                .on_leave_cb = exclude_remove_cb,
+                                                .udata = &state2
+                                            });
 
     ecs_require_component(ecs, sys2, comp2);
 
