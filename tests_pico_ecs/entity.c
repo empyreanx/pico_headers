@@ -18,6 +18,18 @@ static void comp_on_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, voi
     comp_ptr->used = false;
 }
 
+static ecs_ret_t entity_dummy_system(ecs_t* ecs,
+                                     ecs_entity_t* entities,
+                                     size_t entity_count,
+                                     void* udata)
+{
+    (void)ecs;
+    (void)entities;
+    (void)entity_count;
+    (void)udata;
+    return 0;
+}
+
 // =============================================================
 // suite_entity: entity lifecycle and component add/remove
 // =============================================================
@@ -80,15 +92,79 @@ TEST_CASE(test_add_remove)
 
 TEST_CASE(test_reset)
 {
+    sys1 = ecs_define_system(ecs, 0, entity_dummy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
+
+    ecs_entity_t entities[MAX_ENTITIES];
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
-        ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1);
-        ecs_add(ecs, entity, comp2);
-        REQUIRE(ecs_is_ready(ecs, entity));
+        entities[i] = ecs_create(ecs);
+        ecs_add(ecs, entities[i], comp1);
+        ecs_add(ecs, entities[i], comp2);
+        REQUIRE(ecs_is_ready(ecs, entities[i]));
     }
 
+    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == MAX_ENTITIES);
+
     ecs_reset(ecs);
+
+    for (int i = 0; i < MAX_ENTITIES; i++)
+    {
+        REQUIRE(!ecs_is_ready(ecs, entities[i]));
+    }
+
+    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 0);
+
+    return true;
+}
+
+TEST_CASE(test_add_idempotent)
+{
+    sys1 = ecs_define_system(ecs, 0, entity_dummy_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
+
+    ecs_entity_t entity = ecs_create(ecs);
+    ecs_add(ecs, entity, comp1);
+
+    REQUIRE(ecs_has(ecs, entity, comp1));
+    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
+
+    // Double-add should be a no-op
+    ecs_add(ecs, entity, comp1);
+
+    REQUIRE(ecs_has(ecs, entity, comp1));
+    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
+
+    return true;
+}
+
+TEST_CASE(test_remove_idempotent)
+{
+    ecs_entity_t entity = ecs_create(ecs);
+
+    // Removing a component the entity doesn't have is a no-op
+    REQUIRE(!ecs_has(ecs, entity, comp1));
+    ecs_remove(ecs, entity, comp1);
+    REQUIRE(!ecs_has(ecs, entity, comp1));
+
+    // Add then double-remove
+    ecs_add(ecs, entity, comp1);
+    REQUIRE(ecs_has(ecs, entity, comp1));
+    ecs_remove(ecs, entity, comp1);
+    REQUIRE(!ecs_has(ecs, entity, comp1));
+    ecs_remove(ecs, entity, comp1);
+    REQUIRE(!ecs_has(ecs, entity, comp1));
+
+    return true;
+}
+
+TEST_CASE(test_component_zeroed)
+{
+    ecs_entity_t entity = ecs_create(ecs);
+    ecs_add(ecs, entity, comp1);
+
+    comp_t* comp = ecs_get(ecs, entity, comp1);
+    REQUIRE(!comp->used);
 
     return true;
 }
@@ -98,6 +174,9 @@ TEST_SUITE(suite_entity)
     RUN_TEST_CASE(test_create_destroy);
     RUN_TEST_CASE(test_add_remove);
     RUN_TEST_CASE(test_reset);
+    RUN_TEST_CASE(test_add_idempotent);
+    RUN_TEST_CASE(test_remove_idempotent);
+    RUN_TEST_CASE(test_component_zeroed);
 }
 
 // =============================================================

@@ -96,6 +96,42 @@ static ecs_ret_t queue_destroy_system(ecs_t* ecs,
     return ecs_get_system_entity_count(ecs, sys1);
 }
 
+static comp_t set_then_destroy_data = { .used = true };
+static bool   set_then_destroy_cb_called = false;
+
+static void on_set_before_destroy(ecs_t* ecs,
+                                  ecs_entity_t entity,
+                                  ecs_comp_t comp,
+                                  void* udata)
+{
+    (void)ecs;
+    (void)entity;
+    (void)comp;
+    (void)udata;
+    set_then_destroy_cb_called = true;
+}
+
+// Queues a set then a destroy for the same entity within one system tick.
+// The deferred set must be skipped at flush time because the destroy marks
+// the entity not-ready before the command queue is processed.
+static ecs_ret_t set_then_destroy_system(ecs_t* ecs,
+                                         ecs_entity_t* entities,
+                                         size_t entity_count,
+                                         void* udata)
+{
+    ecs_comp_t* comp_handle = (ecs_comp_t*)udata;
+
+    for (size_t i = 0; i < entity_count; i++)
+    {
+        // Queue set first (entity is still ready at this point)
+        ecs_set(ecs, entities[i], *comp_handle, &set_then_destroy_data);
+        // Destroy immediately marks entity not-ready and queues CMD_DESTROY
+        ecs_destroy(ecs, entities[i]);
+    }
+
+    return 0;
+}
+
 // =============================================================
 // Deferred Suite: mutations performed during system iteration
 // =============================================================
@@ -192,6 +228,29 @@ TEST_CASE(test_queue_destroy)
     return true;
 }
 
+TEST_CASE(test_queue_set_dead_entity)
+{
+    set_then_destroy_cb_called = false;
+
+    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), NULL, NULL,
+                                              on_set_before_destroy, NULL);
+    sys1 = ecs_define_system(ecs, 0, set_then_destroy_system, NULL, NULL, &comp_cb);
+    ecs_require_component(ecs, sys1, comp_cb);
+
+    ecs_entity_t entity = ecs_create(ecs);
+    ecs_add(ecs, entity, comp_cb);
+
+    ecs_run_system(ecs, sys1, 0);
+
+    // The entity should have been destroyed
+    REQUIRE(!ecs_is_ready(ecs, entity));
+
+    // The deferred set was skipped because the entity was not ready at flush time
+    REQUIRE(!set_then_destroy_cb_called);
+
+    return true;
+}
+
 TEST_SUITE(suite_deferred)
 {
     RUN_TEST_CASE(test_destroy_system);
@@ -199,4 +258,5 @@ TEST_SUITE(suite_deferred)
     RUN_TEST_CASE(test_queue_add);
     RUN_TEST_CASE(test_queue_remove);
     RUN_TEST_CASE(test_queue_destroy);
+    RUN_TEST_CASE(test_queue_set_dead_entity);
 }

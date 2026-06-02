@@ -390,6 +390,9 @@ TEST_CASE(test_system_mask)
 // Tests system add/remove callbacks
 TEST_CASE(test_add_remove_callbacks)
 {
+    added = false;
+    removed = false;
+
     sys1 = ecs_define_system(ecs, 0, empty_system, on_add, on_remove, NULL);
 
     ecs_require_component(ecs, sys1, comp1);
@@ -458,6 +461,49 @@ TEST_CASE(test_system_udata)
     return true;
 }
 
+TEST_CASE(test_run_systems)
+{
+    sys1 = ecs_define_system(ecs, 0, comp_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys1, comp1);
+
+    sys2 = ecs_define_system(ecs, 0, comp_system, NULL, NULL, NULL);
+    ecs_require_component(ecs, sys2, comp2);
+
+    ecs_entity_t entity1 = ecs_create(ecs);
+    ecs_add(ecs, entity1, comp1);
+
+    ecs_entity_t entity2 = ecs_create(ecs);
+    ecs_add(ecs, entity2, comp2);
+
+    comp_t* c1 = ecs_get(ecs, entity1, comp1);
+    comp_t* c2 = ecs_get(ecs, entity2, comp2);
+
+    ecs_run_systems(ecs, 0);
+
+    REQUIRE(c1->used);
+    REQUIRE(c2->used);
+
+    return true;
+}
+
+TEST_CASE(test_get_set_system_mask)
+{
+    sys1 = ecs_define_system(ecs, (1 << 2), dummy_system, NULL, NULL, NULL);
+
+    REQUIRE(ecs_get_system_mask(ecs, sys1) == (ecs_mask_t)(1 << 2));
+
+    ecs_set_system_mask(ecs, sys1, (1 << 3) | (1 << 4));
+
+    REQUIRE(ecs_get_system_mask(ecs, sys1) == (ecs_mask_t)((1 << 3) | (1 << 4)));
+
+    // Zero mask matches all categories
+    ecs_set_system_mask(ecs, sys1, 0);
+
+    REQUIRE(ecs_get_system_mask(ecs, sys1) == 0);
+
+    return true;
+}
+
 TEST_SUITE(suite_systems)
 {
     RUN_TEST_CASE(test_add_systems);
@@ -468,6 +514,8 @@ TEST_SUITE(suite_systems)
     RUN_TEST_CASE(test_add_remove_callbacks);
     RUN_TEST_CASE(test_set_system_callbacks);
     RUN_TEST_CASE(test_system_udata);
+    RUN_TEST_CASE(test_run_systems);
+    RUN_TEST_CASE(test_get_set_system_mask);
 }
 
 // =============================================================
