@@ -101,7 +101,7 @@ TEST_CASE(test_set_on_set_callback)
 {
     set_callback_called = false;
 
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t)
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_def_t)
     {
         .on_set_cb = comp_on_set
     });
@@ -156,14 +156,14 @@ TEST_CASE(test_set_deferred_fires_callback)
 {
     deferred_cb_called = false;
 
-    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_params_t)
+    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_def_t)
     {
         .on_set_cb = on_set_deferred
     });
 
     set_args_t args = { .comp = comp_cb, .data = { .used = true } };
 
-    sys1 = ecs_define_system(ecs, set_system_with_args, &(ecs_sys_params_t)
+    sys1 = ecs_define_system(ecs, set_system_with_args, &(ecs_sys_def_t)
     {
         .udata = &args
     });

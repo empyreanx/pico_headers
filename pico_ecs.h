@@ -303,7 +303,7 @@ typedef struct
     ecs_on_remove_fn on_remove_cb;
     ecs_on_set_fn on_set_cb;
     void* udata;
-} ecs_comp_params_t;
+} ecs_comp_def_t;
 
 /**
  * @brief Defines a component
@@ -313,12 +313,12 @@ typedef struct
  *
  * @param ecs    The ECS context
  * @param size   The number of bytes to allocate for each component instance
- * @param params Optional parameters for callbacks and user data (can be NULL)
+ * @param def Optional parameters for callbacks and user data (can be NULL)
  * @returns      A component handle
  */
 ecs_comp_t ecs_define_component(ecs_t* ecs,
-                               size_t size,
-                               const ecs_comp_params_t* params);
+                                size_t size,
+                                const ecs_comp_def_t* def);
 
 /**
  * @brief System callback
@@ -369,7 +369,7 @@ typedef struct
     ecs_on_join_fn on_join_cb;
     ecs_on_leave_fn on_leave_cb;
     void* udata;
-} ecs_sys_params_t;
+} ecs_sys_def_t;
 
 /**
  * @brief Defines a system
@@ -379,12 +379,12 @@ typedef struct
  *
  * @param ecs       The ECS context
  * @param system_cb Callback that is fired every update
- * @param params    Optional parameters for mask, join/leave callbacks, and user data (can be NULL)
+ * @param def       Optional parameters for mask, join/leave callbacks, and user data (can be NULL)
  * @returns         A system handle
  */
 ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_system_fn system_cb,
-                               const ecs_sys_params_t* params);
+                               const ecs_sys_def_t* def);
 /**
  * @brief Entities are processed by the target system if they have all of the
  * the components required by the system
@@ -957,7 +957,7 @@ void ecs_reset(ecs_t* ecs)
 
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 size_t size,
-                                const ecs_comp_params_t* params)
+                                const ecs_comp_def_t* def)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
@@ -973,12 +973,12 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
     ECS_MEMSET(comp_data, 0, sizeof(ecs_comp_data_t));
     comp_data->size = size;
 
-    if (params)
+    if (def)
     {
-        comp_data->on_add = params->on_add_cb;
-        comp_data->on_remove = params->on_remove_cb;
-        comp_data->on_set = params->on_set_cb;
-        comp_data->udata = params->udata;
+        comp_data->on_add = def->on_add_cb;
+        comp_data->on_remove = def->on_remove_cb;
+        comp_data->on_set = def->on_set_cb;
+        comp_data->udata = def->udata;
     }
 
     ecs->comp_count++;
@@ -988,7 +988,7 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
 
 ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_system_fn system_cb,
-                               const ecs_sys_params_t* params)
+                               const ecs_sys_def_t* def)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->system_count < ECS_MAX_SYSTEMS);
@@ -1004,12 +1004,12 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
     sys_data->system_cb = system_cb;
     sys_data->active = true;
 
-    if (params)
+    if (def)
     {
-        sys_data->mask = params->mask;
-        sys_data->on_join = params->on_join_cb;
-        sys_data->on_leave = params->on_leave_cb;
-        sys_data->udata = params->udata;
+        sys_data->mask = def->mask;
+        sys_data->on_join = def->on_join_cb;
+        sys_data->on_leave = def->on_leave_cb;
+        sys_data->udata = def->udata;
     }
 
     ecs->system_count++;

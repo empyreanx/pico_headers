@@ -358,7 +358,7 @@ TEST_CASE(test_system_mask)
 {
     bool run = false;
 
-    sys1 = ecs_define_system(ecs, mask_test_system, &(ecs_sys_params_t)
+    sys1 = ecs_define_system(ecs, mask_test_system, &(ecs_sys_def_t)
     {
         .mask = (1 << 0) | (1 << 1),
         .udata = &run
@@ -397,7 +397,7 @@ TEST_CASE(test_add_remove_callbacks)
     added = false;
     removed = false;
 
-    sys1 = ecs_define_system(ecs, empty_system, &(ecs_sys_params_t)
+    sys1 = ecs_define_system(ecs, empty_system, &(ecs_sys_def_t)
     {
         .on_join_cb = on_add,
         .on_leave_cb = on_remove
@@ -496,7 +496,7 @@ TEST_CASE(test_run_systems)
 
 TEST_CASE(test_get_set_system_mask)
 {
-    sys1 = ecs_define_system(ecs, dummy_system, &(ecs_sys_params_t)
+    sys1 = ecs_define_system(ecs, dummy_system, &(ecs_sys_def_t)
     {
         .mask = (1 << 2)
     });
@@ -540,7 +540,7 @@ TEST_CASE(test_exclude)
 
     ecs_system_t sys1 = ecs_define_system(ecs,
                                             exclude_system,
-                                            &(ecs_sys_params_t)
+                                            &(ecs_sys_def_t)
                                             {
                                                 .on_join_cb = exclude_add_cb,
                                                 .on_leave_cb = exclude_remove_cb,
@@ -552,7 +552,7 @@ TEST_CASE(test_exclude)
 
     ecs_system_t sys2 = ecs_define_system(ecs,
                                             exclude_system,
-                                            &(ecs_sys_params_t)
+                                            &(ecs_sys_def_t)
                                             {
                                                 .on_join_cb = exclude_add_cb,
                                                 .on_leave_cb = exclude_remove_cb,
