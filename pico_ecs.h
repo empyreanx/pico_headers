@@ -311,10 +311,10 @@ typedef struct
  * Defines a component with the specified size in bytes. Components define the
  * game state (usually contained within structs) and are manipulated by systems.
  *
- * @param ecs    The ECS context
- * @param size   The number of bytes to allocate for each component instance
- * @param def Optional parameters for callbacks and user data (can be NULL)
- * @returns      A component handle
+ * @param ecs  The ECS context
+ * @param size The number of bytes to allocate for each component instance
+ * @param def   Optional parameters for callbacks and user data (can be NULL)
+ * @returns     A component handle
  */
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 size_t size,
@@ -379,7 +379,7 @@ typedef struct
  *
  * @param ecs       The ECS context
  * @param system_cb Callback that is fired every update
- * @param def       Optional parameters for mask, join/leave callbacks, and user data (can be NULL)
+ * @param def    Optional parameters for mask, join/leave callbacks, and user data (can be NULL)
  * @returns         A system handle
  */
 ecs_system_t ecs_define_system(ecs_t* ecs,
