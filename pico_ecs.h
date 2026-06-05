@@ -1179,7 +1179,9 @@ void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data)
     ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
 
     if (!ecs_has(ecs, entity, comp))
-        return;
+    {
+        ecs_add(ecs, entity, comp);
+    }
 
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
@@ -1188,8 +1190,8 @@ void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data)
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type   = ECS_CMD_SET;
         cmd->entity = entity;
-        cmd->comp = comp;
-        cmd->data = ecs_arena_alloc(ecs, &ecs->arena, comp_data->size);
+        cmd->comp   = comp;
+        cmd->data   = ecs_arena_alloc(ecs, &ecs->arena, comp_data->size);
         ECS_MEMCPY(cmd->data, data, comp_data->size);
         return;
     }
