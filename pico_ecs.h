@@ -128,6 +128,19 @@
         - Capacity overflow detection
         - Invalid entity ID value has been reverted to max ID value
 
+    - 3.3 (2026/06/05)
+        - New command queue which ensures add/remove/set/destroy operations are
+          performed in the order the corresponding functions have been called.
+        - Pointers obtained by ecs_get are now durable
+        - The ecs_add constructor/destructor have been replaced by
+        - on_add/on_remove callbacks.
+        - A new function 'ecs_set' has been added. Calling it will invoke
+          ecs_add if the component does not exist on the entity and sets the
+          component's value regardless. If called in a system context, setting
+          the value is deferred. This effectively replaces the ecs_add constructor.
+        - ecs_require_component/ecs_exclude_component have been renamed to
+          ecs_require/ecs_exclude.
+
     Usage:
     ------
 
@@ -145,6 +158,7 @@
     - ECS_REALLOC(ptr, size, ctx) (default: realloc)
     - ECS_FREE(ptr, ctx)          (default: free)
     - ECS_MEMSET                  (default: memset)
+    - ECS_MEMCPY                  (default: memcpy)
 
     The ctx parameter is sometimes used by custom allocators
 
