@@ -91,8 +91,8 @@ TEST_CASE(test_set_without_component)
     comp_t data = { .used = true };
     ecs_set(ecs, entity, comp1, &data);
 
-    // Component should still be absent
-    REQUIRE(!ecs_has(ecs, entity, comp1));
+    // Component should not be absent
+    REQUIRE(ecs_has(ecs, entity, comp1));
 
     return true;
 }

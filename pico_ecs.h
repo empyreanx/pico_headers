@@ -945,7 +945,7 @@ void ecs_reset(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
-    ecs->entity_pool.size   = 0;
+    ecs->entity_pool.size = 0;
 
     ECS_MEMSET(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
 
