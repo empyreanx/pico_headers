@@ -38,7 +38,7 @@
 // 5. Define zero-based system IDs (using an enum is recommended)
 // 6. Register components
 // 7. Register systems
-// 8. Associate components with systems (using ecs_require_component)
+// 8. Associate components with systems (using ecs_require)
 
 // Concrete component structs
 typedef struct
@@ -102,16 +102,16 @@ void register_systems(ecs_t* ecs)
     System3 = ecs_define_system(ecs, system_update, NULL);
 
     // System1 requires PosComp compnents
-    ecs_require_component(ecs, System1, PosComp);
+    ecs_require(ecs, System1, PosComp);
 
     // System2 requires both PosComp and VelComp components
-    ecs_require_component(ecs, System2, PosComp);
-    ecs_require_component(ecs, System2, VelComp);
+    ecs_require(ecs, System2, PosComp);
+    ecs_require(ecs, System2, VelComp);
 
     // System3 requires the PosComp, VelComp, and RectComp components
-    ecs_require_component(ecs, System3, PosComp);
-    ecs_require_component(ecs, System3, VelComp);
-    ecs_require_component(ecs, System3, RectComp);
+    ecs_require(ecs, System3, PosComp);
+    ecs_require(ecs, System3, VelComp);
+    ecs_require(ecs, System3, RectComp);
 }
 
 

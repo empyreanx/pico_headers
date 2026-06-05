@@ -303,7 +303,7 @@ typedef struct
     ecs_on_remove_fn on_remove_cb;
     ecs_on_set_fn on_set_cb;
     void* udata;
-} ecs_comp_def_t;
+} ecs_comp_desc_t;
 
 /**
  * @brief Defines a component
@@ -318,7 +318,7 @@ typedef struct
  */
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 size_t size,
-                                const ecs_comp_def_t* def);
+                                const ecs_comp_desc_t* desc);
 
 /**
  * @brief System callback
@@ -369,7 +369,7 @@ typedef struct
     ecs_on_join_fn on_join_cb;
     ecs_on_leave_fn on_leave_cb;
     void* udata;
-} ecs_sys_def_t;
+} ecs_sys_desc_t;
 
 /**
  * @brief Defines a system
@@ -384,7 +384,9 @@ typedef struct
  */
 ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_system_fn system_cb,
-                               const ecs_sys_def_t* def);
+                               const ecs_sys_desc_t* desc);
+
+
 /**
  * @brief Entities are processed by the target system if they have all of the
  * the components required by the system
@@ -393,7 +395,7 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
  * @param sys  The target system
  * @param comp A component to require
  */
-void ecs_require_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
+void ecs_require(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
 
 /**
  * @brief Excludes entities having the specified component from being added to
@@ -403,7 +405,7 @@ void ecs_require_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
  * @param sys  The target system
  * @param comp A component to exclude
  */
-void ecs_exclude_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
+void ecs_exclude(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
 
 /**
  * @brief Enables a system
@@ -957,7 +959,7 @@ void ecs_reset(ecs_t* ecs)
 
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 size_t size,
-                                const ecs_comp_def_t* def)
+                                const ecs_comp_desc_t* desc)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
@@ -973,12 +975,12 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
     ECS_MEMSET(comp_data, 0, sizeof(ecs_comp_data_t));
     comp_data->size = size;
 
-    if (def)
+    if (desc)
     {
-        comp_data->on_add = def->on_add_cb;
-        comp_data->on_remove = def->on_remove_cb;
-        comp_data->on_set = def->on_set_cb;
-        comp_data->udata = def->udata;
+        comp_data->on_add = desc->on_add_cb;
+        comp_data->on_remove = desc->on_remove_cb;
+        comp_data->on_set = desc->on_set_cb;
+        comp_data->udata = desc->udata;
     }
 
     ecs->comp_count++;
@@ -988,7 +990,7 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
 
 ecs_system_t ecs_define_system(ecs_t* ecs,
                                ecs_system_fn system_cb,
-                               const ecs_sys_def_t* def)
+                               const ecs_sys_desc_t* desc)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs->system_count < ECS_MAX_SYSTEMS);
@@ -1004,12 +1006,12 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
     sys_data->system_cb = system_cb;
     sys_data->active = true;
 
-    if (def)
+    if (desc)
     {
-        sys_data->mask = def->mask;
-        sys_data->on_join = def->on_join_cb;
-        sys_data->on_leave = def->on_leave_cb;
-        sys_data->udata = def->udata;
+        sys_data->mask = desc->mask;
+        sys_data->on_join = desc->on_join_cb;
+        sys_data->on_leave = desc->on_leave_cb;
+        sys_data->udata = desc->udata;
     }
 
     ecs->system_count++;
@@ -1017,7 +1019,7 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
     return sys;
 }
 
-void ecs_require_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp)
+void ecs_require(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -1030,7 +1032,7 @@ void ecs_require_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp)
     ecs_bitset_flip(&sys_data->require_bits, comp.id, true);
 }
 
-void ecs_exclude_component(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp)
+void ecs_exclude(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));

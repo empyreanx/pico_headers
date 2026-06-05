@@ -163,14 +163,14 @@ static void setup_three_systems_min()
     RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL);
 
     MovementSystem = ecs_define_system(ecs, movement_system, NULL);
-    ecs_require_component(ecs, MovementSystem, PosComponent);
-    ecs_require_component(ecs, MovementSystem, DirComponent);
+    ecs_require(ecs, MovementSystem, PosComponent);
+    ecs_require(ecs, MovementSystem, DirComponent);
 
     ComflabSystem = ecs_define_system(ecs, comflab_system, NULL);
-    ecs_require_component(ecs, ComflabSystem, ComflabComponent);
+    ecs_require(ecs, ComflabSystem, ComflabComponent);
 
     BoundsSystem = ecs_define_system(ecs, bounds_system, NULL);
-    ecs_require_component(ecs, BoundsSystem, RectComponent);
+    ecs_require(ecs, BoundsSystem, RectComponent);
 }
 
 static void setup_three_systems_max()
@@ -183,14 +183,14 @@ static void setup_three_systems_max()
     RectComponent = ecs_define_component(ecs, sizeof(rect_t), NULL);
 
     MovementSystem = ecs_define_system(ecs, movement_system, NULL);
-    ecs_require_component(ecs, MovementSystem, PosComponent);
-    ecs_require_component(ecs, MovementSystem, DirComponent);
+    ecs_require(ecs, MovementSystem, PosComponent);
+    ecs_require(ecs, MovementSystem, DirComponent);
 
     ComflabSystem = ecs_define_system(ecs, comflab_system, NULL);
-    ecs_require_component(ecs, ComflabSystem, ComflabComponent);
+    ecs_require(ecs, ComflabSystem, ComflabComponent);
 
     BoundsSystem = ecs_define_system(ecs, bounds_system, NULL);
-    ecs_require_component(ecs, BoundsSystem, RectComponent);
+    ecs_require(ecs, BoundsSystem, RectComponent);
 }
 
 // Runs after benchmark function
@@ -324,8 +324,8 @@ ecs_ret_t destroy_system(ecs_t* ecs,
 static void bench_destroy()
 {
     DestroySystem = ecs_define_system(ecs, destroy_system, NULL);
-    ecs_require_component(ecs, DestroySystem, PosComponent);
-    ecs_require_component(ecs, DestroySystem, RectComponent);
+    ecs_require(ecs, DestroySystem, PosComponent);
+    ecs_require(ecs, DestroySystem, RectComponent);
 
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {

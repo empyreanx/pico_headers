@@ -209,11 +209,11 @@ TEST_CASE(test_add_systems)
 {
     // Set up systems
     sys1 = ecs_define_system(ecs, dummy_system, NULL);
-    ecs_require_component(ecs, sys1, comp1);
+    ecs_require(ecs, sys1, comp1);
 
     sys2 = ecs_define_system(ecs, dummy_system, NULL);
-    ecs_require_component(ecs, sys2, comp1);
-    ecs_require_component(ecs, sys2, comp2);
+    ecs_require(ecs, sys2, comp1);
+    ecs_require(ecs, sys2, comp2);
 
     // Create a couple entities
     ecs_entity_t entity1 = ecs_create(ecs);
@@ -246,8 +246,8 @@ TEST_CASE(test_remove)
 {
     // Set up system
     sys1 = ecs_define_system(ecs, dummy_system, NULL);
-    ecs_require_component(ecs, sys1, comp1); // Entity must have at least
-    ecs_require_component(ecs, sys1, comp2); // component 1 and 2 to match
+    ecs_require(ecs, sys1, comp1); // Entity must have at least
+    ecs_require(ecs, sys1, comp2); // component 1 and 2 to match
 
     // Create an entity
     ecs_entity_t entity1 = ecs_create(ecs);
@@ -286,8 +286,8 @@ TEST_CASE(test_destroy)
 {
     // Set up system
     sys1 = ecs_define_system(ecs, dummy_system, NULL);
-    ecs_require_component(ecs, sys1, comp1);
-    ecs_require_component(ecs, sys1, comp2);
+    ecs_require(ecs, sys1, comp1);
+    ecs_require(ecs, sys1, comp2);
 
     // Create an entity
     ecs_entity_t entity = ecs_create(ecs);
@@ -314,7 +314,7 @@ TEST_CASE(test_enable_disable)
 {
     // Set up system
     sys1 = ecs_define_system(ecs, comp_system, NULL);
-    ecs_require_component(ecs, sys1, comp1);
+    ecs_require(ecs, sys1, comp1);
 
     // Create entity
     ecs_entity_t entity = ecs_create(ecs);
@@ -358,7 +358,7 @@ TEST_CASE(test_system_mask)
 {
     bool run = false;
 
-    sys1 = ecs_define_system(ecs, mask_test_system, &(ecs_sys_def_t)
+    sys1 = ecs_define_system(ecs, mask_test_system, &(ecs_sys_desc_t)
     {
         .mask = (1 << 0) | (1 << 1),
         .udata = &run
@@ -397,13 +397,13 @@ TEST_CASE(test_add_remove_callbacks)
     added = false;
     removed = false;
 
-    sys1 = ecs_define_system(ecs, empty_system, &(ecs_sys_def_t)
+    sys1 = ecs_define_system(ecs, empty_system, &(ecs_sys_desc_t)
     {
         .on_join_cb = on_add,
         .on_leave_cb = on_remove
     });
 
-    ecs_require_component(ecs, sys1, comp1);
+    ecs_require(ecs, sys1, comp1);
 
     ecs_run_system(ecs, sys1, 0);
 
@@ -424,7 +424,7 @@ TEST_CASE(test_set_system_callbacks)
     removed = false;
 
     sys1 = ecs_define_system(ecs, ret_system, NULL);
-    ecs_require_component(ecs, sys1, comp1);
+    ecs_require(ecs, sys1, comp1);
 
     // Test initial system callback works
     ecs_ret_t ret = ecs_run_system(ecs, sys1, 0);
@@ -472,10 +472,10 @@ TEST_CASE(test_system_udata)
 TEST_CASE(test_run_systems)
 {
     sys1 = ecs_define_system(ecs, comp_system, NULL);
-    ecs_require_component(ecs, sys1, comp1);
+    ecs_require(ecs, sys1, comp1);
 
     sys2 = ecs_define_system(ecs, comp_system, NULL);
-    ecs_require_component(ecs, sys2, comp2);
+    ecs_require(ecs, sys2, comp2);
 
     ecs_entity_t entity1 = ecs_create(ecs);
     ecs_add(ecs, entity1, comp1);
@@ -496,7 +496,7 @@ TEST_CASE(test_run_systems)
 
 TEST_CASE(test_get_set_system_mask)
 {
-    sys1 = ecs_define_system(ecs, dummy_system, &(ecs_sys_def_t)
+    sys1 = ecs_define_system(ecs, dummy_system, &(ecs_sys_desc_t)
     {
         .mask = (1 << 2)
     });
@@ -540,26 +540,26 @@ TEST_CASE(test_exclude)
 
     ecs_system_t sys1 = ecs_define_system(ecs,
                                             exclude_system,
-                                            &(ecs_sys_def_t)
+                                            &(ecs_sys_desc_t)
                                             {
                                                 .on_join_cb = exclude_add_cb,
                                                 .on_leave_cb = exclude_remove_cb,
                                                 .udata = &state1
                                             });
 
-    ecs_require_component(ecs, sys1, comp2);
-    ecs_exclude_component(ecs, sys1, comp1);
+    ecs_require(ecs, sys1, comp2);
+    ecs_exclude(ecs, sys1, comp1);
 
     ecs_system_t sys2 = ecs_define_system(ecs,
                                             exclude_system,
-                                            &(ecs_sys_def_t)
+                                            &(ecs_sys_desc_t)
                                             {
                                                 .on_join_cb = exclude_add_cb,
                                                 .on_leave_cb = exclude_remove_cb,
                                                 .udata = &state2
                                             });
 
-    ecs_require_component(ecs, sys2, comp2);
+    ecs_require(ecs, sys2, comp2);
 
     ecs_entity_t entity1 = ecs_create(ecs);
     ecs_add(ecs, entity1, comp1);
@@ -627,14 +627,14 @@ TEST_CASE(test_exclude_remove_system)
                                           remove_exclude_system,
                                           NULL);
 
-    ecs_require_component(ecs, sys1, comp2);
-    ecs_exclude_component(ecs, sys1, comp1);
+    ecs_require(ecs, sys1, comp2);
+    ecs_exclude(ecs, sys1, comp1);
 
     ecs_system_t sys2 = ecs_define_system(ecs,
                                           remove_exclude_system,
                                           NULL);
 
-    ecs_require_component(ecs, sys2, comp2);
+    ecs_require(ecs, sys2, comp2);
 
     ecs_entity_t entity1 = ecs_create(ecs);
     ecs_add(ecs, entity1, comp1);
@@ -660,14 +660,14 @@ TEST_CASE(test_exclude_add_system)
                                           add_exclude_system,
                                           NULL);
 
-    ecs_require_component(ecs, sys1, comp2);
-    ecs_exclude_component(ecs, sys1, comp1);
+    ecs_require(ecs, sys1, comp2);
+    ecs_exclude(ecs, sys1, comp1);
 
     ecs_system_t sys2 = ecs_define_system(ecs,
                                           add_exclude_system,
                                           NULL);
 
-    ecs_require_component(ecs, sys2, comp2);
+    ecs_require(ecs, sys2, comp2);
 
     ecs_entity_t entity1 = ecs_create(ecs);
     ecs_add(ecs, entity1, comp1);
