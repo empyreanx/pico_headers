@@ -85,7 +85,7 @@ TEST_CASE(test_set_without_component)
 {
     ecs_entity_t entity = ecs_create(ecs);
 
-    // Entity does not have comp1 - ecs_set should be a no-op
+    // Entity does not have comp1 - ecs_set should add the component
     REQUIRE(!ecs_has(ecs, entity, comp1));
 
     comp_t data = { .used = true };
