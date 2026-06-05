@@ -104,7 +104,7 @@ TEST_CASE(test_reset)
         REQUIRE(ecs_is_ready(ecs, entities[i]));
     }
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == MAX_ENTITIES);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == MAX_ENTITIES);
 
     ecs_reset(ecs);
 
@@ -113,7 +113,7 @@ TEST_CASE(test_reset)
         REQUIRE(!ecs_is_ready(ecs, entities[i]));
     }
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 0);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 0);
 
     return true;
 }
@@ -127,13 +127,13 @@ TEST_CASE(test_add_idempotent)
     ecs_add(ecs, entity, comp1);
 
     REQUIRE(ecs_has(ecs, entity, comp1));
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
 
     // Double-add should be a no-op
     ecs_add(ecs, entity, comp1);
 
     REQUIRE(ecs_has(ecs, entity, comp1));
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
 
     return true;
 }

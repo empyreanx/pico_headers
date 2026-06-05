@@ -219,25 +219,25 @@ TEST_CASE(test_add_systems)
     ecs_entity_t entity1 = ecs_create(ecs);
     ecs_entity_t entity2 = ecs_create(ecs);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 0);
-    REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 0);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 0);
+    REQUIRE(ecs_get_entity_count(ecs, sys2) == 0);
 
     // Add a component to entity 1
     ecs_add(ecs, entity1, comp1);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
-    REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 0);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys2) == 0);
 
     // Add components to entity 2
     ecs_add(ecs, entity2, comp1);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 2);
-    REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 0);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 2);
+    REQUIRE(ecs_get_entity_count(ecs, sys2) == 0);
 
     ecs_add(ecs, entity2, comp2);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 2);
-    REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 2);
+    REQUIRE(ecs_get_entity_count(ecs, sys2) == 1);
 
     return true;
 }
@@ -256,14 +256,14 @@ TEST_CASE(test_remove)
     ecs_add(ecs, entity1, comp1);
     ecs_add(ecs, entity1, comp2);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
 
     // Remove component
     REQUIRE(ecs_has(ecs, entity1, comp2));
     ecs_remove(ecs, entity1, comp2);
     REQUIRE(!ecs_has(ecs, entity1, comp2));
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 0);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 0);
 
     ecs_entity_t entity2 = ecs_create(ecs);
 
@@ -271,13 +271,13 @@ TEST_CASE(test_remove)
     ecs_add(ecs, entity2, comp2);
     ecs_add(ecs, entity2, comp3);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
 
     REQUIRE(ecs_has(ecs, entity2, comp3));
     ecs_remove(ecs, entity2, comp3);
     REQUIRE(!ecs_has(ecs, entity2, comp3));
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
 
     return true;
 }
@@ -296,12 +296,12 @@ TEST_CASE(test_destroy)
     ecs_add(ecs, entity, comp1);
     ecs_add(ecs, entity, comp2);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
 
     // Destroy entity
     ecs_destroy(ecs, entity);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 0);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 0);
 
     // Verify entity is inactive
     REQUIRE(!ecs_is_ready(ecs, entity));
@@ -643,13 +643,13 @@ TEST_CASE(test_exclude_remove_system)
     ecs_entity_t entity2 = ecs_create(ecs);
     ecs_add(ecs, entity2, comp2);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
-    REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 2);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys2) == 2);
 
     ecs_run_system(ecs, sys2, 0);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 2);
-    REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 2);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 2);
+    REQUIRE(ecs_get_entity_count(ecs, sys2) == 2);
 
     return true;
 }
@@ -676,13 +676,13 @@ TEST_CASE(test_exclude_add_system)
     ecs_entity_t entity2 = ecs_create(ecs);
     ecs_add(ecs, entity2, comp2);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 1);
-    REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 2);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
+    REQUIRE(ecs_get_entity_count(ecs, sys2) == 2);
 
     ecs_run_system(ecs, sys2, 0);
 
-    REQUIRE(ecs_get_system_entity_count(ecs, sys1) == 0);
-    REQUIRE(ecs_get_system_entity_count(ecs, sys2) == 2);
+    REQUIRE(ecs_get_entity_count(ecs, sys1) == 0);
+    REQUIRE(ecs_get_entity_count(ecs, sys2) == 2);
 
     return true;
 }

@@ -49,32 +49,6 @@
 
     Please see the examples and unit tests for more details.
 
-    Version 2.4 to 3.1 Migration Guide:
-    ----------------------------
-
-    Version 3.1 is a major departure from 2.4. Here is a short guide to help
-    make the leap to 3.1.
-
-    1. Make the following substitutions:
-        - ecs_register_system  -> ecs_define_system
-        - ecs_register_component  -> ecs_define_component
-        - ecs_update_system -> ecs_run_system
-        - ecs_update_systems -> ecs_run_systems
-    2. Remove the 'dt' parameter from system callbacks, replacing it with a
-       function call or global variable where necessary.
-    3. Replace 'int entity_count' with 'size_t entity_count' in all system
-       callbacks
-    4. Insert a mask value of 0 into `ecs_define_system` calls, for example,
-       `ecs_define_system(ecs, 0, ...)`
-    5. Ensure all update calls have the form `ecs_run_system(ctx, sys, 0)`
-       and/or `ecs_run_systems(ctx, 0)`
-    6. Replace raw IDs with typesafe handles.
-    7. Replace all ecs_queue_remove and ecs_queue_destroy with ecs_remove and
-       ecs_remove respectively.
-
-    If you encounter any difficulties with any of these steps and/or your project
-    doesn't compile once you're finished, please submit an issue.
-
     Masks:
     ------
 
@@ -140,6 +114,7 @@
           the value is deferred. This effectively replaces the ecs_add constructor.
         - ecs_require_component/ecs_exclude_component have been renamed to
           ecs_require/ecs_exclude.
+        - Renamed ecs_get_system_entity_count to ecs_get_entity_count.
 
     Usage:
     ------
@@ -491,7 +466,7 @@ ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys);
 /**
  * @brief Returns the number of entities assigned to the specified system
  */
-size_t ecs_get_system_entity_count(ecs_t* ecs, ecs_system_t sys);
+size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Creates an entity
@@ -1132,7 +1107,7 @@ ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys)
     return ecs->systems[sys.id].mask;
 }
 
-size_t ecs_get_system_entity_count(ecs_t* ecs, ecs_system_t sys)
+size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys)
 {
     return ecs->systems[sys.id].entity_ids.size;
 }

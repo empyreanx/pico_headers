@@ -75,7 +75,7 @@ static ecs_ret_t queue_remove_system(ecs_t* ecs,
         ecs_remove(ecs, entity, comp1);
     }
 
-    return ecs_get_system_entity_count(ecs, sys1);
+    return ecs_get_entity_count(ecs, sys1);
 }
 
 static ecs_ret_t queue_destroy_system(ecs_t* ecs,
@@ -93,7 +93,7 @@ static ecs_ret_t queue_destroy_system(ecs_t* ecs,
         ecs_destroy(ecs, entity);
     }
 
-    return ecs_get_system_entity_count(ecs, sys1);
+    return ecs_get_entity_count(ecs, sys1);
 }
 
 static comp_t set_then_destroy_data = { .used = true };
@@ -184,7 +184,7 @@ TEST_CASE(test_queue_add)
     ecs_require(ecs, sys1, comp1);
 
     ecs_run_system(ecs, sys1, 0);
-    size_t count = ecs_get_system_entity_count(ecs, sys1);
+    size_t count = ecs_get_entity_count(ecs, sys1);
 
     REQUIRE(count == MIN_ENTITIES);
     return true;
@@ -201,7 +201,7 @@ TEST_CASE(test_queue_remove)
     }
 
     size_t inner_count = ecs_run_system(ecs, sys1, 0);
-    size_t outer_count = ecs_get_system_entity_count(ecs, sys1);
+    size_t outer_count = ecs_get_entity_count(ecs, sys1);
 
     REQUIRE(inner_count == MAX_ENTITIES);
     REQUIRE(outer_count == 0);
@@ -220,7 +220,7 @@ TEST_CASE(test_queue_destroy)
     }
 
     size_t inner_count = ecs_run_system(ecs, sys1, 0);
-    size_t outer_count = ecs_get_system_entity_count(ecs, sys1);
+    size_t outer_count = ecs_get_entity_count(ecs, sys1);
 
     REQUIRE(inner_count == MAX_ENTITIES);
     REQUIRE(outer_count == 0);
