@@ -102,18 +102,18 @@
         - Capacity overflow detection
         - Invalid entity ID value has been reverted to max ID value
 
-    - 3.3 (2026/06/05)
-        - New command queue which ensures add/remove/set/destroy operations are
-          performed in the order the corresponding functions have been called.
-        - Pointers obtained by ecs_get are now durable
-        - The ecs_add constructor/destructor have been replaced by
-        - on_add/on_remove callbacks.
-        - A new function 'ecs_set' has been added. Calling it will invoke
-          ecs_add if the component does not exist on the entity and sets the
-          component's value regardless. If called in a system context, setting
-          the value is deferred. This effectively replaces the ecs_add constructor.
-        - ecs_require_component/ecs_exclude_component have been renamed to
-          ecs_require/ecs_exclude.
+    - 3.3 (2026/06/05):
+        - New command queue that ensures add/remove/set/destroy operations are
+          performed in the order the corresponding functions were called.
+        - Pointers obtained by ecs_get are now stable.
+        - The ecs_add constructor/destructor callbacks have been replaced by
+          on_add/on_remove callbacks.
+        - A new function 'ecs_set' has been added. If the entity does not have
+          the component it is added first, then the component's value is set.
+          If called during system iteration the set is deferred until after the
+          system completes.
+        - ecs_require_component and ecs_exclude_component have been renamed to
+          ecs_require and ecs_exclude.
         - Renamed ecs_get_system_entity_count to ecs_get_entity_count.
 
     Usage:
@@ -522,8 +522,9 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 /**
  * @brief Copies data into a component instance associated with an entity
  *
- * If the entity does not have the component this is a no-op. If called during
- * system iteration the operation is deferred until after the system completes.
+ * If the entity does not have the component this adds the component to the
+ * enity. If called during system iteration the operation is deferred until
+ * after the system completes.
  *
  * @param ecs    The ECS context
  * @param entity The entity
