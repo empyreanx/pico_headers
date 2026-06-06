@@ -1011,6 +1011,7 @@ ecs_query_t ecs_define_query(ecs_t* ecs, const ecs_query_desc_t* desc)
     ecs_query_t query = ecs_make_query(ecs->query_count);
     ecs_query_data_t* query_data = &ecs->queries[query.id];
 
+    ECS_MEMSET(query_data, 0, sizeof(ecs_query_data_t));
 
     if (desc->require_count > 0)
     {
