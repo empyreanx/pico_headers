@@ -203,6 +203,12 @@ typedef struct ecs_entity_t { ecs_id_t id; } ecs_entity_t;
  */
 typedef struct ecs_comp_t { ecs_id_t id; } ecs_comp_t;
 
+
+/**
+ * @brief A query handle
+ */
+typedef struct ecs_query_t { ecs_id_t id; } ecs_query_t;
+
 /**
  * @brief A system handle
  */
@@ -308,6 +314,16 @@ typedef struct
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 size_t size,
                                 const ecs_comp_desc_t* desc);
+
+typedef struct
+{
+    ecs_comp_t require[64];
+    ecs_comp_t exclude[64];
+    size_t require_count;
+    size_t exclude_count;
+} ecs_query_desc_t;
+
+ecs_query_t ecs_define_query(ecs_t* ecs, const ecs_query_desc_t* query);
 
 /**
  * @brief System callback
@@ -716,6 +732,12 @@ typedef struct
 
 typedef struct
 {
+    ecs_bitset_t require_bits;
+    ecs_bitset_t exclude_bits;
+} ecs_query_data_t;
+
+typedef struct
+{
     bool             active;
     ecs_sparse_set_t entity_ids;
     ecs_mask_t       mask;
@@ -759,6 +781,8 @@ struct ecs_s
     ecs_comp_data_t    comps[ECS_MAX_COMPONENTS];
     ecs_comp_blocks_t  comp_blocks[ECS_MAX_COMPONENTS];
     size_t             comp_count;
+    ecs_query_data_t   queries[16];
+    size_t             query_count;
     ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
     size_t             system_count;
     bool               system_active;
@@ -773,6 +797,7 @@ struct ecs_s
 static inline ecs_entity_t ecs_make_entity(ecs_id_t id);
 static inline ecs_comp_t ecs_make_comp(ecs_id_t id);
 static inline ecs_system_t ecs_make_system(ecs_id_t id);
+static inline ecs_query_t ecs_make_query(ecs_id_t id);
 
 /*=============================================================================
  * Realloc wrapper
@@ -976,6 +1001,36 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
     ecs->comp_count++;
 
     return comp;
+}
+
+ecs_query_t ecs_define_query(ecs_t* ecs, const ecs_query_desc_t* desc)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    //ECS_ASSERT(ecs_is_not_null(desc));
+
+    ecs_query_t query = ecs_make_query(ecs->query_count);
+    ecs_query_data_t* query_data = &ecs->queries[query.id];
+
+
+    if (desc->require_count > 0)
+    {
+        for (size_t i = 0; i < desc->require_count; i++)
+        {
+            ecs_bitset_flip(&query_data->require_bits, desc->require[i].id, true);
+        }
+    }
+
+    if (desc->exclude_count > 0)
+    {
+        for (size_t i = 0; i < desc->exclude_count; i++)
+        {
+            ecs_bitset_flip(&query_data->exclude_bits, desc->exclude[i].id, true);
+        }
+    }
+
+    ecs->query_count++;
+
+    return query;
 }
 
 ecs_system_t ecs_define_system(ecs_t* ecs,
@@ -1416,6 +1471,12 @@ static inline ecs_comp_t ecs_make_comp(ecs_id_t id)
 {
     ecs_comp_t comp = { id };
     return comp;
+}
+
+static inline ecs_query_t ecs_make_query(ecs_id_t id)
+{
+    //ecs_comp_t comp = { id };
+    return (ecs_query_t){ id };
 }
 
 static inline ecs_system_t ecs_make_system(ecs_id_t id)
