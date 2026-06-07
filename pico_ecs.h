@@ -110,7 +110,7 @@
           on_add/on_remove callbacks.
         - A new function 'ecs_set' has been added. If the entity does not have
           the component it is added first, then the component's value is set.
-          If called during system iteration then setting the value is deferred
+          If called during system iteration, then setting the value is deferred
           until after the system completes. This function effectively replaces
           the old ecs_add/constructor functionality.
         - ecs_require_component and ecs_exclude_component have been renamed to
@@ -1312,6 +1312,14 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // belongs to
     ecs_bitset_flip(&entity_data->comp_bits, comp.id, true);
 
+    // Load component
+    ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
+
+    // Grow the component array now (not deferred) so that ecs_get can safely
+    // index into it immediately, since ecs_has already reports the component
+    // as present as soon as the bit above is flipped
+    ecs_comp_blocks_resize(ecs, comp_blocks, entity.id);
+
     if (ecs->system_active)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
@@ -1321,12 +1329,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         return;
     }
 
-    // Load component
-    ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
-
-    // Grow the component array
-    ecs_comp_blocks_resize(ecs, comp_blocks, entity.id);
 
     // Get pointer to component
     void* comp_ptr = ecs_get(ecs, entity, comp);
