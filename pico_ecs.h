@@ -110,11 +110,14 @@
           on_add/on_remove callbacks.
         - A new function 'ecs_set' has been added. If the entity does not have
           the component it is added first, then the component's value is set.
-          If called during system iteration the set is deferred until after the
-          system completes.
+          If called during system iteration then setting the value is deferred
+          until after the system completes. This function effectively replaces
+          the old ecs_add/constructor functionality.
         - ecs_require_component and ecs_exclude_component have been renamed to
           ecs_require and ecs_exclude.
         - Renamed ecs_get_system_entity_count to ecs_get_entity_count.
+        - Added ecs_get_entities that return the entities associated with a
+          system.
 
     Usage:
     ------
@@ -462,6 +465,11 @@ void ecs_set_system_mask(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
  * @return    The system's mask
  */
 ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys);
+
+/**
+ * @brief Returns the entities associated with the specified system
+ */
+ecs_entity_t* ecs_get_entities(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Returns the number of entities assigned to the specified system
@@ -1108,8 +1116,21 @@ ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys)
     return ecs->systems[sys.id].mask;
 }
 
+ecs_entity_t* ecs_get_entities(ecs_t* ecs, ecs_system_t sys)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
+
+    return ecs->systems[sys.id].entity_ids.dense;
+}
+
 size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys)
 {
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
+
     return ecs->systems[sys.id].entity_ids.size;
 }
 
@@ -1408,20 +1429,17 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask)
  *============================================================================*/
 static inline ecs_entity_t ecs_make_entity(ecs_id_t id)
 {
-    ecs_entity_t entity = { id };
-    return entity;
+    return (ecs_entity_t){ id };
 }
 
 static inline ecs_comp_t ecs_make_comp(ecs_id_t id)
 {
-    ecs_comp_t comp = { id };
-    return comp;
+    return (ecs_comp_t){ id };
 }
 
 static inline ecs_system_t ecs_make_system(ecs_id_t id)
 {
-    ecs_system_t sys = { id };
-    return sys;
+    return (ecs_system_t){ id };
 }
 
 /*=============================================================================
@@ -1951,17 +1969,27 @@ static inline bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
 /*=============================================================================
  * System entity add/remove functions
  *============================================================================*/
+#if ECS_MAX_COMPONENTS <= 64
 
 static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
                                           ecs_bitset_t exclude_bits,
                                           ecs_bitset_t entity_bits)
 {
-#if ECS_MAX_COMPONENTS <= 64
     if (entity_bits & exclude_bits)
         return false;
 
-    return (entity_bits & require_bits) == require_bits;
-#else
+    if ((entity_bits & require_bits) != require_bits)
+        return false;
+
+    return true;
+}
+
+#else // ECS_MAX_COMPONENTS
+
+static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
+                                          ecs_bitset_t exclude_bits,
+                                          ecs_bitset_t entity_bits)
+{
     if (!ecs_bitset_is_zero(&exclude_bits))
     {
         ecs_bitset_t overlap = ecs_bitset_and(&entity_bits, &exclude_bits);
@@ -1974,8 +2002,8 @@ static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
 
     ecs_bitset_t entity_and_require = ecs_bitset_and(&entity_bits, &require_bits);
     return ecs_bitset_equal(&entity_and_require, &require_bits);
-#endif
 }
+#endif // ECS_MAX_COMPONENTS
 
 static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
