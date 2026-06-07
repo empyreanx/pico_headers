@@ -155,7 +155,7 @@
 
 #include <stdbool.h> // bool, true, false
 #include <stddef.h>  // size_t
-#include <stdint.h>  // uint32_t
+#include <stdint.h>  // uint32_t, uint64_t
 #include <limits.h>  // SIZE_MAX
 
 #ifdef __cplusplus
@@ -371,7 +371,7 @@ typedef struct
  *
  * @param ecs       The ECS context
  * @param system_cb Callback that is fired every update
- * @param def    Optional parameters for mask, join/leave callbacks, and user data (can be NULL)
+ * @param def       Optional parameters for mask, join/leave callbacks, and user data (can be NULL)
  * @returns         A system handle
  */
 ecs_system_t ecs_define_system(ecs_t* ecs,
