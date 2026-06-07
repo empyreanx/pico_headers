@@ -236,10 +236,12 @@ TEST_CASE(test_queue_set_dead_entity)
     {
         .on_set_cb = on_set_before_destroy
     });
+
     sys1 = ecs_define_system(ecs, set_then_destroy_system, &(ecs_sys_desc_t)
     {
         .udata = &comp_cb
     });
+
     ecs_require(ecs, sys1, comp_cb);
 
     ecs_entity_t entity = ecs_create(ecs);

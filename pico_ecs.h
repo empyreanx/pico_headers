@@ -734,6 +734,7 @@ typedef struct
 {
     ecs_bitset_t require_bits;
     ecs_bitset_t exclude_bits;
+    ecs_sparse_set_t entity_ids;
 } ecs_query_data_t;
 
 typedef struct
@@ -785,7 +786,7 @@ struct ecs_s
     size_t             query_count;
     ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
     size_t             system_count;
-    bool               system_active;
+    int                active_system;
     ecs_cmd_array_t    cmd_queue;
     ecs_arena_t        arena;
     void*              mem_ctx;
@@ -854,11 +855,11 @@ static inline bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id);
  * System entity add/remove functions
  *============================================================================*/
 
-static bool ecs_entity_system_test(ecs_bitset_t require_bits,
+static bool ecs_query_test(ecs_bitset_t require_bits,
                                    ecs_bitset_t exclude_bits,
                                    ecs_bitset_t entity_bits);
 
-static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
+static void  ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id);
 static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
@@ -908,10 +909,10 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     ECS_MEMSET(ecs, 0, sizeof(ecs_t));
 
-    ecs->entity_count     = (entity_count > 0) ? entity_count : 1;
-    ecs->next_entity_id   = 0;
-    ecs->system_active = false;
-    ecs->mem_ctx          = mem_ctx;
+    ecs->entity_count   = (entity_count > 0) ? entity_count : 1;
+    ecs->next_entity_id = 0;
+    ecs->active_system  = -1;
+    ecs->mem_ctx        = mem_ctx;
 
     // Initialize entity pool and queues
     ecs_id_array_init(ecs, &ecs->entity_pool, entity_count);
@@ -1013,20 +1014,14 @@ ecs_query_t ecs_define_query(ecs_t* ecs, const ecs_query_desc_t* desc)
 
     ECS_MEMSET(query_data, 0, sizeof(ecs_query_data_t));
 
-    if (desc->require_count > 0)
+    for (size_t i = 0; i < desc->require_count; i++)
     {
-        for (size_t i = 0; i < desc->require_count; i++)
-        {
-            ecs_bitset_flip(&query_data->require_bits, desc->require[i].id, true);
-        }
+        ecs_bitset_flip(&query_data->require_bits, desc->require[i].id, true);
     }
 
-    if (desc->exclude_count > 0)
+    for (size_t i = 0; i < desc->exclude_count; i++)
     {
-        for (size_t i = 0; i < desc->exclude_count; i++)
-        {
-            ecs_bitset_flip(&query_data->exclude_bits, desc->exclude[i].id, true);
-        }
+        ecs_bitset_flip(&query_data->exclude_bits, desc->exclude[i].id, true);
     }
 
     ecs->query_count++;
@@ -1231,7 +1226,7 @@ void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data)
 
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
-    if (ecs->system_active)
+    if (ecs->active_system > 0)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type   = ECS_CMD_SET;
@@ -1262,7 +1257,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
     ecs_bitset_t comp_bits = entity_data->comp_bits;
 
-    if (ecs->system_active)
+    if (ecs->active_system > 0)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type   = ECS_CMD_DESTROY;
@@ -1347,7 +1342,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // belongs to
     ecs_bitset_flip(&entity_data->comp_bits, comp.id, true);
 
-    if (ecs->system_active)
+    if (ecs->active_system > 0)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type      = ECS_CMD_ADD;
@@ -1395,7 +1390,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     // belongs to
     ecs_bitset_flip(&entity_data->comp_bits, comp.id, false);
 
-    if (ecs->system_active)
+    if (ecs->active_system > 0)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type   = ECS_CMD_REMOVE;
@@ -1428,14 +1423,14 @@ ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask)
     if (0 != sys_data->mask && !(sys_data->mask & mask))
         return 0;
 
-    ecs->system_active = true;
+    ecs->active_system = sys.id;
 
     ecs_ret_t code = sys_data->system_cb(ecs,
                      sys_data->entity_ids.dense,
                      sys_data->entity_ids.size,
                      sys_data->udata);
 
-    ecs->system_active = false;
+    ecs->active_system = -1;
 
     ecs_cmd_flush_queue(ecs);
     ecs_arena_reset(ecs, &ecs->arena);
@@ -2014,16 +2009,27 @@ static inline bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
  * System entity add/remove functions
  *============================================================================*/
 
-static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
+#if ECS_MAX_COMPONENTS <= 64
+
+static inline bool ecs_query_test(ecs_bitset_t require_bits,
                                           ecs_bitset_t exclude_bits,
                                           ecs_bitset_t entity_bits)
 {
-#if ECS_MAX_COMPONENTS <= 64
     if (entity_bits & exclude_bits)
         return false;
 
-    return (entity_bits & require_bits) == require_bits;
-#else
+    if ((entity_bits & require_bits) != require_bits)
+        return false;
+
+    return true;
+}
+
+#else // ECS_MAX_COMPONENTS
+
+static inline bool ecs_query_test(ecs_bitset_t require_bits,
+                                          ecs_bitset_t exclude_bits,
+                                          ecs_bitset_t entity_bits)
+{
     if (!ecs_bitset_is_zero(&exclude_bits))
     {
         ecs_bitset_t overlap = ecs_bitset_and(&entity_bits, &exclude_bits);
@@ -2036,34 +2042,41 @@ static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
 
     ecs_bitset_t entity_and_require = ecs_bitset_and(&entity_bits, &require_bits);
     return ecs_bitset_equal(&entity_and_require, &require_bits);
-#endif
 }
+#endif // ECS_MAX_COMPONENTS
 
 static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     // Load entity data
     ecs_entity_data_t* entity_data = &ecs->entities[entity_id];
 
-    // Add or remove entity from systems
-    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    ecs_sys_data_t* sys_data = NULL;
+
+    if (ecs->active_system > 0)
     {
-        ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
+        sys_data = &ecs->systems[ecs->active_system];
+    }
+
+    // Add or remove entity from systems
+    for (ecs_id_t query_id = 0; query_id < ecs->query_count; query_id++)
+    {
+        ecs_query_data_t* query_data = &ecs->queries[query_id];
 
         // Skip systems that don't reference the changed component --
         // their match result cannot have changed
-        if (!ecs_bitset_test(&sys_data->require_bits, comp_id) &&
-            !ecs_bitset_test(&sys_data->exclude_bits, comp_id))
+        if (!ecs_bitset_test(&query_data->require_bits, comp_id) &&
+            !ecs_bitset_test(&query_data->exclude_bits, comp_id))
             continue;
 
         // Test to see if entity's components matches the system
-        if (ecs_entity_system_test(sys_data->require_bits,
-                                   sys_data->exclude_bits,
-                                   entity_data->comp_bits))
+        if (ecs_query_test(query_data->require_bits,
+                           query_data->exclude_bits,
+                           entity_data->comp_bits))
         {
             // Add the entity directly to the sparse set
-            if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity_id))
+            if (ecs_sparse_set_add(ecs, &query_data->entity_ids, entity_id))
             {
-                if (sys_data->on_join)
+                if (sys_data && sys_data->on_join)
                     sys_data->on_join(ecs, ecs_make_entity(entity_id), sys_data->udata);
             }
         }
@@ -2071,9 +2084,9 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
         {
             // Just remove the entity from the sparse set if its components
             // no longer match
-            if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id))
+            if (ecs_sparse_set_remove(&query_data->entity_ids, entity_id))
             {
-                if (sys_data->on_leave)
+                if (sys_data && sys_data->on_leave)
                     sys_data->on_leave(ecs, ecs_make_entity(entity_id), sys_data->udata);
             }
         }
