@@ -229,7 +229,7 @@ typedef struct ecs_system_t { ecs_id_t id; } ecs_system_t;
  *
  * @returns An ECS context or NULL if out of memory
  */
-ecs_t* ecs_new(size_t entity_count, void* mem_ctx);
+ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx);
 
 /**
  * @brief Destroys an ECS context
@@ -762,7 +762,7 @@ struct ecs_s
 {
     ecs_id_array_t     entity_pool;
     ecs_entity_data_t* entities;
-    size_t             entity_count;
+    size_t             entity_capacity;
     size_t             next_entity_id;
     ecs_comp_data_t    comps[ECS_MAX_COMPONENTS];
     ecs_comp_blocks_t  comp_blocks[ECS_MAX_COMPONENTS];
@@ -878,9 +878,9 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
  * Public API implementation
  *============================================================================*/
 
-ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
+ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx)
 {
-    ECS_ASSERT(entity_count > 0);
+    ECS_ASSERT(entity_capacity > 0);
     ECS_ASSERT(!ecs_is_valid_id(ECS_INVALID_ID) && "ecs_id_t is signed");
 
     ecs_t* ecs = (ecs_t*)ECS_MALLOC(sizeof(ecs_t), mem_ctx);
@@ -891,24 +891,24 @@ ecs_t* ecs_new(size_t entity_count, void* mem_ctx)
 
     ECS_MEMSET(ecs, 0, sizeof(ecs_t));
 
-    ecs->entity_count     = (entity_count > 0) ? entity_count : 1;
-    ecs->next_entity_id   = 0;
-    ecs->system_active = false;
-    ecs->mem_ctx          = mem_ctx;
+    ecs->entity_capacity = (entity_capacity > 0) ? entity_capacity : 32;
+    ecs->next_entity_id  = 0;
+    ecs->system_active   = false;
+    ecs->mem_ctx         = mem_ctx;
 
     // Initialize entity pool and queues
-    ecs_id_array_init(ecs, &ecs->entity_pool, entity_count);
+    ecs_id_array_init(ecs, &ecs->entity_pool, entity_capacity);
 
     // Initialize deferred command queue
-    ecs_cmd_array_init(ecs, &ecs->cmd_queue, entity_count);
+    ecs_cmd_array_init(ecs, &ecs->cmd_queue, entity_capacity);
 
     // Allocate entity array
-    ECS_ASSERT(ecs_is_valid_capacity(ecs->entity_count, sizeof(ecs_entity_data_t)));
-    ecs->entities = (ecs_entity_data_t*)ECS_MALLOC(ecs->entity_count * sizeof(ecs_entity_data_t),
+    ECS_ASSERT(ecs_is_valid_capacity(ecs->entity_capacity, sizeof(ecs_entity_data_t)));
+    ecs->entities = (ecs_entity_data_t*)ECS_MALLOC(ecs->entity_capacity * sizeof(ecs_entity_data_t),
                                                    ecs->mem_ctx);
 
     // Zero entity array
-    ECS_MEMSET(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
+    ECS_MEMSET(ecs->entities, 0, ecs->entity_capacity * sizeof(ecs_entity_data_t));
 
     ecs_arena_init(ecs, &ecs->arena, 512);
 
@@ -945,7 +945,7 @@ void ecs_reset(ecs_t* ecs)
 
     ecs->entity_pool.size = 0;
 
-    ECS_MEMSET(ecs->entities, 0, ecs->entity_count * sizeof(ecs_entity_data_t));
+    ECS_MEMSET(ecs->entities, 0, ecs->entity_capacity * sizeof(ecs_entity_data_t));
 
     ecs->next_entity_id = 0;
 
@@ -966,7 +966,7 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
     ecs_comp_t comp = ecs_make_comp(ecs->comp_count);
 
     ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
-    ecs_comp_blocks_init(ecs, comp_blocks, size, ecs->entity_count);
+    ecs_comp_blocks_init(ecs, comp_blocks, size, ecs->entity_capacity);
 
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
@@ -999,7 +999,7 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
 
     ECS_MEMSET(sys_data, 0, sizeof(ecs_sys_data_t));
 
-    ecs_sparse_set_init(ecs, &sys_data->entity_ids, ecs->entity_count);
+    ecs_sparse_set_init(ecs, &sys_data->entity_ids, ecs->entity_capacity);
 
     sys_data->system_cb = system_cb;
     sys_data->active = true;
@@ -1153,17 +1153,17 @@ ecs_entity_t ecs_create(ecs_t* ecs)
         entity_id = ecs->next_entity_id++;
 
         // Grow the entities array if necessary
-        if (entity_id >= ecs->entity_count)
+        if (entity_id >= ecs->entity_capacity)
         {
-            size_t old_count = ecs->entity_count;
-            size_t new_count = 2 * old_count;
+            size_t old_capacity = ecs->entity_capacity;
+            size_t new_capacity = 2 * old_capacity;
 
-            ECS_ASSERT(ecs_is_valid_capacity(new_count, sizeof(ecs_entity_data_t)));
+            ECS_ASSERT(ecs_is_valid_capacity(new_capacity, sizeof(ecs_entity_data_t)));
             ecs->entities = (ecs_entity_data_t*)ecs_realloc_zero(ecs, ecs->entities,
-                                                                 old_count * sizeof(ecs_entity_data_t),
-                                                                 new_count * sizeof(ecs_entity_data_t));
+                                                                 old_capacity * sizeof(ecs_entity_data_t),
+                                                                 new_capacity * sizeof(ecs_entity_data_t));
 
-            ecs->entity_count = new_count;
+            ecs->entity_capacity = new_capacity;
         }
     }
 
