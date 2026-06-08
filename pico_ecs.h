@@ -116,7 +116,7 @@
         - ecs_require_component and ecs_exclude_component have been renamed to
           ecs_require and ecs_exclude.
         - Renamed ecs_get_system_entity_count to ecs_get_entity_count.
-        - Added ecs_get_entities that return the entities associated with a
+        - Added ecs_get_entity_array that return the entities associated with a
           system.
 
     Usage:
@@ -469,7 +469,7 @@ ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys);
 /**
  * @brief Returns the entities associated with the specified system
  */
-ecs_entity_t* ecs_get_entities(ecs_t* ecs, ecs_system_t sys);
+ecs_entity_t* ecs_get_entity_array(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Returns the number of entities assigned to the specified system
@@ -1116,7 +1116,7 @@ ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys)
     return ecs->systems[sys.id].mask;
 }
 
-ecs_entity_t* ecs_get_entities(ecs_t* ecs, ecs_system_t sys)
+ecs_entity_t* ecs_get_entity_array(ecs_t* ecs, ecs_system_t sys)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
