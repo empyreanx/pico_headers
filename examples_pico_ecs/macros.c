@@ -32,25 +32,25 @@
 #define PICO_ECS_IMPLEMENTATION
 #include "../pico_ecs.h"
 
-ECS_DEFINE_COMPONENT(pos_t);
-ECS_DEFINE_COMPONENT(vel_t);
-ECS_DEFINE_COMPONENT(rect_t);
+ECS_DEFINE_COMPONENT(Position);
+ECS_DEFINE_COMPONENT(Velocity);
+ECS_DEFINE_COMPONENT(Rect);
 
 // Concrete component structs
 typedef struct
 {
     float x, y;
-} pos_t;
+} Position;
 
 typedef struct
 {
     float vx, vy;
-} vel_t;
+} Velocity;
 
 typedef struct
 {
     int x, y, w, h;
-} rect_t;
+} Rect;
 
 static ecs_t* ecs = NULL;
 
@@ -86,16 +86,16 @@ void register_systems(ecs_t* ecs)
     sys3 = ecs_define_system(ecs, system_update, NULL);
 
     // System 1 requires the position component
-    ecs_require_(ecs, sys1, pos_t);
+    ecs_require_(ecs, sys1, Position);
 
     // System 2 requires both position and velocity components
-    ecs_require_(ecs, sys2, pos_t);
-    ecs_require_(ecs, sys2, vel_t);
+    ecs_require_(ecs, sys2, Position);
+    ecs_require_(ecs, sys2, Velocity);
 
     // System3 requires the position, velocity, and rect components
-    ecs_require_(ecs, sys3, pos_t);
-    ecs_require_(ecs, sys3, vel_t);
-    ecs_require_(ecs, sys3, rect_t);
+    ecs_require_(ecs, sys3, Position);
+    ecs_require_(ecs, sys3, Velocity);
+    ecs_require_(ecs, sys3, Rect);
 }
 
 int main(int argc, char* argv[])
@@ -105,9 +105,9 @@ int main(int argc, char* argv[])
 
     ecs = ecs_new(32, NULL);
 
-    ecs_register_component(ecs, pos_t, NULL);
-    ecs_register_component(ecs, vel_t, NULL);
-    ecs_register_component(ecs, rect_t, NULL);
+    ecs_register_component(ecs, Position, NULL);
+    ecs_register_component(ecs, Velocity, NULL);
+    ecs_register_component(ecs, Rect, NULL);
 
     register_systems(ecs);
 
@@ -121,24 +121,24 @@ int main(int argc, char* argv[])
     printf("Created entities: %lu, %lu, %lu\n", e1.id, e2.id, e3.id);
     printf("---------------------------------------------------------------\n");
 
-    printf("pos_t added to: %lu\n", e1.id);
-    ecs_add_(ecs, e1, pos_t);
+    printf("Position added to: %lu\n", e1.id);
+    ecs_add_(ecs, e1, Position);
 
     printf("---------------------------------------------------------------\n");
-    printf("pos_t added to: %lu\n", e2.id);
-    printf("vel_t added to: %lu\n", e2.id);
+    printf("Position added to: %lu\n", e2.id);
+    printf("Velocity added to: %lu\n", e2.id);
 
-    ecs_add_(ecs, e2, pos_t);
-    ecs_add_(ecs, e2, vel_t);
+    ecs_add_(ecs, e2, Position);
+    ecs_add_(ecs, e2, Velocity);
 
     printf("---------------------------------------------------------------\n");
-    printf("pos_t added to: %lu\n",  e3.id);
-    printf("vel_t added to: %lu\n",  e3.id);
-    printf("rect_t added to: %lu\n", e3.id);
+    printf("Position added to: %lu\n",  e3.id);
+    printf("Velocity added to: %lu\n",  e3.id);
+    printf("Rect added to: %lu\n", e3.id);
 
-    ecs_add_(ecs, e3, pos_t);
-    ecs_add_(ecs, e3, vel_t);
-    ecs_add_(ecs, e3, rect_t);
+    ecs_add_(ecs, e3, Position);
+    ecs_add_(ecs, e3, Velocity);
+    ecs_add_(ecs, e3, Rect);
 
     printf("---------------------------------------------------------------\n");
 
