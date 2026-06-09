@@ -30,8 +30,6 @@
 #ifndef MACROS_H
 #define MACROS_H
 
-#include "../pico_ecs.h"
-
 // Name of the global handle for a given component type.
 #define ECS_TYPE(type) (comp_##type)
 
