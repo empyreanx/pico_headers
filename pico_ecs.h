@@ -253,6 +253,7 @@ void ecs_reset(ecs_t* ecs);
 typedef void (*ecs_on_add_fn)(ecs_t* ecs,
                               ecs_entity_t entity,
                               ecs_comp_t comp,
+                              void* args,
                               void* udata);
 
 /**
@@ -511,10 +512,15 @@ bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param ecs    The ECS context
  * @param entity The entity
  * @param comp   The component
+ * @param args   Optional arguments passed to the component constructor. The
+ *               pointer is not copied: when the add is deferred (called from
+ *               within a running system) it must remain valid until the
+ *               command queue is flushed, i.e. until the system run completes.
+ *               Same ownership contract as udata.
  *
  * @returns The component data
  */
-void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
+void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args);
 
 /**
  * @brief Gets a component instance associated with an entity
@@ -749,6 +755,7 @@ typedef struct
     ecs_entity_t   entity;
     ecs_comp_t     comp;
     void*          data;
+    void*          args;
 } ecs_cmd_t;
 
 typedef struct
@@ -1191,7 +1198,7 @@ void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data)
 
     if (!ecs_has(ecs, entity, comp))
     {
-        ecs_add(ecs, entity, comp);
+        ecs_add(ecs, entity, comp, NULL);
     }
 
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
@@ -1294,7 +1301,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     return (char*)comp_blocks->blocks[block] + (comp_blocks->comp_size * slot);
 }
 
-void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
+void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_id(entity.id));
@@ -1326,6 +1333,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         cmd->type      = ECS_CMD_ADD;
         cmd->entity    = entity;
         cmd->comp      = comp;
+        cmd->args      = args;
         return;
     }
 
@@ -1339,7 +1347,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
 
     // Call constructor
     if (comp_data->on_add)
-        comp_data->on_add(ecs, entity, comp, comp_data->udata);
+        comp_data->on_add(ecs, entity, comp, args, comp_data->udata);
 
     // Add/remove entity to/from systems based on matching criteria
     ecs_sync_add_remove(ecs, entity.id, comp.id);
@@ -1545,7 +1553,7 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
                 if (ecs_is_ready(ecs, cmd->entity))
                 {
                     ecs_bitset_flip(&ecs->entities[cmd->entity.id].comp_bits, cmd->comp.id, false);
-                    ecs_add(ecs, cmd->entity, cmd->comp);
+                    ecs_add(ecs, cmd->entity, cmd->comp, cmd->args);
                 }
                 break;
 

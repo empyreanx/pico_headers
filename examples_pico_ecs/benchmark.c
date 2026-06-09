@@ -148,8 +148,8 @@ static void setup_destroy_with_two_components()
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, PosComponent);
-        ecs_add(ecs, entity, RectComponent);
+        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, RectComponent, NULL);
     }
 }
 
@@ -213,7 +213,7 @@ static void setup_get()
         ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        ecs_add(ecs, entity, PosComponent);
+        ecs_add(ecs, entity, PosComponent, NULL);
     }
 }
 
@@ -330,8 +330,8 @@ static void bench_destroy()
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, PosComponent);
-        ecs_add(ecs, entity, RectComponent);
+        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, RectComponent, NULL);
     }
 
     ecs_run_system(ecs, DestroySystem, 0);
@@ -354,8 +354,8 @@ static void bench_create_with_two_components()
         ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        ecs_add(ecs, entity, PosComponent);
-        ecs_add(ecs, entity, RectComponent);
+        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, RectComponent, NULL);
     }
 }
 
@@ -365,7 +365,7 @@ static void bench_add_remove()
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, PosComponent);
+        ecs_add(ecs, entity, PosComponent, NULL);
         ecs_remove(ecs, entity, PosComponent);
     }
 }
@@ -379,8 +379,8 @@ static void bench_add_assign()
         ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        ecs_add(ecs, entity, PosComponent);
-        ecs_add(ecs, entity, RectComponent);
+        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, RectComponent, NULL);
         // Set concrete component values
         ecs_set(ecs, entity, PosComponent,  &(v2d_t) { 1, 2 });
         ecs_set(ecs, entity, RectComponent, &(rect_t){ 1, 2, 3, 4 });
@@ -408,13 +408,13 @@ static void bench_three_systems()
         ecs_entity_t entity = ecs_create(ecs);
 
         // Add components
-        ecs_add(ecs, entity, PosComponent);
-        ecs_add(ecs, entity, DirComponent);
-        ecs_add(ecs, entity, RectComponent);
+        ecs_add(ecs, entity, PosComponent, NULL);
+        ecs_add(ecs, entity, DirComponent, NULL);
+        ecs_add(ecs, entity, RectComponent, NULL);
 
         if (i % 2 == 0)
         {
-            ecs_add(ecs, entity, ComflabComponent);
+            ecs_add(ecs, entity, ComflabComponent, NULL);
             ecs_set(ecs, entity, ComflabComponent, &(comflab_t){ 0 });
         }
 

@@ -2,12 +2,24 @@
 
 // --- Helpers ---
 
-static void comp_on_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* udata)
+static void comp_on_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args, void* udata)
 {
+    (void)args;
     (void)udata;
 
     comp_t* comp_ptr = ecs_get(ecs, entity, comp);
     comp_ptr->used = true;
+}
+
+// Constructor that initializes the component from the args passed to ecs_add
+static void comp_on_add_args(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args, void* udata)
+{
+    (void)udata;
+
+    comp_t* comp_ptr = ecs_get(ecs, entity, comp);
+
+    if (args)
+        *comp_ptr = *(comp_t*)args;
 }
 
 static void comp_on_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* udata)
@@ -60,14 +72,14 @@ TEST_CASE(test_add_remove)
     REQUIRE(!ecs_has(ecs, entity, comp2));
 
     // Add a component
-    ecs_add(ecs, entity, comp1);
+    ecs_add(ecs, entity, comp1, NULL);
 
     // Verify that the entity has one component and not the other
     REQUIRE(ecs_has(ecs, entity, comp1));
     REQUIRE(!ecs_has(ecs, entity, comp2));
 
     // Add a second component to the entity
-    ecs_add(ecs, entity, comp2);
+    ecs_add(ecs, entity, comp2, NULL);
 
     // Verify that the entity has both components
     REQUIRE(ecs_has(ecs, entity, comp1));
@@ -99,8 +111,8 @@ TEST_CASE(test_reset)
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
         entities[i] = ecs_create(ecs);
-        ecs_add(ecs, entities[i], comp1);
-        ecs_add(ecs, entities[i], comp2);
+        ecs_add(ecs, entities[i], comp1, NULL);
+        ecs_add(ecs, entities[i], comp2, NULL);
         REQUIRE(ecs_is_ready(ecs, entities[i]));
     }
 
@@ -124,13 +136,13 @@ TEST_CASE(test_add_idempotent)
     ecs_require(ecs, sys1, comp1);
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp1);
+    ecs_add(ecs, entity, comp1, NULL);
 
     REQUIRE(ecs_has(ecs, entity, comp1));
     REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
 
     // Double-add should be a no-op
-    ecs_add(ecs, entity, comp1);
+    ecs_add(ecs, entity, comp1, NULL);
 
     REQUIRE(ecs_has(ecs, entity, comp1));
     REQUIRE(ecs_get_entity_count(ecs, sys1) == 1);
@@ -148,7 +160,7 @@ TEST_CASE(test_remove_idempotent)
     REQUIRE(!ecs_has(ecs, entity, comp1));
 
     // Add then double-remove
-    ecs_add(ecs, entity, comp1);
+    ecs_add(ecs, entity, comp1, NULL);
     REQUIRE(ecs_has(ecs, entity, comp1));
     ecs_remove(ecs, entity, comp1);
     REQUIRE(!ecs_has(ecs, entity, comp1));
@@ -161,7 +173,7 @@ TEST_CASE(test_remove_idempotent)
 TEST_CASE(test_component_zeroed)
 {
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp1);
+    ecs_add(ecs, entity, comp1, NULL);
 
     comp_t* comp = ecs_get(ecs, entity, comp1);
     REQUIRE(!comp->used);
@@ -191,9 +203,28 @@ TEST_CASE(test_on_add)
     });
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp_type);
+    ecs_add(ecs, entity, comp_type, NULL);
     comp_t* comp = ecs_get(ecs, entity, comp_type);
 
+    REQUIRE(comp->used);
+
+    return true;
+}
+
+TEST_CASE(test_on_add_args)
+{
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
+    {
+        .on_add_cb = comp_on_add_args
+    });
+
+    ecs_entity_t entity = ecs_create(ecs);
+
+    // The args passed to ecs_add are forwarded to the on_add constructor
+    comp_t init = { .used = true };
+    ecs_add(ecs, entity, comp_type, &init);
+
+    comp_t* comp = ecs_get(ecs, entity, comp_type);
     REQUIRE(comp->used);
 
     return true;
@@ -208,7 +239,7 @@ TEST_CASE(test_on_remove)
     });
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp_type);
+    ecs_add(ecs, entity, comp_type, NULL);
     comp_t* comp = ecs_get(ecs, entity, comp_type);
     ecs_remove(ecs, entity, comp_type);
 
@@ -226,7 +257,7 @@ TEST_CASE(test_destructor_destroy)
     });
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp_type);
+    ecs_add(ecs, entity, comp_type, NULL);
     comp_t* comp = ecs_get(ecs, entity, comp_type);
     ecs_destroy(ecs, entity);
 
@@ -241,6 +272,7 @@ TEST_CASE(test_destructor_destroy)
 TEST_SUITE(suite_components)
 {
     RUN_TEST_CASE(test_on_add);
+    RUN_TEST_CASE(test_on_add_args);
     RUN_TEST_CASE(test_on_remove);
     RUN_TEST_CASE(test_destructor_destroy);
 }

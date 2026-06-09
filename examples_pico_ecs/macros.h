@@ -49,8 +49,8 @@
     ecs_exclude((ecs), ECS_TYPE(type))
 
 // Per-entity component operations, addressed by component type name.
-#define ecs_add_(ecs, entity, type) \
-    ecs_add((ecs), (entity), ECS_TYPE(type))
+#define ecs_add_(ecs, entity, type, args) \
+    ecs_add((ecs), (entity), ECS_TYPE(type), (args))
 
  #define ecs_remove_(ecs, entity, type) \
     ecs_remove((ecs), (entity), ECS_TYPE(type))

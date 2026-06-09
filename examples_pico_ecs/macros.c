@@ -122,23 +122,23 @@ int main(int argc, char* argv[])
     printf("---------------------------------------------------------------\n");
 
     printf("Position added to: %lu\n", e1.id);
-    ecs_add_(ecs, e1, Position);
+    ecs_add_(ecs, e1, Position, NULL);
 
     printf("---------------------------------------------------------------\n");
     printf("Position added to: %lu\n", e2.id);
     printf("Velocity added to: %lu\n", e2.id);
 
-    ecs_add_(ecs, e2, Position);
-    ecs_add_(ecs, e2, Velocity);
+    ecs_add_(ecs, e2, Position, NULL);
+    ecs_add_(ecs, e2, Velocity, NULL);
 
     printf("---------------------------------------------------------------\n");
     printf("Position added to: %lu\n",  e3.id);
     printf("Velocity added to: %lu\n",  e3.id);
     printf("Rect added to: %lu\n", e3.id);
 
-    ecs_add_(ecs, e3, Position);
-    ecs_add_(ecs, e3, Velocity);
-    ecs_add_(ecs, e3, Rect);
+    ecs_add_(ecs, e3, Position, NULL);
+    ecs_add_(ecs, e3, Velocity, NULL);
+    ecs_add_(ecs, e3, Rect, NULL);
 
     printf("---------------------------------------------------------------\n");
 

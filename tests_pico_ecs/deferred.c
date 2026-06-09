@@ -54,7 +54,7 @@ static ecs_ret_t queue_add_system(ecs_t* ecs,
     for (size_t i = 0; i < MIN_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1);
+        ecs_add(ecs, entity, comp1, NULL);
     }
 
     return 0;
@@ -132,6 +132,47 @@ static ecs_ret_t set_then_destroy_system(ecs_t* ecs,
     return 0;
 }
 
+// Constructor that initializes the component from the args forwarded through
+// the deferred command queue
+static void on_add_deferred_args(ecs_t* ecs,
+                                 ecs_entity_t entity,
+                                 ecs_comp_t comp,
+                                 void* args,
+                                 void* udata)
+{
+    (void)udata;
+
+    comp_t* comp_ptr = ecs_get(ecs, entity, comp);
+
+    if (args)
+        *comp_ptr = *(comp_t*)args;
+}
+
+typedef struct
+{
+    ecs_comp_t   comp;
+    comp_t       args;   // caller-owned; must outlive the system run
+    ecs_entity_t entity;
+} deferred_add_args_t;
+
+static ecs_ret_t queue_add_args_system(ecs_t* ecs,
+                                       ecs_entity_t* entities,
+                                       size_t entity_count,
+                                       void* udata)
+{
+    (void)entities;
+    (void)entity_count;
+
+    deferred_add_args_t* state = (deferred_add_args_t*)udata;
+
+    // Deferred add: the args pointer is stored in the command queue and must
+    // remain valid until the queue is flushed after the system completes
+    state->entity = ecs_create(ecs);
+    ecs_add(ecs, state->entity, state->comp, &state->args);
+
+    return 0;
+}
+
 // =============================================================
 // Deferred Suite: mutations performed during system iteration
 // =============================================================
@@ -145,8 +186,8 @@ TEST_CASE(test_destroy_system)
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1);
-        ecs_add(ecs, entity, comp2);
+        ecs_add(ecs, entity, comp1, NULL);
+        ecs_add(ecs, entity, comp2, NULL);
         REQUIRE(ecs_is_ready(ecs, entity));
     }
 
@@ -166,8 +207,8 @@ TEST_CASE(test_remove_system)
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
         ecs_entity_t entity = ecs_create(ecs);
-        ecs_add(ecs, entity, comp1);
-        ecs_add(ecs, entity, comp2);
+        ecs_add(ecs, entity, comp1, NULL);
+        ecs_add(ecs, entity, comp2, NULL);
         REQUIRE(ecs_is_ready(ecs, entity));
     }
 
@@ -197,7 +238,7 @@ TEST_CASE(test_queue_remove)
 
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
-        ecs_add(ecs, ecs_create(ecs), comp1);
+        ecs_add(ecs, ecs_create(ecs), comp1, NULL);
     }
 
     size_t inner_count = ecs_run_system(ecs, sys1, 0);
@@ -216,7 +257,7 @@ TEST_CASE(test_queue_destroy)
 
     for (size_t i = 0; i < MAX_ENTITIES; i++)
     {
-        ecs_add(ecs, ecs_create(ecs), comp1);
+        ecs_add(ecs, ecs_create(ecs), comp1, NULL);
     }
 
     size_t inner_count = ecs_run_system(ecs, sys1, 0);
@@ -224,6 +265,36 @@ TEST_CASE(test_queue_destroy)
 
     REQUIRE(inner_count == MAX_ENTITIES);
     REQUIRE(outer_count == 0);
+
+    return true;
+}
+
+TEST_CASE(test_queue_add_args)
+{
+    ecs_comp_t comp_args = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
+    {
+        .on_add_cb = on_add_deferred_args
+    });
+
+    // state (and therefore state.args) outlives the system run below
+    deferred_add_args_t state =
+    {
+        .comp = comp_args,
+        .args = { .used = true }
+    };
+
+    sys1 = ecs_define_system(ecs, queue_add_args_system, &(ecs_sys_desc_t)
+    {
+        .udata = &state
+    });
+    ecs_require(ecs, sys1, comp1);
+
+    ecs_run_system(ecs, sys1, 0);
+
+    // The args passed to the deferred ecs_add must reach the constructor
+    // after the command queue is flushed
+    REQUIRE(ecs_has(ecs, state.entity, comp_args));
+    REQUIRE(((comp_t*)ecs_get(ecs, state.entity, comp_args))->used);
 
     return true;
 }
@@ -243,7 +314,7 @@ TEST_CASE(test_queue_set_dead_entity)
     ecs_require(ecs, sys1, comp_cb);
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp_cb);
+    ecs_add(ecs, entity, comp_cb, NULL);
 
     ecs_run_system(ecs, sys1, 0);
 
@@ -263,5 +334,6 @@ TEST_SUITE(suite_deferred)
     RUN_TEST_CASE(test_queue_add);
     RUN_TEST_CASE(test_queue_remove);
     RUN_TEST_CASE(test_queue_destroy);
+    RUN_TEST_CASE(test_queue_add_args);
     RUN_TEST_CASE(test_queue_set_dead_entity);
 }

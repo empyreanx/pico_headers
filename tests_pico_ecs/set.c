@@ -68,7 +68,7 @@ static ecs_ret_t set_system_with_args(ecs_t* ecs,
 TEST_CASE(test_set_copies_data)
 {
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp1);
+    ecs_add(ecs, entity, comp1, NULL);
 
     comp_t* comp = ecs_get(ecs, entity, comp1);
     REQUIRE(!comp->used);
@@ -107,7 +107,7 @@ TEST_CASE(test_set_on_set_callback)
     });
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp_type);
+    ecs_add(ecs, entity, comp_type, NULL);
 
     comp_t data = { .used = true };
     ecs_set(ecs, entity, comp_type, &data);
@@ -124,7 +124,7 @@ TEST_CASE(test_set_deferred)
     ecs_require(ecs, sys1, comp1);
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp1);
+    ecs_add(ecs, entity, comp1, NULL);
 
     REQUIRE(!((comp_t*)ecs_get(ecs, entity, comp1))->used);
 
@@ -139,8 +139,8 @@ TEST_CASE(test_set_deferred)
 TEST_CASE(test_set_isolated)
 {
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp1);
-    ecs_add(ecs, entity, comp2);
+    ecs_add(ecs, entity, comp1, NULL);
+    ecs_add(ecs, entity, comp2, NULL);
 
     comp_t data = { .used = true };
     ecs_set(ecs, entity, comp1, &data);
@@ -171,7 +171,7 @@ TEST_CASE(test_set_deferred_fires_callback)
     ecs_require(ecs, sys1, comp_cb);
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp_cb);
+    ecs_add(ecs, entity, comp_cb, NULL);
 
     ecs_run_system(ecs, sys1, 0);
 

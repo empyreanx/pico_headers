@@ -135,23 +135,23 @@ int main()
     printf("---------------------------------------------------------------\n");
 
     printf("PosComp added to: %lu\n", e1.id);
-    ecs_add(ecs, e1, PosComp);
+    ecs_add(ecs, e1, PosComp, NULL);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %lu\n",  e2.id);
     printf("VeloComp added to: %lu\n", e2.id);
 
-    ecs_add(ecs, e2, PosComp);
-    ecs_add(ecs, e2, VelComp);
+    ecs_add(ecs, e2, PosComp, NULL);
+    ecs_add(ecs, e2, VelComp, NULL);
 
     printf("---------------------------------------------------------------\n");
     printf("PosComp added to: %lu\n",  e3.id);
     printf("VeloComp added to: %lu\n", e3.id);
     printf("RectComp added to: %lu\n", e3.id);
 
-    ecs_add(ecs, e3, PosComp);
-    ecs_add(ecs, e3, VelComp);
-    ecs_add(ecs, e3, RectComp);
+    ecs_add(ecs, e3, PosComp, NULL);
+    ecs_add(ecs, e3, VelComp, NULL);
+    ecs_add(ecs, e3, RectComp, NULL);
 
     printf("---------------------------------------------------------------\n");
 
