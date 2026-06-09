@@ -1,5 +1,6 @@
 benchmark
 example
+macros
 *.o
 gmon.out
 massif.out*
