@@ -8,7 +8,7 @@ endif
 
 DEPS   = ../pico_ecs.h
 
-all: benchmark example
+all: benchmark example macros
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -19,7 +19,10 @@ benchmark: benchmark.o $(DEPS)
 example: example.o $(DEPS)
 	$(CC) -o example example.o #-g
 
+macros: macros.o $(DEPS)
+	$(CC) -o macros macros.o #-g
+
 .PHONY: clean
 
 clean:
-	rm -f benchmark example *.o
+	rm -f benchmark example macros *.o
