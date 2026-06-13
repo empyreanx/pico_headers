@@ -27,8 +27,8 @@
 // Helper macros for referring to pico_ecs components by their C type name
 // rather than passing ecs_comp_t handles.
 
-#ifndef MACROS_H
-#define MACROS_H
+#ifndef PICO_ECS_MACROS_H
+#define PICO_ECS_MACROS_H
 
 // Name of the global handle for a given component type.
 #define ECS_TYPE(type) (comp_##type)
@@ -38,7 +38,7 @@
 #define ECS_DEFINE_COMPONENT(type) ecs_comp_t ECS_TYPE(type)
 
 // Register a components
-#define ecs_register_component(ecs, type, desc) \
+#define ecs_register_component_(ecs, type, desc) \
     ECS_TYPE(type) = ecs_define_component((ecs), sizeof(type), (desc))
 
 // Constrain a system's entity match by component type name.
@@ -65,4 +65,4 @@
 #define ecs_get_(ecs, entity, type) \
     ((type*)ecs_get((ecs), (entity), ECS_TYPE(type))
 
-#endif // MACROS_H
+#endif // PICO_ECS_MACROS_H
