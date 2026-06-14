@@ -750,33 +750,39 @@ void queued_emitter_flush(queued_emitter_t* qe)
 {
     EMITTER_ASSERT(qe != NULL);
 
-    int flush_count = qe->count;
-    int read_arena  = qe->write_arena;
+    int remaining = 0;
 
-    /* Flip write arena before dispatching so that nested emits during flush
-     * copy payload into the other arena. Their data pointers remain valid
-     * after the read arena is reset below. */
-    qe->write_arena = 1 - read_arena;
+    do {
 
-    for (int i = 0; i < flush_count; i++)
-    {
-        emitter_emit(qe->emitter, qe->events[i], qe->datas[i]);
-    }
+        int flush_count = qe->count;
+        int read_arena  = qe->write_arena;
 
-    /* Shift deferred events (enqueued during flush) to the front.
-     * events/datas are heap-resident so no arena pointer fixup is needed. */
-    int remaining = qe->count - flush_count;
+        /* Flip write arena before dispatching so that nested emits during flush
+        * copy payload into the other arena. Their data pointers remain valid
+        * after the read arena is reset below. */
+        qe->write_arena = 1 - read_arena;
 
-    for (int i = 0; i < remaining; i++)
-    {
-        qe->events[i] = qe->events[flush_count + i];
-        qe->datas[i]  = qe->datas[flush_count + i];
-    }
+        for (int i = 0; i < flush_count; i++)
+        {
+            emitter_emit(qe->emitter, qe->events[i], qe->datas[i]);
+        }
 
-    qe->count = remaining;
+        /* Shift deferred events (enqueued during flush) to the front.
+        * events/datas are heap-resident so no arena pointer fixup is needed. */
+        remaining = qe->count - flush_count;
 
-    // All dispatched payloads are consumed — O(1) reset of the read arena.
-    arena_reset(&qe->arenas[read_arena]);
+        for (int i = 0; i < remaining; i++)
+        {
+            qe->events[i] = qe->events[flush_count + i];
+            qe->datas[i]  = qe->datas[flush_count + i];
+        }
+
+        qe->count = remaining;
+
+        // All dispatched payloads are consumed — O(1) reset of the read arena.
+        arena_reset(&qe->arenas[read_arena]);
+
+    } while (remaining > 0);
 }
 
 int queued_emitter_count(const queued_emitter_t* qe, int event)
