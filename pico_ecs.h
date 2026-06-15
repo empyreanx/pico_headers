@@ -119,6 +119,10 @@
         - Added ecs_get_entity_array that return the entities associated with a
           system.
 
+    - 3.4 (2026/06/15):
+        - ECS_INVALID_ID is now 0. Entity, component, and system IDs all start
+          at 1, leaving 0 reserved as the invalid ID.
+
     Usage:
     ------
 
@@ -213,8 +217,11 @@ typedef struct ecs_system_t { ecs_id_t id; } ecs_system_t;
 
 /**
  * @brief An invalid ID
+ *
+ * Zero is reserved as the invalid ID. Valid entity, component, and system IDs
+ * all start at 1.
  */
-#define ECS_INVALID_ID ((ecs_id_t)-1)
+#define ECS_INVALID_ID ((ecs_id_t)0)
 
 /**
  * @brief True if the argument (entity/system/component) is invalid
@@ -650,13 +657,16 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
  *  Data structures
  *============================================================================*/
 
-#if ECS_MAX_COMPONENTS <= 32
+// Component IDs run from 1..ECS_MAX_COMPONENTS, so the highest bit position is
+// ECS_MAX_COMPONENTS (bit 0 is unused). The bitset therefore needs room for
+// ECS_MAX_COMPONENTS + 1 bits.
+#if ECS_MAX_COMPONENTS <= 31
 typedef uint32_t ecs_bitset_t;
-#elif ECS_MAX_COMPONENTS <= 64
+#elif ECS_MAX_COMPONENTS <= 63
 typedef uint64_t ecs_bitset_t;
 #else
 #define ECS_BITSET_WIDTH 64
-#define ECS_BITSET_SIZE (((ECS_MAX_COMPONENTS - 1) / ECS_BITSET_WIDTH) + 1)
+#define ECS_BITSET_SIZE ((ECS_MAX_COMPONENTS / ECS_BITSET_WIDTH) + 1)
 
 typedef struct
 {
@@ -766,10 +776,12 @@ struct ecs_s
     ecs_entity_data_t* entities;
     size_t             entity_capacity;
     size_t             next_entity_id;
-    ecs_comp_data_t    comps[ECS_MAX_COMPONENTS];
-    ecs_comp_blocks_t  comp_blocks[ECS_MAX_COMPONENTS];
+    // IDs are 1-based and index these arrays directly, so slot 0 is reserved
+    // (unused) and the arrays hold one extra element
+    ecs_comp_data_t    comps[ECS_MAX_COMPONENTS + 1];
+    ecs_comp_blocks_t  comp_blocks[ECS_MAX_COMPONENTS + 1];
     size_t             comp_count;
-    ecs_sys_data_t     systems[ECS_MAX_SYSTEMS];
+    ecs_sys_data_t     systems[ECS_MAX_SYSTEMS + 1];
     size_t             system_count;
     bool               system_active;
     ecs_cmd_array_t    cmd_queue;
@@ -883,7 +895,7 @@ static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
 ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx)
 {
     ECS_ASSERT(entity_capacity > 0);
-    ECS_ASSERT(!ecs_is_valid_id(ECS_INVALID_ID) && "ecs_id_t is signed");
+    ECS_ASSERT(!ecs_is_valid_id(ECS_INVALID_ID) && "ECS_INVALID_ID must be invalid");
 
     ecs_t* ecs = (ecs_t*)ECS_MALLOC(sizeof(ecs_t), mem_ctx);
 
@@ -894,7 +906,7 @@ ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx)
     ECS_MEMSET(ecs, 0, sizeof(ecs_t));
 
     ecs->entity_capacity = (entity_capacity > 0) ? entity_capacity : 32;
-    ecs->next_entity_id  = 0;
+    ecs->next_entity_id  = 1;
     ecs->system_active   = false;
     ecs->mem_ctx         = mem_ctx;
 
@@ -925,19 +937,19 @@ void ecs_free(ecs_t* ecs)
     ecs_cmd_array_free(ecs, &ecs->cmd_queue);
     ecs_arena_destroy(ecs, &ecs->arena);
 
-    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
+    for (ecs_id_t comp_id = 1; comp_id <= ecs->comp_count; comp_id++)
     {
         ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp_id];
         ecs_comp_blocks_free(ecs, comp_blocks);
     }
 
-    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    for (ecs_id_t sys_id = 1; sys_id <= ecs->system_count; sys_id++)
     {
         ecs_sys_data_t* sys = &ecs->systems[sys_id];
         ecs_sparse_set_free(ecs, &sys->entity_ids);
     }
 
-    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
+    for (ecs_id_t comp_id = 1; comp_id <= ecs->comp_count; comp_id++)
     {
         ecs_comp_data_t* comp_data = &ecs->comps[comp_id];
 
@@ -959,9 +971,9 @@ void ecs_reset(ecs_t* ecs)
 
     ECS_MEMSET(ecs->entities, 0, ecs->entity_capacity * sizeof(ecs_entity_data_t));
 
-    ecs->next_entity_id = 0;
+    ecs->next_entity_id = 1;
 
-    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    for (ecs_id_t sys_id = 1; sys_id <= ecs->system_count; sys_id++)
     {
         ecs->systems[sys_id].entity_ids.size = 0;
     }
@@ -975,7 +987,7 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
     ECS_ASSERT(ecs->comp_count < ECS_MAX_COMPONENTS);
     ECS_ASSERT(size > 0);
 
-    ecs_comp_t comp = ecs_make_comp(ecs->comp_count);
+    ecs_comp_t comp = ecs_make_comp(ecs->comp_count + 1);
 
     ecs_comp_blocks_t* comp_blocks = &ecs->comp_blocks[comp.id];
     ecs_comp_blocks_init(ecs, comp_blocks, size, ecs->entity_capacity);
@@ -1012,7 +1024,7 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
     ECS_ASSERT(ecs->system_count < ECS_MAX_SYSTEMS);
     ECS_ASSERT(NULL != system_cb);
 
-    ecs_system_t sys = ecs_make_system(ecs->system_count);
+    ecs_system_t sys = ecs_make_system(ecs->system_count + 1);
     ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
 
     ECS_MEMSET(sys_data, 0, sizeof(ecs_sys_data_t));
@@ -1254,7 +1266,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         return;
     }
 
-    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
+    for (ecs_id_t comp_id = 1; comp_id <= ecs->comp_count; comp_id++)
     {
         if (ecs_bitset_test(&comp_bits, comp_id))
         {
@@ -1436,7 +1448,7 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
 
-    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    for (ecs_id_t sys_id = 1; sys_id <= ecs->system_count; sys_id++)
     {
         ecs_system_t sys = ecs_make_system(sys_id);
         ecs_ret_t code = ecs_run_system(ecs, sys, mask);
@@ -1595,7 +1607,7 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
  * Bitset functions
  *============================================================================*/
 
-#if ECS_MAX_COMPONENTS <= 64
+#if ECS_MAX_COMPONENTS <= 63
 
 static inline bool ecs_bitset_is_zero(ecs_bitset_t* set)
 {
@@ -1993,7 +2005,7 @@ static inline bool ecs_sparse_set_remove(ecs_sparse_set_t* set, ecs_id_t id)
 /*=============================================================================
  * System entity add/remove functions
  *============================================================================*/
-#if ECS_MAX_COMPONENTS <= 64
+#if ECS_MAX_COMPONENTS <= 63
 
 static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
                                           ecs_bitset_t exclude_bits,
@@ -2035,7 +2047,7 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
     ecs_entity_data_t* entity_data = &ecs->entities[entity_id];
 
     // Add or remove entity from systems
-    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    for (ecs_id_t sys_id = 1; sys_id <= ecs->system_count; sys_id++)
     {
         ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
@@ -2073,7 +2085,7 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
 static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id)
 {
     // Remove entity from systems
-    for (ecs_id_t sys_id = 0; sys_id < ecs->system_count; sys_id++)
+    for (ecs_id_t sys_id = 1; sys_id <= ecs->system_count; sys_id++)
     {
         ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
@@ -2239,18 +2251,19 @@ static bool ecs_is_not_null(void* ptr)
 
 static bool ecs_is_valid_component_id(ecs_id_t id)
 {
-    return id < ECS_MAX_COMPONENTS;
+    return ECS_INVALID_ID != id && id <= ECS_MAX_COMPONENTS;
 }
 
 static bool ecs_is_valid_system_id(ecs_id_t id)
 {
-    return id < ECS_MAX_SYSTEMS;
+    return ECS_INVALID_ID != id && id <= ECS_MAX_SYSTEMS;
 }
 
 static bool ecs_is_valid_id(ecs_id_t id)
 {
-    // Ensures high bit is not set - works for any unsigned ecs_id_t
-    return id == ((id << 1) >> 1);
+    // Zero is reserved as the invalid ID, and the high bit must not be set --
+    // the latter works for any unsigned ecs_id_t
+    return ECS_INVALID_ID != id && id == ((id << 1) >> 1);
 }
 
 static bool ecs_is_valid_capacity(size_t capacity, size_t elem_size)
@@ -2274,12 +2287,12 @@ static bool ecs_is_entity_ready(ecs_t* ecs, ecs_id_t entity_id)
 
 static bool ecs_is_component_ready(ecs_t* ecs, ecs_id_t comp_id)
 {
-    return comp_id < ecs->comp_count;
+    return ECS_INVALID_ID != comp_id && comp_id <= ecs->comp_count;
 }
 
 static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
 {
-    return sys_id < ecs->system_count;
+    return ECS_INVALID_ID != sys_id && sys_id <= ecs->system_count;
 }
 
 #endif // NDEBUG
