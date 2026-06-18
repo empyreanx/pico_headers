@@ -278,7 +278,7 @@ TEST_CASE(test_default_value)
     });
 
     ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp_type);
+    ecs_add(ecs, entity, comp_type, NULL);
     comp_t* comp = ecs_get(ecs, entity, comp_type);
 
     // The component should be initialized to the default rather than zeroed
@@ -296,7 +296,7 @@ TEST_CASE(test_default_value_per_add)
 
     // First entity gets the default, then we mutate its component
     ecs_entity_t entity1 = ecs_create(ecs);
-    ecs_add(ecs, entity1, comp_type);
+    ecs_add(ecs, entity1, comp_type, NULL);
     comp_t* comp1_ptr = ecs_get(ecs, entity1, comp_type);
     REQUIRE(comp1_ptr->used);
     comp1_ptr->used = false;
@@ -304,7 +304,7 @@ TEST_CASE(test_default_value_per_add)
     // A second entity should still receive a fresh copy of the default,
     // proving the stored default is copied and not shared/mutated
     ecs_entity_t entity2 = ecs_create(ecs);
-    ecs_add(ecs, entity2, comp_type);
+    ecs_add(ecs, entity2, comp_type, NULL);
     comp_t* comp2_ptr = ecs_get(ecs, entity2, comp_type);
     REQUIRE(comp2_ptr->used);
 
