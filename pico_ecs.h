@@ -119,6 +119,15 @@
         - Added ecs_get_entity_array that return the entities associated with a
           system.
 
+    - 3.4 (2026/06/18):
+        - ecs_add now accepts an optional 'args' pointer that is forwarded to the
+          on_add callback. When the component is defined with a non-zero
+          args_size, the args are copied into the command arena so the caller
+          need not keep them alive (relevant for deferred adds during system
+          iteration).
+        - Components may now specify a default_value that is copied into the
+          component on add.
+
     Usage:
     ------
 
