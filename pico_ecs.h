@@ -295,6 +295,7 @@ typedef struct
     ecs_on_add_fn on_add_cb;
     ecs_on_remove_fn on_remove_cb;
     ecs_on_set_fn on_set_cb;
+    void* default_value;
     void* udata;
 } ecs_comp_desc_t;
 
@@ -725,6 +726,7 @@ typedef struct
     ecs_on_remove_fn on_remove;
     ecs_on_set_fn on_set;
     size_t size;
+    void* default_value;
     void* udata;
 } ecs_comp_data_t;
 
@@ -942,6 +944,16 @@ void ecs_free(ecs_t* ecs)
         ecs_sparse_set_free(ecs, &sys->entity_ids);
     }
 
+    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
+    {
+        ecs_comp_data_t* comp_data = &ecs->comps[comp_id];
+
+        if (comp_data->default_value)
+        {
+            ECS_FREE(comp_data->default_value, ecs->mem_ctx);
+        }
+    }
+
     ECS_FREE(ecs->entities, ecs->mem_ctx);
     ECS_FREE(ecs, ecs->mem_ctx);
 }
@@ -986,6 +998,12 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
         comp_data->on_remove = desc->on_remove_cb;
         comp_data->on_set = desc->on_set_cb;
         comp_data->udata = desc->udata;
+
+        if (desc->default_value)
+        {
+            comp_data->default_value = ECS_MALLOC(size, ctx->mem_ctx);
+            ECS_MEMCPY(comp_data->default_value, desc->default_value, size);
+        }
     }
 
     ecs->comp_count++;
@@ -1342,8 +1360,11 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     // Get pointer to component
     void* comp_ptr = ecs_get(ecs, entity, comp);
 
-    // Zero component
-    ECS_MEMSET(comp_ptr, 0, comp_blocks->comp_size);
+    // Set default value
+    if (comp_data->default_value)
+        ECS_MEMCPY(comp_ptr, comp_data->default_value, comp_data->size);
+    else
+        ECS_MEMSET(comp_ptr, 0, comp_blocks->comp_size);
 
     // Call constructor
     if (comp_data->on_add)

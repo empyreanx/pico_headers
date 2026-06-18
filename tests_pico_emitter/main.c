@@ -514,24 +514,100 @@ TEST_CASE(test_queued_off_all)
 
 static queued_emitter_t* g_qe_safe = NULL;
 
+/* Bound on the number of events the re-enqueuing listener will chain. */
+#define QUEUED_ENQUEUE_CHAIN 5
+
 static void queued_listener_enqueues(const void* data, void* udata)
 {
     (void)data;
     (void)udata;
-    queued_emitter_emit(g_qe_safe, 0, NULL, 0);
+    /* Re-enqueue until the chain bound is reached; flush drains the queue to
+     * completion, so an unconditional re-enqueue would loop forever. */
+    if (g_call_count < QUEUED_ENQUEUE_CHAIN - 1)
+        queued_emitter_emit(g_qe_safe, 0, NULL, 0);
     g_call_count++;
 }
 
-TEST_CASE(test_queued_emit_during_flush_deferred)
+TEST_CASE(test_queued_emit_during_flush_dispatched)
 {
     reset_counters();
     g_qe_safe = queued_emitter_create(1);
     queued_emitter_on(g_qe_safe, 0, queued_listener_enqueues, NULL);
     queued_emitter_emit(g_qe_safe, 0, NULL, 0);
-    queued_emitter_flush(g_qe_safe); /* fires; listener re-enqueues */
-    REQUIRE(g_call_count == 1);      /* only the original event fired */
-    queued_emitter_flush(g_qe_safe); /* fires the re-enqueued event */
-    REQUIRE(g_call_count == 2);
+    /* A single flush dispatches the original event and every event the
+     * listener enqueues during the flush, draining the queue to completion. */
+    queued_emitter_flush(g_qe_safe);
+    REQUIRE(g_call_count == QUEUED_ENQUEUE_CHAIN);
+    queued_emitter_destroy(g_qe_safe);
+    g_qe_safe = NULL;
+    return true;
+}
+
+/* A listener on event 0 enqueues event 1 during flush; both events must be
+ * dispatched within the same flush, fanning out across event types. */
+static void queued_listener_chains_event1(const void* data, void* udata)
+{
+    (void)data;
+    (void)udata;
+    queued_emitter_emit(g_qe_safe, 1, NULL, 0);
+    g_call_order[g_order_count++] = 0;
+}
+
+static void queued_listener_records_event1(const void* data, void* udata)
+{
+    (void)data;
+    (void)udata;
+    g_call_order[g_order_count++] = 1;
+}
+
+TEST_CASE(test_queued_nested_cross_event_dispatch)
+{
+    reset_counters();
+    g_qe_safe = queued_emitter_create(2);
+    queued_emitter_on(g_qe_safe, 0, queued_listener_chains_event1, NULL);
+    queued_emitter_on(g_qe_safe, 1, queued_listener_records_event1, NULL);
+    queued_emitter_emit(g_qe_safe, 0, NULL, 0);
+    /* One flush dispatches event 0, which enqueues event 1, which is then
+     * dispatched in the same flush. */
+    queued_emitter_flush(g_qe_safe);
+    REQUIRE(g_order_count   == 2);
+    REQUIRE(g_call_order[0] == 0); /* event 0 handled first */
+    REQUIRE(g_call_order[1] == 1); /* event 1 handled after, same flush */
+    queued_emitter_destroy(g_qe_safe);
+    g_qe_safe = NULL;
+    return true;
+}
+
+/* A payload enqueued by a listener during flush must survive the arena
+ * ping-pong and be delivered intact to the nested event's listener. */
+static int g_nested_result = 0;
+
+static void queued_listener_enqueues_payload(const void* data, void* udata)
+{
+    (void)data;
+    (void)udata;
+    int nested = 1234;
+    queued_emitter_emit(g_qe_safe, 1, &nested, sizeof(nested));
+}
+
+static void queued_listener_store_nested(const void* data, void* udata)
+{
+    (void)udata;
+    g_nested_result = *(const int*)data;
+}
+
+TEST_CASE(test_queued_nested_payload_delivered)
+{
+    reset_counters();
+    g_nested_result = 0;
+    g_qe_safe = queued_emitter_create(2);
+    queued_emitter_on(g_qe_safe, 0, queued_listener_enqueues_payload, NULL);
+    queued_emitter_on(g_qe_safe, 1, queued_listener_store_nested, NULL);
+    queued_emitter_emit(g_qe_safe, 0, NULL, 0);
+    /* The payload is copied into the flipped write arena during flush; it must
+     * remain valid when the nested event is dispatched. */
+    queued_emitter_flush(g_qe_safe);
+    REQUIRE(g_nested_result == 1234);
     queued_emitter_destroy(g_qe_safe);
     g_qe_safe = NULL;
     return true;
@@ -666,7 +742,9 @@ TEST_SUITE(suite_queued_emitter)
     RUN_TEST_CASE(test_queued_once);
     RUN_TEST_CASE(test_queued_off);
     RUN_TEST_CASE(test_queued_off_all);
-    RUN_TEST_CASE(test_queued_emit_during_flush_deferred);
+    RUN_TEST_CASE(test_queued_emit_during_flush_dispatched);
+    RUN_TEST_CASE(test_queued_nested_cross_event_dispatch);
+    RUN_TEST_CASE(test_queued_nested_payload_delivered);
     RUN_TEST_CASE(test_queued_data_copied_not_referenced);
     RUN_TEST_CASE(test_queued_large_payload);
     RUN_TEST_CASE(test_queued_many_events_arena_grow);

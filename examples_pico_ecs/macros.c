@@ -105,9 +105,9 @@ int main(int argc, char* argv[])
 
     ecs = ecs_new(32, NULL);
 
-    ecs_register_component(ecs, Position, NULL);
-    ecs_register_component(ecs, Velocity, NULL);
-    ecs_register_component(ecs, Rect, NULL);
+    ecs_register_component_(ecs, Position, NULL);
+    ecs_register_component_(ecs, Velocity, NULL);
+    ecs_register_component_(ecs, Rect, NULL);
 
     register_systems(ecs);
 
