@@ -288,6 +288,12 @@ typedef void (*ecs_on_set_fn)(ecs_t* ecs,
  * @param on_add_cb    Called when a component is added to an entity (can be NULL)
  * @param on_remove_cb Called when a component is removed from an entity (can be NULL)
  * @param on_set_cb    Called when a component's data is set via ecs_set (can be NULL)
+ * @param default_value Optional initial component value, copied on add (can be NULL)
+ * @param args_size    Size, in bytes, of the args buffer passed to ecs_add. When
+ *                     non-zero and an add is deferred (issued from a running
+ *                     system), this many bytes are copied and stored so the
+ *                     caller need not keep the args alive. Leave 0 if the
+ *                     component takes no args.
  * @param udata        User data passed to callbacks (can be NULL)
  */
 typedef struct
@@ -296,6 +302,7 @@ typedef struct
     ecs_on_remove_fn on_remove_cb;
     ecs_on_set_fn on_set_cb;
     void* default_value;
+    size_t args_size;
     void* udata;
 } ecs_comp_desc_t;
 
@@ -513,11 +520,12 @@ bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param ecs    The ECS context
  * @param entity The entity
  * @param comp   The component
- * @param args   Optional arguments passed to the component constructor. The
- *               pointer is not copied: when the add is deferred (called from
- *               within a running system) it must remain valid until the
- *               command queue is flushed, i.e. until the system run completes.
- *               Same ownership contract as udata.
+ * @param args   Optional arguments passed to the component constructor. When
+ *               the add is deferred (called from within a running system) and
+ *               the component was defined with a non-zero args_size, args_size
+ *               bytes are copied and stored until the command queue is flushed,
+ *               so the caller need not keep the args alive. If args_size is 0,
+ *               no copy is made and NULL is forwarded to the constructor.
  *
  * @returns The component data
  */
@@ -727,6 +735,7 @@ typedef struct
     ecs_on_set_fn on_set;
     size_t size;
     void* default_value;
+    size_t args_size;
     void* udata;
 } ecs_comp_data_t;
 
@@ -997,6 +1006,7 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
         comp_data->on_add = desc->on_add_cb;
         comp_data->on_remove = desc->on_remove_cb;
         comp_data->on_set = desc->on_set_cb;
+        comp_data->args_size = desc->args_size;
         comp_data->udata = desc->udata;
 
         if (desc->default_value)
@@ -1345,17 +1355,27 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     // as present as soon as the bit above is flipped
     ecs_comp_blocks_resize(ecs, comp_blocks, entity.id);
 
+    ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
+
     if (ecs->system_active)
     {
         ecs_cmd_t* cmd = ecs_cmd_array_push(ecs, &ecs->cmd_queue);
         cmd->type      = ECS_CMD_ADD;
         cmd->entity    = entity;
         cmd->comp      = comp;
-        cmd->args      = args;
+
+        // Copy the constructor args into the command arena so the caller is
+        // not required to keep them alive until the queue is flushed. The copy
+        // is handed back to ecs_add (and thus the on_add constructor) when the
+        // queue is flushed at the end of the system run.
+        if (args && comp_data->args_size > 0)
+        {
+            cmd->args = ecs_arena_alloc(ecs, &ecs->arena, comp_data->args_size);
+            ECS_MEMCPY(cmd->args, args, comp_data->args_size);
+        }
+
         return;
     }
-
-    ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
     // Get pointer to component
     void* comp_ptr = ecs_get(ecs, entity, comp);

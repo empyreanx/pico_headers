@@ -151,7 +151,6 @@ static void on_add_deferred_args(ecs_t* ecs,
 typedef struct
 {
     ecs_comp_t   comp;
-    comp_t       args;   // caller-owned; must outlive the system run
     ecs_entity_t entity;
 } deferred_add_args_t;
 
@@ -165,10 +164,13 @@ static ecs_ret_t queue_add_args_system(ecs_t* ecs,
 
     deferred_add_args_t* state = (deferred_add_args_t*)udata;
 
-    // Deferred add: the args pointer is stored in the command queue and must
-    // remain valid until the queue is flushed after the system completes
+    // Deferred add: the args are copied into the command queue (the component
+    // was defined with a non-zero args_size), so this stack-local buffer does
+    // not need to outlive the system run.
+    comp_t args = { .used = true };
+
     state->entity = ecs_create(ecs);
-    ecs_add(ecs, state->entity, state->comp, &state->args);
+    ecs_add(ecs, state->entity, state->comp, &args);
 
     return 0;
 }
@@ -273,14 +275,13 @@ TEST_CASE(test_queue_add_args)
 {
     ecs_comp_t comp_args = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
     {
-        .on_add_cb = on_add_deferred_args
+        .on_add_cb = on_add_deferred_args,
+        .args_size = sizeof(comp_t)
     });
 
-    // state (and therefore state.args) outlives the system run below
     deferred_add_args_t state =
     {
-        .comp = comp_args,
-        .args = { .used = true }
+        .comp = comp_args
     };
 
     sys1 = ecs_define_system(ecs, queue_add_args_system, &(ecs_sys_desc_t)
