@@ -538,7 +538,7 @@ bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * @returns The component data
  */
-void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args);
+void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args);
 
 /**
  * @brief Gets a component instance associated with an entity
@@ -1338,7 +1338,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     return (char*)comp_blocks->blocks[block] + (comp_blocks->comp_size * slot);
 }
 
-void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
+void* ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_id(entity.id));
@@ -1347,7 +1347,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     ECS_ASSERT(ecs_is_component_ready(ecs, comp.id));
 
     if (ecs_has(ecs, entity, comp))
-        return;
+        return NULL;
 
     // Load entity data
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
@@ -1383,7 +1383,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
             ECS_MEMCPY(cmd->args, args, comp_data->args_size);
         }
 
-        return;
+        return NULL;
     }
 
     // Get pointer to component
@@ -1401,6 +1401,8 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
 
     // Add/remove entity to/from systems based on matching criteria
     ecs_sync_add_remove(ecs, entity.id, comp.id);
+
+    return comp_ptr;
 }
 
 void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
