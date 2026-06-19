@@ -1,6 +1,6 @@
 /**
     @file pico_ecs.h
-    @brief A pure and simple ECS written in C99.
+    @brief A pure and simple ECS
 
     ----------------------------------------------------------------------------
     Licensing information at end of header
@@ -8,7 +8,7 @@
 
     Features:
     ---------
-    - Written in C99
+    - Written in C11
     - Single header library for easy build system integration
     - Excellent performance
     - Pure ECS design (strict separation between data and logic)
