@@ -137,7 +137,7 @@ static ecs_ret_t set_then_destroy_system(ecs_t* ecs,
 static void on_add_deferred_args(ecs_t* ecs,
                                  ecs_entity_t entity,
                                  ecs_comp_t comp,
-                                 void* args,
+                                 const void* args,
                                  void* udata)
 {
     (void)udata;

@@ -262,7 +262,7 @@ void ecs_reset(ecs_t* ecs);
 typedef void (*ecs_on_add_fn)(ecs_t* ecs,
                               ecs_entity_t entity,
                               ecs_comp_t comp,
-                              void* args,
+                              const void* args,
                               void* udata);
 
 /**
