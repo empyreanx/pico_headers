@@ -128,6 +128,12 @@
         - Components may now specify a default_value that is copied into the
           component on add.
 
+    - 3.5 (2026/06/21):
+        - Added a publish/subscribe event system: ecs_define_event,
+          ecs_subscribe, ecs_unsubscribe, ecs_emit, and ecs_dispatch. Events are
+          queued when emitted and delivered to subscribers only when
+          ecs_dispatch is called (never automatically).
+
     Usage:
     ------
 
@@ -155,8 +161,32 @@
     - PICO_ECS_MAX_COMPONENTS  (default: 32)
     - PICO_ECS_MAX_SYSTEMS     (default: 16)
     - PICO_ECS_COMP_BLOCK_SIZE (default: 64)
+    - PICO_ECS_MAX_EVENTS      (default: 32)
+    - PICO_ECS_MAX_LISTENERS   (default: 16)
 
     Must be defined before PICO_ECS_IMPLEMENTATION
+
+    Events:
+    -------
+
+    Events are a publish/subscribe message bus that decouples the code that
+    detects something from the code that reacts to it. Unlike the component
+    lifecycle callbacks (on_add/on_remove/on_set/on_join/on_leave), events are
+    not tied to a particular component or entity and may carry an arbitrary
+    payload.
+
+    An event type is declared with `ecs_define_event`, specifying the size of
+    its payload (which may be 0). Listeners register with `ecs_subscribe` and
+    are removed with `ecs_unsubscribe`. Code emits events with `ecs_emit`; the
+    payload is copied, so the caller need not keep it alive.
+
+    Emitted events are queued rather than delivered immediately. This makes it
+    safe to emit while a system is iterating (mirroring the deferred command
+    queue). Queued events are delivered to subscribers only when `ecs_dispatch`
+    is called, which is never done automatically. Listeners run outside of
+    system iteration, so component operations they perform take effect
+    immediately. Events emitted by a listener are delivered within the same
+    `ecs_dispatch` call.
 */
 
 #ifndef PICO_ECS_H
@@ -221,6 +251,11 @@ typedef struct ecs_comp_t { ecs_id_t id; } ecs_comp_t;
 typedef struct ecs_system_t { ecs_id_t id; } ecs_system_t;
 
 /**
+ * @brief An event handle
+ */
+typedef struct ecs_event_t { ecs_id_t id; } ecs_event_t;
+
+/**
  * @brief An invalid ID
  */
 #define ECS_INVALID_ID ((ecs_id_t)-1)
@@ -248,7 +283,8 @@ ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx);
 void ecs_free(ecs_t* ecs);
 
 /**
- * @brief Removes all entities from the ECS, preserving systems and components.
+ * @brief Removes all entities from the ECS, preserving systems, components, and
+ * event subscriptions. Any pending (undispatched) events are discarded.
  */
 void ecs_reset(ecs_t* ecs);
 
@@ -607,6 +643,90 @@ ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
  */
 ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 
+/**
+ * @brief Event listener callback
+ *
+ * Called for each subscribed listener when a matching event is delivered by
+ * {@link ecs_dispatch}.
+ *
+ * @param ecs          The ECS context
+ * @param event        The event being delivered
+ * @param payload      Pointer to the event payload, or NULL if the event was
+ *                     defined with a payload size of 0. The payload is only
+ *                     valid for the duration of the call.
+ * @param payload_size The size, in bytes, of the payload
+ * @param udata        The user data supplied to {@link ecs_subscribe}
+ */
+typedef void (*ecs_listener_fn)(ecs_t* ecs,
+                                ecs_event_t event,
+                                const void* payload,
+                                size_t payload_size,
+                                void* udata);
+
+/**
+ * @brief Defines an event type
+ *
+ * Events are messages delivered to subscribed listeners. They are decoupled
+ * from components and entities and may carry an arbitrary, fixed-size payload.
+ *
+ * @param ecs          The ECS context
+ * @param payload_size The number of bytes carried by each instance of the
+ *                     event. May be 0 for events that carry no payload.
+ * @returns            An event handle
+ */
+ecs_event_t ecs_define_event(ecs_t* ecs, size_t payload_size);
+
+/**
+ * @brief Subscribes a listener to an event
+ *
+ * @param ecs   The ECS context
+ * @param event The event to subscribe to
+ * @param fn    The listener callback to invoke when the event is dispatched
+ * @param udata User data passed to the listener (can be NULL)
+ * @returns     A subscription handle that can be passed to
+ *              {@link ecs_unsubscribe}
+ */
+ecs_id_t ecs_subscribe(ecs_t* ecs,
+                       ecs_event_t event,
+                       ecs_listener_fn fn,
+                       void* udata);
+
+/**
+ * @brief Removes a listener from an event
+ *
+ * @param ecs   The ECS context
+ * @param event The event to unsubscribe from
+ * @param sub   The subscription handle returned by {@link ecs_subscribe}
+ */
+void ecs_unsubscribe(ecs_t* ecs, ecs_event_t event, ecs_id_t sub);
+
+/**
+ * @brief Emits an event
+ *
+ * The event is queued and its payload copied, so the caller need not keep the
+ * payload alive. Queued events are delivered to subscribers when
+ * {@link ecs_dispatch} is called. It is safe to call this from within a running
+ * system.
+ *
+ * @param ecs     The ECS context
+ * @param event   The event to emit
+ * @param payload Pointer to the payload to copy. Must be non-NULL if the event
+ *                was defined with a non-zero payload size, otherwise ignored.
+ */
+void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload);
+
+/**
+ * @brief Delivers all queued events to their subscribers
+ *
+ * Drains the event queue, invoking each subscribed listener for every queued
+ * event in the order the events were emitted. Events emitted by listeners
+ * during dispatch are delivered within the same call. This function is never
+ * called automatically and is not re-entrant.
+ *
+ * @param ecs The ECS context
+ */
+void ecs_dispatch(ecs_t* ecs);
+
 #ifdef __cplusplus
 }
 #endif
@@ -625,6 +745,14 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 
 #ifndef PICO_ECS_COMP_BLOCK_SIZE
 #define PICO_ECS_COMP_BLOCK_SIZE 64
+#endif
+
+#ifndef PICO_ECS_MAX_EVENTS
+#define PICO_ECS_MAX_EVENTS 32
+#endif
+
+#ifndef PICO_ECS_MAX_LISTENERS
+#define PICO_ECS_MAX_LISTENERS 16
 #endif
 
 #ifdef NDEBUG
@@ -663,6 +791,8 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 #define ECS_MAX_COMPONENTS   PICO_ECS_MAX_COMPONENTS
 #define ECS_MAX_SYSTEMS      PICO_ECS_MAX_SYSTEMS
 #define ECS_COMP_BLOCK_SIZE  PICO_ECS_COMP_BLOCK_SIZE
+#define ECS_MAX_EVENTS       PICO_ECS_MAX_EVENTS
+#define ECS_MAX_LISTENERS    PICO_ECS_MAX_LISTENERS
 #define ECS_MALLOC           PICO_ECS_MALLOC
 #define ECS_REALLOC          PICO_ECS_REALLOC
 #define ECS_FREE             PICO_ECS_FREE
@@ -785,6 +915,34 @@ typedef struct
     size_t     capacity;
 } ecs_cmd_array_t;
 
+typedef struct
+{
+    ecs_listener_fn fn;
+    void*           udata;
+    bool            active;
+} ecs_listener_t;
+
+typedef struct
+{
+    bool           active;       // true once defined
+    size_t         payload_size;
+    ecs_listener_t listeners[ECS_MAX_LISTENERS];
+    size_t         listener_count;
+} ecs_event_data_t;
+
+typedef struct
+{
+    ecs_id_t event_id;
+    void*    payload; // arena-allocated copy, NULL if payload_size is 0
+} ecs_event_msg_t;
+
+typedef struct
+{
+    ecs_event_msg_t* data;
+    size_t           size;
+    size_t           capacity;
+} ecs_event_queue_t;
+
 struct ecs_s
 {
     ecs_id_array_t     entity_pool;
@@ -799,6 +957,11 @@ struct ecs_s
     bool               system_active;
     ecs_cmd_array_t    cmd_queue;
     ecs_arena_t        arena;
+    ecs_event_data_t   events[ECS_MAX_EVENTS];
+    size_t             event_count;
+    ecs_event_queue_t  event_queue;
+    ecs_arena_t        event_arena;
+    bool               dispatching;
     void*              mem_ctx;
 };
 
@@ -808,6 +971,7 @@ struct ecs_s
 static inline ecs_entity_t ecs_make_entity(ecs_id_t id);
 static inline ecs_comp_t ecs_make_comp(ecs_id_t id);
 static inline ecs_system_t ecs_make_system(ecs_id_t id);
+static inline ecs_event_t ecs_make_event(ecs_id_t id);
 
 /*=============================================================================
  * Realloc wrapper
@@ -826,6 +990,13 @@ static void  ecs_cmd_array_init(ecs_t* ecs, ecs_cmd_array_t* queue, size_t capac
 static void  ecs_cmd_array_free(ecs_t* ecs, ecs_cmd_array_t* queue);
 static ecs_cmd_t* ecs_cmd_array_push(ecs_t* ecs, ecs_cmd_array_t* queue);
 static void  ecs_cmd_flush_queue(ecs_t* ecs);
+
+/*=============================================================================
+ * Event queue functions
+ *============================================================================*/
+static void ecs_event_queue_init(ecs_t* ecs, ecs_event_queue_t* queue, size_t capacity);
+static void ecs_event_queue_free(ecs_t* ecs, ecs_event_queue_t* queue);
+static ecs_event_msg_t* ecs_event_queue_push(ecs_t* ecs, ecs_event_queue_t* queue);
 
 /*=============================================================================
  * Bitset functions
@@ -894,11 +1065,13 @@ static void ecs_comp_blocks_resize(ecs_t* ecs, ecs_comp_blocks_t* array, ecs_id_
 static bool ecs_is_not_null(void* ptr);
 static bool ecs_is_valid_component_id(ecs_id_t id);
 static bool ecs_is_valid_system_id(ecs_id_t id);
+static bool ecs_is_valid_event_id(ecs_id_t id);
 static bool ecs_is_valid_id(ecs_id_t id);
 static bool ecs_is_valid_capacity(size_t capacity, size_t elem_size);
 static bool ecs_is_entity_ready(ecs_t* ecs, ecs_id_t entity_id);
 static bool ecs_is_component_ready(ecs_t* ecs, ecs_id_t comp_id);
 static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
+static bool ecs_is_event_ready(ecs_t* ecs, ecs_id_t event_id);
 #endif // NDEBUG
 
 /*=============================================================================
@@ -929,6 +1102,9 @@ ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx)
     // Initialize deferred command queue
     ecs_cmd_array_init(ecs, &ecs->cmd_queue, entity_capacity);
 
+    // Initialize event queue
+    ecs_event_queue_init(ecs, &ecs->event_queue, entity_capacity);
+
     // Allocate entity array
     ECS_ASSERT(ecs_is_valid_capacity(ecs->entity_capacity, sizeof(ecs_entity_data_t)));
     ecs->entities = (ecs_entity_data_t*)ECS_MALLOC(ecs->entity_capacity * sizeof(ecs_entity_data_t),
@@ -938,6 +1114,7 @@ ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx)
     ECS_MEMSET(ecs->entities, 0, ecs->entity_capacity * sizeof(ecs_entity_data_t));
 
     ecs_arena_init(ecs, &ecs->arena, 512);
+    ecs_arena_init(ecs, &ecs->event_arena, 512);
 
     return ecs;
 }
@@ -948,7 +1125,9 @@ void ecs_free(ecs_t* ecs)
 
     ecs_id_array_free(ecs, &ecs->entity_pool);
     ecs_cmd_array_free(ecs, &ecs->cmd_queue);
+    ecs_event_queue_free(ecs, &ecs->event_queue);
     ecs_arena_destroy(ecs, &ecs->arena);
+    ecs_arena_destroy(ecs, &ecs->event_arena);
 
     for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
     {
@@ -990,6 +1169,10 @@ void ecs_reset(ecs_t* ecs)
     {
         ecs->systems[sys_id].entity_ids.size = 0;
     }
+
+    // Discard any pending events (subscriptions are preserved)
+    ecs->event_queue.size = 0;
+    ecs_arena_reset(ecs, &ecs->event_arena);
 }
 
 ecs_comp_t ecs_define_component(ecs_t* ecs,
@@ -1020,7 +1203,7 @@ ecs_comp_t ecs_define_component(ecs_t* ecs,
 
         if (desc->default_value)
         {
-            comp_data->default_value = ECS_MALLOC(size, ctx->mem_ctx);
+            comp_data->default_value = ECS_MALLOC(size, ecs->mem_ctx);
             ECS_MEMCPY(comp_data->default_value, desc->default_value, size);
         }
     }
@@ -1485,6 +1668,131 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask)
     return 0;
 }
 
+ecs_event_t ecs_define_event(ecs_t* ecs, size_t payload_size)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs->event_count < ECS_MAX_EVENTS);
+
+    ecs_event_t event = ecs_make_event(ecs->event_count);
+    ecs_event_data_t* event_data = &ecs->events[event.id];
+
+    ECS_MEMSET(event_data, 0, sizeof(ecs_event_data_t));
+    event_data->active       = true;
+    event_data->payload_size = payload_size;
+
+    ecs->event_count++;
+
+    return event;
+}
+
+ecs_id_t ecs_subscribe(ecs_t* ecs,
+                       ecs_event_t event,
+                       ecs_listener_fn fn,
+                       void* udata)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_event_id(event.id));
+    ECS_ASSERT(ecs_is_event_ready(ecs, event.id));
+    ECS_ASSERT(NULL != fn);
+
+    ecs_event_data_t* event_data = &ecs->events[event.id];
+
+    // Reuse a previously unsubscribed slot if one exists so handles stay stable
+    for (ecs_id_t sub = 0; sub < event_data->listener_count; sub++)
+    {
+        if (!event_data->listeners[sub].active)
+        {
+            event_data->listeners[sub].fn     = fn;
+            event_data->listeners[sub].udata  = udata;
+            event_data->listeners[sub].active = true;
+            return sub;
+        }
+    }
+
+    ECS_ASSERT(event_data->listener_count < ECS_MAX_LISTENERS);
+
+    ecs_id_t sub = event_data->listener_count++;
+    event_data->listeners[sub].fn     = fn;
+    event_data->listeners[sub].udata  = udata;
+    event_data->listeners[sub].active = true;
+
+    return sub;
+}
+
+void ecs_unsubscribe(ecs_t* ecs, ecs_event_t event, ecs_id_t sub)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_event_id(event.id));
+    ECS_ASSERT(ecs_is_event_ready(ecs, event.id));
+
+    ecs_event_data_t* event_data = &ecs->events[event.id];
+    ECS_ASSERT(sub < event_data->listener_count);
+
+    event_data->listeners[sub].active = false;
+}
+
+void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_event_id(event.id));
+    ECS_ASSERT(ecs_is_event_ready(ecs, event.id));
+
+    ecs_event_data_t* event_data = &ecs->events[event.id];
+
+    ecs_event_msg_t* msg = ecs_event_queue_push(ecs, &ecs->event_queue);
+    msg->event_id = event.id;
+
+    if (event_data->payload_size > 0)
+    {
+        ECS_ASSERT(ecs_is_not_null((void*)payload));
+        msg->payload = ecs_arena_alloc(ecs, &ecs->event_arena, event_data->payload_size);
+        ECS_MEMCPY(msg->payload, payload, event_data->payload_size);
+    }
+    else
+    {
+        msg->payload = NULL;
+    }
+}
+
+void ecs_dispatch(ecs_t* ecs)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(!ecs->dispatching && "ecs_dispatch is not re-entrant");
+
+    ecs->dispatching = true;
+
+    ecs_event_queue_t* queue = &ecs->event_queue;
+
+    // Drain the queue. Listeners may emit new events, which are appended and
+    // delivered within this same pass. The queue array may be reallocated by
+    // those emissions, so values are read by index rather than cached pointers.
+    for (size_t i = 0; i < queue->size; i++)
+    {
+        ecs_id_t event_id = queue->data[i].event_id;
+        void*    payload  = queue->data[i].payload;
+
+        ecs_event_data_t* event_data = &ecs->events[event_id];
+        size_t payload_size = event_data->payload_size;
+        ecs_event_t event = ecs_make_event(event_id);
+
+        for (size_t j = 0; j < event_data->listener_count; j++)
+        {
+            // Copy by value so unsubscribing within a listener is well-defined
+            ecs_listener_t listener = event_data->listeners[j];
+
+            if (listener.active)
+            {
+                listener.fn(ecs, event, payload, payload_size, listener.udata);
+            }
+        }
+    }
+
+    queue->size = 0;
+    ecs_arena_reset(ecs, &ecs->event_arena);
+
+    ecs->dispatching = false;
+}
+
 /*=============================================================================
  * Handle constructors
  *============================================================================*/
@@ -1501,6 +1809,11 @@ static inline ecs_comp_t ecs_make_comp(ecs_id_t id)
 static inline ecs_system_t ecs_make_system(ecs_id_t id)
 {
     return (ecs_system_t){ id };
+}
+
+static inline ecs_event_t ecs_make_event(ecs_id_t id)
+{
+    return (ecs_event_t){ id };
 }
 
 /*=============================================================================
@@ -1626,6 +1939,55 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
     }
 
     queue->size = 0;
+}
+
+/*=============================================================================
+ * Event queue implementation
+ *============================================================================*/
+static void ecs_event_queue_init(ecs_t* ecs, ecs_event_queue_t* queue, size_t capacity)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(queue));
+    ECS_ASSERT(capacity > 0);
+
+    queue->size     = 0;
+    queue->capacity = capacity;
+    queue->data     = (ecs_event_msg_t*)ECS_MALLOC(capacity * sizeof(ecs_event_msg_t),
+                                                   ecs->mem_ctx);
+
+    ECS_ASSERT(ecs_is_not_null(queue->data));
+}
+
+static void ecs_event_queue_free(ecs_t* ecs, ecs_event_queue_t* queue)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(queue));
+    ECS_FREE(queue->data, ecs->mem_ctx);
+    (void)ecs;
+    (void)queue;
+}
+
+static ecs_event_msg_t* ecs_event_queue_push(ecs_t* ecs, ecs_event_queue_t* queue)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_not_null(queue));
+
+    (void)ecs;
+
+    if (queue->size == queue->capacity)
+    {
+        size_t new_capacity = queue->capacity * 2;
+
+        ECS_ASSERT(ecs_is_valid_capacity(new_capacity, sizeof(ecs_event_msg_t)));
+        queue->data = (ecs_event_msg_t*)ECS_REALLOC(queue->data,
+                                                    new_capacity * sizeof(ecs_event_msg_t),
+                                                    ecs->mem_ctx);
+        queue->capacity = new_capacity;
+    }
+
+    ecs_event_msg_t* msg = &queue->data[queue->size++];
+    ECS_MEMSET(msg, 0, sizeof(ecs_event_msg_t));
+    return msg;
 }
 
 /*=============================================================================
@@ -2284,6 +2646,11 @@ static bool ecs_is_valid_system_id(ecs_id_t id)
     return id < ECS_MAX_SYSTEMS;
 }
 
+static bool ecs_is_valid_event_id(ecs_id_t id)
+{
+    return id < ECS_MAX_EVENTS;
+}
+
 static bool ecs_is_valid_id(ecs_id_t id)
 {
     // Ensures high bit is not set - works for any unsigned ecs_id_t
@@ -2317,6 +2684,11 @@ static bool ecs_is_component_ready(ecs_t* ecs, ecs_id_t comp_id)
 static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
 {
     return sys_id < ecs->system_count;
+}
+
+static bool ecs_is_event_ready(ecs_t* ecs, ecs_id_t event_id)
+{
+    return event_id < ecs->event_count;
 }
 
 #endif // NDEBUG
