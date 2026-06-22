@@ -63,6 +63,6 @@
 
 // Returns a typed (type*) pointer to the entity's component data.
 #define ecs_get_(ecs, entity, type) \
-    ((type*)ecs_get((ecs), (entity), ECS_TYPE(type))
+    ((type*)ecs_get((ecs), (entity), ECS_TYPE(type)))
 
 #endif // PICO_ECS_MACROS_H
