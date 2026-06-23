@@ -2,7 +2,7 @@
 
 // --- Helpers ---
 
-static void comp_on_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args, void* udata)
+static void comp_on_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* args, void* udata)
 {
     (void)args;
     (void)udata;
@@ -12,14 +12,14 @@ static void comp_on_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* 
 }
 
 // Constructor that initializes the component from the args passed to ecs_add
-static void comp_on_add_args(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args, void* udata)
+static void comp_on_add_args(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* args, void* udata)
 {
     (void)udata;
 
     comp_t* comp_ptr = ecs_get(ecs, entity, comp);
 
     if (args)
-        *comp_ptr = *(comp_t*)args;
+        *comp_ptr = *(const comp_t*)args;
 }
 
 static void comp_on_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* udata)
