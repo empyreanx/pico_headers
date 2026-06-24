@@ -134,6 +134,21 @@
           queued when emitted and delivered to subscribers only when
           ecs_dispatch is called (never automatically).
 
+    - 3.6 (2026/06/24):
+        - The per-system on_join/on_leave callbacks have been removed and
+          replaced by two built-in events. When an entity joins (or leaves) a
+          system the ECS emits a join (or leave) event whose source is the
+          system and whose payload is the entity. Because these events are
+          queued like any other, the callbacks now fire on ecs_dispatch rather
+          than synchronously.
+        - Events now carry an optional source id. Emit with a source using
+          ecs_emit_from, and scope a listener to a single source with
+          ecs_subscribe_to. A plain ecs_subscribe still receives events from
+          every source. This is the infrastructure that ties a join/leave
+          listener to a specific system; see ecs_on_join and ecs_on_leave.
+        - ecs_set_system_callbacks has been renamed to ecs_set_system_callback
+          and now updates only the system callback.
+
     Usage:
     ------
 
@@ -171,14 +186,32 @@
 
     Events are a publish/subscribe message bus that decouples the code that
     detects something from the code that reacts to it. Unlike the component
-    lifecycle callbacks (on_add/on_remove/on_set/on_join/on_leave), events are
-    not tied to a particular component or entity and may carry an arbitrary
-    payload.
+    lifecycle callbacks (on_add/on_remove/on_set), events are not tied to a
+    particular component or entity and may carry an arbitrary payload.
 
     An event type is declared with `ecs_define_event`, specifying the size of
     its payload (which may be 0). Listeners register with `ecs_subscribe` and
     are removed with `ecs_unsubscribe`. Code emits events with `ecs_emit`; the
     payload is copied, so the caller need not keep it alive.
+
+    Events may also carry a source id. `ecs_emit_from` tags an event with a
+    source, and `ecs_subscribe_to` scopes a listener so it only receives events
+    from a particular source. A listener registered with `ecs_subscribe`
+    receives events regardless of source. The ECS uses this mechanism for the
+    built-in join/leave events (see below), whose source is the system the
+    entity joined or left.
+
+    System join/leave:
+    ------------------
+
+    When an entity starts matching a system it "joins" that system; when it
+    stops matching (or is destroyed) it "leaves". The ECS emits a built-in join
+    or leave event for each such transition. The event's source is the system
+    and its payload is the joining/leaving entity (an `ecs_entity_t`). Use
+    `ecs_on_join`/`ecs_on_leave` to subscribe a listener scoped to a single
+    system, or subscribe to `ecs_get_join_event`/`ecs_get_leave_event` directly
+    to observe every system. Like all events, these are queued and delivered on
+    `ecs_dispatch`.
 
     Emitted events are queued rather than delivered immediately. This makes it
     safe to emit while a system is iterating (mirroring the deferred command
@@ -383,37 +416,18 @@ typedef ecs_ret_t (*ecs_system_fn)(ecs_t* ecs,
                                    void* udata);
 
 /**
- * @brief Called when an entity is added to a system
- *
- * @param ecs    The ECS context
- * @param entity The entity being added
- * @param udata  The user data passed to the callback
- */
-typedef void (*ecs_on_join_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
-
-/**
- * @brief Called when an entity is removed from a system
- *
- * @param ecs    The ECS context
- * @param entity The enitty being removed
- * @param udata  The user data passed to the callback
- */
-typedef void (*ecs_on_leave_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
-
-/**
  * @brief Optional parameters for system definition
+ *
+ * To react to entities joining or leaving the system, subscribe a listener
+ * with {@link ecs_on_join} / {@link ecs_on_leave} after defining the system.
  *
  * @param mask        Bitmask that assigns the system to one or more categories.
  *                    A value of 0 means the system matches all categories.
- * @param on_join_cb  Called when an entity is added to the system (can be NULL)
- * @param on_leave_cb Called when an entity is removed from the system (can be NULL)
- * @param udata       User data passed to callbacks (can be NULL)
+ * @param udata       User data passed to the system callback (can be NULL)
  */
 typedef struct
 {
     ecs_mask_t mask;
-    ecs_on_join_fn on_join_cb;
-    ecs_on_leave_fn on_leave_cb;
     void* udata;
 } ecs_sys_desc_t;
 
@@ -470,19 +484,15 @@ void ecs_enable_system(ecs_t* ecs, ecs_system_t sys);
 void ecs_disable_system(ecs_t* ecs, ecs_system_t sys);
 
 /**
- * @brief Updates the callbacks for an existing system
+ * @brief Updates the callback for an existing system
  *
  * @param ecs       The ECS context
  * @param sys       The system
  * @param system_cb Callback that is fired every update
- * @param add_cb    Called when an entity is added to the system (can be NULL)
- * @param remove_cb Called when an entity is removed from the system (can be NULL)
  */
-void ecs_set_system_callbacks(ecs_t* ecs,
-                              ecs_system_t sys,
-                              ecs_system_fn system_cb,
-                              ecs_on_join_fn on_join,
-                              ecs_on_leave_fn on_leave);
+void ecs_set_system_callback(ecs_t* ecs,
+                             ecs_system_t sys,
+                             ecs_system_fn system_cb);
 
 /**
  * @brief Sets the user data for a system
@@ -692,6 +702,28 @@ ecs_id_t ecs_subscribe(ecs_t* ecs,
                        void* udata);
 
 /**
+ * @brief Subscribes a listener to an event, scoped to a single source
+ *
+ * The listener is invoked only for events emitted with a matching source (see
+ * {@link ecs_emit_from}). Events emitted with no source (via {@link ecs_emit})
+ * are not delivered to a scoped listener. This is how a listener is tied to a
+ * specific system for the built-in join/leave events.
+ *
+ * @param ecs    The ECS context
+ * @param event  The event to subscribe to
+ * @param source The source id to match
+ * @param fn     The listener callback to invoke
+ * @param udata  User data passed to the listener (can be NULL)
+ * @returns      A subscription handle that can be passed to
+ *               {@link ecs_unsubscribe}
+ */
+ecs_id_t ecs_subscribe_to(ecs_t* ecs,
+                          ecs_event_t event,
+                          ecs_id_t source,
+                          ecs_listener_fn fn,
+                          void* udata);
+
+/**
  * @brief Removes a listener from an event
  *
  * @param ecs   The ECS context
@@ -716,6 +748,25 @@ void ecs_unsubscribe(ecs_t* ecs, ecs_event_t event, ecs_id_t sub);
 void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload);
 
 /**
+ * @brief Emits an event tagged with a source id
+ *
+ * Behaves like {@link ecs_emit} but associates the event with a source. The
+ * event is delivered to listeners subscribed to that source via
+ * {@link ecs_subscribe_to} as well as to unscoped listeners subscribed via
+ * {@link ecs_subscribe}.
+ *
+ * @param ecs     The ECS context
+ * @param event   The event to emit
+ * @param source  The source id to tag the event with
+ * @param payload Pointer to the payload to copy. Must be non-NULL if the event
+ *                was defined with a non-zero payload size, otherwise ignored.
+ */
+void ecs_emit_from(ecs_t* ecs,
+                   ecs_event_t event,
+                   ecs_id_t source,
+                   const void* payload);
+
+/**
  * @brief Delivers all queued events to their subscribers
  *
  * Drains the event queue, invoking each subscribed listener for every queued
@@ -726,6 +777,71 @@ void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload);
  * @param ecs The ECS context
  */
 void ecs_dispatch(ecs_t* ecs);
+
+/**
+ * @brief Returns the built-in event emitted when an entity joins a system
+ *
+ * The event's source is the system (its id) and its payload is the joining
+ * entity (an {@link ecs_entity_t}). Subscribe with {@link ecs_subscribe} to
+ * observe joins for every system, or use {@link ecs_on_join} to scope a
+ * listener to a single system.
+ *
+ * @param ecs The ECS context
+ * @returns   The join event handle
+ */
+ecs_event_t ecs_get_join_event(ecs_t* ecs);
+
+/**
+ * @brief Returns the built-in event emitted when an entity leaves a system
+ *
+ * The event's source is the system (its id) and its payload is the leaving
+ * entity (an {@link ecs_entity_t}). An entity leaves when it no longer matches
+ * the system or when it is destroyed.
+ *
+ * @param ecs The ECS context
+ * @returns   The leave event handle
+ */
+ecs_event_t ecs_get_leave_event(ecs_t* ecs);
+
+/**
+ * @brief Subscribes a listener for entities joining a specific system
+ *
+ * Convenience wrapper that scopes a listener on the built-in join event (see
+ * {@link ecs_get_join_event}) to the given system. The listener's payload is
+ * the joining entity. The callback fires on {@link ecs_dispatch}, not
+ * synchronously.
+ *
+ * @param ecs   The ECS context
+ * @param sys   The system to watch
+ * @param fn    The listener callback
+ * @param udata User data passed to the listener (can be NULL)
+ * @returns     A subscription handle. Pass it together with
+ *              {@link ecs_get_join_event} to {@link ecs_unsubscribe}.
+ */
+ecs_id_t ecs_on_join(ecs_t* ecs,
+                     ecs_system_t sys,
+                     ecs_listener_fn fn,
+                     void* udata);
+
+/**
+ * @brief Subscribes a listener for entities leaving a specific system
+ *
+ * Convenience wrapper that scopes a listener on the built-in leave event (see
+ * {@link ecs_get_leave_event}) to the given system. The listener's payload is
+ * the leaving entity. The callback fires on {@link ecs_dispatch}, not
+ * synchronously.
+ *
+ * @param ecs   The ECS context
+ * @param sys   The system to watch
+ * @param fn    The listener callback
+ * @param udata User data passed to the listener (can be NULL)
+ * @returns     A subscription handle. Pass it together with
+ *              {@link ecs_get_leave_event} to {@link ecs_unsubscribe}.
+ */
+ecs_id_t ecs_on_leave(ecs_t* ecs,
+                      ecs_system_t sys,
+                      ecs_listener_fn fn,
+                      void* udata);
 
 #ifdef __cplusplus
 }
@@ -884,8 +1000,6 @@ typedef struct
     ecs_sparse_set_t entity_ids;
     ecs_mask_t       mask;
     ecs_system_fn    system_cb;
-    ecs_on_join_fn   on_join;
-    ecs_on_leave_fn  on_leave;
     ecs_bitset_t     require_bits;
     ecs_bitset_t     exclude_bits;
     void*            udata;
@@ -919,6 +1033,8 @@ typedef struct
 {
     ecs_listener_fn fn;
     void*           udata;
+    ecs_id_t        source; // only matching-source events are delivered;
+                            // ECS_INVALID_ID receives events from any source
     bool            active;
 } ecs_listener_t;
 
@@ -933,6 +1049,7 @@ typedef struct
 typedef struct
 {
     ecs_id_t event_id;
+    ecs_id_t source;  // ECS_INVALID_ID if emitted without a source
     void*    payload; // arena-allocated copy, NULL if payload_size is 0
 } ecs_event_msg_t;
 
@@ -961,6 +1078,8 @@ struct ecs_s
     size_t             event_count;
     ecs_event_queue_t  event_queue;
     ecs_arena_t        event_arena;
+    ecs_event_t        join_event;  // built-in: entity joined a system
+    ecs_event_t        leave_event; // built-in: entity left a system
     bool               dispatching;
     void*              mem_ctx;
 };
@@ -1116,6 +1235,11 @@ ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx)
     ecs_arena_init(ecs, &ecs->arena, 512);
     ecs_arena_init(ecs, &ecs->event_arena, 512);
 
+    // Reserve the built-in system join/leave events. Their payload is the
+    // entity that joined or left; their source is the system in question.
+    ecs->join_event  = ecs_define_event(ecs, sizeof(ecs_entity_t));
+    ecs->leave_event = ecs_define_event(ecs, sizeof(ecs_entity_t));
+
     return ecs;
 }
 
@@ -1234,8 +1358,6 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
     if (desc)
     {
         sys_data->mask = desc->mask;
-        sys_data->on_join = desc->on_join_cb;
-        sys_data->on_leave = desc->on_leave_cb;
         sys_data->udata = desc->udata;
     }
 
@@ -1290,11 +1412,9 @@ void ecs_disable_system(ecs_t* ecs, ecs_system_t sys)
     sys_data->active = false;
 }
 
-void ecs_set_system_callbacks(ecs_t* ecs,
-                              ecs_system_t sys,
-                              ecs_system_fn system_cb,
-                              ecs_on_join_fn on_join,
-                              ecs_on_leave_fn on_leave)
+void ecs_set_system_callback(ecs_t* ecs,
+                             ecs_system_t sys,
+                             ecs_system_fn system_cb)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -1303,8 +1423,6 @@ void ecs_set_system_callbacks(ecs_t* ecs,
 
     ecs_sys_data_t* sys_data = &ecs->systems[sys.id];
     sys_data->system_cb = system_cb;
-    sys_data->on_join = on_join;
-    sys_data->on_leave = on_leave;
 }
 
 void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata)
@@ -1685,10 +1803,11 @@ ecs_event_t ecs_define_event(ecs_t* ecs, size_t payload_size)
     return event;
 }
 
-ecs_id_t ecs_subscribe(ecs_t* ecs,
-                       ecs_event_t event,
-                       ecs_listener_fn fn,
-                       void* udata)
+static ecs_id_t ecs_subscribe_impl(ecs_t* ecs,
+                                   ecs_event_t event,
+                                   ecs_id_t source,
+                                   ecs_listener_fn fn,
+                                   void* udata)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_event_id(event.id));
@@ -1704,6 +1823,7 @@ ecs_id_t ecs_subscribe(ecs_t* ecs,
         {
             event_data->listeners[sub].fn     = fn;
             event_data->listeners[sub].udata  = udata;
+            event_data->listeners[sub].source = source;
             event_data->listeners[sub].active = true;
             return sub;
         }
@@ -1714,9 +1834,29 @@ ecs_id_t ecs_subscribe(ecs_t* ecs,
     ecs_id_t sub = event_data->listener_count++;
     event_data->listeners[sub].fn     = fn;
     event_data->listeners[sub].udata  = udata;
+    event_data->listeners[sub].source = source;
     event_data->listeners[sub].active = true;
 
     return sub;
+}
+
+ecs_id_t ecs_subscribe(ecs_t* ecs,
+                       ecs_event_t event,
+                       ecs_listener_fn fn,
+                       void* udata)
+{
+    // ECS_INVALID_ID as the source means "receive events from any source"
+    return ecs_subscribe_impl(ecs, event, ECS_INVALID_ID, fn, udata);
+}
+
+ecs_id_t ecs_subscribe_to(ecs_t* ecs,
+                          ecs_event_t event,
+                          ecs_id_t source,
+                          ecs_listener_fn fn,
+                          void* udata)
+{
+    ECS_ASSERT(source != ECS_INVALID_ID && "use ecs_subscribe to match any source");
+    return ecs_subscribe_impl(ecs, event, source, fn, udata);
 }
 
 void ecs_unsubscribe(ecs_t* ecs, ecs_event_t event, ecs_id_t sub)
@@ -1731,7 +1871,10 @@ void ecs_unsubscribe(ecs_t* ecs, ecs_event_t event, ecs_id_t sub)
     event_data->listeners[sub].active = false;
 }
 
-void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload)
+static void ecs_emit_impl(ecs_t* ecs,
+                          ecs_event_t event,
+                          ecs_id_t source,
+                          const void* payload)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_event_id(event.id));
@@ -1741,10 +1884,11 @@ void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload)
 
     ecs_event_msg_t* msg = ecs_event_queue_push(ecs, &ecs->event_queue);
     msg->event_id = event.id;
+    msg->source   = source;
 
     if (event_data->payload_size > 0)
     {
-        ECS_ASSERT(ecs_is_not_null((void*)payload));
+        ECS_ASSERT(payload != NULl);
         msg->payload = ecs_arena_alloc(ecs, &ecs->event_arena, event_data->payload_size);
         ECS_MEMCPY(msg->payload, payload, event_data->payload_size);
     }
@@ -1752,6 +1896,19 @@ void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload)
     {
         msg->payload = NULL;
     }
+}
+
+void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload)
+{
+    ecs_emit_impl(ecs, event, ECS_INVALID_ID, payload);
+}
+
+void ecs_emit_from(ecs_t* ecs,
+                   ecs_event_t event,
+                   ecs_id_t source,
+                   const void* payload)
+{
+    ecs_emit_impl(ecs, event, source, payload);
 }
 
 void ecs_dispatch(ecs_t* ecs)
@@ -1769,6 +1926,7 @@ void ecs_dispatch(ecs_t* ecs)
     for (size_t i = 0; i < queue->size; i++)
     {
         ecs_id_t event_id = queue->data[i].event_id;
+        ecs_id_t source   = queue->data[i].source;
         void*    payload  = queue->data[i].payload;
 
         ecs_event_data_t* event_data = &ecs->events[event_id];
@@ -1780,10 +1938,15 @@ void ecs_dispatch(ecs_t* ecs)
             // Copy by value so unsubscribing within a listener is well-defined
             ecs_listener_t listener = event_data->listeners[j];
 
-            if (listener.active)
-            {
-                listener.fn(ecs, event, payload, payload_size, listener.udata);
-            }
+            if (!listener.active)
+                continue;
+
+            // Unscoped listeners (source == ECS_INVALID_ID) receive every
+            // event; scoped listeners only receive matching-source events
+            if (listener.source != ECS_INVALID_ID && listener.source != source)
+                continue;
+
+            listener.fn(ecs, event, payload, payload_size, listener.udata);
         }
     }
 
@@ -1791,6 +1954,42 @@ void ecs_dispatch(ecs_t* ecs)
     ecs_arena_reset(ecs, &ecs->event_arena);
 
     ecs->dispatching = false;
+}
+
+ecs_event_t ecs_get_join_event(ecs_t* ecs)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    return ecs->join_event;
+}
+
+ecs_event_t ecs_get_leave_event(ecs_t* ecs)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    return ecs->leave_event;
+}
+
+ecs_id_t ecs_on_join(ecs_t* ecs,
+                     ecs_system_t sys,
+                     ecs_listener_fn fn,
+                     void* udata)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
+
+    return ecs_subscribe_to(ecs, ecs->join_event, sys.id, fn, udata);
+}
+
+ecs_id_t ecs_on_leave(ecs_t* ecs,
+                      ecs_system_t sys,
+                      ecs_listener_fn fn,
+                      void* udata)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_system_id(sys.id));
+    ECS_ASSERT(ecs_is_system_ready(ecs, sys.id));
+
+    return ecs_subscribe_to(ecs, ecs->leave_event, sys.id, fn, udata);
 }
 
 /*=============================================================================
@@ -2428,6 +2627,22 @@ static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
 }
 #endif // ECS_MAX_COMPONENTS
 
+// True if an event has at least one subscriber. Used to avoid queueing the
+// built-in join/leave events (and growing the event queue without bound) when
+// nothing is listening for them.
+static inline bool ecs_event_has_listeners(ecs_t* ecs, ecs_event_t event)
+{
+    ecs_event_data_t* event_data = &ecs->events[event.id];
+
+    for (size_t i = 0; i < event_data->listener_count; i++)
+    {
+        if (event_data->listeners[i].active)
+            return true;
+    }
+
+    return false;
+}
+
 static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id)
 {
     // Load entity data
@@ -2450,20 +2665,24 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
                                    entity_data->comp_bits))
         {
             // Add the entity directly to the sparse set
-            if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity_id))
+            if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity_id) &&
+                ecs_event_has_listeners(ecs, ecs->join_event))
             {
-                if (sys_data->on_join)
-                    sys_data->on_join(ecs, ecs_make_entity(entity_id), sys_data->udata);
+                // Emit the built-in join event, sourced from this system
+                ecs_entity_t entity = ecs_make_entity(entity_id);
+                ecs_emit_impl(ecs, ecs->join_event, sys_id, &entity);
             }
         }
         else
         {
             // Just remove the entity from the sparse set if its components
             // no longer match
-            if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id))
+            if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id) &&
+                ecs_event_has_listeners(ecs, ecs->leave_event))
             {
-                if (sys_data->on_leave)
-                    sys_data->on_leave(ecs, ecs_make_entity(entity_id), sys_data->udata);
+                // Emit the built-in leave event, sourced from this system
+                ecs_entity_t entity = ecs_make_entity(entity_id);
+                ecs_emit_impl(ecs, ecs->leave_event, sys_id, &entity);
             }
         }
     }
@@ -2476,10 +2695,12 @@ static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id)
     {
         ecs_sys_data_t* sys_data = &ecs->systems[sys_id];
 
-        if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id))
+        if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id) &&
+            ecs_event_has_listeners(ecs, ecs->leave_event))
         {
-            if (sys_data->on_leave)
-                sys_data->on_leave(ecs, ecs_make_entity(entity_id), sys_data->udata);
+            // Emit the built-in leave event, sourced from this system
+            ecs_entity_t entity = ecs_make_entity(entity_id);
+            ecs_emit_impl(ecs, ecs->leave_event, sys_id, &entity);
         }
     }
 }

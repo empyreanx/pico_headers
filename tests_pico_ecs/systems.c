@@ -57,18 +57,30 @@ static ecs_ret_t empty_system(ecs_t* ecs,
 static bool added = false;
 static bool removed = false;
 
-static void on_add(ecs_t* ecs, ecs_entity_t entity, void* udata)
+static void on_add(ecs_t* ecs,
+                   ecs_event_t event,
+                   const void* payload,
+                   size_t payload_size,
+                   void* udata)
 {
     (void)ecs;
-    (void)entity;
+    (void)event;
+    (void)payload;
+    (void)payload_size;
     (void)udata;
     added = true;
 }
 
-static void on_remove(ecs_t* ecs, ecs_entity_t entity, void* udata)
+static void on_remove(ecs_t* ecs,
+                      ecs_event_t event,
+                      const void* payload,
+                      size_t payload_size,
+                      void* udata)
 {
     (void)ecs;
-    (void)entity;
+    (void)event;
+    (void)payload;
+    (void)payload_size;
     (void)udata;
     removed = true;
 }
@@ -143,11 +155,15 @@ static ecs_ret_t exclude_system(ecs_t* ecs,
 }
 
 static void exclude_add_cb(ecs_t* ecs,
-                           ecs_entity_t entity,
+                           ecs_event_t event,
+                           const void* payload,
+                           size_t payload_size,
                            void* udata)
 {
     (void)ecs;
-    (void)entity;
+    (void)event;
+    (void)payload;
+    (void)payload_size;
 
     exclude_sys_state_t* state = (exclude_sys_state_t*)udata;
 
@@ -155,11 +171,15 @@ static void exclude_add_cb(ecs_t* ecs,
 }
 
 static void exclude_remove_cb(ecs_t* ecs,
-                              ecs_entity_t entity,
+                              ecs_event_t event,
+                              const void* payload,
+                              size_t payload_size,
                               void* udata)
 {
     (void)ecs;
-    (void)entity;
+    (void)event;
+    (void)payload;
+    (void)payload_size;
 
     exclude_sys_state_t* state = (exclude_sys_state_t*)udata;
 
@@ -397,19 +417,25 @@ TEST_CASE(test_add_remove_callbacks)
     added = false;
     removed = false;
 
-    sys1 = ecs_define_system(ecs, empty_system, &(ecs_sys_desc_t)
-    {
-        .on_join_cb = on_add,
-        .on_leave_cb = on_remove
-    });
+    sys1 = ecs_define_system(ecs, empty_system, NULL);
 
     ecs_require(ecs, sys1, comp1);
+
+    // Join/leave are delivered as events scoped to this system
+    ecs_on_join(ecs, sys1, on_add, NULL);
+    ecs_on_leave(ecs, sys1, on_remove, NULL);
 
     ecs_run_system(ecs, sys1, 0);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp1, NULL);
     ecs_destroy(ecs, entity);
+
+    // Nothing is delivered until dispatch
+    REQUIRE(!added);
+    REQUIRE(!removed);
+
+    ecs_dispatch(ecs);
 
     REQUIRE(added);
     REQUIRE(removed);
@@ -431,16 +457,22 @@ TEST_CASE(test_set_system_callbacks)
     REQUIRE(ret == 42);
 
     // Change system callback and test
-    ecs_set_system_callbacks(ecs, sys1, alt_ret_system, on_add, on_remove);
+    ecs_set_system_callback(ecs, sys1, alt_ret_system);
     ret = ecs_run_system(ecs, sys1, 0);
     REQUIRE(ret == 24);
+
+    // Subscribe join/leave listeners scoped to the system
+    ecs_on_join(ecs, sys1, on_add, NULL);
+    ecs_on_leave(ecs, sys1, on_remove, NULL);
 
     // Create entity to trigger callbacks
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp1, NULL);
+    ecs_dispatch(ecs);
     REQUIRE(added);
 
     ecs_destroy(ecs, entity);
+    ecs_dispatch(ecs);
     REQUIRE(removed);
 
     return true;
@@ -542,24 +574,27 @@ TEST_CASE(test_exclude)
                                             exclude_system,
                                             &(ecs_sys_desc_t)
                                             {
-                                                .on_join_cb = exclude_add_cb,
-                                                .on_leave_cb = exclude_remove_cb,
                                                 .udata = &state1
                                             });
 
     ecs_require(ecs, sys1, comp2);
     ecs_exclude(ecs, sys1, comp1);
 
+    // Scope join/leave listeners to sys1 so they only see sys1 transitions
+    ecs_on_join(ecs, sys1, exclude_add_cb, &state1);
+    ecs_on_leave(ecs, sys1, exclude_remove_cb, &state1);
+
     ecs_system_t sys2 = ecs_define_system(ecs,
                                             exclude_system,
                                             &(ecs_sys_desc_t)
                                             {
-                                                .on_join_cb = exclude_add_cb,
-                                                .on_leave_cb = exclude_remove_cb,
                                                 .udata = &state2
                                             });
 
     ecs_require(ecs, sys2, comp2);
+
+    ecs_on_join(ecs, sys2, exclude_add_cb, &state2);
+    ecs_on_leave(ecs, sys2, exclude_remove_cb, &state2);
 
     ecs_entity_t entity1 = ecs_create(ecs);
     ecs_add(ecs, entity1, comp1, NULL);
@@ -570,6 +605,9 @@ TEST_CASE(test_exclude)
 
     ecs_run_system(ecs, sys1, 0);
     ecs_run_system(ecs, sys2, 0);
+
+    // Deliver the queued join/leave events to the scoped listeners
+    ecs_dispatch(ecs);
 
     REQUIRE(state1.count == 1);
     REQUIRE(state1.entity.id == entity2.id);
@@ -589,6 +627,8 @@ TEST_CASE(test_exclude)
     ecs_run_system(ecs, sys1, 0);
     ecs_run_system(ecs, sys2, 0);
 
+    ecs_dispatch(ecs);
+
     REQUIRE(state1.count == 2);
     REQUIRE(state1.entity.id == entity2.id);
     REQUIRE(state1.add_count == 1);
@@ -607,6 +647,8 @@ TEST_CASE(test_exclude)
 
     ecs_run_system(ecs, sys1, 0);
     ecs_run_system(ecs, sys2, 0);
+
+    ecs_dispatch(ecs);
 
     REQUIRE(state1.count == 1);
     REQUIRE(state1.entity.id == entity1.id);
