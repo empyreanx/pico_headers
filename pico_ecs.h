@@ -189,6 +189,14 @@
           unchanged. The built-in lifecycle events use the system/component as
           the sender.
 
+    - 3.11 (2026/06/25):
+        - ecs_on_join, ecs_on_leave, ecs_on_add, ecs_on_remove, and ecs_on_set
+          now take a bool 'sync' parameter. When false the callback is enqueued
+          and runs on ecs_dispatch (the prior behavior); when true it is invoked
+          synchronously at the point the change occurs. A synchronous on_add
+          initializes the component during ecs_add, and a synchronous on_remove
+          runs while the entity is still live (even for ecs_destroy).
+
     Usage:
     ------
 
@@ -250,8 +258,10 @@
     (see below), whose sender is the system or component the event concerns.
 
     The component lifecycle callbacks (on_add/on_remove/on_set) and the system
-    join/leave callbacks are delivered through built-in events. These are
-    enqueued, so they fire on `ecs_dispatch` rather than synchronously.
+    join/leave callbacks are delivered through built-in events. Each is
+    registered with a `sync` flag: when false (the default choice) the callback
+    is enqueued and fires on `ecs_dispatch`; when true it is delivered
+    synchronously at the point the change occurs.
 
     System join/leave:
     ------------------
@@ -863,8 +873,9 @@ ecs_event_t ecs_set_event(ecs_t* ecs);
 /**
  * @brief Called when a component is added to an entity (via ecs_add)
  *
- * Registered with {@link ecs_on_add}. Delivered as a queued event, so it fires
- * on {@link ecs_dispatch} rather than synchronously during ecs_add.
+ * Registered with {@link ecs_on_add}. By default it is delivered as a queued
+ * event and fires on {@link ecs_dispatch}; if registered with sync=true it runs
+ * synchronously during ecs_add instead.
  *
  * @param ecs    The ECS context
  * @param entity The entity the component was added to
@@ -883,10 +894,12 @@ typedef void (*ecs_on_add_fn)(ecs_t* ecs,
  * @brief Called when a component is removed from an entity (via ecs_remove or
  * ecs_destroy)
  *
- * Registered with {@link ecs_on_remove}. Delivered as a queued event, so it
- * fires on {@link ecs_dispatch}. Note that when triggered by ecs_destroy the
- * entity is already inactive by dispatch time, so the callback must not assume
- * the entity is still live.
+ * Registered with {@link ecs_on_remove}. By default it is delivered as a queued
+ * event and fires on {@link ecs_dispatch}; if registered with sync=true it runs
+ * synchronously during ecs_remove/ecs_destroy instead. Note that a deferred
+ * callback triggered by ecs_destroy runs after the entity is already inactive,
+ * so it must not assume the entity is still live; a synchronous callback runs
+ * while the entity is still live.
  *
  * @param ecs    The ECS context
  * @param entity The entity the component was removed from
@@ -902,8 +915,9 @@ typedef void (*ecs_on_remove_fn)(ecs_t* ecs,
 /**
  * @brief Called when a component's data is set (via ecs_set)
  *
- * Registered with {@link ecs_on_set}. Delivered as a queued event, so it fires
- * on {@link ecs_dispatch} rather than synchronously during ecs_set.
+ * Registered with {@link ecs_on_set}. By default it is delivered as a queued
+ * event and fires on {@link ecs_dispatch}; if registered with sync=true it runs
+ * synchronously during ecs_set instead.
  *
  * @param ecs    The ECS context
  * @param entity The entity whose component was set
@@ -919,41 +933,49 @@ typedef void (*ecs_on_set_fn)(ecs_t* ecs,
  * @brief Sets the callback invoked when the component is added to an entity
  *
  * The callback receives the added entity, the component, the args passed to
- * ecs_add, and the component's user data. It is delivered through a built-in
- * event and fires on {@link ecs_dispatch}, not synchronously during ecs_add.
- * Calling this again replaces the component's add callback.
+ * ecs_add, and the component's user data. If sync is false the callback is
+ * delivered through a built-in event and fires on {@link ecs_dispatch}; if sync
+ * is true it is invoked immediately during ecs_add. Calling this again replaces
+ * the component's add callback.
  *
  * @param ecs  The ECS context
  * @param comp The component to watch
  * @param fn   The callback invoked when the component is added
+ * @param sync If true, invoke the callback synchronously; if false, defer it to
+ *             {@link ecs_dispatch}
  */
-void ecs_on_add(ecs_t* ecs, ecs_comp_t comp, ecs_on_add_fn fn);
+void ecs_on_add(ecs_t* ecs, ecs_comp_t comp, ecs_on_add_fn fn, bool sync);
 
 /**
  * @brief Sets the callback invoked when the component is removed from an entity
  *
- * The callback fires for both ecs_remove and ecs_destroy and is delivered
- * through a built-in event on {@link ecs_dispatch}, not synchronously. Calling
- * this again replaces the component's remove callback.
+ * The callback fires for both ecs_remove and ecs_destroy. If sync is false it is
+ * delivered through a built-in event on {@link ecs_dispatch}; if sync is true it
+ * is invoked immediately (while the entity is still live, even for ecs_destroy).
+ * Calling this again replaces the component's remove callback.
  *
  * @param ecs  The ECS context
  * @param comp The component to watch
  * @param fn   The callback invoked when the component is removed
+ * @param sync If true, invoke the callback synchronously; if false, defer it to
+ *             {@link ecs_dispatch}
  */
-void ecs_on_remove(ecs_t* ecs, ecs_comp_t comp, ecs_on_remove_fn fn);
+void ecs_on_remove(ecs_t* ecs, ecs_comp_t comp, ecs_on_remove_fn fn, bool sync);
 
 /**
  * @brief Sets the callback invoked when the component's data is set via ecs_set
  *
- * Delivered through a built-in event on {@link ecs_dispatch}, not
- * synchronously during ecs_set. Calling this again replaces the component's
- * set callback.
+ * If sync is false the callback is delivered through a built-in event on
+ * {@link ecs_dispatch}; if sync is true it is invoked immediately during
+ * ecs_set. Calling this again replaces the component's set callback.
  *
  * @param ecs  The ECS context
  * @param comp The component to watch
  * @param fn   The callback invoked when the component is set
+ * @param sync If true, invoke the callback synchronously; if false, defer it to
+ *             {@link ecs_dispatch}
  */
-void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn);
+void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn, bool sync);
 
 
 /**
@@ -1005,14 +1027,17 @@ typedef void (*ecs_on_leave_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * The callback is delivered through the built-in join event (see
  * {@link ecs_join_event}), scoped to the given system, and receives the
  * joining entity along with the system's user data (see
- * {@link ecs_set_system_udata}). It fires on {@link ecs_dispatch}, not
- * synchronously. Calling this again replaces the system's join callback.
+ * {@link ecs_set_system_udata}). If sync is false it fires on
+ * {@link ecs_dispatch}; if sync is true it is invoked immediately. Calling this
+ * again replaces the system's join callback.
  *
- * @param ecs The ECS context
- * @param sys The system to watch
- * @param fn  The callback invoked for each entity that joins the system
+ * @param ecs  The ECS context
+ * @param sys  The system to watch
+ * @param fn   The callback invoked for each entity that joins the system
+ * @param sync If true, invoke the callback synchronously; if false, defer it to
+ *             {@link ecs_dispatch}
  */
-void ecs_on_join(ecs_t* ecs, ecs_system_t sys, ecs_on_join_fn fn);
+void ecs_on_join(ecs_t* ecs, ecs_system_t sys, ecs_on_join_fn fn, bool sync);
 
 /**
  * @brief Sets the callback invoked when an entity leaves a specific system
@@ -1020,15 +1045,18 @@ void ecs_on_join(ecs_t* ecs, ecs_system_t sys, ecs_on_join_fn fn);
  * The callback is delivered through the built-in leave event (see
  * {@link ecs_leave_event}), scoped to the given system, and receives the
  * leaving entity along with the system's user data (see
- * {@link ecs_set_system_udata}). It fires on {@link ecs_dispatch}, not
- * synchronously. An entity leaves when it no longer matches the system or when
- * it is destroyed. Calling this again replaces the system's leave callback.
+ * {@link ecs_set_system_udata}). If sync is false it fires on
+ * {@link ecs_dispatch}; if sync is true it is invoked immediately. An entity
+ * leaves when it no longer matches the system or when it is destroyed. Calling
+ * this again replaces the system's leave callback.
  *
- * @param ecs The ECS context
- * @param sys The system to watch
- * @param fn  The callback invoked for each entity that leaves the system
+ * @param ecs  The ECS context
+ * @param sys  The system to watch
+ * @param fn   The callback invoked for each entity that leaves the system
+ * @param sync If true, invoke the callback synchronously; if false, defer it to
+ *             {@link ecs_dispatch}
  */
-void ecs_on_leave(ecs_t* ecs, ecs_system_t sys, ecs_on_leave_fn fn);
+void ecs_on_leave(ecs_t* ecs, ecs_system_t sys, ecs_on_leave_fn fn, bool sync);
 
 #ifdef __cplusplus
 }
@@ -1189,6 +1217,9 @@ typedef struct
     ecs_on_add_fn on_add;
     ecs_on_remove_fn on_remove;
     ecs_on_set_fn on_set;
+    bool   on_add_sync;     // deliver on_add synchronously rather than on dispatch
+    bool   on_remove_sync;  // deliver on_remove synchronously
+    bool   on_set_sync;     // deliver on_set synchronously
     size_t size;
     void* default_value;
     size_t args_size;
@@ -1201,8 +1232,10 @@ typedef struct
     ecs_sparse_set_t entity_ids;
     ecs_mask_t       mask;
     ecs_system_fn    system_cb;
-    ecs_on_join_fn   on_join;  // set via ecs_on_join, delivered as an event
-    ecs_on_leave_fn  on_leave; // set via ecs_on_leave, delivered as an event
+    ecs_on_join_fn   on_join;       // set via ecs_on_join, delivered as an event
+    ecs_on_leave_fn  on_leave;      // set via ecs_on_leave, delivered as an event
+    bool             on_join_sync;  // deliver on_join synchronously
+    bool             on_leave_sync; // deliver on_leave synchronously
     ecs_bitset_t     require_bits;
     ecs_bitset_t     exclude_bits;
     void*            udata;
@@ -1302,6 +1335,8 @@ static inline ecs_event_t ecs_make_event(ecs_id_t id);
  * Built-in lifecycle event forwarding listeners
  *============================================================================*/
 static void ecs_enqueue_impl(ecs_t* ecs, ecs_event_t event, ecs_id_t sender, const void* payload);
+static void ecs_deliver(ecs_t* ecs, ecs_event_t event, ecs_id_t sender, const void* payload);
+static void ecs_emit_lifecycle(ecs_t* ecs, ecs_event_t event, ecs_id_t sender, const void* payload, bool sync);
 static inline bool ecs_event_has_user_listener(ecs_t* ecs, ecs_event_t event);
 
 static void ecs_forward_on_add(ecs_t* ecs, ecs_event_t event,
@@ -1613,7 +1648,7 @@ static void ecs_forward_on_set(ecs_t* ecs, ecs_event_t event,
         comp_data->on_set(ecs, msg->entity, msg->comp, comp_data->udata);
 }
 
-void ecs_on_add(ecs_t* ecs, ecs_comp_t comp, ecs_on_add_fn fn)
+void ecs_on_add(ecs_t* ecs, ecs_comp_t comp, ecs_on_add_fn fn, bool sync)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_component_id(comp.id));
@@ -1621,9 +1656,10 @@ void ecs_on_add(ecs_t* ecs, ecs_comp_t comp, ecs_on_add_fn fn)
     ECS_ASSERT(NULL != fn);
 
     ecs->comps[comp.id].on_add = fn;
+    ecs->comps[comp.id].on_add_sync = sync;
 }
 
-void ecs_on_remove(ecs_t* ecs, ecs_comp_t comp, ecs_on_remove_fn fn)
+void ecs_on_remove(ecs_t* ecs, ecs_comp_t comp, ecs_on_remove_fn fn, bool sync)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_component_id(comp.id));
@@ -1631,9 +1667,10 @@ void ecs_on_remove(ecs_t* ecs, ecs_comp_t comp, ecs_on_remove_fn fn)
     ECS_ASSERT(NULL != fn);
 
     ecs->comps[comp.id].on_remove = fn;
+    ecs->comps[comp.id].on_remove_sync = sync;
 }
 
-void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn)
+void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn, bool sync)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_component_id(comp.id));
@@ -1641,6 +1678,7 @@ void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn)
     ECS_ASSERT(NULL != fn);
 
     ecs->comps[comp.id].on_set = fn;
+    ecs->comps[comp.id].on_set_sync = sync;
 }
 
 ecs_system_t ecs_define_system(ecs_t* ecs,
@@ -1861,11 +1899,11 @@ void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data)
     void* comp_ptr = ecs_get(ecs, entity, comp);
     ECS_MEMCPY(comp_ptr, data, comp_data->size);
 
-    // Queue the on_set callback (delivered on ecs_dispatch)
+    // Deliver the on_set callback synchronously or via the queue
     if (comp_data->on_set || ecs_event_has_user_listener(ecs, ecs->set_event))
     {
         ecs_comp_event_t msg = { entity, comp, NULL };
-        ecs_enqueue_impl(ecs, ecs->set_event, comp.id, &msg);
+        ecs_emit_lifecycle(ecs, ecs->set_event, comp.id, &msg, comp_data->on_set_sync);
     }
 }
 
@@ -1896,14 +1934,14 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         {
             ecs_comp_data_t* comp_data = &ecs->comps[comp_id];
 
-            // Queue the on_remove callback (delivered on ecs_dispatch). The
-            // entity is deactivated below, so the callback runs after the entity
-            // is gone.
+            // Deliver the on_remove callback. A synchronous callback runs here,
+            // while the entity is still live; a deferred one runs on dispatch,
+            // after the entity has been deactivated below.
             if (comp_data->on_remove || ecs_event_has_user_listener(ecs, ecs->remove_event))
             {
                 ecs_comp_t comp = ecs_make_comp(comp_id);
                 ecs_comp_event_t msg = { entity, comp, NULL };
-                ecs_enqueue_impl(ecs, ecs->remove_event, comp_id, &msg);
+                ecs_emit_lifecycle(ecs, ecs->remove_event, comp_id, &msg, comp_data->on_remove_sync);
             }
         }
     }
@@ -2009,22 +2047,32 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
     else
         ECS_MEMSET(comp_ptr, 0, comp_blocks->comp_size);
 
-    // Queue the on_add callback (delivered on ecs_dispatch). The args are
-    // copied into the event arena so the caller need not keep them alive until
-    // dispatch; this requires the component to define a non-zero args_size.
+    // Deliver the on_add callback synchronously or via the queue
     if (comp_data->on_add || ecs_event_has_user_listener(ecs, ecs->add_event))
     {
-        const void* args_copy = NULL;
-
-        if (args && comp_data->args_size > 0)
+        if (comp_data->on_add_sync)
         {
-            void* copy = ecs_arena_alloc(ecs, &ecs->event_arena, comp_data->args_size);
-            ECS_MEMCPY(copy, args, comp_data->args_size);
-            args_copy = copy;
+            // Synchronous: args stay valid for the duration of the call, so the
+            // original pointer can be forwarded without a copy
+            ecs_comp_event_t msg = { entity, comp, args };
+            ecs_deliver(ecs, ecs->add_event, comp.id, &msg);
         }
+        else
+        {
+            // Deferred: copy the args into the event arena so the caller need
+            // not keep them alive until dispatch (requires a non-zero args_size)
+            const void* args_copy = NULL;
 
-        ecs_comp_event_t msg = { entity, comp, args_copy };
-        ecs_enqueue_impl(ecs, ecs->add_event, comp.id, &msg);
+            if (args && comp_data->args_size > 0)
+            {
+                void* copy = ecs_arena_alloc(ecs, &ecs->event_arena, comp_data->args_size);
+                ECS_MEMCPY(copy, args, comp_data->args_size);
+                args_copy = copy;
+            }
+
+            ecs_comp_event_t msg = { entity, comp, args_copy };
+            ecs_enqueue_impl(ecs, ecs->add_event, comp.id, &msg);
+        }
     }
 
     // Add/remove entity to/from systems based on matching criteria
@@ -2058,13 +2106,13 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
         return;
     }
 
-    // Queue the on_remove callback (delivered on ecs_dispatch)
+    // Deliver the on_remove callback synchronously or via the queue
     ecs_comp_data_t* comp_data = &ecs->comps[comp.id];
 
     if (comp_data->on_remove || ecs_event_has_user_listener(ecs, ecs->remove_event))
     {
         ecs_comp_event_t msg = { entity, comp, NULL };
-        ecs_enqueue_impl(ecs, ecs->remove_event, comp.id, &msg);
+        ecs_emit_lifecycle(ecs, ecs->remove_event, comp.id, &msg, comp_data->on_remove_sync);
     }
 
     // Add/remove entity to/from systems based on matching criteria
@@ -2280,6 +2328,17 @@ static void ecs_enqueue_impl(ecs_t* ecs,
     }
 }
 
+// Emits a built-in lifecycle event either synchronously (delivered now) or
+// deferred (queued for ecs_dispatch), per the callback's registered sync flag.
+static void ecs_emit_lifecycle(ecs_t* ecs, ecs_event_t event, ecs_id_t sender,
+                               const void* payload, bool sync)
+{
+    if (sync)
+        ecs_deliver(ecs, event, sender, payload);
+    else
+        ecs_enqueue_impl(ecs, event, sender, payload);
+}
+
 void ecs_enqueue(ecs_t* ecs, ecs_event_t event, const void* payload)
 {
     ecs_enqueue_impl(ecs, event, ECS_INVALID_ID, payload);
@@ -2384,7 +2443,7 @@ static void ecs_forward_on_leave(ecs_t* ecs,
         sys_data->on_leave(ecs, msg->entity, sys_data->udata);
 }
 
-void ecs_on_join(ecs_t* ecs, ecs_system_t sys, ecs_on_join_fn fn)
+void ecs_on_join(ecs_t* ecs, ecs_system_t sys, ecs_on_join_fn fn, bool sync)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -2392,9 +2451,10 @@ void ecs_on_join(ecs_t* ecs, ecs_system_t sys, ecs_on_join_fn fn)
     ECS_ASSERT(NULL != fn);
 
     ecs->systems[sys.id].on_join = fn;
+    ecs->systems[sys.id].on_join_sync = sync;
 }
 
-void ecs_on_leave(ecs_t* ecs, ecs_system_t sys, ecs_on_leave_fn fn)
+void ecs_on_leave(ecs_t* ecs, ecs_system_t sys, ecs_on_leave_fn fn, bool sync)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_system_id(sys.id));
@@ -2402,6 +2462,7 @@ void ecs_on_leave(ecs_t* ecs, ecs_system_t sys, ecs_on_leave_fn fn)
     ECS_ASSERT(NULL != fn);
 
     ecs->systems[sys.id].on_leave = fn;
+    ecs->systems[sys.id].on_leave_sync = sync;
 }
 
 /*=============================================================================
@@ -3083,9 +3144,9 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
             if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity_id) &&
                 (sys_data->on_join || ecs_event_has_user_listener(ecs, ecs->join_event)))
             {
-                // Queue the built-in join event, with this system as the sender
+                // Emit the built-in join event, with this system as the sender
                 ecs_sys_event_t msg = { ecs_make_entity(entity_id), ecs_make_system(sys_id) };
-                ecs_enqueue_impl(ecs, ecs->join_event, sys_id, &msg);
+                ecs_emit_lifecycle(ecs, ecs->join_event, sys_id, &msg, sys_data->on_join_sync);
             }
         }
         else
@@ -3095,9 +3156,9 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
             if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id) &&
                 (sys_data->on_leave || ecs_event_has_user_listener(ecs, ecs->leave_event)))
             {
-                // Queue the built-in leave event, with this system as the sender
+                // Emit the built-in leave event, with this system as the sender
                 ecs_sys_event_t msg = { ecs_make_entity(entity_id), ecs_make_system(sys_id) };
-                ecs_enqueue_impl(ecs, ecs->leave_event, sys_id, &msg);
+                ecs_emit_lifecycle(ecs, ecs->leave_event, sys_id, &msg, sys_data->on_leave_sync);
             }
         }
     }
@@ -3113,9 +3174,9 @@ static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id)
         if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id) &&
             (sys_data->on_leave || ecs_event_has_user_listener(ecs, ecs->leave_event)))
         {
-            // Queue the built-in leave event, with this system as the sender
+            // Emit the built-in leave event, with this system as the sender
             ecs_sys_event_t msg = { ecs_make_entity(entity_id), ecs_make_system(sys_id) };
-            ecs_enqueue_impl(ecs, ecs->leave_event, sys_id, &msg);
+            ecs_emit_lifecycle(ecs, ecs->leave_event, sys_id, &msg, sys_data->on_leave_sync);
         }
     }
 }

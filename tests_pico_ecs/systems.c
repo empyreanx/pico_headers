@@ -402,8 +402,8 @@ TEST_CASE(test_add_remove_callbacks)
     ecs_require(ecs, sys1, comp1);
 
     // Join/leave are delivered as events scoped to this system
-    ecs_on_join(ecs, sys1, on_add);
-    ecs_on_leave(ecs, sys1, on_remove);
+    ecs_on_join(ecs, sys1, on_add, false);
+    ecs_on_leave(ecs, sys1, on_remove, false);
 
     ecs_run_system(ecs, sys1, 0);
 
@@ -419,6 +419,29 @@ TEST_CASE(test_add_remove_callbacks)
 
     REQUIRE(added);
     REQUIRE(removed);
+
+    return true;
+}
+
+// Tests synchronous join/leave callbacks (fire immediately, no dispatch)
+TEST_CASE(test_add_remove_callbacks_sync)
+{
+    added = false;
+    removed = false;
+
+    sys1 = ecs_define_system(ecs, empty_system, NULL);
+    ecs_require(ecs, sys1, comp1);
+
+    ecs_on_join(ecs, sys1, on_add, true);    // synchronous
+    ecs_on_leave(ecs, sys1, on_remove, true);
+
+    ecs_entity_t entity = ecs_create(ecs);
+
+    ecs_add(ecs, entity, comp1, NULL);
+    REQUIRE(added);    // fired during ecs_add, no dispatch
+
+    ecs_destroy(ecs, entity);
+    REQUIRE(removed);  // fired during ecs_destroy, no dispatch
 
     return true;
 }
@@ -442,8 +465,8 @@ TEST_CASE(test_set_system_callbacks)
     REQUIRE(ret == 24);
 
     // Subscribe join/leave listeners scoped to the system
-    ecs_on_join(ecs, sys1, on_add);
-    ecs_on_leave(ecs, sys1, on_remove);
+    ecs_on_join(ecs, sys1, on_add, false);
+    ecs_on_leave(ecs, sys1, on_remove, false);
 
     // Create entity to trigger callbacks
     ecs_entity_t entity = ecs_create(ecs);
@@ -535,6 +558,7 @@ TEST_SUITE(suite_systems)
     RUN_TEST_CASE(test_enable_disable);
     RUN_TEST_CASE(test_system_mask);
     RUN_TEST_CASE(test_add_remove_callbacks);
+    RUN_TEST_CASE(test_add_remove_callbacks_sync);
     RUN_TEST_CASE(test_set_system_callbacks);
     RUN_TEST_CASE(test_system_udata);
     RUN_TEST_CASE(test_run_systems);
@@ -562,8 +586,8 @@ TEST_CASE(test_exclude)
 
     // Scope join/leave listeners to sys1 so they only see sys1 transitions.
     // The callbacks receive the system's user data (&state1, set above).
-    ecs_on_join(ecs, sys1, exclude_add_cb);
-    ecs_on_leave(ecs, sys1, exclude_remove_cb);
+    ecs_on_join(ecs, sys1, exclude_add_cb, false);
+    ecs_on_leave(ecs, sys1, exclude_remove_cb, false);
 
     ecs_system_t sys2 = ecs_define_system(ecs,
                                             exclude_system,
@@ -574,8 +598,8 @@ TEST_CASE(test_exclude)
 
     ecs_require(ecs, sys2, comp2);
 
-    ecs_on_join(ecs, sys2, exclude_add_cb);
-    ecs_on_leave(ecs, sys2, exclude_remove_cb);
+    ecs_on_join(ecs, sys2, exclude_add_cb, false);
+    ecs_on_leave(ecs, sys2, exclude_remove_cb, false);
 
     ecs_entity_t entity1 = ecs_create(ecs);
     ecs_add(ecs, entity1, comp1, NULL);

@@ -102,7 +102,7 @@ TEST_CASE(test_set_on_set_callback)
     set_callback_called = false;
 
     ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
-    ecs_on_set(ecs, comp_type, comp_on_set);
+    ecs_on_set(ecs, comp_type, comp_on_set, false);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type, NULL);
@@ -160,7 +160,7 @@ TEST_CASE(test_set_deferred_fires_callback)
     deferred_cb_called = false;
 
     ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), NULL);
-    ecs_on_set(ecs, comp_cb, on_set_deferred);
+    ecs_on_set(ecs, comp_cb, on_set_deferred, false);
 
     set_args_t args = { .comp = comp_cb, .data = { .used = true } };
 

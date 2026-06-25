@@ -213,7 +213,7 @@ TEST_SUITE(suite_entity)
 TEST_CASE(test_on_add)
 {
     ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
-    ecs_on_add(ecs, comp_type, comp_on_add);
+    ecs_on_add(ecs, comp_type, comp_on_add, false);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type, NULL);
@@ -235,7 +235,7 @@ TEST_CASE(test_on_add_args)
     {
         .args_size = sizeof(comp_t)
     });
-    ecs_on_add(ecs, comp_type, comp_on_add_args);
+    ecs_on_add(ecs, comp_type, comp_on_add_args, false);
 
     ecs_entity_t entity = ecs_create(ecs);
 
@@ -253,8 +253,8 @@ TEST_CASE(test_on_add_args)
 TEST_CASE(test_on_remove)
 {
     ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
-    ecs_on_add(ecs, comp_type, comp_on_add);
-    ecs_on_remove(ecs, comp_type, comp_on_remove);
+    ecs_on_add(ecs, comp_type, comp_on_add, false);
+    ecs_on_remove(ecs, comp_type, comp_on_remove, false);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type, NULL);
@@ -274,7 +274,7 @@ TEST_CASE(test_destructor_destroy)
     destructor_ran = false;
 
     ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
-    ecs_on_remove(ecs, comp_type, comp_on_remove_flag);
+    ecs_on_remove(ecs, comp_type, comp_on_remove_flag, false);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type, NULL);
@@ -332,12 +332,48 @@ TEST_CASE(test_default_value_per_add)
     return true;
 }
 
+// A synchronous on_add runs during ecs_add, acting as a real constructor
+TEST_CASE(test_on_add_sync)
+{
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    ecs_on_add(ecs, comp_type, comp_on_add, true); // synchronous
+
+    ecs_entity_t entity = ecs_create(ecs);
+    ecs_add(ecs, entity, comp_type, NULL);
+
+    // The callback already ran (no dispatch), so the component is initialized
+    REQUIRE(((comp_t*)ecs_get(ecs, entity, comp_type))->used);
+
+    return true;
+}
+
+// A synchronous on_remove runs during ecs_remove, while the entity is live
+TEST_CASE(test_on_remove_sync)
+{
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    ecs_on_remove(ecs, comp_type, comp_on_remove, true); // synchronous
+
+    ecs_entity_t entity = ecs_create(ecs);
+    ecs_add(ecs, entity, comp_type, NULL);
+    comp_t* comp = ecs_get(ecs, entity, comp_type);
+    comp->used = true;
+
+    ecs_remove(ecs, entity, comp_type);
+
+    // The callback already ran (no dispatch) and cleared the component
+    REQUIRE(!comp->used);
+
+    return true;
+}
+
 TEST_SUITE(suite_components)
 {
     RUN_TEST_CASE(test_on_add);
     RUN_TEST_CASE(test_on_add_args);
     RUN_TEST_CASE(test_on_remove);
     RUN_TEST_CASE(test_destructor_destroy);
+    RUN_TEST_CASE(test_on_add_sync);
+    RUN_TEST_CASE(test_on_remove_sync);
     RUN_TEST_CASE(test_default_value);
     RUN_TEST_CASE(test_default_value_per_add);
 }

@@ -277,7 +277,7 @@ TEST_CASE(test_queue_add_args)
     {
         .args_size = sizeof(comp_t)
     });
-    ecs_on_add(ecs, comp_args, on_add_deferred_args);
+    ecs_on_add(ecs, comp_args, on_add_deferred_args, false);
 
     deferred_add_args_t state =
     {
@@ -306,7 +306,7 @@ TEST_CASE(test_queue_set_dead_entity)
     set_then_destroy_cb_called = false;
 
     ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), NULL);
-    ecs_on_set(ecs, comp_cb, on_set_before_destroy);
+    ecs_on_set(ecs, comp_cb, on_set_before_destroy, false);
     sys1 = ecs_define_system(ecs, set_then_destroy_system, &(ecs_sys_desc_t)
     {
         .udata = &comp_cb
