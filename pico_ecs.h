@@ -180,6 +180,15 @@
           even for systems/components with no convenience callback registered.
           The event payload layouts are internal to the library.
 
+    - 3.10 (2026/06/25):
+        - The event "source" id has been renamed to "sender" to match a
+          sender/receiver model: an event is tagged with the sender that emitted
+          it (ecs_emit_from/ecs_enqueue_from) and a listener acts as a receiver
+          that hears one sender (ecs_subscribe_to) or every sender
+          (ecs_subscribe). This is a rename only; delivery semantics are
+          unchanged. The built-in lifecycle events use the system/component as
+          the sender.
+
     Usage:
     ------
 
@@ -233,12 +242,12 @@
       Enqueuing is the safe choice from within a running system, since delivery
       is deferred until the system completes.
 
-    Events may also carry a source id. `ecs_emit_from` / `ecs_enqueue_from` tag
-    an event with a source, and `ecs_subscribe_to` scopes a listener so it only
-    receives events from a particular source. A listener registered with
-    `ecs_subscribe` receives events regardless of source. The ECS uses this
-    mechanism for the built-in lifecycle events (see below), whose source is the
-    system or component the event concerns.
+    Events may also carry a sender id identifying who emitted them.
+    `ecs_emit_from` / `ecs_enqueue_from` tag an event with a sender. A listener
+    acts as a receiver: `ecs_subscribe_to` registers a receiver that only hears
+    a particular sender, while `ecs_subscribe` registers a receiver that hears
+    every sender. The ECS uses this mechanism for the built-in lifecycle events
+    (see below), whose sender is the system or component the event concerns.
 
     The component lifecycle callbacks (on_add/on_remove/on_set) and the system
     join/leave callbacks are delivered through built-in events. These are
@@ -249,7 +258,7 @@
 
     When an entity starts matching a system it "joins" that system; when it
     stops matching (or is destroyed) it "leaves". The ECS emits a built-in join
-    or leave event for each such transition. The event's source is the system
+    or leave event for each such transition. The event's sender is the system
     and its payload carries the entity and the system. Use
     `ecs_on_join`/`ecs_on_leave` for a per-system callback (which receives the
     entity directly), or subscribe to `ecs_join_event`/`ecs_leave_event`
@@ -703,16 +712,17 @@ ecs_id_t ecs_subscribe(ecs_t* ecs,
                        void* udata);
 
 /**
- * @brief Subscribes a listener to an event, scoped to a single source
+ * @brief Subscribes a receiver to an event from a single sender
  *
- * The listener is invoked only for events emitted with a matching source (see
- * {@link ecs_emit_from}). Events emitted with no source (via {@link ecs_emit})
- * are not delivered to a scoped listener. This is how a listener is tied to a
- * specific system for the built-in join/leave events.
+ * The listener (receiver) is invoked only for events emitted with a matching
+ * sender (see {@link ecs_emit_from}). Events emitted with no sender (via
+ * {@link ecs_emit}) are not delivered to such a receiver. This is how a listener
+ * is tied to a specific system for the built-in join/leave events. To receive
+ * an event from every sender, use {@link ecs_subscribe} instead.
  *
  * @param ecs    The ECS context
  * @param event  The event to subscribe to
- * @param source The source id to match
+ * @param sender The sender id to receive from
  * @param fn     The listener callback to invoke
  * @param udata  User data passed to the listener (can be NULL)
  * @returns      A subscription handle that can be passed to
@@ -720,7 +730,7 @@ ecs_id_t ecs_subscribe(ecs_t* ecs,
  */
 ecs_id_t ecs_subscribe_to(ecs_t* ecs,
                           ecs_event_t event,
-                          ecs_id_t source,
+                          ecs_id_t sender,
                           ecs_listener_fn fn,
                           void* udata);
 
@@ -753,22 +763,22 @@ void ecs_unsubscribe(ecs_t* ecs, ecs_event_t event, ecs_id_t sub);
 void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload);
 
 /**
- * @brief Emits an event tagged with a source id, delivering it synchronously
+ * @brief Emits an event tagged with a sender id, delivering it synchronously
  *
- * Behaves like {@link ecs_emit} but associates the event with a source. The
- * event is delivered to listeners subscribed to that source via
+ * Behaves like {@link ecs_emit} but associates the event with a sender. The
+ * event is delivered to listeners subscribed to that sender via
  * {@link ecs_subscribe_to} as well as to unscoped listeners subscribed via
  * {@link ecs_subscribe}.
  *
  * @param ecs     The ECS context
  * @param event   The event to emit
- * @param source  The source id to tag the event with
+ * @param sender  The sender id to tag the event with
  * @param payload Pointer to the payload. Must be non-NULL if the event was
  *                defined with a non-zero payload size, otherwise ignored.
  */
 void ecs_emit_from(ecs_t* ecs,
                    ecs_event_t event,
-                   ecs_id_t source,
+                   ecs_id_t sender,
                    const void* payload);
 
 /**
@@ -787,20 +797,20 @@ void ecs_emit_from(ecs_t* ecs,
 void ecs_enqueue(ecs_t* ecs, ecs_event_t event, const void* payload);
 
 /**
- * @brief Enqueues an event tagged with a source id for deferred delivery
+ * @brief Enqueues an event tagged with a sender id for deferred delivery
  *
- * Behaves like {@link ecs_enqueue} but associates the event with a source, with
- * the same source-matching semantics as {@link ecs_emit_from}.
+ * Behaves like {@link ecs_enqueue} but associates the event with a sender, with
+ * the same sender-matching semantics as {@link ecs_emit_from}.
  *
  * @param ecs     The ECS context
  * @param event   The event to enqueue
- * @param source  The source id to tag the event with
+ * @param sender  The sender id to tag the event with
  * @param payload Pointer to the payload to copy. Must be non-NULL if the event
  *                was defined with a non-zero payload size, otherwise ignored.
  */
 void ecs_enqueue_from(ecs_t* ecs,
                       ecs_event_t event,
-                      ecs_id_t source,
+                      ecs_id_t sender,
                       const void* payload);
 
 /**
@@ -818,7 +828,7 @@ void ecs_dispatch(ecs_t* ecs);
 /**
  * @brief Returns the built-in event emitted when a component is added
  *
- * The event's source is the component (its id) and its payload carries the
+ * The event's sender is the component (its id) and its payload carries the
  * entity, the component, and the args passed to ecs_add (the payload layout is
  * internal). Subscribe with {@link ecs_subscribe} to observe adds for every
  * component, or use {@link ecs_on_add} for a per-component callback.
@@ -831,7 +841,7 @@ ecs_event_t ecs_add_event(ecs_t* ecs);
 /**
  * @brief Returns the built-in event emitted when a component is removed
  *
- * The event's source is the component (its id) and its payload carries the
+ * The event's sender is the component (its id) and its payload carries the
  * entity and the component (the payload layout is internal).
  *
  * @param ecs The ECS context
@@ -842,7 +852,7 @@ ecs_event_t ecs_remove_event(ecs_t* ecs);
 /**
  * @brief Returns the built-in event emitted when a component's data is set
  *
- * The event's source is the component (its id) and its payload carries the
+ * The event's sender is the component (its id) and its payload carries the
  * entity and the component (the payload layout is internal).
  *
  * @param ecs The ECS context
@@ -949,7 +959,7 @@ void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn);
 /**
  * @brief Returns the built-in event emitted when an entity joins a system
  *
- * The event's source is the system (its id) and its payload carries the joining
+ * The event's sender is the system (its id) and its payload carries the joining
  * entity and the system (the payload layout is internal). Subscribe with
  * {@link ecs_subscribe} to observe joins for every system, or use
  * {@link ecs_on_join} for a per-system callback that receives the entity.
@@ -962,7 +972,7 @@ ecs_event_t ecs_join_event(ecs_t* ecs);
 /**
  * @brief Returns the built-in event emitted when an entity leaves a system
  *
- * The event's source is the system (its id) and its payload carries the leaving
+ * The event's sender is the system (its id) and its payload carries the leaving
  * entity and the system (the payload layout is internal). An entity leaves when
  * it no longer matches the system or when it is destroyed.
  *
@@ -1226,8 +1236,8 @@ typedef struct
 {
     ecs_listener_fn fn;
     void*           udata;
-    ecs_id_t        source; // only matching-source events are delivered;
-                            // ECS_INVALID_ID receives events from any source
+    ecs_id_t        sender; // only matching-sender events are delivered;
+                            // ECS_INVALID_ID receives events from any sender
     bool            active;
 } ecs_listener_t;
 
@@ -1242,7 +1252,7 @@ typedef struct
 typedef struct
 {
     ecs_id_t event_id;
-    ecs_id_t source;  // ECS_INVALID_ID if emitted without a source
+    ecs_id_t sender;  // ECS_INVALID_ID if emitted without a sender
     void*    payload; // arena-allocated copy, NULL if payload_size is 0
 } ecs_event_msg_t;
 
@@ -1291,7 +1301,7 @@ static inline ecs_event_t ecs_make_event(ecs_id_t id);
 /*=============================================================================
  * Built-in lifecycle event forwarding listeners
  *============================================================================*/
-static void ecs_enqueue_impl(ecs_t* ecs, ecs_event_t event, ecs_id_t source, const void* payload);
+static void ecs_enqueue_impl(ecs_t* ecs, ecs_event_t event, ecs_id_t sender, const void* payload);
 static inline bool ecs_event_has_user_listener(ecs_t* ecs, ecs_event_t event);
 
 static void ecs_forward_on_add(ecs_t* ecs, ecs_event_t event,
@@ -2125,7 +2135,7 @@ ecs_event_t ecs_define_event(ecs_t* ecs, size_t payload_size)
 
 static ecs_id_t ecs_subscribe_impl(ecs_t* ecs,
                                    ecs_event_t event,
-                                   ecs_id_t source,
+                                   ecs_id_t sender,
                                    ecs_listener_fn fn,
                                    void* udata)
 {
@@ -2143,7 +2153,7 @@ static ecs_id_t ecs_subscribe_impl(ecs_t* ecs,
         {
             event_data->listeners[sub].fn     = fn;
             event_data->listeners[sub].udata  = udata;
-            event_data->listeners[sub].source = source;
+            event_data->listeners[sub].sender = sender;
             event_data->listeners[sub].active = true;
             return sub;
         }
@@ -2154,7 +2164,7 @@ static ecs_id_t ecs_subscribe_impl(ecs_t* ecs,
     ecs_id_t sub = event_data->listener_count++;
     event_data->listeners[sub].fn     = fn;
     event_data->listeners[sub].udata  = udata;
-    event_data->listeners[sub].source = source;
+    event_data->listeners[sub].sender = sender;
     event_data->listeners[sub].active = true;
 
     return sub;
@@ -2165,18 +2175,18 @@ ecs_id_t ecs_subscribe(ecs_t* ecs,
                        ecs_listener_fn fn,
                        void* udata)
 {
-    // ECS_INVALID_ID as the source means "receive events from any source"
+    // ECS_INVALID_ID as the sender means "receive events from any sender"
     return ecs_subscribe_impl(ecs, event, ECS_INVALID_ID, fn, udata);
 }
 
 ecs_id_t ecs_subscribe_to(ecs_t* ecs,
                           ecs_event_t event,
-                          ecs_id_t source,
+                          ecs_id_t sender,
                           ecs_listener_fn fn,
                           void* udata)
 {
-    ECS_ASSERT(source != ECS_INVALID_ID && "use ecs_subscribe to match any source");
-    return ecs_subscribe_impl(ecs, event, source, fn, udata);
+    ECS_ASSERT(sender != ECS_INVALID_ID && "use ecs_subscribe to match any sender");
+    return ecs_subscribe_impl(ecs, event, sender, fn, udata);
 }
 
 void ecs_unsubscribe(ecs_t* ecs, ecs_event_t event, ecs_id_t sub)
@@ -2195,7 +2205,7 @@ void ecs_unsubscribe(ecs_t* ecs, ecs_event_t event, ecs_id_t sub)
 // synchronous ecs_emit and to drain queued (enqueued) events in ecs_dispatch.
 static void ecs_deliver(ecs_t* ecs,
                         ecs_event_t event,
-                        ecs_id_t source,
+                        ecs_id_t sender,
                         const void* payload)
 {
     ecs_event_data_t* event_data = &ecs->events[event.id];
@@ -2209,9 +2219,9 @@ static void ecs_deliver(ecs_t* ecs,
         if (!listener.active)
             continue;
 
-        // Unscoped listeners (source == ECS_INVALID_ID) receive every event;
-        // scoped listeners only receive matching-source events
-        if (listener.source != ECS_INVALID_ID && listener.source != source)
+        // Unscoped listeners (sender == ECS_INVALID_ID) receive every event;
+        // scoped listeners only receive matching-sender events
+        if (listener.sender != ECS_INVALID_ID && listener.sender != sender)
             continue;
 
         listener.fn(ecs, event, payload, payload_size, listener.udata);
@@ -2230,7 +2240,7 @@ void ecs_emit(ecs_t* ecs, ecs_event_t event, const void* payload)
 
 void ecs_emit_from(ecs_t* ecs,
                    ecs_event_t event,
-                   ecs_id_t source,
+                   ecs_id_t sender,
                    const void* payload)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
@@ -2238,14 +2248,14 @@ void ecs_emit_from(ecs_t* ecs,
     ECS_ASSERT(ecs_is_event_ready(ecs, event.id));
     ECS_ASSERT(ecs->events[event.id].payload_size == 0 || payload != NULL);
 
-    ecs_deliver(ecs, event, source, payload);
+    ecs_deliver(ecs, event, sender, payload);
 }
 
 // Appends an event to the queue, copying its payload into the event arena so
 // the caller need not keep it alive until ecs_dispatch.
 static void ecs_enqueue_impl(ecs_t* ecs,
                              ecs_event_t event,
-                             ecs_id_t source,
+                             ecs_id_t sender,
                              const void* payload)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
@@ -2256,7 +2266,7 @@ static void ecs_enqueue_impl(ecs_t* ecs,
 
     ecs_event_msg_t* msg = ecs_event_queue_push(ecs, &ecs->event_queue);
     msg->event_id = event.id;
-    msg->source   = source;
+    msg->sender   = sender;
 
     if (event_data->payload_size > 0)
     {
@@ -2277,10 +2287,10 @@ void ecs_enqueue(ecs_t* ecs, ecs_event_t event, const void* payload)
 
 void ecs_enqueue_from(ecs_t* ecs,
                       ecs_event_t event,
-                      ecs_id_t source,
+                      ecs_id_t sender,
                       const void* payload)
 {
-    ecs_enqueue_impl(ecs, event, source, payload);
+    ecs_enqueue_impl(ecs, event, sender, payload);
 }
 
 void ecs_dispatch(ecs_t* ecs)
@@ -2298,7 +2308,7 @@ void ecs_dispatch(ecs_t* ecs)
     for (size_t i = 0; i < queue->size; i++)
     {
         ecs_event_t event = ecs_make_event(queue->data[i].event_id);
-        ecs_deliver(ecs, event, queue->data[i].source, queue->data[i].payload);
+        ecs_deliver(ecs, event, queue->data[i].sender, queue->data[i].payload);
     }
 
     queue->size = 0;
@@ -3073,7 +3083,7 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
             if (ecs_sparse_set_add(ecs, &sys_data->entity_ids, entity_id) &&
                 (sys_data->on_join || ecs_event_has_user_listener(ecs, ecs->join_event)))
             {
-                // Queue the built-in join event, sourced from this system
+                // Queue the built-in join event, with this system as the sender
                 ecs_sys_event_t msg = { ecs_make_entity(entity_id), ecs_make_system(sys_id) };
                 ecs_enqueue_impl(ecs, ecs->join_event, sys_id, &msg);
             }
@@ -3085,7 +3095,7 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
             if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id) &&
                 (sys_data->on_leave || ecs_event_has_user_listener(ecs, ecs->leave_event)))
             {
-                // Queue the built-in leave event, sourced from this system
+                // Queue the built-in leave event, with this system as the sender
                 ecs_sys_event_t msg = { ecs_make_entity(entity_id), ecs_make_system(sys_id) };
                 ecs_enqueue_impl(ecs, ecs->leave_event, sys_id, &msg);
             }
@@ -3103,7 +3113,7 @@ static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id)
         if (ecs_sparse_set_remove(&sys_data->entity_ids, entity_id) &&
             (sys_data->on_leave || ecs_event_has_user_listener(ecs, ecs->leave_event)))
         {
-            // Queue the built-in leave event, sourced from this system
+            // Queue the built-in leave event, with this system as the sender
             ecs_sys_event_t msg = { ecs_make_entity(entity_id), ecs_make_system(sys_id) };
             ecs_enqueue_impl(ecs, ecs->leave_event, sys_id, &msg);
         }

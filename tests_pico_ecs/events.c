@@ -211,7 +211,7 @@ TEST_CASE(test_event_payload_is_copied)
     evt_payload_t p = { .value = 11 };
     ecs_enqueue(ecs, event, &p);
 
-    // Mutating the source after emit must not affect the queued payload
+    // Mutating the original payload after enqueue must not affect the queued copy
     p.value = 999;
 
     ecs_dispatch(ecs);
@@ -399,23 +399,23 @@ TEST_CASE(test_event_emit_from_synchronous)
 {
     reset_globals();
 
-    const ecs_id_t source = 5;
+    const ecs_id_t sender = 5;
 
     ecs_event_t event = ecs_define_event(ecs, sizeof(evt_payload_t));
-    ecs_subscribe_to(ecs, event, source, on_accumulate, NULL); // scoped
-    ecs_subscribe(ecs, event, on_accumulate, NULL);            // unscoped
+    ecs_subscribe_to(ecs, event, sender, on_accumulate, NULL); // scoped to a sender
+    ecs_subscribe(ecs, event, on_accumulate, NULL);            // any sender
 
     evt_payload_t p = { .value = 1 };
 
-    // Matching source: both the scoped and unscoped listeners fire
-    ecs_emit_from(ecs, event, source, &p);
+    // Matching sender: both the scoped and unscoped receivers fire
+    ecs_emit_from(ecs, event, sender, &p);
     REQUIRE(g_call_count == 2);
 
-    // Different source: only the unscoped listener fires
-    ecs_emit_from(ecs, event, source + 1, &p);
+    // Different sender: only the unscoped receiver fires
+    ecs_emit_from(ecs, event, sender + 1, &p);
     REQUIRE(g_call_count == 3);
 
-    // No source: only the unscoped listener fires
+    // No sender: only the unscoped receiver fires
     ecs_emit(ecs, event, &p);
     REQUIRE(g_call_count == 4);
 
