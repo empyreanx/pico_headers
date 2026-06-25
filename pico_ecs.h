@@ -174,7 +174,7 @@
           than a bare entity, and systems no longer consume a listener slot each
           (decoupling them from PICO_ECS_MAX_LISTENERS). The ecs_on_join/
           ecs_on_leave API is unchanged.
-        - Added ecs_get_add_event/ecs_get_remove_event/ecs_get_set_event so the
+        - Added ecs_add_event/ecs_remove_event/ecs_set_event so the
           built-in component events can be observed via a raw ecs_subscribe,
           like the join/leave events. A raw subscriber receives these events
           even for systems/components with no convenience callback registered.
@@ -252,7 +252,7 @@
     or leave event for each such transition. The event's source is the system
     and its payload carries the entity and the system. Use
     `ecs_on_join`/`ecs_on_leave` for a per-system callback (which receives the
-    entity directly), or subscribe to `ecs_get_join_event`/`ecs_get_leave_event`
+    entity directly), or subscribe to `ecs_join_event`/`ecs_leave_event`
     directly to observe every system. These events are enqueued, so they are
     delivered on `ecs_dispatch`.
 
@@ -826,7 +826,7 @@ void ecs_dispatch(ecs_t* ecs);
  * @param ecs The ECS context
  * @returns   The add event handle
  */
-ecs_event_t ecs_get_add_event(ecs_t* ecs);
+ecs_event_t ecs_add_event(ecs_t* ecs);
 
 /**
  * @brief Returns the built-in event emitted when a component is removed
@@ -837,7 +837,7 @@ ecs_event_t ecs_get_add_event(ecs_t* ecs);
  * @param ecs The ECS context
  * @returns   The remove event handle
  */
-ecs_event_t ecs_get_remove_event(ecs_t* ecs);
+ecs_event_t ecs_remove_event(ecs_t* ecs);
 
 /**
  * @brief Returns the built-in event emitted when a component's data is set
@@ -848,7 +848,7 @@ ecs_event_t ecs_get_remove_event(ecs_t* ecs);
  * @param ecs The ECS context
  * @returns   The set event handle
  */
-ecs_event_t ecs_get_set_event(ecs_t* ecs);
+ecs_event_t ecs_set_event(ecs_t* ecs);
 
 /**
  * @brief Called when a component is added to an entity (via ecs_add)
@@ -957,7 +957,7 @@ void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn);
  * @param ecs The ECS context
  * @returns   The join event handle
  */
-ecs_event_t ecs_get_join_event(ecs_t* ecs);
+ecs_event_t ecs_join_event(ecs_t* ecs);
 
 /**
  * @brief Returns the built-in event emitted when an entity leaves a system
@@ -969,7 +969,7 @@ ecs_event_t ecs_get_join_event(ecs_t* ecs);
  * @param ecs The ECS context
  * @returns   The leave event handle
  */
-ecs_event_t ecs_get_leave_event(ecs_t* ecs);
+ecs_event_t ecs_leave_event(ecs_t* ecs);
 
 /**
  * @brief Called when an entity joins a system
@@ -993,7 +993,7 @@ typedef void (*ecs_on_leave_fn)(ecs_t* ecs, ecs_entity_t entity, void* udata);
  * @brief Sets the callback invoked when an entity joins a specific system
  *
  * The callback is delivered through the built-in join event (see
- * {@link ecs_get_join_event}), scoped to the given system, and receives the
+ * {@link ecs_join_event}), scoped to the given system, and receives the
  * joining entity along with the system's user data (see
  * {@link ecs_set_system_udata}). It fires on {@link ecs_dispatch}, not
  * synchronously. Calling this again replaces the system's join callback.
@@ -1008,7 +1008,7 @@ void ecs_on_join(ecs_t* ecs, ecs_system_t sys, ecs_on_join_fn fn);
  * @brief Sets the callback invoked when an entity leaves a specific system
  *
  * The callback is delivered through the built-in leave event (see
- * {@link ecs_get_leave_event}), scoped to the given system, and receives the
+ * {@link ecs_leave_event}), scoped to the given system, and receives the
  * leaving entity along with the system's user data (see
  * {@link ecs_set_system_udata}). It fires on {@link ecs_dispatch}, not
  * synchronously. An entity leaves when it no longer matches the system or when
@@ -2307,31 +2307,31 @@ void ecs_dispatch(ecs_t* ecs)
     ecs->dispatching = false;
 }
 
-ecs_event_t ecs_get_join_event(ecs_t* ecs)
+ecs_event_t ecs_join_event(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     return ecs->join_event;
 }
 
-ecs_event_t ecs_get_leave_event(ecs_t* ecs)
+ecs_event_t ecs_leave_event(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     return ecs->leave_event;
 }
 
-ecs_event_t ecs_get_add_event(ecs_t* ecs)
+ecs_event_t ecs_add_event(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     return ecs->add_event;
 }
 
-ecs_event_t ecs_get_remove_event(ecs_t* ecs)
+ecs_event_t ecs_remove_event(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     return ecs->remove_event;
 }
 
-ecs_event_t ecs_get_set_event(ecs_t* ecs)
+ecs_event_t ecs_set_event(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     return ecs->set_event;
@@ -3032,7 +3032,7 @@ static inline bool ecs_entity_system_test(ecs_bitset_t require_bits,
 // True if a built-in lifecycle event has a user listener. The built-in
 // forwarding listener is always subscribed first (slot 0) and never removed, so
 // any active listener at a later slot is a user subscription (via the
-// ecs_get_*_event handles). The lifecycle emit sites use this so raw subscribers
+// ecs_*_event handles). The lifecycle emit sites use this so raw subscribers
 // receive events even for systems/components without a convenience callback,
 // while still emitting nothing when nobody is listening at all.
 static inline bool ecs_event_has_user_listener(ecs_t* ecs, ecs_event_t event)

@@ -429,7 +429,7 @@ TEST_CASE(test_event_raw_component_subscription)
 
     // comp1 has no ecs_on_add callback; a raw subscriber to the built-in add
     // event still observes the add (the payload type is internal to the library)
-    ecs_subscribe(ecs, ecs_get_add_event(ecs), on_comp_event, NULL);
+    ecs_subscribe(ecs, ecs_add_event(ecs), on_comp_event, NULL);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp1, NULL);
