@@ -30,6 +30,21 @@ static void comp_on_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, voi
     comp_ptr->used = false;
 }
 
+// Destructor used by the destroy test. Because on_remove is now delivered on
+// ecs_dispatch, an entity destroyed via ecs_destroy is no longer live when this
+// runs, so it must not dereference the entity; it just records that it fired.
+static bool destructor_ran = false;
+
+static void comp_on_remove_flag(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* udata)
+{
+    (void)ecs;
+    (void)entity;
+    (void)comp;
+    (void)udata;
+
+    destructor_ran = true;
+}
+
 static ecs_ret_t entity_dummy_system(ecs_t* ecs,
                                      ecs_entity_t* entities,
                                      size_t entity_count,
@@ -197,15 +212,17 @@ TEST_SUITE(suite_entity)
 
 TEST_CASE(test_on_add)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
-    {
-        .on_add_cb = comp_on_add
-    });
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    ecs_on_add(ecs, comp_type, comp_on_add);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type, NULL);
-    comp_t* comp = ecs_get(ecs, entity, comp_type);
 
+    // on_add is delivered as an event; it runs on dispatch, not during ecs_add
+    REQUIRE(!((comp_t*)ecs_get(ecs, entity, comp_type))->used);
+    ecs_dispatch(ecs);
+
+    comp_t* comp = ecs_get(ecs, entity, comp_type);
     REQUIRE(comp->used);
 
     return true;
@@ -213,16 +230,19 @@ TEST_CASE(test_on_add)
 
 TEST_CASE(test_on_add_args)
 {
+    // args_size is required so the args are copied and survive until dispatch
     ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
     {
-        .on_add_cb = comp_on_add_args
+        .args_size = sizeof(comp_t)
     });
+    ecs_on_add(ecs, comp_type, comp_on_add_args);
 
     ecs_entity_t entity = ecs_create(ecs);
 
     // The args passed to ecs_add are forwarded to the on_add constructor
     comp_t init = { .used = true };
     ecs_add(ecs, entity, comp_type, &init);
+    ecs_dispatch(ecs);
 
     comp_t* comp = ecs_get(ecs, entity, comp_type);
     REQUIRE(comp->used);
@@ -232,16 +252,17 @@ TEST_CASE(test_on_add_args)
 
 TEST_CASE(test_on_remove)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
-    {
-        .on_add_cb = comp_on_add,
-        .on_remove_cb = comp_on_remove
-    });
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    ecs_on_add(ecs, comp_type, comp_on_add);
+    ecs_on_remove(ecs, comp_type, comp_on_remove);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type, NULL);
     comp_t* comp = ecs_get(ecs, entity, comp_type);
     ecs_remove(ecs, entity, comp_type);
+
+    // on_add then on_remove are delivered in order on dispatch
+    ecs_dispatch(ecs);
 
     REQUIRE(!comp->used);
 
@@ -250,21 +271,21 @@ TEST_CASE(test_on_remove)
 
 TEST_CASE(test_destructor_destroy)
 {
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
-    {
-        .on_add_cb = comp_on_add,
-        .on_remove_cb = comp_on_remove
-    });
+    destructor_ran = false;
+
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    ecs_on_remove(ecs, comp_type, comp_on_remove_flag);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type, NULL);
-    comp_t* comp = ecs_get(ecs, entity, comp_type);
+
     ecs_destroy(ecs, entity);
 
-    REQUIRE(!ecs_is_ready(ecs, entity));
+    // The destructor is queued by ecs_destroy and fires on dispatch
+    ecs_dispatch(ecs);
 
-    //WARNING: We assume memory has not been reclaimed
-    REQUIRE(!comp->used);
+    REQUIRE(!ecs_is_ready(ecs, entity));
+    REQUIRE(destructor_ran);
 
     return true;
 }

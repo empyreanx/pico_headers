@@ -101,10 +101,8 @@ TEST_CASE(test_set_on_set_callback)
 {
     set_callback_called = false;
 
-    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
-    {
-        .on_set_cb = comp_on_set
-    });
+    ecs_comp_t comp_type = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    ecs_on_set(ecs, comp_type, comp_on_set);
 
     ecs_entity_t entity = ecs_create(ecs);
     ecs_add(ecs, entity, comp_type, NULL);
@@ -112,8 +110,13 @@ TEST_CASE(test_set_on_set_callback)
     comp_t data = { .used = true };
     ecs_set(ecs, entity, comp_type, &data);
 
-    REQUIRE(set_callback_called);
+    // The data is copied synchronously, but on_set is delivered on dispatch
     REQUIRE(((comp_t*)ecs_get(ecs, entity, comp_type))->used);
+    REQUIRE(!set_callback_called);
+
+    ecs_dispatch(ecs);
+
+    REQUIRE(set_callback_called);
 
     return true;
 }
@@ -156,10 +159,8 @@ TEST_CASE(test_set_deferred_fires_callback)
 {
     deferred_cb_called = false;
 
-    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
-    {
-        .on_set_cb = on_set_deferred
-    });
+    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    ecs_on_set(ecs, comp_cb, on_set_deferred);
 
     set_args_t args = { .comp = comp_cb, .data = { .used = true } };
 
@@ -175,9 +176,13 @@ TEST_CASE(test_set_deferred_fires_callback)
 
     ecs_run_system(ecs, sys1, 0);
 
-    // on_set must fire even when the set was deferred
-    REQUIRE(deferred_cb_called);
+    // The deferred set is applied at flush; its on_set fires on dispatch
     REQUIRE(((comp_t*)ecs_get(ecs, entity, comp_cb))->used);
+    REQUIRE(!deferred_cb_called);
+
+    ecs_dispatch(ecs);
+
+    REQUIRE(deferred_cb_called);
 
     return true;
 }

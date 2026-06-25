@@ -275,9 +275,9 @@ TEST_CASE(test_queue_add_args)
 {
     ecs_comp_t comp_args = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
     {
-        .on_add_cb = on_add_deferred_args,
         .args_size = sizeof(comp_t)
     });
+    ecs_on_add(ecs, comp_args, on_add_deferred_args);
 
     deferred_add_args_t state =
     {
@@ -292,9 +292,10 @@ TEST_CASE(test_queue_add_args)
 
     ecs_run_system(ecs, sys1, 0);
 
-    // The args passed to the deferred ecs_add must reach the constructor
-    // after the command queue is flushed
+    // The component is present after flush, but its on_add constructor (which
+    // copies the args into the component) runs on dispatch
     REQUIRE(ecs_has(ecs, state.entity, comp_args));
+    ecs_dispatch(ecs);
     REQUIRE(((comp_t*)ecs_get(ecs, state.entity, comp_args))->used);
 
     return true;
@@ -304,10 +305,8 @@ TEST_CASE(test_queue_set_dead_entity)
 {
     set_then_destroy_cb_called = false;
 
-    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), &(ecs_comp_desc_t)
-    {
-        .on_set_cb = on_set_before_destroy
-    });
+    ecs_comp_t comp_cb = ecs_define_component(ecs, sizeof(comp_t), NULL);
+    ecs_on_set(ecs, comp_cb, on_set_before_destroy);
     sys1 = ecs_define_system(ecs, set_then_destroy_system, &(ecs_sys_desc_t)
     {
         .udata = &comp_cb
@@ -322,7 +321,10 @@ TEST_CASE(test_queue_set_dead_entity)
     // The entity should have been destroyed
     REQUIRE(!ecs_is_ready(ecs, entity));
 
-    // The deferred set was skipped because the entity was not ready at flush time
+    ecs_dispatch(ecs);
+
+    // The deferred set was skipped because the entity was not ready at flush
+    // time, so its on_set callback never fired
     REQUIRE(!set_then_destroy_cb_called);
 
     return true;
