@@ -364,61 +364,6 @@ void ecs_free(ecs_t* ecs);
 void ecs_reset(ecs_t* ecs);
 
 /**
- * @brief Called when a component is added to an entity (via ecs_add)
- *
- * Registered with {@link ecs_on_add}. Delivered as a queued event, so it fires
- * on {@link ecs_dispatch} rather than synchronously during ecs_add.
- *
- * @param ecs    The ECS context
- * @param entity The entity the component was added to
- * @param comp   The component that was added
- * @param args   The args passed to ecs_add (copied; see ecs_define_component's
- *               args_size), or NULL
- * @param udata  The component's user data (see ecs_define_component)
- */
-typedef void (*ecs_on_add_fn)(ecs_t* ecs,
-                              ecs_entity_t entity,
-                              ecs_comp_t comp,
-                              const void* args,
-                              void* udata);
-
-/**
- * @brief Called when a component is removed from an entity (via ecs_remove or
- * ecs_destroy)
- *
- * Registered with {@link ecs_on_remove}. Delivered as a queued event, so it
- * fires on {@link ecs_dispatch}. Note that when triggered by ecs_destroy the
- * entity is already inactive by dispatch time, so the callback must not assume
- * the entity is still live.
- *
- * @param ecs    The ECS context
- * @param entity The entity the component was removed from
- * @param comp   The component that was removed
- * @param udata  The component's user data (see ecs_define_component)
- */
-typedef void (*ecs_on_remove_fn)(ecs_t* ecs,
-                                 ecs_entity_t entity,
-                                 ecs_comp_t comp,
-                                 void* udata);
-
-
-/**
- * @brief Called when a component's data is set (via ecs_set)
- *
- * Registered with {@link ecs_on_set}. Delivered as a queued event, so it fires
- * on {@link ecs_dispatch} rather than synchronously during ecs_set.
- *
- * @param ecs    The ECS context
- * @param entity The entity whose component was set
- * @param comp   The component that was set
- * @param udata  The component's user data (see ecs_define_component)
- */
-typedef void (*ecs_on_set_fn)(ecs_t* ecs,
-                              ecs_entity_t entity,
-                              ecs_comp_t comp,
-                              void* udata);
-
-/**
  * @brief Optional parameters for component definition
  *
  * To react to a component being added, removed, or set, register a callback
@@ -453,46 +398,6 @@ typedef struct
 ecs_comp_t ecs_define_component(ecs_t* ecs,
                                 size_t size,
                                 const ecs_comp_desc_t* desc);
-
-/**
- * @brief Sets the callback invoked when the component is added to an entity
- *
- * The callback receives the added entity, the component, the args passed to
- * ecs_add, and the component's user data. It is delivered through a built-in
- * event and fires on {@link ecs_dispatch}, not synchronously during ecs_add.
- * Calling this again replaces the component's add callback.
- *
- * @param ecs  The ECS context
- * @param comp The component to watch
- * @param fn   The callback invoked when the component is added
- */
-void ecs_on_add(ecs_t* ecs, ecs_comp_t comp, ecs_on_add_fn fn);
-
-/**
- * @brief Sets the callback invoked when the component is removed from an entity
- *
- * The callback fires for both ecs_remove and ecs_destroy and is delivered
- * through a built-in event on {@link ecs_dispatch}, not synchronously. Calling
- * this again replaces the component's remove callback.
- *
- * @param ecs  The ECS context
- * @param comp The component to watch
- * @param fn   The callback invoked when the component is removed
- */
-void ecs_on_remove(ecs_t* ecs, ecs_comp_t comp, ecs_on_remove_fn fn);
-
-/**
- * @brief Sets the callback invoked when the component's data is set via ecs_set
- *
- * Delivered through a built-in event on {@link ecs_dispatch}, not
- * synchronously during ecs_set. Calling this again replaces the component's
- * set callback.
- *
- * @param ecs  The ECS context
- * @param comp The component to watch
- * @param fn   The callback invoked when the component is set
- */
-void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn);
 
 /**
  * @brief System callback
@@ -911,31 +816,6 @@ void ecs_enqueue_from(ecs_t* ecs,
 void ecs_dispatch(ecs_t* ecs);
 
 /**
- * @brief Returns the built-in event emitted when an entity joins a system
- *
- * The event's source is the system (its id) and its payload carries the joining
- * entity and the system (the payload layout is internal). Subscribe with
- * {@link ecs_subscribe} to observe joins for every system, or use
- * {@link ecs_on_join} for a per-system callback that receives the entity.
- *
- * @param ecs The ECS context
- * @returns   The join event handle
- */
-ecs_event_t ecs_get_join_event(ecs_t* ecs);
-
-/**
- * @brief Returns the built-in event emitted when an entity leaves a system
- *
- * The event's source is the system (its id) and its payload carries the leaving
- * entity and the system (the payload layout is internal). An entity leaves when
- * it no longer matches the system or when it is destroyed.
- *
- * @param ecs The ECS context
- * @returns   The leave event handle
- */
-ecs_event_t ecs_get_leave_event(ecs_t* ecs);
-
-/**
  * @brief Returns the built-in event emitted when a component is added
  *
  * The event's source is the component (its id) and its payload carries the
@@ -969,6 +849,127 @@ ecs_event_t ecs_get_remove_event(ecs_t* ecs);
  * @returns   The set event handle
  */
 ecs_event_t ecs_get_set_event(ecs_t* ecs);
+
+/**
+ * @brief Called when a component is added to an entity (via ecs_add)
+ *
+ * Registered with {@link ecs_on_add}. Delivered as a queued event, so it fires
+ * on {@link ecs_dispatch} rather than synchronously during ecs_add.
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity the component was added to
+ * @param comp   The component that was added
+ * @param args   The args passed to ecs_add (copied; see ecs_define_component's
+ *               args_size), or NULL
+ * @param udata  The component's user data (see ecs_define_component)
+ */
+typedef void (*ecs_on_add_fn)(ecs_t* ecs,
+                              ecs_entity_t entity,
+                              ecs_comp_t comp,
+                              const void* args,
+                              void* udata);
+
+/**
+ * @brief Called when a component is removed from an entity (via ecs_remove or
+ * ecs_destroy)
+ *
+ * Registered with {@link ecs_on_remove}. Delivered as a queued event, so it
+ * fires on {@link ecs_dispatch}. Note that when triggered by ecs_destroy the
+ * entity is already inactive by dispatch time, so the callback must not assume
+ * the entity is still live.
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity the component was removed from
+ * @param comp   The component that was removed
+ * @param udata  The component's user data (see ecs_define_component)
+ */
+typedef void (*ecs_on_remove_fn)(ecs_t* ecs,
+                                 ecs_entity_t entity,
+                                 ecs_comp_t comp,
+                                 void* udata);
+
+
+/**
+ * @brief Called when a component's data is set (via ecs_set)
+ *
+ * Registered with {@link ecs_on_set}. Delivered as a queued event, so it fires
+ * on {@link ecs_dispatch} rather than synchronously during ecs_set.
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity whose component was set
+ * @param comp   The component that was set
+ * @param udata  The component's user data (see ecs_define_component)
+ */
+typedef void (*ecs_on_set_fn)(ecs_t* ecs,
+                              ecs_entity_t entity,
+                              ecs_comp_t comp,
+                              void* udata);
+
+/**
+ * @brief Sets the callback invoked when the component is added to an entity
+ *
+ * The callback receives the added entity, the component, the args passed to
+ * ecs_add, and the component's user data. It is delivered through a built-in
+ * event and fires on {@link ecs_dispatch}, not synchronously during ecs_add.
+ * Calling this again replaces the component's add callback.
+ *
+ * @param ecs  The ECS context
+ * @param comp The component to watch
+ * @param fn   The callback invoked when the component is added
+ */
+void ecs_on_add(ecs_t* ecs, ecs_comp_t comp, ecs_on_add_fn fn);
+
+/**
+ * @brief Sets the callback invoked when the component is removed from an entity
+ *
+ * The callback fires for both ecs_remove and ecs_destroy and is delivered
+ * through a built-in event on {@link ecs_dispatch}, not synchronously. Calling
+ * this again replaces the component's remove callback.
+ *
+ * @param ecs  The ECS context
+ * @param comp The component to watch
+ * @param fn   The callback invoked when the component is removed
+ */
+void ecs_on_remove(ecs_t* ecs, ecs_comp_t comp, ecs_on_remove_fn fn);
+
+/**
+ * @brief Sets the callback invoked when the component's data is set via ecs_set
+ *
+ * Delivered through a built-in event on {@link ecs_dispatch}, not
+ * synchronously during ecs_set. Calling this again replaces the component's
+ * set callback.
+ *
+ * @param ecs  The ECS context
+ * @param comp The component to watch
+ * @param fn   The callback invoked when the component is set
+ */
+void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn);
+
+
+/**
+ * @brief Returns the built-in event emitted when an entity joins a system
+ *
+ * The event's source is the system (its id) and its payload carries the joining
+ * entity and the system (the payload layout is internal). Subscribe with
+ * {@link ecs_subscribe} to observe joins for every system, or use
+ * {@link ecs_on_join} for a per-system callback that receives the entity.
+ *
+ * @param ecs The ECS context
+ * @returns   The join event handle
+ */
+ecs_event_t ecs_get_join_event(ecs_t* ecs);
+
+/**
+ * @brief Returns the built-in event emitted when an entity leaves a system
+ *
+ * The event's source is the system (its id) and its payload carries the leaving
+ * entity and the system (the payload layout is internal). An entity leaves when
+ * it no longer matches the system or when it is destroyed.
+ *
+ * @param ecs The ECS context
+ * @returns   The leave event handle
+ */
+ecs_event_t ecs_get_leave_event(ecs_t* ecs);
 
 /**
  * @brief Called when an entity joins a system
