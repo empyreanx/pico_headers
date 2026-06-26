@@ -2617,9 +2617,10 @@ static void ecs_cmd_flush_queue(ecs_t* ecs)
  *============================================================================*/
 static void ecs_event_queue_init(ecs_t* ecs, ecs_event_queue_t* queue, size_t capacity)
 {
-    ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_not_null(queue));
     ECS_ASSERT(capacity > 0);
+
+    (void)ecs;
 
     queue->size     = 0;
     queue->capacity = capacity;
