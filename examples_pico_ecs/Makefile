@@ -8,7 +8,7 @@ endif
 
 DEPS   = ../pico_ecs.h
 
-all: benchmark example macros events lifecycle
+all: benchmark example macros events lifecycle deferred_events
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -28,7 +28,10 @@ events: events.o $(DEPS)
 lifecycle: lifecycle.o $(DEPS)
 	$(CC) -o lifecycle lifecycle.o #-g
 
+deferred_events: deferred_events.o $(DEPS)
+	$(CC) -o deferred_events deferred_events.o #-g
+
 .PHONY: clean
 
 clean:
-	rm -f benchmark example macros events lifecycle *.o
+	rm -f benchmark example macros events lifecycle deferred_events *.o
