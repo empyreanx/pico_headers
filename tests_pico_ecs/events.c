@@ -51,27 +51,6 @@ static void on_accumulate(ecs_t* ecs,
     }
 }
 
-// Counts raw subscriptions to a built-in component event. The payload struct is
-// internal to the library, so the listener only records that it fired and that a
-// payload was delivered.
-static int  g_comp_event_count;
-static bool g_comp_event_had_payload;
-
-static void on_comp_event(ecs_t* ecs,
-                          ecs_event_t event,
-                          const void* payload,
-                          size_t payload_size,
-                          void* udata)
-{
-    (void)ecs;
-    (void)event;
-    (void)payload_size;
-    (void)udata;
-
-    g_comp_event_had_payload = (payload != NULL);
-    g_comp_event_count++;
-}
-
 // Listener that re-emits another event while dispatch is running
 static ecs_event_t g_chain_event;
 
@@ -422,28 +401,6 @@ TEST_CASE(test_event_emit_from_synchronous)
     return true;
 }
 
-TEST_CASE(test_event_raw_component_subscription)
-{
-    g_comp_event_count       = 0;
-    g_comp_event_had_payload = false;
-
-    // comp1 has no ecs_on_add callback; a raw subscriber to the built-in add
-    // event still observes the add (the payload type is internal to the library)
-    ecs_subscribe(ecs, ecs_add_event(ecs), on_comp_event, NULL);
-
-    ecs_entity_t entity = ecs_create(ecs);
-    ecs_add(ecs, entity, comp1, NULL);
-
-    // The lifecycle events are enqueued, so nothing is delivered until dispatch
-    REQUIRE(g_comp_event_count == 0);
-    ecs_dispatch(ecs);
-
-    REQUIRE(g_comp_event_count == 1);
-    REQUIRE(g_comp_event_had_payload);
-
-    return true;
-}
-
 TEST_SUITE(suite_events)
 {
     RUN_TEST_CASE(test_event_emit_and_dispatch);
@@ -460,5 +417,4 @@ TEST_SUITE(suite_events)
     RUN_TEST_CASE(test_event_reset_discards_pending);
     RUN_TEST_CASE(test_event_emit_synchronous);
     RUN_TEST_CASE(test_event_emit_from_synchronous);
-    RUN_TEST_CASE(test_event_raw_component_subscription);
 }
