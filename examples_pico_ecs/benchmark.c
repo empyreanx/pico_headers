@@ -236,8 +236,8 @@ ecs_ret_t movement_system(ecs_t* ecs,
         v2d_t* pos = ecs_get(ecs, entity, PosComponent);
         v2d_t* dir = ecs_get(ecs, entity, DirComponent);
 
-        pos->x += pos->x + dir->y * 1.f / 60.f;
-        pos->y += pos->y + dir->y * 1.f / 60.f;
+        pos->x += dir->x * 1.f / 60.f;
+        pos->y += dir->y * 1.f / 60.f;
     }
 
     return 0;
@@ -395,7 +395,11 @@ static void bench_get()
     {
         // Create entity id
         ecs_entity_t entity = {(ecs_id_t)i};
-        ecs_get(ecs, entity, PosComponent);
+        v2d_t* pos = ecs_get(ecs, entity, PosComponent);
+        // Assign through the returned pointer so the lookup has an observable
+        // effect (otherwise the optimizer elides the whole loop)
+        pos->x = 1.f;
+        pos->y = 2.f;
     }
 }
 
