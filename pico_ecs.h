@@ -174,11 +174,6 @@
           than a bare entity, and systems no longer consume a listener slot each
           (decoupling them from PICO_ECS_MAX_LISTENERS). The ecs_on_join/
           ecs_on_leave API is unchanged.
-        - Added ecs_add_event/ecs_remove_event/ecs_set_event so the
-          built-in component events can be observed via a raw ecs_subscribe,
-          like the join/leave events. A raw subscriber receives these events
-          even for systems/components with no convenience callback registered.
-          The event payload layouts are internal to the library.
 
     - 3.10 (2026/06/25):
         - The event "source" id has been renamed to "sender" to match a
