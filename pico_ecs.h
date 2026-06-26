@@ -977,7 +977,6 @@ void ecs_on_remove(ecs_t* ecs, ecs_comp_t comp, ecs_on_remove_fn fn, bool sync);
  */
 void ecs_on_set(ecs_t* ecs, ecs_comp_t comp, ecs_on_set_fn fn, bool sync);
 
-
 /**
  * @brief Returns the built-in event emitted when an entity joins a system
  *
