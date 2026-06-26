@@ -1,6 +1,9 @@
 benchmark
 example
 macros
+deferred_events
+events
+lifecycle
 *.o
 gmon.out
 massif.out*
