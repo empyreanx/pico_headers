@@ -8,7 +8,7 @@ endif
 
 DEPS   = ../pico_ecs.h
 
-all: benchmark example macros
+all: benchmark example events macros
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -18,6 +18,9 @@ benchmark: benchmark.o $(DEPS)
 
 example: example.o $(DEPS)
 	$(CC) -o example example.o #-g
+
+events: events.o $(DEPS) ../pico_emitter.h
+	$(CC) -o events events.o #-g
 
 macros: macros.o $(DEPS)
 	$(CC) -o macros macros.o #-g
