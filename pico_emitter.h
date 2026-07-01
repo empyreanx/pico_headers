@@ -266,6 +266,20 @@ void queued_emitter_off(queued_emitter_t* qe, int event, emitter_listener_fn lis
 void queued_emitter_off_all(queued_emitter_t* qe, int event);
 
 /**
+ * @brief Emits an event immediately, bypassing the queue.
+ *
+ * Convenience alias that forwards directly to emitter_emit on the wrapped
+ * emitter. Listeners fire synchronously during this call rather than being
+ * deferred to the next queued_emitter_flush. Because dispatch is immediate,
+ * the payload is not copied; the pointed-to object need only outlive the call.
+ *
+ * @param qe    The queued emitter. Must not be NULL.
+ * @param event Event ID in [0, num_events).
+ * @param data  Optional event payload forwarded to each listener. May be NULL.
+ */
+void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data);
+
+/**
  * @brief Enqueues an event for deferred dispatch.
  *
  * If data is non-NULL and data_size is greater than zero, the payload is
@@ -279,30 +293,30 @@ void queued_emitter_off_all(queued_emitter_t* qe, int event);
  *                  when data is NULL or when a pointer-only reference is
  *                  intentionally stored without copying.
  */
-void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data, size_t data_size);
+void queued_emitter_enqueue(queued_emitter_t* qe, int event, const void* data, size_t data_size);
 
 /**
  * @brief Convenience macro that enqueues a typed event without an explicit size argument.
  *
- * Equivalent to calling queued_emitter_emit with `sizeof(*ptr)` as the data
+ * Equivalent to calling queued_emitter_enqueue with `sizeof(*ptr)` as the data
  * size. The payload size is deduced at compile time from the pointer's type,
  * so no per-event registration is required.
  *
  * When @p ptr is NULL, `sizeof(*ptr)` is still evaluated at compile time
- * (sizeof does not evaluate its operand), and queued_emitter_emit treats a
+ * (sizeof does not evaluate its operand), and queued_emitter_enqueue treats a
  * NULL data pointer as no-payload regardless of the size argument, so no
  * copy is performed.
  *
  * @note @p ptr must not be a `void*`; the compiler cannot apply `sizeof` to
- *       an incomplete type. Use queued_emitter_emit directly when the payload
+ *       an incomplete type. Use queued_emitter_enqueue directly when the payload
  *       is untyped or the size is not derivable from the pointer type.
  *
  * @param qe    The queued emitter. Must not be NULL.
  * @param event Event ID in [0, num_events).
  * @param ptr   Typed pointer to the event payload, or NULL for no payload.
  */
-#define queued_emitter_emit_typed(qe, event, ptr) \
-    (queued_emitter_emit((qe), (event), (ptr), sizeof(*(ptr))))
+#define queued_emitter_enqueue_typed(qe, event, ptr) \
+    (queued_emitter_enqueue((qe), (event), (ptr), sizeof(*(ptr))))
 
 /**
  * @brief Dispatches all queued events in FIFO order and clears the queue.
@@ -721,7 +735,13 @@ void queued_emitter_off_all(queued_emitter_t* qe, int event)
     emitter_off_all(qe->emitter, event);
 }
 
-void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data, size_t data_size)
+void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data)
+{
+    EMITTER_ASSERT(qe != NULL);
+    emitter_emit(qe->emitter, event, data);
+}
+
+void queued_emitter_enqueue(queued_emitter_t* qe, int event, const void* data, size_t data_size)
 {
     EMITTER_ASSERT(qe != NULL);
     EMITTER_ASSERT(event >= 0 && event < qe->emitter->num_events);
