@@ -8,7 +8,7 @@ endif
 
 DEPS   = ../pico_ecs.h
 
-all: benchmark example events macros
+all: benchmark example events messaging macros
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -22,10 +22,13 @@ example: example.o $(DEPS)
 events: events.o $(DEPS) ../pico_emitter.h
 	$(CC) -o events events.o #-g
 
+messaging: messaging.o $(DEPS) ../pico_emitter.h
+	$(CC) -o messaging messaging.o #-g
+
 macros: macros.o $(DEPS)
 	$(CC) -o macros macros.o #-g
 
 .PHONY: clean
 
 clean:
-	rm -f benchmark example macros *.o
+	rm -f benchmark example events messaging macros *.o
