@@ -33,7 +33,28 @@
  * An ECS *system* is good at answering broad, data-parallel questions ("which
  * pairs of colliders overlap?"), but it is a poor place to bury the dozens of
  * special-case rules that a collision can trigger. Instead, the system emits
- * one coarse event and lets a cascade of listeners refine it:
+ * one coarse event and lets a cascade of listeners refine it.
+ *
+ * Each frame is split into three phases, which is how a real game loop tends
+ * to be organized: advance the simulation, resolve the events it produced,
+ * then present the result.
+ *
+ *   1. simulation   movement_system   integrate position from velocity
+ *                   collision_system  detect overlaps -> ENQUEUE EVT_COLLISION
+ *   2. resolve      queued_emitter_flush  drain the frame's events
+ *   3. present      report_system     print entity state
+ *
+ * The emitter is a *queued* emitter, which is the realistic choice: a system
+ * should not have listeners firing in the middle of its own iteration, nor
+ * recursing onto its call stack. collision_system therefore only *enqueues*
+ * EVT_COLLISION; nothing is dispatched until queued_emitter_flush is called.
+ * Flush drains in FIFO waves -- the EVT_COLLISION events first, then the
+ * EVT_DAMAGE / EVT_PICKUP they spawn, then EVT_DEATH / EVT_SCORE_CHANGED, and
+ * so on -- so the cascade still happens, but at one predictable drain point.
+ * Payloads are copied into the emitter's arena, so it is safe to enqueue a
+ * stack-local event struct (see the queued_emitter_enqueue_typed calls below).
+ *
+ * The cascade refines one coarse collision into progressively finer events:
  *
  *   Layer 0  collision_system  (geometry only) -----> EVT_COLLISION
  *   Layer 1  on_collision      (what kind of hit?) -> EVT_DAMAGE / EVT_PICKUP
@@ -44,6 +65,7 @@
  *
  * Each layer knows a little more about the game than the one above it, and
  * each only depends on the event it subscribes to -- not on its callers. The
+ * movement and report systems are entirely unaware of the emitter; the
  * collision system never mentions health, items, or score; the score handler
  * never mentions collisions. New rules can be slotted in by subscribing to an
  * existing event, without editing the layers above.
@@ -86,6 +108,7 @@ typedef struct { int delta;                  } score_evt_t;
 typedef enum { KIND_PLAYER, KIND_ENEMY, KIND_ITEM } kind_t;
 
 typedef struct { float x, y;   } pos_t;
+typedef struct { float vx, vy; } vel_t;
 typedef struct { float radius; } collider_t;
 typedef struct { int hp;       } health_t;
 
@@ -97,11 +120,14 @@ typedef struct
 } tag_t;
 
 ecs_comp_t PosComp;
+ecs_comp_t VelComp;
 ecs_comp_t ColliderComp;
 ecs_comp_t HealthComp;
 ecs_comp_t TagComp;
 
+ecs_system_t MovementSystem;
 ecs_system_t CollisionSystem;
+ecs_system_t ReportSystem;
 
 /* --------------------------------------------------------------------------
  * Shared context handed to every system and listener as user data
@@ -109,9 +135,10 @@ ecs_system_t CollisionSystem;
 
 typedef struct
 {
-    ecs_t*     ecs;
-    emitter_t* emitter;
-    int        score;
+    ecs_t*            ecs;
+    queued_emitter_t* qe;
+    float             dt;
+    int               score;
 } game_t;
 
 static const char* kind_name(kind_t k)
@@ -123,6 +150,33 @@ static const char* kind_name(kind_t k)
         case KIND_ITEM:   return "item";
         default:          return "?";
     }
+}
+
+/* --------------------------------------------------------------------------
+ * Movement system: integrate position from velocity
+ *
+ * A plain data-parallel system with no events at all. It is what makes the
+ * collisions below emergent -- entities drift together over successive frames
+ * instead of being placed in contact up front.
+ * -------------------------------------------------------------------------- */
+
+ecs_ret_t movement_system(ecs_t* ecs,
+                          ecs_entity_t* entities,
+                          size_t entity_count,
+                          void* udata)
+{
+    game_t* game = (game_t*)udata;
+
+    for (size_t i = 0; i < entity_count; i++)
+    {
+        pos_t* p = ecs_get(ecs, entities[i], PosComp);
+        vel_t* v = ecs_get(ecs, entities[i], VelComp);
+
+        p->x += v->vx * game->dt;
+        p->y += v->vy * game->dt;
+    }
+
+    return 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -164,7 +218,7 @@ ecs_ret_t collision_system(ecs_t* ecs,
             if (dx * dx + dy * dy <= r * r)
             {
                 collision_evt_t ev = { ea, eb };
-                emitter_emit(game->emitter, EVT_COLLISION, &ev);
+                queued_emitter_enqueue_typed(game->qe, EVT_COLLISION, &ev);
             }
         }
     }
@@ -209,7 +263,7 @@ static void on_collision(const void* data, void* udata)
         if (ot->kind == KIND_ITEM)
         {
             pickup_evt_t pe = { player, other };
-            emitter_emit(game->emitter, EVT_PICKUP, &pe);
+            queued_emitter_enqueue_typed(game->qe, EVT_PICKUP, &pe);
             return;
         }
 
@@ -222,8 +276,8 @@ static void on_collision(const void* data, void* udata)
             damage_evt_t to_enemy  = { other,  pt->power };
             damage_evt_t to_player = { player, ot->power };
 
-            emitter_emit(game->emitter, EVT_DAMAGE, &to_enemy);
-            emitter_emit(game->emitter, EVT_DAMAGE, &to_player);
+            queued_emitter_enqueue_typed(game->qe, EVT_DAMAGE, &to_enemy);
+            queued_emitter_enqueue_typed(game->qe, EVT_DAMAGE, &to_player);
         }
     }
 }
@@ -251,7 +305,7 @@ static void on_damage(const void* data, void* udata)
     if (h->hp <= 0)
     {
         death_evt_t de = { ev->target };
-        emitter_emit(game->emitter, EVT_DEATH, &de);
+        queued_emitter_enqueue_typed(game->qe, EVT_DEATH, &de);
     }
 }
 
@@ -273,7 +327,7 @@ static void on_pickup(const void* data, void* udata)
     ecs_destroy(game->ecs, ev->item);
 
     score_evt_t se = { value };
-    emitter_emit(game->emitter, EVT_SCORE_CHANGED, &se);
+    queued_emitter_enqueue_typed(game->qe, EVT_SCORE_CHANGED, &se);
 }
 
 /* --------------------------------------------------------------------------
@@ -296,7 +350,7 @@ static void on_death(const void* data, void* udata)
     if (t->kind == KIND_ENEMY)
     {
         score_evt_t se = { t->value };
-        emitter_emit(game->emitter, EVT_SCORE_CHANGED, &se);
+        queued_emitter_enqueue_typed(game->qe, EVT_SCORE_CHANGED, &se);
     }
 
     ecs_destroy(game->ecs, ev->entity);
@@ -313,12 +367,40 @@ static void on_score(const void* data, void* udata)
 }
 
 /* --------------------------------------------------------------------------
+ * Report system: print the surviving entities at the end of the frame
+ *
+ * Runs last so it sees the state left behind once the collision cascade and
+ * the deferred destroys for the frame have been applied.
+ * -------------------------------------------------------------------------- */
+
+ecs_ret_t report_system(ecs_t* ecs,
+                        ecs_entity_t* entities,
+                        size_t entity_count,
+                        void* udata)
+{
+    (void)udata;
+
+    for (size_t i = 0; i < entity_count; i++)
+    {
+        pos_t*    p = ecs_get(ecs, entities[i], PosComp);
+        health_t* h = ecs_get(ecs, entities[i], HealthComp);
+        tag_t*    t = ecs_get(ecs, entities[i], TagComp);
+
+        printf("    [report] %-6s @ (%.1f, %.1f)  hp: %d\n",
+               kind_name(t->kind), p->x, p->y, h->hp);
+    }
+
+    return 0;
+}
+
+/* --------------------------------------------------------------------------
  * Setup
  * -------------------------------------------------------------------------- */
 
 static void register_components(ecs_t* ecs)
 {
     PosComp      = ecs_define_component(ecs, sizeof(pos_t),      NULL);
+    VelComp      = ecs_define_component(ecs, sizeof(vel_t),      NULL);
     ColliderComp = ecs_define_component(ecs, sizeof(collider_t), NULL);
     HealthComp   = ecs_define_component(ecs, sizeof(health_t),   NULL);
     TagComp      = ecs_define_component(ecs, sizeof(tag_t),      NULL);
@@ -328,28 +410,40 @@ static void register_systems(ecs_t* ecs, game_t* game)
 {
     ecs_sys_desc_t desc = { .udata = game };
 
+    // ecs_run_systems dispatches systems in definition order, so the order of
+    // these calls is the per-frame pipeline: move, then collide, then report.
+    MovementSystem = ecs_define_system(ecs, movement_system, &desc);
+    ecs_require(ecs, MovementSystem, PosComp);
+    ecs_require(ecs, MovementSystem, VelComp);
+
     CollisionSystem = ecs_define_system(ecs, collision_system, &desc);
     ecs_require(ecs, CollisionSystem, PosComp);
     ecs_require(ecs, CollisionSystem, ColliderComp);
+
+    ReportSystem = ecs_define_system(ecs, report_system, &desc);
+    ecs_require(ecs, ReportSystem, PosComp);
+    ecs_require(ecs, ReportSystem, TagComp);
 }
 
-static void register_listeners(emitter_t* emitter, game_t* game)
+static void register_listeners(queued_emitter_t* qe, game_t* game)
 {
     // Each subscription connects one layer to the next. The cascade is built
     // entirely out of these edges; no layer calls another directly.
-    emitter_on(emitter, EVT_COLLISION,     on_collision, game);
-    emitter_on(emitter, EVT_DAMAGE,        on_damage,    game);
-    emitter_on(emitter, EVT_PICKUP,        on_pickup,    game);
-    emitter_on(emitter, EVT_DEATH,         on_death,     game);
-    emitter_on(emitter, EVT_SCORE_CHANGED, on_score,     game);
+    queued_emitter_on(qe, EVT_COLLISION,     on_collision, game);
+    queued_emitter_on(qe, EVT_DAMAGE,        on_damage,    game);
+    queued_emitter_on(qe, EVT_PICKUP,        on_pickup,    game);
+    queued_emitter_on(qe, EVT_DEATH,         on_death,     game);
+    queued_emitter_on(qe, EVT_SCORE_CHANGED, on_score,     game);
 }
 
 static ecs_entity_t spawn(ecs_t* ecs, kind_t kind, float x, float y,
-                          float radius, int hp, int power, int value)
+                          float vx, float vy, float radius,
+                          int hp, int power, int value)
 {
     ecs_entity_t e = ecs_create(ecs);
 
     pos_t      p = { x, y };
+    vel_t      v = { vx, vy };
     collider_t c = { radius };
     health_t   h = { hp };
     tag_t      t = { kind, power, value };
@@ -357,6 +451,7 @@ static ecs_entity_t spawn(ecs_t* ecs, kind_t kind, float x, float y,
     // ecs_set adds the component if absent and copies the value in. (ecs_add's
     // "args" are forwarded to an optional constructor, not stored directly.)
     ecs_set(ecs, e, PosComp,      &p);
+    ecs_set(ecs, e, VelComp,      &v);
     ecs_set(ecs, e, ColliderComp, &c);
     ecs_set(ecs, e, HealthComp,   &h);
     ecs_set(ecs, e, TagComp,      &t);
@@ -366,36 +461,48 @@ static ecs_entity_t spawn(ecs_t* ecs, kind_t kind, float x, float y,
 
 int main(void)
 {
-    ecs_t*     ecs     = ecs_new(1024, NULL);
-    emitter_t* emitter = emitter_create(EVT_COUNT);
+    ecs_t*            ecs = ecs_new(1024, NULL);
+    queued_emitter_t* qe  = queued_emitter_create(EVT_COUNT);
 
-    game_t game = { ecs, emitter, 0 };
+    game_t game = { ecs, qe, 1.0f, 0 };
 
     register_components(ecs);
     register_systems(ecs, &game);
-    register_listeners(emitter, &game);
+    register_listeners(qe, &game);
 
-    //                 kind         x      y    rad  hp  power value
-    spawn(ecs, KIND_PLAYER,   0.0f,  0.0f, 1.0f, 100,  20,    0);
-    spawn(ecs, KIND_ENEMY,    0.5f,  0.0f, 1.0f,  30,  10,   50);
-    spawn(ecs, KIND_ITEM,     0.0f,  0.5f, 1.0f,   1,   0,  100);
-    spawn(ecs, KIND_ENEMY,   50.0f, 50.0f, 1.0f,  30,  10,   50); // out of range
+    // The player drifts right into a stationary item, then into an enemy that
+    // is closing from the right. A second enemy sits far away and never joins.
+    //                 kind          x      y     vx     vy   rad  hp  power value
+    spawn(ecs, KIND_PLAYER,   0.0f,  0.0f,  1.0f,  0.0f, 1.0f, 100,  20,    0);
+    spawn(ecs, KIND_ITEM,     3.0f,  0.0f,  0.0f,  0.0f, 1.0f,   1,   0,  100);
+    spawn(ecs, KIND_ENEMY,    8.0f,  0.0f, -2.0f,  0.0f, 1.0f,  30,  10,   50);
+    spawn(ecs, KIND_ENEMY,   50.0f, 50.0f,  0.0f,  0.0f, 1.0f,  30,  10,   50); // out of range
 
-    for (int frame = 1; frame <= 3; frame++)
+    for (int frame = 1; frame <= 4; frame++)
     {
         printf("---------------------------------------------------------------\n");
         printf("Frame %d\n", frame);
         printf("---------------------------------------------------------------\n");
 
-        // One coarse system run fans out into the full cascade of fine events.
+        // Phase 1 - simulation: movement_system integrates positions and
+        // collision_system enqueues EVT_COLLISION events. No listener has run
+        // yet; the queue just fills up.
+        ecs_run_system(ecs, MovementSystem,  0);
         ecs_run_system(ecs, CollisionSystem, 0);
+
+        // Phase 2 - resolve: drain the frame's events. The whole cascade runs
+        // here, in FIFO waves, off the systems' call stacks.
+        queued_emitter_flush(qe);
+
+        // Phase 3 - present: report the state the cascade left behind.
+        ecs_run_system(ecs, ReportSystem, 0);
     }
 
     printf("---------------------------------------------------------------\n");
     printf("Final score: %d\n", game.score);
     printf("---------------------------------------------------------------\n");
 
-    emitter_destroy(emitter);
+    queued_emitter_destroy(qe);
     ecs_free(ecs);
 
     return 0;
