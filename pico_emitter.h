@@ -130,6 +130,23 @@ emitter_t* emitter_create(int num_events);
 void emitter_destroy(emitter_t* emitter);
 
 /**
+ * @brief Resizes the emitter to support a different number of event types.
+ *
+ * The underlying array of per-event listener slots is reallocated to hold
+ * @p num_events entries. When growing, existing listeners are preserved and the
+ * newly added event slots start empty. When shrinking, listeners registered on
+ * the dropped events are removed and their memory is freed; event IDs must
+ * remain in [0, num_events) after the call.
+ *
+ * @param emitter    The emitter. Must not be NULL.
+ * @param num_events Positive number of distinct event types.
+ *
+ * @returns true on success, or false if reallocation failed (in which case the
+ *          emitter is left unchanged).
+ */
+bool emitter_resize(emitter_t* emitter, int num_events);
+
+/**
  * @brief Subscribes a listener to an event.
  *
  * Registering the same listener multiple times results in multiple calls
@@ -227,6 +244,23 @@ queued_emitter_t* queued_emitter_create(int num_events);
  * @param qe The queued emitter. Must not be NULL.
  */
 void queued_emitter_destroy(queued_emitter_t* qe);
+
+/**
+ * @brief Resizes the queued emitter to support a different number of event types.
+ *
+ * Resizes the wrapped emitter's per-event listener slot array via
+ * emitter_resize. Growing preserves existing listeners and leaves the new event
+ * slots empty; shrinking removes listeners on the dropped events. Already
+ * queued events are unaffected, but any pending event ID must still be in
+ * [0, num_events) when queued_emitter_flush runs.
+ *
+ * @param qe         The queued emitter. Must not be NULL.
+ * @param num_events Positive number of distinct event types.
+ *
+ * @returns true on success, or false if reallocation failed (in which case the
+ *          queued emitter is left unchanged).
+ */
+bool queued_emitter_resize(queued_emitter_t* qe, int num_events);
 
 /**
  * @brief Subscribes a persistent listener to an event.
@@ -501,6 +535,49 @@ void emitter_destroy(emitter_t* emitter)
     EMITTER_FREE(emitter);
 }
 
+bool emitter_resize(emitter_t* emitter, int num_events)
+{
+    EMITTER_ASSERT(emitter    != NULL);
+    EMITTER_ASSERT(num_events >  0);
+
+    int old_num = emitter->num_events;
+
+    if (num_events == old_num)
+    {
+        return true;
+    }
+
+    // When shrinking, release the listener arrays of the slots being dropped
+    // before they become unreachable past the reallocated boundary.
+    for (int i = num_events; i < old_num; i++)
+    {
+        EMITTER_FREE(emitter->events[i].listeners);
+        EMITTER_FREE(emitter->events[i].udatas);
+        EMITTER_FREE(emitter->events[i].once);
+        // Clear the slot so a failed shrink-realloc below cannot leave dangling
+        // freed pointers that emitter_destroy would later double-free.
+        EMITTER_MEMSET(&emitter->events[i], 0, sizeof(emitter_slot_t));
+    }
+
+    emitter_slot_t* events = (emitter_slot_t*)EMITTER_REALLOC(emitter->events, (size_t)num_events * sizeof(emitter_slot_t));
+
+    if (!events)
+    {
+        return false;
+    }
+
+    // When growing, the newly added slots must start empty.
+    if (num_events > old_num)
+    {
+        EMITTER_MEMSET(&events[old_num], 0, (size_t)(num_events - old_num) * sizeof(emitter_slot_t));
+    }
+
+    emitter->events     = events;
+    emitter->num_events = num_events;
+
+    return true;
+}
+
 void emitter_on(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata)
 {
     emitter_subscribe(emitter, event, listener, udata, false);
@@ -709,6 +786,12 @@ void queued_emitter_destroy(queued_emitter_t* qe)
     EMITTER_FREE(qe->events);
     EMITTER_FREE(qe->datas);
     EMITTER_FREE(qe);
+}
+
+bool queued_emitter_resize(queued_emitter_t* qe, int num_events)
+{
+    EMITTER_ASSERT(qe != NULL);
+    return emitter_resize(qe->emitter, num_events);
 }
 
 void queued_emitter_on(queued_emitter_t* qe, int event, emitter_listener_fn listener, void* udata)

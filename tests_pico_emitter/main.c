@@ -363,6 +363,65 @@ TEST_CASE(test_emitter_once_reregister_during_emit)
     return true;
 }
 
+TEST_CASE(test_emitter_resize_grow_adds_events)
+{
+    reset_counters();
+    emitter_t* em = emitter_create(1);
+    emitter_on(em, 0, listener_inc, NULL);
+    REQUIRE(emitter_resize(em, 3)); /* expand num_events from 1 to 3 */
+    /* Existing listener is preserved. */
+    emitter_emit(em, 0, NULL);
+    REQUIRE(g_call_count == 1);
+    /* New event slots are usable and start empty. */
+    REQUIRE(emitter_count(em, 2) == 0);
+    emitter_on(em, 2, listener_inc, NULL);
+    emitter_emit(em, 2, NULL);
+    REQUIRE(g_call_count == 2);
+    emitter_destroy(em);
+    return true;
+}
+
+TEST_CASE(test_emitter_resize_preserves_listeners)
+{
+    int a = 0;
+    int b = 0;
+    emitter_t* em = emitter_create(2);
+    emitter_on(em, 0, listener_store_udata, &a);
+    emitter_on(em, 1, listener_store_udata, &b);
+    REQUIRE(emitter_resize(em, 5));
+    emitter_emit(em, 0, NULL);
+    emitter_emit(em, 1, NULL);
+    REQUIRE(a == 1);
+    REQUIRE(b == 1);
+    emitter_destroy(em);
+    return true;
+}
+
+TEST_CASE(test_emitter_resize_shrink_drops_events)
+{
+    reset_counters();
+    emitter_t* em = emitter_create(3);
+    emitter_on(em, 0, listener_inc, NULL);
+    emitter_on(em, 2, listener_inc, NULL); /* listener on a slot to be dropped */
+    REQUIRE(emitter_resize(em, 1)); /* drop events 1 and 2, freeing their slots */
+    emitter_emit(em, 0, NULL);
+    REQUIRE(g_call_count == 1);
+    emitter_destroy(em); /* must not leak or double-free the dropped slot */
+    return true;
+}
+
+TEST_CASE(test_emitter_resize_same_size_is_noop)
+{
+    reset_counters();
+    emitter_t* em = emitter_create(2);
+    emitter_on(em, 1, listener_inc, NULL);
+    REQUIRE(emitter_resize(em, 2));
+    emitter_emit(em, 1, NULL);
+    REQUIRE(g_call_count == 1);
+    emitter_destroy(em);
+    return true;
+}
+
 /* Test suite (emitter) ----------------------------------------------------- */
 
 TEST_SUITE(suite_emitter)
@@ -387,6 +446,10 @@ TEST_SUITE(suite_emitter)
     RUN_TEST_CASE(test_emitter_off_all_during_emit);
     RUN_TEST_CASE(test_emitter_on_during_emit_not_called);
     RUN_TEST_CASE(test_emitter_once_reregister_during_emit);
+    RUN_TEST_CASE(test_emitter_resize_grow_adds_events);
+    RUN_TEST_CASE(test_emitter_resize_preserves_listeners);
+    RUN_TEST_CASE(test_emitter_resize_shrink_drops_events);
+    RUN_TEST_CASE(test_emitter_resize_same_size_is_noop);
 }
 
 /* --------------------------------------------------------------------------
@@ -754,6 +817,23 @@ TEST_CASE(test_queued_multiple_payloads_independent)
     return true;
 }
 
+/* Resizing the queued emitter grows the wrapped emitter's event slots; new
+ * events become usable while queued events on existing slots still flush. */
+TEST_CASE(test_queued_resize_grow_adds_events)
+{
+    reset_counters();
+    queued_emitter_t* qe = queued_emitter_create(1);
+    queued_emitter_on(qe, 0, listener_inc, NULL);
+    queued_emitter_enqueue(qe, 0, NULL, 0); /* queued before the resize */
+    REQUIRE(queued_emitter_resize(qe, 3));  /* expand num_events from 1 to 3 */
+    queued_emitter_on(qe, 2, listener_inc, NULL);
+    queued_emitter_enqueue(qe, 2, NULL, 0);
+    queued_emitter_flush(qe);
+    REQUIRE(g_call_count == 2); /* both the pre-resize and new-event fire */
+    queued_emitter_destroy(qe);
+    return true;
+}
+
 /* Test suite (queued emitter) ---------------------------------------------- */
 
 TEST_SUITE(suite_queued_emitter)
@@ -779,6 +859,7 @@ TEST_SUITE(suite_queued_emitter)
     RUN_TEST_CASE(test_queued_multiple_payloads_independent);
     RUN_TEST_CASE(test_queued_typed_emit_deduces_size);
     RUN_TEST_CASE(test_queued_typed_emit_null_is_safe);
+    RUN_TEST_CASE(test_queued_resize_grow_adds_events);
 }
 
 int main(void)
