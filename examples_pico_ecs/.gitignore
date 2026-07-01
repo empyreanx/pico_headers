@@ -2,6 +2,7 @@ benchmark
 events
 example
 macros
+messaging
 *.o
 gmon.out
 massif.out*
