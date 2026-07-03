@@ -327,30 +327,30 @@ void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data);
  *                  when data is NULL or when a pointer-only reference is
  *                  intentionally stored without copying.
  */
-void queued_emitter_enqueue(queued_emitter_t* qe, int event, const void* data, size_t data_size);
+void queued_emitter_enqueue_raw(queued_emitter_t* qe, int event, const void* data, size_t data_size);
 
 /**
  * @brief Convenience macro that enqueues a typed event without an explicit size argument.
  *
- * Equivalent to calling queued_emitter_enqueue with `sizeof(*ptr)` as the data
+ * Equivalent to calling queued_emitter_enqueue_raw with `sizeof(*ptr)` as the data
  * size. The payload size is deduced at compile time from the pointer's type,
  * so no per-event registration is required.
  *
  * When @p ptr is NULL, `sizeof(*ptr)` is still evaluated at compile time
- * (sizeof does not evaluate its operand), and queued_emitter_enqueue treats a
+ * (sizeof does not evaluate its operand), and queued_emitter_enqueue_raw treats a
  * NULL data pointer as no-payload regardless of the size argument, so no
  * copy is performed.
  *
  * @note @p ptr must not be a `void*`; the compiler cannot apply `sizeof` to
- *       an incomplete type. Use queued_emitter_enqueue directly when the payload
+ *       an incomplete type. Use queued_emitter_enqueue_raw directly when the payload
  *       is untyped or the size is not derivable from the pointer type.
  *
  * @param qe    The queued emitter. Must not be NULL.
  * @param event Event ID in [0, num_events).
  * @param ptr   Typed pointer to the event payload, or NULL for no payload.
  */
-#define queued_emitter_enqueue_typed(qe, event, ptr) \
-    (queued_emitter_enqueue((qe), (event), (ptr), sizeof(*(ptr))))
+#define queued_emitter_enqueue(qe, event, ptr) \
+    (queued_emitter_enqueue_raw((qe), (event), (ptr), sizeof(*(ptr))))
 
 /**
  * @brief Dispatches all queued events in FIFO order and clears the queue.
@@ -824,7 +824,7 @@ void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data)
     emitter_emit(qe->emitter, event, data);
 }
 
-void queued_emitter_enqueue(queued_emitter_t* qe, int event, const void* data, size_t data_size)
+void queued_emitter_enqueue_raw(queued_emitter_t* qe, int event, const void* data, size_t data_size)
 {
     EMITTER_ASSERT(qe != NULL);
     EMITTER_ASSERT(event >= 0 && event < qe->emitter->num_events);

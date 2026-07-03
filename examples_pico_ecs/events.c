@@ -52,7 +52,7 @@
  * EVT_DAMAGE / EVT_PICKUP they spawn, then EVT_DEATH / EVT_SCORE_CHANGED, and
  * so on -- so the cascade still happens, but at one predictable drain point.
  * Payloads are copied into the emitter's arena, so it is safe to enqueue a
- * stack-local event struct (see the queued_emitter_enqueue_typed calls below).
+ * stack-local event struct (see the queued_emitter_enqueue calls below).
  *
  * The cascade refines one coarse collision into progressively finer events:
  *
@@ -218,7 +218,7 @@ ecs_ret_t collision_system(ecs_t* ecs,
             if (dx * dx + dy * dy <= r * r)
             {
                 collision_evt_t ev = { ea, eb };
-                queued_emitter_enqueue_typed(game->qe, EVT_COLLISION, &ev);
+                queued_emitter_enqueue(game->qe, EVT_COLLISION, &ev);
             }
         }
     }
@@ -263,7 +263,7 @@ static void on_collision(const void* data, void* udata)
         if (ot->kind == KIND_ITEM)
         {
             pickup_evt_t pe = { player, other };
-            queued_emitter_enqueue_typed(game->qe, EVT_PICKUP, &pe);
+            queued_emitter_enqueue(game->qe, EVT_PICKUP, &pe);
             return;
         }
 
@@ -276,8 +276,8 @@ static void on_collision(const void* data, void* udata)
             damage_evt_t to_enemy  = { other,  pt->power };
             damage_evt_t to_player = { player, ot->power };
 
-            queued_emitter_enqueue_typed(game->qe, EVT_DAMAGE, &to_enemy);
-            queued_emitter_enqueue_typed(game->qe, EVT_DAMAGE, &to_player);
+            queued_emitter_enqueue(game->qe, EVT_DAMAGE, &to_enemy);
+            queued_emitter_enqueue(game->qe, EVT_DAMAGE, &to_player);
         }
     }
 }
@@ -305,7 +305,7 @@ static void on_damage(const void* data, void* udata)
     if (h->hp <= 0)
     {
         death_evt_t de = { ev->target };
-        queued_emitter_enqueue_typed(game->qe, EVT_DEATH, &de);
+        queued_emitter_enqueue(game->qe, EVT_DEATH, &de);
     }
 }
 
@@ -327,7 +327,7 @@ static void on_pickup(const void* data, void* udata)
     ecs_destroy(game->ecs, ev->item);
 
     score_evt_t se = { value };
-    queued_emitter_enqueue_typed(game->qe, EVT_SCORE_CHANGED, &se);
+    queued_emitter_enqueue(game->qe, EVT_SCORE_CHANGED, &se);
 }
 
 /* --------------------------------------------------------------------------
@@ -350,7 +350,7 @@ static void on_death(const void* data, void* udata)
     if (t->kind == KIND_ENEMY)
     {
         score_evt_t se = { t->value };
-        queued_emitter_enqueue_typed(game->qe, EVT_SCORE_CHANGED, &se);
+        queued_emitter_enqueue(game->qe, EVT_SCORE_CHANGED, &se);
     }
 
     ecs_destroy(game->ecs, ev->entity);

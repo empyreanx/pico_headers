@@ -237,7 +237,7 @@ ecs_ret_t collision_system(ecs_t* ecs, ecs_entity_t* entities,
             if (dx * dx + dy * dy <= r * r)
             {
                 contact_evt_t ev = { ea, eb };
-                queued_emitter_enqueue_typed(game->qe, EVT_CONTACT, &ev);
+                queued_emitter_enqueue(game->qe, EVT_CONTACT, &ev);
             }
         }
     }
@@ -331,7 +331,7 @@ static void on_death(const void* data, void* udata)
     {
         // Broadcast the points (fire-and-forget; on_score just tallies it).
         score_evt_t se = { t->value };
-        queued_emitter_enqueue_typed(game->qe, EVT_SCORE, &se);
+        queued_emitter_enqueue(game->qe, EVT_SCORE, &se);
 
         // POST a LootMsg. There is no existing entity to address -- the dying
         // enemy is about to be destroyed -- so the message rides on a throwaway
@@ -386,7 +386,7 @@ ecs_ret_t damage_system(ecs_t* ecs, ecs_entity_t* entities,
         if (h->hp <= 0)
         {
             death_evt_t de = { e };
-            queued_emitter_enqueue_typed(game->qe, EVT_DEATH, &de);
+            queued_emitter_enqueue(game->qe, EVT_DEATH, &de);
         }
     }
 
@@ -414,7 +414,7 @@ ecs_ret_t pickup_system(ecs_t* ecs, ecs_entity_t* entities,
         printf("    [pickup-sys] item worth %d collected\n", t->value);
 
         score_evt_t se = { t->value };
-        queued_emitter_enqueue_typed(game->qe, EVT_SCORE, &se);
+        queued_emitter_enqueue(game->qe, EVT_SCORE, &se);
 
         ecs_destroy(ecs, item); // envelope goes with the entity
     }
