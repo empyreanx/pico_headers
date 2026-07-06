@@ -46,7 +46,7 @@
     Quick Start:
     ------------
 
-    ```c
+    @code{.c}
     pf_atlas_t* atlas = pf_create_atlas(512, 512);   // page width, max page height
     pf_face_t*  face  = pf_create_face(atlas, ttf_data, 32.0f);  // 32px height
 
@@ -60,7 +60,7 @@
 
     pf_destroy_face(face);
     pf_destroy_atlas(atlas);
-    ```
+    @endcode
 
     Full Example:
     -------------
@@ -94,8 +94,18 @@
 
 // ---- Types ------------------------------------------------------------------
 
-// Opaque handles
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @brief Opaque atlas handle
+ */
 typedef struct pf_atlas_t pf_atlas_t;
+
+/**
+ * @brief Opaque font-face handle
+ */
 typedef struct pf_face_t  pf_face_t;
 
 /**
@@ -103,25 +113,20 @@ typedef struct pf_face_t  pf_face_t;
  */
 typedef struct
 {
-    uint32_t codepoint;   // Unicode codepoint
-    float    size;        // Font pixel height used when rasterizing
-    int      glyph_index; // stbtt glyph index (0 = missing glyph)
+    uint32_t codepoint;     //!< Unicode codepoint
+    float    size;          //!< Font pixel height used when rasterizing
+    int      glyph_index;   //!< stbtt glyph index (0 = missing glyph)
 
-    // Position inside page (pixels)
-    int page_x, page_y;
-    int page_w, page_h;
+    int page_x, page_y;     //!< Position inside page (pixels)
+    int page_w, page_h;     //!< Dimensions inside page (pixels)
 
-    // Atlas page index
-    size_t page;
+    size_t page;            //!< Atlas page index
 
-    // Offset from cursor to top-left of bitmap
-    int offset_x, offset_y;
+    int offset_x, offset_y; //!< Offset from cursor to top-left of bitmap
 
-    // Horizontal advance in pixels (scaled)
-    float advance_x;
+    float advance_x;        //!< Horizontal advance in pixels (scaled)
 
-    // UV corners (computed after placement)
-    float u0, v0, u1, v1;
+    float u0, v0, u1, v1;   //!< UV corners (computed after placement)
 } pf_glyph_t;
 
 /**
@@ -129,9 +134,9 @@ typedef struct
  */
 typedef struct
 {
-    float x0, y0, x1, y1; // screen-space rectangle
-    float u0, v0, u1, v1; // atlas UVs
-    size_t page;          // atlas page index
+    float x0, y0, x1, y1; //!< Screen-space rectangle
+    float u0, v0, u1, v1; //!< Atlas UVs
+    size_t page;          //!< Atlas page index
 } pf_quad_t;
 
 /**
@@ -148,16 +153,20 @@ typedef struct
 /**
  * @brief Callback invoked for each glyph quad during text drawing.
  *
- * Return false to stop iteration, true to continue.
+ * @param quad The screen-space quad with atlas UVs and page index
+ * @param user Opaque pointer supplied by the caller
+ * @return false to stop iteration, true to continue
  */
 typedef bool (*pf_draw_callback_fn)(const pf_quad_t* quad, void* user);
 
 /**
  * @brief Callback invoked for each dirty atlas page during pf_upload_atlas.
- * @param page  page index
- * @param pixels single-channel bitmap (width * height bytes)
- * @param width, bitmap horizontal dimensions
- * @param height bitmap vertical dimensions
+ *
+ * @param page   Page index
+ * @param pixels Single-channel bitmap (width * height bytes)
+ * @param width  Bitmap width in pixels
+ * @param height Bitmap height in pixels
+ * @param user   Opaque pointer supplied by the caller
  * @return false to stop iteration, true to continue. The dirty flag is cleared
  * automatically after a successful (true) return.
  */
@@ -165,10 +174,6 @@ typedef bool (*pf_upload_callback_fn)(size_t page, const unsigned char* pixels,
                                       int width, int height, void* user);
 
 // ---- API --------------------------------------------------------------------
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
  * @brief Allocates and initializes a font atlas.
@@ -234,7 +239,7 @@ const pf_glyph_t* pf_get_glyph(pf_face_t* face, uint32_t codepoint);
  * For each visible glyph the callback receives a screen-space quad with atlas
  * UVs and a page index. Kerning is applied automatically between adjacent
  * codepoints. The caller is responsible for line breaking; use pf_get_metrics()
- * to obtain the line height for advancing *y between lines.
+ * to obtain the line height for advancing @p y between lines.
  *
  * @param face  Face to use.
  * @param text  Null-terminated UTF-8 string.
