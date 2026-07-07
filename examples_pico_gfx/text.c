@@ -48,13 +48,15 @@ typedef struct
     float color[4];
 } draw_ctx_t;
 
-unsigned char* read_file(const char* filename) {
+unsigned char* read_file(const char* filename, size_t* size) {
     FILE *f = fopen(filename, "rb");
     if (!f) return NULL;
 
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
+
+    *size = (size_t)fsize;
 
     unsigned char *data = malloc(fsize + 1);
 
@@ -164,12 +166,13 @@ int main(int argc, char *argv[])
     pg_shader_t* shader = pg_create_shader(ctx, text);
 
     // Load TTF font
-    unsigned char* ttf = read_file("devroye.ttf");
+    size_t ttf_size = 0;
+    unsigned char* ttf = read_file("devroye.ttf", &ttf_size);
     assert(ttf);
 
     // Create font atlas and face
     pf_atlas_t* atlas = pf_create_atlas(512, 512);
-    pf_face_t* face = pf_create_face(atlas, ttf, 48.0f);
+    pf_face_t* face = pf_create_face(atlas, ttf, ttf_size, 48.0f);
 
     // Generate text geometry using pico_font
     draw_ctx_t draw = { .color = { 1.0f, 1.0f, 1.0f, 1.0f } };

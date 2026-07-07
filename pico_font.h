@@ -71,10 +71,12 @@
     ----------------
 
     - PICO_FONT_ASSERT  (default: assert)
+    - PICO_FONT_MALLOC  (default: malloc)
     - PICO_FONT_CALLOC  (default: calloc)
     - PICO_FONT_REALLOC (default: realloc)
-    - PICO_FONT_FRE     (default: free)
+    - PICO_FONT_FREE    (default: free)
     - PICO_FONT_MEMSET  (default: memset)
+    - PICO_FONT_MEMCPY  (default: memcpy)
 
     Constant Overrides:
     -------------------
@@ -200,8 +202,10 @@ void pf_destroy_atlas(pf_atlas_t* atlas);
  * @brief Create a font face at a given pixel height.
  *
  * Initialises an stb_truetype font from raw TrueType data and binds it to
- * @p atlas for glyph caching. The face does not take ownership of
- * @p ttf_data; the caller must keep it alive for the lifetime of the face.
+ * @p atlas for glyph caching. The face takes ownership of @p ttf_data: it is
+ * released with PICO_FONT_FREE by pf_destroy_face (or immediately if creation
+ * fails), so it must have been allocated compatibly with PICO_FONT_FREE and
+ * must not be freed by the caller.
  *
  * @param atlas         Atlas that will store rasterized glyphs.
  * @param ttf_data      Pointer to the raw TrueType font file contents.
@@ -210,10 +214,11 @@ void pf_destroy_atlas(pf_atlas_t* atlas);
  */
 pf_face_t* pf_create_face(pf_atlas_t* atlas,
                           const unsigned char* ttf_data,
+                          size_t ttf_data_size,
                           float pixel_height);
 
 /**
- * @brief Destroys a font face.
+ * @brief Destroys a font face and frees the TTF data it owns.
  *
  * Does not destroy the atlas it was bound to.
  *
@@ -330,10 +335,12 @@ float pf_get_kerning(const pf_face_t* face, uint32_t cp1, uint32_t cp2);
     #endif
 #endif
 
-#if !defined(PICO_FONT_CALLOC)  || \
+#if !defined(PICO_FONT_MALLOC)  || \
+    !defined(PICO_FONT_CALLOC)  || \
     !defined(PICO_FONT_REALLOC) || \
     !defined(PICO_FONT_FREE)
     #include <stdlib.h>
+    #define PICO_FONT_MALLOC(size)       (malloc(size))
     #define PICO_FONT_CALLOC(num, size)  (calloc(num, size))
     #define PICO_FONT_REALLOC(ptr, size) (realloc(ptr, size))
     #define PICO_FONT_FREE(ptr)          (free(ptr))
@@ -342,6 +349,11 @@ float pf_get_kerning(const pf_face_t* face, uint32_t cp1, uint32_t cp2);
 #ifndef PICO_FONT_MEMSET
     #include <string.h>
     #define PICO_FONT_MEMSET memset
+#endif
+
+#ifndef PICO_FONT_MEMCPY
+    #include <string.h>
+    #define PICO_FONT_MEMCPY memcpy
 #endif
 
 // Sentinel value returned by internal functions to signal failure.
@@ -399,6 +411,7 @@ struct pf_atlas_t
 struct pf_face_t
 {
     stbtt_fontinfo info;
+    unsigned char* ttf_data; // owned; freed in pf_destroy_face
     float          size;     // requested pixel height
     float          scale;    // stbtt scale factor
     int            ascent;   // scaled ascent in pixels
@@ -516,6 +529,7 @@ void pf_destroy_atlas(pf_atlas_t* atlas)
 
 pf_face_t* pf_create_face(pf_atlas_t* atlas,
                           const unsigned char* ttf_data,
+                          size_t ttf_data_size,
                           float pixel_height)
 {
     PICO_FONT_ASSERT(atlas != NULL);
@@ -525,7 +539,19 @@ pf_face_t* pf_create_face(pf_atlas_t* atlas,
     pf_face_t* face = (pf_face_t*)PICO_FONT_CALLOC(1, sizeof(pf_face_t));
 
     if (!face)
+    {
         return NULL;
+    }
+
+    face->ttf_data = (unsigned char*)PICO_FONT_MALLOC(ttf_data_size);
+
+    if (!face->ttf_data)
+    {
+        PICO_FONT_FREE(face);
+        return NULL;
+    }
+
+    PICO_FONT_MEMCPY(face->ttf_data, ttf_data, ttf_data_size);
 
     face->atlas = atlas;
     face->size  = pixel_height;
@@ -557,7 +583,7 @@ void pf_destroy_face(pf_face_t* face)
 {
     if (!face)
         return;
-
+    PICO_FONT_FREE(face->ttf_data);
     PICO_FONT_FREE(face);
 }
 
