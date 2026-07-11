@@ -1,6 +1,7 @@
 benchmark
 events
 example
+hierarchy
 macros
 messaging
 *.o
