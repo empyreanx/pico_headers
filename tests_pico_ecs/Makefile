@@ -6,7 +6,7 @@ ifeq ($(UNAME_S),Darwin)
     CC = clang
 endif
 
-SRCS   = main.c entity.c systems.c deferred.c set.c
+SRCS   = main.c entity.c systems.c deferred.c set.c hierarchy.c
 
 DEPS   = ../pico_ecs.h common.h
 OBJS   = $(SRCS:.c=.o)

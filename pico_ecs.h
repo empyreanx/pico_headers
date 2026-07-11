@@ -77,6 +77,28 @@
 
     `ecs_run_system(ecs, sys, 0);`
 
+    Hierarchy:
+    ----------
+
+    Entities can be arranged into parent/child hierarchies using
+    `ecs_child_of`. The hierarchy is stored intrusively as parent/first-child/
+    sibling links inside the entity data, so attaching (`ecs_child_of`),
+    detaching (`ecs_detach`), and destroying entities are all O(1) and require
+    no additional allocations.
+
+    The children of an entity can be traversed with:
+
+    ecs_entity_t child = ecs_get_first_child(ecs, entity);
+
+    while (!ECS_IS_INVALID(child))
+    {
+        // ...
+        child = ecs_get_next_sibling(ecs, child);
+    }
+
+    Destroying an entity detaches its children, making them root entities. To
+    destroy an entire subtree, use `ecs_destroy_hierarchy`.
+
     Revision History:
     -----------------
 
@@ -127,6 +149,11 @@
           iteration).
         - Components may now specify a default_value that is copied into the
           component on add.
+
+    - 3.5 (2026/07/10):
+        - Added support for parent/child entity hierarchies (ecs_child_of,
+          ecs_detach, ecs_get_parent, ecs_get_first_child,
+          ecs_get_next_sibling, ecs_destroy_hierarchy).
 
     Usage:
     ------
@@ -568,7 +595,9 @@ void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data);
 /**
  * @brief Destroys an entity
  *
- * Destroys an entity, releasing resources and returning it to the pool.
+ * Destroys an entity, releasing resources and returning it to the pool. The
+ * entity is detached from its parent, if any, and its children are detached,
+ * becoming root entities.
  *
  * @param ecs    The ECS context
  * @param entity The entity to destroy
@@ -583,6 +612,88 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
  * @param comp   The component
  */
 void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
+
+/**
+ * @brief Makes one entity a child of another
+ *
+ * Attaches the child to the parent, first detaching the child from its
+ * current parent, if it has one. The hierarchy is stored intrusively
+ * (parent/first-child/sibling links) so attaching, detaching, and destroying
+ * are all O(1), and iterating the children of an entity is O(n) in the number
+ * of children.
+ *
+ * Hierarchy links have no effect on system matching, and take effect
+ * immediately, even during system iteration.
+ *
+ * Destroying an entity detaches it from its parent, and detaches its
+ * children, making them root entities.
+ *
+ * @param ecs    The ECS context
+ * @param child  The entity to attach (must not be an ancestor of the parent)
+ * @param parent The entity that will become the child's parent
+ */
+void ecs_child_of(ecs_t* ecs, ecs_entity_t child, ecs_entity_t parent);
+
+/**
+ * @brief Detaches an entity from its parent, making it a root entity
+ *
+ * Does nothing if the entity has no parent.
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity to detach
+ */
+void ecs_detach(ecs_t* ecs, ecs_entity_t entity);
+
+/**
+ * @brief Returns the parent of an entity
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity
+ *
+ * @returns The parent, or an invalid handle (see {@link ECS_IS_INVALID}) if
+ * the entity has no parent
+ */
+ecs_entity_t ecs_get_parent(ecs_t* ecs, ecs_entity_t entity);
+
+/**
+ * @brief Returns the first child of an entity
+ *
+ * Children can be iterated by following {@link ecs_get_next_sibling} until it
+ * returns an invalid handle.
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity
+ *
+ * @returns The first child, or an invalid handle (see {@link ECS_IS_INVALID})
+ * if the entity has no children
+ */
+ecs_entity_t ecs_get_first_child(ecs_t* ecs, ecs_entity_t entity);
+
+/**
+ * @brief Returns the next sibling of an entity
+ *
+ * @param ecs    The ECS context
+ * @param entity The entity
+ *
+ * @returns The next sibling, or an invalid handle (see {@link ECS_IS_INVALID})
+ * if the entity is the last child of its parent
+ */
+ecs_entity_t ecs_get_next_sibling(ecs_t* ecs, ecs_entity_t entity);
+
+/**
+ * @brief Destroys an entity and all of its descendants
+ *
+ * Recursively destroys the entity's subtree, children first, as if by calling
+ * {@link ecs_destroy} on each entity. If called during system iteration the
+ * destruction of every entity in the subtree is deferred until after the
+ * system completes.
+ *
+ * The recursion depth equals the depth of the subtree.
+ *
+ * @param ecs    The ECS context
+ * @param entity The root of the subtree to destroy
+ */
+void ecs_destroy_hierarchy(ecs_t* ecs, ecs_entity_t entity);
 
 /**
  * @brief Update an individual system
@@ -735,6 +846,14 @@ typedef struct
     ecs_bitset_t comp_bits;
     bool         active;
     bool         ready;
+
+    // Intrusive hierarchy links. Children of an entity form a doubly-linked
+    // list threaded through the children themselves, making attach, detach,
+    // and destroy O(1). Unused links hold ECS_INVALID_ID
+    ecs_id_t     parent;
+    ecs_id_t     first_child;
+    ecs_id_t     next_sibling;
+    ecs_id_t     prev_sibling;
 } ecs_entity_data_t;
 
 typedef struct
@@ -872,6 +991,12 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
 static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
+ * Hierarchy functions
+ *============================================================================*/
+static void ecs_hierarchy_reset(ecs_entity_data_t* entity_data);
+static void ecs_hierarchy_detach(ecs_t* ecs, ecs_id_t entity_id);
+
+/*=============================================================================
  * ID array functions
  *============================================================================*/
 static void   ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* pool, size_t capacity);
@@ -899,6 +1024,7 @@ static bool ecs_is_valid_capacity(size_t capacity, size_t elem_size);
 static bool ecs_is_entity_ready(ecs_t* ecs, ecs_id_t entity_id);
 static bool ecs_is_component_ready(ecs_t* ecs, ecs_id_t comp_id);
 static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id);
+static bool ecs_is_ancestor(ecs_t* ecs, ecs_id_t ancestor_id, ecs_id_t entity_id);
 #endif // NDEBUG
 
 /*=============================================================================
@@ -1215,6 +1341,9 @@ ecs_entity_t ecs_create(ecs_t* ecs)
     ecs->entities[entity_id].active = true;
     ecs->entities[entity_id].ready  = true;
 
+    // Invalidate hierarchy links (zeroed memory would alias entity 0)
+    ecs_hierarchy_reset(&ecs->entities[entity_id]);
+
     return ecs_make_entity(entity_id);
 }
 
@@ -1294,6 +1423,28 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         }
     }
 
+    // Unlink the entity from the hierarchy: detach it from its parent and
+    // orphan its children (they become root entities)
+    ecs_hierarchy_detach(ecs, entity.id);
+
+    ecs_id_t child_id = entity_data->first_child;
+
+    while (ECS_INVALID_ID != child_id)
+    {
+        ecs_entity_data_t* child_data = &ecs->entities[child_id];
+        ecs_id_t next_id = child_data->next_sibling;
+
+        // Only the upward/sibling links are cleared; the child keeps its own
+        // children
+        child_data->parent       = ECS_INVALID_ID;
+        child_data->next_sibling = ECS_INVALID_ID;
+        child_data->prev_sibling = ECS_INVALID_ID;
+
+        child_id = next_id;
+    }
+
+    entity_data->first_child = ECS_INVALID_ID;
+
     ecs_sync_destroy(ecs, entity.id);
 
     ecs_id_array_t* pool = &ecs->entity_pool;
@@ -1302,6 +1453,95 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
     ECS_MEMSET(&entity_data->comp_bits, 0, sizeof(ecs_bitset_t));
     entity_data->active = false;
     entity_data->ready  = false;
+}
+
+void ecs_child_of(ecs_t* ecs, ecs_entity_t child, ecs_entity_t parent)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_id(child.id));
+    ECS_ASSERT(ecs_is_valid_id(parent.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, child.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, parent.id));
+    ECS_ASSERT(child.id != parent.id);
+    ECS_ASSERT(!ecs_is_ancestor(ecs, child.id, parent.id) &&
+               "attaching an entity to its own descendant");
+
+    // Detach from the current parent, if any
+    ecs_hierarchy_detach(ecs, child.id);
+
+    ecs_entity_data_t* child_data  = &ecs->entities[child.id];
+    ecs_entity_data_t* parent_data = &ecs->entities[parent.id];
+
+    // Push the child onto the front of the parent's child list
+    child_data->parent       = parent.id;
+    child_data->prev_sibling = ECS_INVALID_ID;
+    child_data->next_sibling = parent_data->first_child;
+
+    if (ECS_INVALID_ID != parent_data->first_child)
+        ecs->entities[parent_data->first_child].prev_sibling = child.id;
+
+    parent_data->first_child = child.id;
+}
+
+void ecs_detach(ecs_t* ecs, ecs_entity_t entity)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_id(entity.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
+
+    ecs_hierarchy_detach(ecs, entity.id);
+}
+
+ecs_entity_t ecs_get_parent(ecs_t* ecs, ecs_entity_t entity)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_id(entity.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
+
+    return ecs_make_entity(ecs->entities[entity.id].parent);
+}
+
+ecs_entity_t ecs_get_first_child(ecs_t* ecs, ecs_entity_t entity)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_id(entity.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
+
+    return ecs_make_entity(ecs->entities[entity.id].first_child);
+}
+
+ecs_entity_t ecs_get_next_sibling(ecs_t* ecs, ecs_entity_t entity)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_id(entity.id));
+    ECS_ASSERT(ecs_is_entity_ready(ecs, entity.id));
+
+    return ecs_make_entity(ecs->entities[entity.id].next_sibling);
+}
+
+void ecs_destroy_hierarchy(ecs_t* ecs, ecs_entity_t entity)
+{
+    ECS_ASSERT(ecs_is_not_null(ecs));
+    ECS_ASSERT(ecs_is_valid_id(entity.id));
+    ECS_ASSERT(ecs_is_active(ecs, entity.id));
+
+    if (!ecs_is_active(ecs, entity.id))
+        return;
+
+    ecs_id_t child_id = ecs->entities[entity.id].first_child;
+
+    while (ECS_INVALID_ID != child_id)
+    {
+        // Save the next sibling now: destroying the child unlinks it from
+        // the child list (immediately, or when the command queue is flushed)
+        ecs_id_t next_id = ecs->entities[child_id].next_sibling;
+
+        ecs_destroy_hierarchy(ecs, ecs_make_entity(child_id));
+
+        child_id = next_id;
+    }
+
+    ecs_destroy(ecs, entity);
 }
 
 bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
@@ -2123,6 +2363,42 @@ static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id)
 }
 
 /*=============================================================================
+ * Hierarchy functions
+ *============================================================================*/
+
+static void ecs_hierarchy_reset(ecs_entity_data_t* entity_data)
+{
+    entity_data->parent       = ECS_INVALID_ID;
+    entity_data->first_child  = ECS_INVALID_ID;
+    entity_data->next_sibling = ECS_INVALID_ID;
+    entity_data->prev_sibling = ECS_INVALID_ID;
+}
+
+static void ecs_hierarchy_detach(ecs_t* ecs, ecs_id_t entity_id)
+{
+    ecs_entity_data_t* entity_data = &ecs->entities[entity_id];
+
+    if (ECS_INVALID_ID == entity_data->parent)
+        return;
+
+    ecs_entity_data_t* parent_data = &ecs->entities[entity_data->parent];
+
+    // Unlink the entity from its parent's child list
+    if (parent_data->first_child == entity_id)
+        parent_data->first_child = entity_data->next_sibling;
+
+    if (ECS_INVALID_ID != entity_data->prev_sibling)
+        ecs->entities[entity_data->prev_sibling].next_sibling = entity_data->next_sibling;
+
+    if (ECS_INVALID_ID != entity_data->next_sibling)
+        ecs->entities[entity_data->next_sibling].prev_sibling = entity_data->prev_sibling;
+
+    entity_data->parent       = ECS_INVALID_ID;
+    entity_data->next_sibling = ECS_INVALID_ID;
+    entity_data->prev_sibling = ECS_INVALID_ID;
+}
+
+/*=============================================================================
  * ID array functions
  *============================================================================*/
 
@@ -2317,6 +2593,22 @@ static bool ecs_is_component_ready(ecs_t* ecs, ecs_id_t comp_id)
 static bool ecs_is_system_ready(ecs_t* ecs, ecs_id_t sys_id)
 {
     return sys_id < ecs->system_count;
+}
+
+// Returns true if ancestor_id appears on the path from entity_id to its root
+static bool ecs_is_ancestor(ecs_t* ecs, ecs_id_t ancestor_id, ecs_id_t entity_id)
+{
+    ecs_id_t id = ecs->entities[entity_id].parent;
+
+    while (ECS_INVALID_ID != id)
+    {
+        if (id == ancestor_id)
+            return true;
+
+        id = ecs->entities[id].parent;
+    }
+
+    return false;
 }
 
 #endif // NDEBUG
