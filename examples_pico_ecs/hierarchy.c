@@ -130,9 +130,9 @@ void node_detach(ecs_t* ecs, ecs_entity_t entity)
     if (!ECS_IS_INVALID(node->next_sibling))
         node_get(ecs, node->next_sibling)->prev_sibling = node->prev_sibling;
 
-    node->parent       = (ecs_entity_t){ ECS_INVALID_ID };
-    node->next_sibling = (ecs_entity_t){ ECS_INVALID_ID };
-    node->prev_sibling = (ecs_entity_t){ ECS_INVALID_ID };
+    node->parent       = ECS_INVALID_ENTITY;
+    node->next_sibling = ECS_INVALID_ENTITY;
+    node->prev_sibling = ECS_INVALID_ENTITY;
 }
 
 // Makes one entity a child of another, first detaching the child from its
@@ -147,7 +147,7 @@ void node_child_of(ecs_t* ecs, ecs_entity_t child, ecs_entity_t parent)
 
     // Push the child onto the front of the parent's child list
     child_node->parent       = parent;
-    child_node->prev_sibling = (ecs_entity_t){ ECS_INVALID_ID };
+    child_node->prev_sibling = ECS_INVALID_ENTITY;
     child_node->next_sibling = parent_node->first_child;
 
     if (!ECS_IS_INVALID(parent_node->first_child))
@@ -169,14 +169,14 @@ static void node_orphan_children(ecs_t* ecs, ecs_entity_t entity)
         node_t* child_node = node_get(ecs, child);
         ecs_entity_t next = child_node->next_sibling;
 
-        child_node->parent       = (ecs_entity_t){ ECS_INVALID_ID };
-        child_node->next_sibling = (ecs_entity_t){ ECS_INVALID_ID };
-        child_node->prev_sibling = (ecs_entity_t){ ECS_INVALID_ID };
+        child_node->parent       = ECS_INVALID_ENTITY;
+        child_node->next_sibling = ECS_INVALID_ENTITY;
+        child_node->prev_sibling = ECS_INVALID_ENTITY;
 
         child = next;
     }
 
-    node->first_child = (ecs_entity_t){ ECS_INVALID_ID };
+    node->first_child = ECS_INVALID_ENTITY;
 }
 
 // Destroys an entity, unlinking it from the hierarchy first: the entity is
