@@ -231,6 +231,19 @@ typedef struct ecs_system_t { ecs_id_t id; } ecs_system_t;
 #define ECS_IS_INVALID(obj) ((obj.id) == ECS_INVALID_ID)
 
 /**
+ * @brief True if the argument (entity/system/component) is valid
+ */
+#define ECS_IS_VALID(obj) (!ECS_IS_INVALID(obj))
+
+/**
+ * @brief An invalid entity handle
+ *
+ * Useful as a sentinel value, for example, as the return value of a lookup
+ * that found no entity. Test for it with ECS_IS_INVALID / ECS_IS_VALID.
+ */
+#define ECS_INVALID_ENTITY ((ecs_entity_t){ ECS_INVALID_ID })
+
+/**
  * @brief Creates an ECS context.
  *
  * @param entity_count The inital number of entities to pre-allocated
