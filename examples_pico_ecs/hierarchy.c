@@ -39,12 +39,15 @@
 // destroyed entity's children simply become root entities. To destroy an
 // entire subtree, use node_destroy_hierarchy.
 //
-// One caveat: destroys issued from inside a system are deferred, and the
-// on_remove callback must be able to access the destroyed entity's parent,
-// children, and siblings when the destroy is finally applied. Destroying a
-// subtree with node_destroy_hierarchy handles this (it detaches entities up
-// front), but individually destroying several linked entities in the same
-// system pass does not; detach them first instead.
+// One caveat: destroys issued from inside a system are deferred, and entities
+// queued for destruction may not be accessed until the destroy is applied.
+// Destroying entities with node_destroy/node_destroy_hierarchy handles this:
+// they unlink the entity up front, while its parent, children, and siblings
+// are all still alive, so no hierarchy operation ever needs to touch a queued
+// entity. So the rule is simply: destroy entities that have a node component
+// with node_destroy (or node_destroy_hierarchy for a subtree) rather than
+// ecs_destroy. The on_remove callback remains as a safety net for direct
+// ecs_destroy calls made outside of systems.
 
 // Pull in the ECS implementation
 #define PICO_ECS_IMPLEMENTATION
@@ -153,51 +156,12 @@ void node_child_of(ecs_t* ecs, ecs_entity_t child, ecs_entity_t parent)
     parent_node->first_child = child;
 }
 
-// Destroys an entity and all of its descendants, children first
-//
-// Each entity is detached before it is destroyed. This matters when the
-// destroy is issued from inside a system: ecs_destroy is deferred until the
-// system completes, and by detaching up front the on_remove callback finds no
-// links left to unlink, so it never needs to touch an entity that is already
-// queued for destruction
-void node_destroy_hierarchy(ecs_t* ecs, ecs_entity_t entity)
+// Orphans the entity's children (they become root entities). Only the upward
+// and sibling links are cleared; each child keeps its own children
+static void node_orphan_children(ecs_t* ecs, ecs_entity_t entity)
 {
-    node_detach(ecs, entity);
-
-    ecs_entity_t child = node_get_first_child(ecs, entity);
-
-    while (!ECS_IS_INVALID(child))
-    {
-        // Save the next sibling now: destroying the child unlinks it from
-        // the child list
-        ecs_entity_t next = node_get_next_sibling(ecs, child);
-
-        node_destroy_hierarchy(ecs, child);
-
-        child = next;
-    }
-
-    ecs_destroy(ecs, entity);
-}
-
-// Called by the ECS when a node component is removed, which includes entity
-// destruction. Detaching here keeps the hierarchy consistent no matter how
-// the entity is destroyed
-static void node_on_remove(ecs_t* ecs,
-                           ecs_entity_t entity,
-                           ecs_comp_t comp,
-                           void* udata)
-{
-    (void)comp;
-    (void)udata;
-
-    // Detach the entity from its parent
-    node_detach(ecs, entity);
-
     node_t* node = node_get(ecs, entity);
 
-    // Orphan the children (they become root entities). Only the upward and
-    // sibling links are cleared; each child keeps its own children
     ecs_entity_t child = node->first_child;
 
     while (!ECS_IS_INVALID(child))
@@ -213,6 +177,57 @@ static void node_on_remove(ecs_t* ecs,
     }
 
     node->first_child = (ecs_entity_t){ ECS_INVALID_ID };
+}
+
+// Destroys an entity, unlinking it from the hierarchy first: the entity is
+// detached from its parent, and its children are orphaned, becoming root
+// entities
+//
+// Unlinking before destroying matters when the destroy is issued from inside
+// a system: ecs_destroy is deferred until the system completes, and entities
+// queued for destruction may not be accessed in the meantime. By unlinking up
+// front, while the entity's parent, children, and siblings are all still
+// alive, the entity carries no links into the deferred destroy, so nothing
+// ever needs to touch a queued entity
+void node_destroy(ecs_t* ecs, ecs_entity_t entity)
+{
+    node_detach(ecs, entity);
+    node_orphan_children(ecs, entity);
+    ecs_destroy(ecs, entity);
+}
+
+// Destroys an entity and all of its descendants, children first
+void node_destroy_hierarchy(ecs_t* ecs, ecs_entity_t entity)
+{
+    ecs_entity_t child = node_get_first_child(ecs, entity);
+
+    while (!ECS_IS_INVALID(child))
+    {
+        // Save the next sibling now: destroying the child unlinks it from
+        // the child list
+        ecs_entity_t next = node_get_next_sibling(ecs, child);
+
+        node_destroy_hierarchy(ecs, child);
+
+        child = next;
+    }
+
+    node_destroy(ecs, entity);
+}
+
+// Called by the ECS when a node component is removed, which includes entity
+// destruction. Detaching here keeps the hierarchy consistent no matter how
+// the entity is destroyed
+static void node_on_remove(ecs_t* ecs,
+                           ecs_entity_t entity,
+                           ecs_comp_t comp,
+                           void* udata)
+{
+    (void)comp;
+    (void)udata;
+
+    node_detach(ecs, entity);
+    node_orphan_children(ecs, entity);
 }
 
 /*=============================================================================
@@ -332,7 +347,7 @@ int main()
 
     // Destroying an entity orphans its children: the barrel becomes a root
     // entity
-    ecs_destroy(ecs, engine);
+    node_destroy(ecs, engine);
 
     printf("---------------------------------------------------------------\n");
     printf("After destroying the engine (the barrel is orphaned):\n");
