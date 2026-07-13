@@ -480,7 +480,7 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader);
  * @param name The name of the UB as supplied by `sokol_shdc`
  * @param data The data to set (must be the whole UB)
  */
-void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
+void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data, size_t size);
 
 /**
  * @brief Vertex attribute pixel formats
@@ -1459,7 +1459,8 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader)
 
 void pg_set_uniform_block(pg_shader_t* shader,
                           const char* name,
-                          const void* data)
+                          const void* data,
+                          size_t size)
 {
     PICO_GFX_ASSERT(shader);
     PICO_GFX_ASSERT(name);
@@ -1474,6 +1475,7 @@ void pg_set_uniform_block(pg_shader_t* shader,
     }
 
     PICO_GFX_ASSERT(block);
+    PICO_GFX_ASSERT(size == block->size);
 
     memcpy(block->data, data, block->size);
 }
@@ -2237,7 +2239,8 @@ static void pg_hashtable_put(pg_hashtable_t* ht,
         {
             entry->hash = hash;
 
-            strncpy(entry->key, key, ht->key_size);
+            memcpy(entry->key, key, ht->key_size - 1);
+            entry->key[ht->key_size - 1] = '\0';
             pg_hashtable_copy_value(ht, entry, value);
 
             ht->size++;
