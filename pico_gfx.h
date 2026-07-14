@@ -1694,6 +1694,7 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
     buffer->type = PG_BUFFER_TYPE_INDEX;
     buffer->usage = usage;
     buffer->count = count;
+    buffer->element_size = sizeof(uint32_t);
     buffer->size = max_elements * sizeof(uint32_t);
     buffer->offset = 0;
 
