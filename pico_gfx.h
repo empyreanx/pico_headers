@@ -591,7 +591,8 @@ const pg_blend_mode_t* pg_get_blend_mode(const pg_pipeline_t* pipeline);
  */
 typedef struct pg_texture_opts_t
 {
-    int mipmaps; //!< Mipmap level
+    int mipmaps;  //!< Mipmap level
+    bool dynamic; //!< True if the texture will be updated with pg_update_texture
 } pg_texture_opts_t;
 
 /**
@@ -637,10 +638,11 @@ uint32_t pg_get_texture_id(const pg_texture_t* texture);
 void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height);
 
 /**
- * @brief Updates a texture with the given data. This can only be called once
- * per frame
+ * @brief Updates a texture with the given data, which must cover the whole
+ * texture. The texture must have been created with the dynamic option, and
+ * can only be updated once per frame
  */
-void pg_update_texture(pg_texture_t* texture, char* data, int width, int height);
+void pg_update_texture(pg_texture_t* texture, char* data);
 
 /**
  * @brief Sampler options
@@ -824,6 +826,7 @@ static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq);
 static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format);
 static sg_usage pg_map_usage(pg_buffer_usage_t format);
 static sg_pixel_format pg_map_pixel_format(pg_pixel_format_t format);
+static size_t pg_pixel_format_bpp(pg_pixel_format_t format);
 static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type);
 
 static void pg_log_sg(const char* tag,              // e.g. 'sg'
@@ -970,6 +973,7 @@ struct pg_texture_t
     pg_ctx_t* ctx;
     int width, height;
     pg_pixel_format_t format;
+    size_t bpp;
     bool target;
     sg_image handle;
     sg_image depth_handle;
@@ -1486,16 +1490,16 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
 {
     PICO_GFX_ASSERT(width > 0);
     PICO_GFX_ASSERT(height > 0);
-    PICO_GFX_ASSERT(data);
-    PICO_GFX_ASSERT(size > 0);
 
     if (opts == NULL)
         opts = &(pg_texture_opts_t){ 0 };
 
     PICO_GFX_ASSERT(opts->mipmaps >= 0);
+    PICO_GFX_ASSERT(opts->dynamic || (data && size > 0));
 
     pg_texture_t* texture = PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
     texture->format = format;
+    texture->bpp = pg_pixel_format_bpp(format);
 
     sg_image_desc desc = { 0 };
 
@@ -1505,7 +1509,17 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
     desc.height = texture->height = height;
 
     desc.num_mipmaps = opts->mipmaps;
-    desc.data.subimage[0][0] = (sg_range){ .ptr = data, .size = size };
+
+    if (opts->dynamic)
+    {
+        // Dynamic images cannot be initialized with data; the initial
+        // contents must be uploaded with pg_update_texture
+        desc.usage = SG_USAGE_DYNAMIC;
+    }
+    else
+    {
+        desc.data.subimage[0][0] = (sg_range){ .ptr = data, .size = size };
+    }
 
     texture->ctx = ctx;
     texture->target = false;
@@ -1531,6 +1545,7 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
 
     pg_texture_t* texture = PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
     texture->format = format;
+    texture->bpp = pg_pixel_format_bpp(format);
 
     sg_image_desc desc = { 0 };
 
@@ -1573,15 +1588,13 @@ void pg_destroy_texture(pg_texture_t* texture)
     PICO_GFX_FREE(texture, texture->ctx->mem_ctx);
 }
 
-void pg_update_texture(pg_texture_t* texture, char* data, int width, int height)
+void pg_update_texture(pg_texture_t* texture, char* data)
 {
     // NOTE: Replaces all existing data
     sg_image_data img_data = { 0 };
     img_data.subimage[0][0].ptr = data;
-    img_data.subimage[0][0].size = (size_t)(width * height);
+    img_data.subimage[0][0].size = (size_t)texture->width * texture->height * texture->bpp;
     sg_update_image(texture->handle, &img_data);
-    texture->width  = width;
-    texture->height = height;
 }
 
 uint32_t pg_get_texture_id(const pg_texture_t* texture)
@@ -1959,6 +1972,19 @@ static sg_pixel_format pg_map_pixel_format(pg_pixel_format_t format)
         case PG_PIXEL_FORMAT_BGRA:    return SG_PIXELFORMAT_BGRA8;
         case PG_PIXEL_FORMAT_SRGBA:   return SG_PIXELFORMAT_SRGB8A8;
         default: PICO_GFX_ASSERT(false); return SG_PIXELFORMAT_NONE;
+    }
+}
+
+static size_t pg_pixel_format_bpp(pg_pixel_format_t format)
+{
+    switch (format)
+    {
+        case PG_PIXEL_FORMAT_DEFAULT: return 4;
+        case PG_PIXEL_FORMAT_RED:     return 1;
+        case PG_PIXEL_FORMAT_RGBA:    return 4;
+        case PG_PIXEL_FORMAT_BGRA:    return 4;
+        case PG_PIXEL_FORMAT_SRGBA:   return 4;
+        default: PICO_GFX_ASSERT(false); return 0;
     }
 }
 

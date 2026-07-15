@@ -110,16 +110,30 @@ static bool upload_callback(size_t page, const unsigned char* pixels,
 
     upload_ctx_t* uc = (upload_ctx_t*)user;
 
+    // GPU textures cannot be resized, so recreate the texture when the atlas
+    // page has grown
+    if (uc->tex)
+    {
+        int tex_width, tex_height;
+        pg_get_texture_size(uc->tex, &tex_width, &tex_height);
+
+        if (tex_width != width || tex_height != height)
+        {
+            pg_destroy_texture(uc->tex);
+            uc->tex = NULL;
+        }
+    }
+
+    // Dynamic textures start out empty; the pixel data is uploaded with
+    // pg_update_texture
     if (!uc->tex)
     {
         uc->tex = pg_create_texture(uc->ctx, width, height,
-                                    PG_PIXEL_FORMAT_RED, pixels,
-                                    (size_t)(width * height), NULL);
+                                    PG_PIXEL_FORMAT_RED, NULL, 0,
+                                    &(pg_texture_opts_t){ .dynamic = true });
     }
-    else
-    {
-        pg_update_texture(uc->tex, (char*)pixels, width, height);
-    }
+
+    pg_update_texture(uc->tex, (char*)pixels);
 
     return true;
 }
