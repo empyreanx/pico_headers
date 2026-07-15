@@ -133,8 +133,7 @@ int main(int argc, char *argv[])
 
     // Create particle texture
 
-    size_t size = w * h * c;
-    pg_texture_t* tex = pg_create_texture(ctx, w, h, PG_PIXEL_FORMAT_RGBA, bitmap, size, NULL);
+    pg_texture_t* tex = pg_create_texture(ctx, w, h, PG_PIXEL_FORMAT_RGBA, bitmap, NULL);
 
     assert(tex && c == 4);
 

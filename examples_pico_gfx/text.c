@@ -129,7 +129,7 @@ static bool upload_callback(size_t page, const unsigned char* pixels,
     if (!uc->tex)
     {
         uc->tex = pg_create_texture(uc->ctx, width, height,
-                                    PG_PIXEL_FORMAT_RED, NULL, 0,
+                                    PG_PIXEL_FORMAT_RED, NULL,
                                     &(pg_texture_opts_t){ .dynamic = true });
     }
 

@@ -596,18 +596,20 @@ typedef struct pg_texture_opts_t
 } pg_texture_opts_t;
 
 /**
- * @brief Creates a texture from an RGBA8 image
+ * @brief Creates a texture from an image
  * @param width Image width
  * @param height Image height
- * @param data Image data (format must be RGBA8)
- * @param size Size of the data in bytes
+ * @param format Pixel format of the image data
+ * @param data Image data covering the whole texture, in the given pixel
+ * format. Dynamic textures must pass NULL and upload their contents with
+ * pg_update_texture instead
  * @param opts Texture creation options (NULL for defaults)
  * @returns A texture created from a bitmap
  */
 pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
                                 int width, int height,
                                 pg_pixel_format_t format,
-                                const uint8_t* data, size_t size,
+                                const uint8_t* data,
                                 const pg_texture_opts_t* opts);
 
 /**
@@ -1485,7 +1487,7 @@ void pg_set_uniform_block(pg_shader_t* shader,
 pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
                                 int width, int height,
                                 pg_pixel_format_t format,
-                                const uint8_t* data, size_t size,
+                                const uint8_t* data,
                                 const pg_texture_opts_t* opts)
 {
     PICO_GFX_ASSERT(width > 0);
@@ -1495,7 +1497,10 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
         opts = &(pg_texture_opts_t){ 0 };
 
     PICO_GFX_ASSERT(opts->mipmaps >= 0);
-    PICO_GFX_ASSERT(opts->dynamic || (data && size > 0));
+
+    // Static textures require initial data; dynamic textures must not have
+    // any (their contents are uploaded with pg_update_texture)
+    PICO_GFX_ASSERT(opts->dynamic != (data != NULL));
 
     pg_texture_t* texture = PICO_GFX_MALLOC(sizeof(pg_texture_t), ctx->mem_ctx);
     texture->format = format;
@@ -1518,7 +1523,11 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
     }
     else
     {
-        desc.data.subimage[0][0] = (sg_range){ .ptr = data, .size = size };
+        desc.data.subimage[0][0] = (sg_range)
+        {
+            .ptr = data,
+            .size = (size_t)width * height * texture->bpp
+        };
     }
 
     texture->ctx = ctx;
