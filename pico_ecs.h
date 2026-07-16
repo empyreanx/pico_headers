@@ -308,7 +308,7 @@ typedef void (*ecs_on_set_fn)(ecs_t* ecs,
  * @brief Optional parameters for component definition
  *
  * @param on_add_cb    Called when a component is added to an entity (can be NULL)
- * @param on_remove_cb Called when a component is removed from an entity (can be NULL)
+ * @param on_remove_cb Called when a component is removed from an enGtity (can be NULL)
  * @param on_set_cb    Called when a component's data is set via ecs_set (can be NULL)
  * @param default_value Optional initial component value, copied on add (can be NULL)
  * @param args_size    Size, in bytes, of the args buffer passed to ecs_add. When
@@ -551,7 +551,7 @@ bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * @returns The component data
  */
-void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args);
+void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* args);
 
 /**
  * @brief Gets a component instance associated with an entity
@@ -576,7 +576,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param comp   The component
  * @param data   Pointer to the data to copy into the component
  */
-void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data);
+void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* data);
 
 /**
  * @brief Destroys an entity
@@ -1238,7 +1238,7 @@ bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity)
     return ecs->entities[entity.id].ready;
 }
 
-void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data)
+void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* data)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_id(entity.id));
@@ -1351,7 +1351,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp)
     return (char*)comp_blocks->blocks[block] + (comp_blocks->comp_size * slot);
 }
 
-void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* args)
+void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* args)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
     ECS_ASSERT(ecs_is_valid_id(entity.id));
