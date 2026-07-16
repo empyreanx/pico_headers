@@ -162,7 +162,7 @@
 
 #define PG_MAX_VERTEX_ATTRIBUTES SG_MAX_VERTEX_ATTRIBUTES
 #define PG_MAX_VERTEX_BUFFERS    SG_MAX_VERTEXBUFFER_BINDSLOTS
-#define PG_MAX_TEXTURE_SLOTS     SG_MAX_IMAGE_BINDSLOTS
+#define PG_MAX_TEXTURE_SLOTS     SG_MAX_VIEW_BINDSLOTS
 #define PG_MAX_SAMPLER_SLOTS     SG_MAX_SAMPLER_BINDSLOTS
 
 /**
@@ -457,7 +457,7 @@ void pg_reset_state(pg_ctx_t* ctx);
         {                               \
             prefix##_shader_desc,       \
             prefix##_attr_slot,         \
-            prefix##_image_slot,        \
+            prefix##_texture_slot,      \
             prefix##_sampler_slot,      \
             prefix##_uniformblock_slot, \
             prefix##_uniformblock_size, \
@@ -826,10 +826,9 @@ static sg_primitive_type pg_map_primitive(pg_primitive_t primitive);
 static sg_blend_factor pg_map_blend_factor(pg_blend_factor_t factor);
 static sg_blend_op pg_map_blend_eq(pg_blend_eq_t eq);
 static sg_vertex_format pg_map_vertex_format(pg_vertex_format_t format);
-static sg_usage pg_map_usage(pg_buffer_usage_t format);
+static sg_buffer_usage pg_map_buffer_usage(pg_buffer_type_t type, pg_buffer_usage_t usage);
 static sg_pixel_format pg_map_pixel_format(pg_pixel_format_t format);
 static size_t pg_pixel_format_bpp(pg_pixel_format_t format);
-static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type);
 
 static void pg_log_sg(const char* tag,              // e.g. 'sg'
                       uint32_t log_level,           // 0=panic, 1=error, 2=warn, 3=info
@@ -978,6 +977,7 @@ struct pg_texture_t
     size_t bpp;
     bool target;
     sg_image handle;
+    sg_view view;
     sg_image depth_handle;
     sg_attachments attachments;
 };
@@ -1519,11 +1519,11 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
     {
         // Dynamic images cannot be initialized with data; the initial
         // contents must be uploaded with pg_update_texture
-        desc.usage = SG_USAGE_DYNAMIC;
+        desc.usage.dynamic_update = true;
     }
     else
     {
-        desc.data.subimage[0][0] = (sg_range)
+        desc.data.mip_levels[0] = (sg_range)
         {
             .ptr = data,
             .size = (size_t)width * height * texture->bpp
@@ -1535,6 +1535,13 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
     texture->handle = sg_make_image(&desc);
 
     PICO_GFX_ASSERT(sg_query_image_state(texture->handle) == SG_RESOURCESTATE_VALID);
+
+    texture->view = sg_make_view(&(sg_view_desc)
+    {
+        .texture.image = texture->handle
+    });
+
+    PICO_GFX_ASSERT(sg_query_view_state(texture->view) == SG_RESOURCESTATE_VALID);
 
     return texture;
 }
@@ -1558,7 +1565,7 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
 
     sg_image_desc desc = { 0 };
 
-    desc.render_target = true;
+    desc.usage.color_attachment = true;
     desc.pixel_format = pg_map_pixel_format(format);
     desc.width  = texture->width  = width;
     desc.height = texture->height = height;
@@ -1571,17 +1578,31 @@ pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
 
     PICO_GFX_ASSERT(sg_query_image_state(texture->handle) == SG_RESOURCESTATE_VALID);
 
+    texture->view = sg_make_view(&(sg_view_desc)
+    {
+        .texture.image = texture->handle
+    });
+
+    PICO_GFX_ASSERT(sg_query_view_state(texture->view) == SG_RESOURCESTATE_VALID);
+
+    desc.usage = (sg_image_usage){ .depth_stencil_attachment = true };
     desc.pixel_format = SG_PIXELFORMAT_DEPTH;
     texture->depth_handle = sg_make_image(&desc);
 
     PICO_GFX_ASSERT(sg_query_image_state(texture->depth_handle) == SG_RESOURCESTATE_VALID);
 
     //TODO: Research multiple color attachments
-    texture->attachments = sg_make_attachments(&(sg_attachments_desc)
+    texture->attachments = (sg_attachments)
     {
-        .colors[0].image = texture->handle,
-        .depth_stencil.image = texture->depth_handle,
-    });
+        .colors[0] = sg_make_view(&(sg_view_desc)
+        {
+            .color_attachment.image = texture->handle
+        }),
+        .depth_stencil = sg_make_view(&(sg_view_desc)
+        {
+            .depth_stencil_attachment.image = texture->depth_handle
+        }),
+    };
 
     return texture;
 }
@@ -1590,9 +1611,12 @@ void pg_destroy_texture(pg_texture_t* texture)
 {
     if (texture->target)
     {
+        sg_destroy_view(texture->attachments.colors[0]);
+        sg_destroy_view(texture->attachments.depth_stencil);
         sg_destroy_image(texture->depth_handle);
     }
 
+    sg_destroy_view(texture->view);
     sg_destroy_image(texture->handle);
     PICO_GFX_FREE(texture, texture->ctx->mem_ctx);
 }
@@ -1601,8 +1625,8 @@ void pg_update_texture(pg_texture_t* texture, char* data)
 {
     // NOTE: Replaces all existing data
     sg_image_data img_data = { 0 };
-    img_data.subimage[0][0].ptr = data;
-    img_data.subimage[0][0].size = (size_t)texture->width * texture->height * texture->bpp;
+    img_data.mip_levels[0].ptr = data;
+    img_data.mip_levels[0].size = (size_t)texture->width * texture->height * texture->bpp;
     sg_update_image(texture->handle, &img_data);
 }
 
@@ -1689,13 +1713,15 @@ pg_buffer_t* pg_create_vertex_buffer(pg_ctx_t* ctx,
     buffer->size = max_elements * element_size;
     buffer->offset = 0;
 
-    buffer->handle = sg_make_buffer(&(sg_buffer_desc)
-    {
-        .type  = SG_BUFFERTYPE_VERTEXBUFFER,
-        .usage = pg_map_usage(usage),
-        .data  = { .ptr = data, .size = count * element_size },
-        .size  = buffer->size
-    });
+    sg_buffer_desc desc = { 0 };
+
+    desc.usage = pg_map_buffer_usage(PG_BUFFER_TYPE_VERTEX, usage);
+    desc.size  = buffer->size;
+
+    if (data)
+        desc.data = (sg_range){ .ptr = data, .size = count * element_size };
+
+    buffer->handle = sg_make_buffer(&desc);
 
     PICO_GFX_ASSERT(sg_query_buffer_state(buffer->handle) == SG_RESOURCESTATE_VALID);
 
@@ -1720,13 +1746,15 @@ pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
     buffer->size = max_elements * sizeof(uint32_t);
     buffer->offset = 0;
 
-    buffer->handle = sg_make_buffer(&(sg_buffer_desc)
-    {
-        .type  = SG_BUFFERTYPE_INDEXBUFFER,
-        .usage = pg_map_usage(usage),
-        .data  = { .ptr = data, .size = count * sizeof(uint32_t) },
-        .size  = buffer->size
-    });
+    sg_buffer_desc desc = { 0 };
+
+    desc.usage = pg_map_buffer_usage(PG_BUFFER_TYPE_INDEX, usage);
+    desc.size  = buffer->size;
+
+    if (data)
+        desc.data = (sg_range){ .ptr = data, .size = count * sizeof(uint32_t) };
+
+    buffer->handle = sg_make_buffer(&desc);
 
     PICO_GFX_ASSERT(sg_query_buffer_state(buffer->handle) == SG_RESOURCESTATE_VALID);
 
@@ -1787,9 +1815,7 @@ void pg_reset_buffer(pg_buffer_t* buffer)
 
     buffer->handle = sg_make_buffer(&(sg_buffer_desc)
     {
-        .type  = pg_map_buffer_type(buffer->type),
-        .usage = pg_map_usage(buffer->usage),
-        .data  = { .ptr = NULL, .size = 0 },
+        .usage = pg_map_buffer_usage(buffer->type, buffer->usage),
         .size  = buffer->size
     });
 
@@ -1819,7 +1845,7 @@ static void pg_apply_textures(const pg_shader_t* shader, sg_bindings* bindings)
         if (!shader->textures[i])
             continue;
 
-        bindings->images[i] = shader->textures[i]->handle;
+        bindings->views[i] = shader->textures[i]->view;
     }
 }
 
@@ -1997,25 +2023,26 @@ static size_t pg_pixel_format_bpp(pg_pixel_format_t format)
     }
 }
 
-static sg_usage pg_map_usage(pg_buffer_usage_t format)
+static sg_buffer_usage pg_map_buffer_usage(pg_buffer_type_t type, pg_buffer_usage_t usage)
 {
-    switch (format)
-    {
-        case PG_USAGE_STATIC:  return SG_USAGE_IMMUTABLE;
-        case PG_USAGE_DYNAMIC: return SG_USAGE_DYNAMIC;
-        case PG_USAGE_STREAM:  return SG_USAGE_STREAM;
-        default: PICO_GFX_ASSERT(false); return SG_USAGE_IMMUTABLE;
-    }
-}
+    sg_buffer_usage buffer_usage = { 0 };
 
-static sg_buffer_type pg_map_buffer_type(pg_buffer_type_t type)
-{
     switch (type)
     {
-        case PG_BUFFER_TYPE_VERTEX: return SG_BUFFERTYPE_VERTEXBUFFER;
-        case PG_BUFFER_TYPE_INDEX:  return SG_BUFFERTYPE_INDEXBUFFER;
-        default: PICO_GFX_ASSERT(false); return SG_BUFFERTYPE_VERTEXBUFFER;
+        case PG_BUFFER_TYPE_VERTEX: buffer_usage.vertex_buffer = true; break;
+        case PG_BUFFER_TYPE_INDEX:  buffer_usage.index_buffer  = true; break;
+        default: PICO_GFX_ASSERT(false);
     }
+
+    switch (usage)
+    {
+        case PG_USAGE_STATIC:  buffer_usage.immutable      = true; break;
+        case PG_USAGE_DYNAMIC: buffer_usage.dynamic_update = true; break;
+        case PG_USAGE_STREAM:  buffer_usage.stream_update  = true; break;
+        default: PICO_GFX_ASSERT(false);
+    }
+
+    return buffer_usage;
 }
 
 static void pg_log(const char* fmt, ...)

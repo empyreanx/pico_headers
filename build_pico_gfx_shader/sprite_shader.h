@@ -21,15 +21,16 @@
         Uniform block 'vs_block':
             C struct: vs_block_t
             Bind slot: UB_vs_block => 0
-        Image 'u_tex':
+        Texture 'u_tex':
             Image type: SG_IMAGETYPE_2D
             Sample type: SG_IMAGESAMPLETYPE_FLOAT
             Multisampled: false
-            Bind slot: IMG_u_tex => 0
+            Bind slot: VIEW_u_tex => 0
         Sampler 'u_smp':
             Type: SG_SAMPLERTYPE_FILTERING
             Bind slot: SMP_u_smp => 1
 */
+#include <string.h>
 #if !defined(SOKOL_GFX_INCLUDED)
 #error "Please include sokol_gfx.h before sprite_shader.h"
 #endif
@@ -42,18 +43,19 @@
 #endif
 const sg_shader_desc* sprite_shader_desc(sg_backend backend);
 int sprite_attr_slot(const char* attr_name);
-int sprite_image_slot(const char* img_name);
+int sprite_texture_slot(const char* tex_name);
 int sprite_sampler_slot(const char* smp_name);
 int sprite_uniformblock_slot(const char* ub_name);
 size_t sprite_uniformblock_size(const char* ub_name);
 int sprite_storagebuffer_slot(const char* sbuf_name);
+int sprite_storageimage_slot(const char* simg_name);
 int sprite_uniform_offset(const char* ub_name, const char* u_name);
 sg_glsl_shader_uniform sprite_uniform_desc(const char* ub_name, const char* u_name);
 #define ATTR_sprite_a_pos (0)
 #define ATTR_sprite_a_color (1)
 #define ATTR_sprite_a_uv (2)
 #define UB_vs_block (0)
-#define IMG_u_tex (0)
+#define VIEW_u_tex (0)
 #define SMP_u_smp (1)
 #pragma pack(push,1)
 SOKOL_SHDC_ALIGN(16) typedef struct vs_block_t {
@@ -340,7 +342,7 @@ static const uint8_t vs_source_hlsl5[919] = {
 #endif
 /*
     Texture2D<float4> u_tex : register(t0);
-    SamplerState u_smp : register(s0);
+    SamplerState u_smp : register(s1);
 
     static float4 frag_color;
     static float2 uv;
@@ -378,7 +380,7 @@ static const uint8_t fs_source_hlsl5[607] = {
     0x3e,0x20,0x75,0x5f,0x74,0x65,0x78,0x20,0x3a,0x20,0x72,0x65,0x67,0x69,0x73,0x74,
     0x65,0x72,0x28,0x74,0x30,0x29,0x3b,0x0a,0x53,0x61,0x6d,0x70,0x6c,0x65,0x72,0x53,
     0x74,0x61,0x74,0x65,0x20,0x75,0x5f,0x73,0x6d,0x70,0x20,0x3a,0x20,0x72,0x65,0x67,
-    0x69,0x73,0x74,0x65,0x72,0x28,0x73,0x30,0x29,0x3b,0x0a,0x0a,0x73,0x74,0x61,0x74,
+    0x69,0x73,0x74,0x65,0x72,0x28,0x73,0x31,0x29,0x3b,0x0a,0x0a,0x73,0x74,0x61,0x74,
     0x69,0x63,0x20,0x66,0x6c,0x6f,0x61,0x74,0x34,0x20,0x66,0x72,0x61,0x67,0x5f,0x63,
     0x6f,0x6c,0x6f,0x72,0x3b,0x0a,0x73,0x74,0x61,0x74,0x69,0x63,0x20,0x66,0x6c,0x6f,
     0x61,0x74,0x32,0x20,0x75,0x76,0x3b,0x0a,0x73,0x74,0x61,0x74,0x69,0x63,0x20,0x66,
@@ -508,7 +510,7 @@ static const uint8_t vs_source_metal_macos[607] = {
         float2 uv [[user(locn1)]];
     };
 
-    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_tex [[texture(0)]], sampler u_smp [[sampler(0)]])
+    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_tex [[texture(0)]], sampler u_smp [[sampler(1)]])
     {
         main0_out out = {};
         out.frag_color = u_tex.sample(u_smp, in.uv) * in.color;
@@ -538,7 +540,7 @@ static const uint8_t fs_source_metal_macos[444] = {
     0x74,0x75,0x72,0x65,0x32,0x64,0x3c,0x66,0x6c,0x6f,0x61,0x74,0x3e,0x20,0x75,0x5f,
     0x74,0x65,0x78,0x20,0x5b,0x5b,0x74,0x65,0x78,0x74,0x75,0x72,0x65,0x28,0x30,0x29,
     0x5d,0x5d,0x2c,0x20,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x20,0x75,0x5f,0x73,0x6d,
-    0x70,0x20,0x5b,0x5b,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x28,0x30,0x29,0x5d,0x5d,
+    0x70,0x20,0x5b,0x5b,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x28,0x31,0x29,0x5d,0x5d,
     0x29,0x0a,0x7b,0x0a,0x20,0x20,0x20,0x20,0x6d,0x61,0x69,0x6e,0x30,0x5f,0x6f,0x75,
     0x74,0x20,0x6f,0x75,0x74,0x20,0x3d,0x20,0x7b,0x7d,0x3b,0x0a,0x20,0x20,0x20,0x20,
     0x6f,0x75,0x74,0x2e,0x66,0x72,0x61,0x67,0x5f,0x63,0x6f,0x6c,0x6f,0x72,0x20,0x3d,
@@ -642,7 +644,7 @@ static const uint8_t vs_source_metal_ios[607] = {
         float2 uv [[user(locn1)]];
     };
 
-    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_tex [[texture(0)]], sampler u_smp [[sampler(0)]])
+    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_tex [[texture(0)]], sampler u_smp [[sampler(1)]])
     {
         main0_out out = {};
         out.frag_color = u_tex.sample(u_smp, in.uv) * in.color;
@@ -672,7 +674,7 @@ static const uint8_t fs_source_metal_ios[444] = {
     0x74,0x75,0x72,0x65,0x32,0x64,0x3c,0x66,0x6c,0x6f,0x61,0x74,0x3e,0x20,0x75,0x5f,
     0x74,0x65,0x78,0x20,0x5b,0x5b,0x74,0x65,0x78,0x74,0x75,0x72,0x65,0x28,0x30,0x29,
     0x5d,0x5d,0x2c,0x20,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x20,0x75,0x5f,0x73,0x6d,
-    0x70,0x20,0x5b,0x5b,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x28,0x30,0x29,0x5d,0x5d,
+    0x70,0x20,0x5b,0x5b,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x28,0x31,0x29,0x5d,0x5d,
     0x29,0x0a,0x7b,0x0a,0x20,0x20,0x20,0x20,0x6d,0x61,0x69,0x6e,0x30,0x5f,0x6f,0x75,
     0x74,0x20,0x6f,0x75,0x74,0x20,0x3d,0x20,0x7b,0x7d,0x3b,0x0a,0x20,0x20,0x20,0x20,
     0x6f,0x75,0x74,0x2e,0x66,0x72,0x61,0x67,0x5f,0x63,0x6f,0x6c,0x6f,0x72,0x20,0x3d,
@@ -776,7 +778,7 @@ static const uint8_t vs_source_metal_sim[607] = {
         float2 uv [[user(locn1)]];
     };
 
-    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_tex [[texture(0)]], sampler u_smp [[sampler(0)]])
+    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_tex [[texture(0)]], sampler u_smp [[sampler(1)]])
     {
         main0_out out = {};
         out.frag_color = u_tex.sample(u_smp, in.uv) * in.color;
@@ -806,7 +808,7 @@ static const uint8_t fs_source_metal_sim[444] = {
     0x74,0x75,0x72,0x65,0x32,0x64,0x3c,0x66,0x6c,0x6f,0x61,0x74,0x3e,0x20,0x75,0x5f,
     0x74,0x65,0x78,0x20,0x5b,0x5b,0x74,0x65,0x78,0x74,0x75,0x72,0x65,0x28,0x30,0x29,
     0x5d,0x5d,0x2c,0x20,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x20,0x75,0x5f,0x73,0x6d,
-    0x70,0x20,0x5b,0x5b,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x28,0x30,0x29,0x5d,0x5d,
+    0x70,0x20,0x5b,0x5b,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x28,0x31,0x29,0x5d,0x5d,
     0x29,0x0a,0x7b,0x0a,0x20,0x20,0x20,0x20,0x6d,0x61,0x69,0x6e,0x30,0x5f,0x6f,0x75,
     0x74,0x20,0x6f,0x75,0x74,0x20,0x3d,0x20,0x7b,0x7d,0x3b,0x0a,0x20,0x20,0x20,0x20,
     0x6f,0x75,0x74,0x2e,0x66,0x72,0x61,0x67,0x5f,0x63,0x6f,0x6c,0x6f,0x72,0x20,0x3d,
@@ -827,8 +829,11 @@ const sg_shader_desc* sprite_shader_desc(sg_backend backend) {
             desc.vertex_func.entry = "main";
             desc.fragment_func.source = (const char*)fs_source_glsl410;
             desc.fragment_func.entry = "main";
+            desc.attrs[0].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.attrs[0].glsl_name = "a_pos";
+            desc.attrs[1].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.attrs[1].glsl_name = "a_color";
+            desc.attrs[2].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.attrs[2].glsl_name = "a_uv";
             desc.uniform_blocks[0].stage = SG_SHADERSTAGE_VERTEX;
             desc.uniform_blocks[0].layout = SG_UNIFORMLAYOUT_STD140;
@@ -836,16 +841,16 @@ const sg_shader_desc* sprite_shader_desc(sg_backend backend) {
             desc.uniform_blocks[0].glsl_uniforms[0].type = SG_UNIFORMTYPE_FLOAT4;
             desc.uniform_blocks[0].glsl_uniforms[0].array_count = 4;
             desc.uniform_blocks[0].glsl_uniforms[0].glsl_name = "vs_block";
-            desc.images[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.images[0].image_type = SG_IMAGETYPE_2D;
-            desc.images[0].sample_type = SG_IMAGESAMPLETYPE_FLOAT;
-            desc.images[0].multisampled = false;
+            desc.views[0].texture.stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.views[0].texture.image_type = SG_IMAGETYPE_2D;
+            desc.views[0].texture.sample_type = SG_IMAGESAMPLETYPE_FLOAT;
+            desc.views[0].texture.multisampled = false;
             desc.samplers[1].stage = SG_SHADERSTAGE_FRAGMENT;
             desc.samplers[1].sampler_type = SG_SAMPLERTYPE_FILTERING;
-            desc.image_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
-            desc.image_sampler_pairs[0].glsl_name = "u_tex_u_smp";
+            desc.texture_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.texture_sampler_pairs[0].view_slot = 0;
+            desc.texture_sampler_pairs[0].sampler_slot = 1;
+            desc.texture_sampler_pairs[0].glsl_name = "u_tex_u_smp";
             desc.label = "sprite_shader";
         }
         return &desc;
@@ -861,8 +866,11 @@ const sg_shader_desc* sprite_shader_desc(sg_backend backend) {
             desc.vertex_func.entry = "main";
             desc.fragment_func.source = (const char*)fs_source_glsl300es;
             desc.fragment_func.entry = "main";
+            desc.attrs[0].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.attrs[0].glsl_name = "a_pos";
+            desc.attrs[1].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.attrs[1].glsl_name = "a_color";
+            desc.attrs[2].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.attrs[2].glsl_name = "a_uv";
             desc.uniform_blocks[0].stage = SG_SHADERSTAGE_VERTEX;
             desc.uniform_blocks[0].layout = SG_UNIFORMLAYOUT_STD140;
@@ -870,16 +878,16 @@ const sg_shader_desc* sprite_shader_desc(sg_backend backend) {
             desc.uniform_blocks[0].glsl_uniforms[0].type = SG_UNIFORMTYPE_FLOAT4;
             desc.uniform_blocks[0].glsl_uniforms[0].array_count = 4;
             desc.uniform_blocks[0].glsl_uniforms[0].glsl_name = "vs_block";
-            desc.images[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.images[0].image_type = SG_IMAGETYPE_2D;
-            desc.images[0].sample_type = SG_IMAGESAMPLETYPE_FLOAT;
-            desc.images[0].multisampled = false;
+            desc.views[0].texture.stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.views[0].texture.image_type = SG_IMAGETYPE_2D;
+            desc.views[0].texture.sample_type = SG_IMAGESAMPLETYPE_FLOAT;
+            desc.views[0].texture.multisampled = false;
             desc.samplers[1].stage = SG_SHADERSTAGE_FRAGMENT;
             desc.samplers[1].sampler_type = SG_SAMPLERTYPE_FILTERING;
-            desc.image_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
-            desc.image_sampler_pairs[0].glsl_name = "u_tex_u_smp";
+            desc.texture_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.texture_sampler_pairs[0].view_slot = 0;
+            desc.texture_sampler_pairs[0].sampler_slot = 1;
+            desc.texture_sampler_pairs[0].glsl_name = "u_tex_u_smp";
             desc.label = "sprite_shader";
         }
         return &desc;
@@ -897,27 +905,30 @@ const sg_shader_desc* sprite_shader_desc(sg_backend backend) {
             desc.fragment_func.source = (const char*)fs_source_hlsl5;
             desc.fragment_func.d3d11_target = "ps_5_0";
             desc.fragment_func.entry = "main";
+            desc.attrs[0].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.attrs[0].hlsl_sem_name = "TEXCOORD";
             desc.attrs[0].hlsl_sem_index = 0;
+            desc.attrs[1].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.attrs[1].hlsl_sem_name = "TEXCOORD";
             desc.attrs[1].hlsl_sem_index = 1;
+            desc.attrs[2].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.attrs[2].hlsl_sem_name = "TEXCOORD";
             desc.attrs[2].hlsl_sem_index = 2;
             desc.uniform_blocks[0].stage = SG_SHADERSTAGE_VERTEX;
             desc.uniform_blocks[0].layout = SG_UNIFORMLAYOUT_STD140;
             desc.uniform_blocks[0].size = 64;
             desc.uniform_blocks[0].hlsl_register_b_n = 0;
-            desc.images[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.images[0].image_type = SG_IMAGETYPE_2D;
-            desc.images[0].sample_type = SG_IMAGESAMPLETYPE_FLOAT;
-            desc.images[0].multisampled = false;
-            desc.images[0].hlsl_register_t_n = 0;
+            desc.views[0].texture.stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.views[0].texture.image_type = SG_IMAGETYPE_2D;
+            desc.views[0].texture.sample_type = SG_IMAGESAMPLETYPE_FLOAT;
+            desc.views[0].texture.multisampled = false;
+            desc.views[0].texture.hlsl_register_t_n = 0;
             desc.samplers[1].stage = SG_SHADERSTAGE_FRAGMENT;
             desc.samplers[1].sampler_type = SG_SAMPLERTYPE_FILTERING;
-            desc.samplers[1].hlsl_register_s_n = 0;
-            desc.image_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.samplers[1].hlsl_register_s_n = 1;
+            desc.texture_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.texture_sampler_pairs[0].view_slot = 0;
+            desc.texture_sampler_pairs[0].sampler_slot = 1;
             desc.label = "sprite_shader";
         }
         return &desc;
@@ -933,21 +944,24 @@ const sg_shader_desc* sprite_shader_desc(sg_backend backend) {
             desc.vertex_func.entry = "main0";
             desc.fragment_func.source = (const char*)fs_source_metal_macos;
             desc.fragment_func.entry = "main0";
+            desc.attrs[0].base_type = SG_SHADERATTRBASETYPE_FLOAT;
+            desc.attrs[1].base_type = SG_SHADERATTRBASETYPE_FLOAT;
+            desc.attrs[2].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.uniform_blocks[0].stage = SG_SHADERSTAGE_VERTEX;
             desc.uniform_blocks[0].layout = SG_UNIFORMLAYOUT_STD140;
             desc.uniform_blocks[0].size = 64;
             desc.uniform_blocks[0].msl_buffer_n = 0;
-            desc.images[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.images[0].image_type = SG_IMAGETYPE_2D;
-            desc.images[0].sample_type = SG_IMAGESAMPLETYPE_FLOAT;
-            desc.images[0].multisampled = false;
-            desc.images[0].msl_texture_n = 0;
+            desc.views[0].texture.stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.views[0].texture.image_type = SG_IMAGETYPE_2D;
+            desc.views[0].texture.sample_type = SG_IMAGESAMPLETYPE_FLOAT;
+            desc.views[0].texture.multisampled = false;
+            desc.views[0].texture.msl_texture_n = 0;
             desc.samplers[1].stage = SG_SHADERSTAGE_FRAGMENT;
             desc.samplers[1].sampler_type = SG_SAMPLERTYPE_FILTERING;
-            desc.samplers[1].msl_sampler_n = 0;
-            desc.image_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.samplers[1].msl_sampler_n = 1;
+            desc.texture_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.texture_sampler_pairs[0].view_slot = 0;
+            desc.texture_sampler_pairs[0].sampler_slot = 1;
             desc.label = "sprite_shader";
         }
         return &desc;
@@ -963,21 +977,24 @@ const sg_shader_desc* sprite_shader_desc(sg_backend backend) {
             desc.vertex_func.entry = "main0";
             desc.fragment_func.source = (const char*)fs_source_metal_ios;
             desc.fragment_func.entry = "main0";
+            desc.attrs[0].base_type = SG_SHADERATTRBASETYPE_FLOAT;
+            desc.attrs[1].base_type = SG_SHADERATTRBASETYPE_FLOAT;
+            desc.attrs[2].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.uniform_blocks[0].stage = SG_SHADERSTAGE_VERTEX;
             desc.uniform_blocks[0].layout = SG_UNIFORMLAYOUT_STD140;
             desc.uniform_blocks[0].size = 64;
             desc.uniform_blocks[0].msl_buffer_n = 0;
-            desc.images[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.images[0].image_type = SG_IMAGETYPE_2D;
-            desc.images[0].sample_type = SG_IMAGESAMPLETYPE_FLOAT;
-            desc.images[0].multisampled = false;
-            desc.images[0].msl_texture_n = 0;
+            desc.views[0].texture.stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.views[0].texture.image_type = SG_IMAGETYPE_2D;
+            desc.views[0].texture.sample_type = SG_IMAGESAMPLETYPE_FLOAT;
+            desc.views[0].texture.multisampled = false;
+            desc.views[0].texture.msl_texture_n = 0;
             desc.samplers[1].stage = SG_SHADERSTAGE_FRAGMENT;
             desc.samplers[1].sampler_type = SG_SAMPLERTYPE_FILTERING;
-            desc.samplers[1].msl_sampler_n = 0;
-            desc.image_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.samplers[1].msl_sampler_n = 1;
+            desc.texture_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.texture_sampler_pairs[0].view_slot = 0;
+            desc.texture_sampler_pairs[0].sampler_slot = 1;
             desc.label = "sprite_shader";
         }
         return &desc;
@@ -993,21 +1010,24 @@ const sg_shader_desc* sprite_shader_desc(sg_backend backend) {
             desc.vertex_func.entry = "main0";
             desc.fragment_func.source = (const char*)fs_source_metal_sim;
             desc.fragment_func.entry = "main0";
+            desc.attrs[0].base_type = SG_SHADERATTRBASETYPE_FLOAT;
+            desc.attrs[1].base_type = SG_SHADERATTRBASETYPE_FLOAT;
+            desc.attrs[2].base_type = SG_SHADERATTRBASETYPE_FLOAT;
             desc.uniform_blocks[0].stage = SG_SHADERSTAGE_VERTEX;
             desc.uniform_blocks[0].layout = SG_UNIFORMLAYOUT_STD140;
             desc.uniform_blocks[0].size = 64;
             desc.uniform_blocks[0].msl_buffer_n = 0;
-            desc.images[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.images[0].image_type = SG_IMAGETYPE_2D;
-            desc.images[0].sample_type = SG_IMAGESAMPLETYPE_FLOAT;
-            desc.images[0].multisampled = false;
-            desc.images[0].msl_texture_n = 0;
+            desc.views[0].texture.stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.views[0].texture.image_type = SG_IMAGETYPE_2D;
+            desc.views[0].texture.sample_type = SG_IMAGESAMPLETYPE_FLOAT;
+            desc.views[0].texture.multisampled = false;
+            desc.views[0].texture.msl_texture_n = 0;
             desc.samplers[1].stage = SG_SHADERSTAGE_FRAGMENT;
             desc.samplers[1].sampler_type = SG_SAMPLERTYPE_FILTERING;
-            desc.samplers[1].msl_sampler_n = 0;
-            desc.image_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 0;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.samplers[1].msl_sampler_n = 1;
+            desc.texture_sampler_pairs[0].stage = SG_SHADERSTAGE_FRAGMENT;
+            desc.texture_sampler_pairs[0].view_slot = 0;
+            desc.texture_sampler_pairs[0].sampler_slot = 1;
             desc.label = "sprite_shader";
         }
         return &desc;
@@ -1028,9 +1048,9 @@ int sprite_attr_slot(const char* attr_name) {
     }
     return -1;
 }
-int sprite_image_slot(const char* img_name) {
-    (void)img_name;
-    if (0 == strcmp(img_name, "u_tex")) {
+int sprite_texture_slot(const char* tex_name) {
+    (void)tex_name;
+    if (0 == strcmp(tex_name, "u_tex")) {
         return 0;
     }
     return -1;
@@ -1084,6 +1104,10 @@ sg_glsl_shader_uniform sprite_uniform_desc(const char* ub_name, const char* u_na
 }
 int sprite_storagebuffer_slot(const char* sbuf_name) {
     (void)sbuf_name;
+    return -1;
+}
+int sprite_storageimage_slot(const char* simg_name) {
+    (void)simg_name;
     return -1;
 }
 #endif // SOKOL_SHDC_IMPL
