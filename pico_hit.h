@@ -320,8 +320,7 @@ ph_circle_t ph_transform_circle(const pt2* transform, const ph_circle_t* circle)
  * @brief Transforms a ray using an affine transform
  *
  * The origin is mapped by the full affine transform while the direction is
- * mapped by the transform's linear part and renormalized. The ray's length is
- * left unchanged.
+ * mapped by the transform's linear part and renormalized.
  *
  * @param transform The transform
  * @param ray The ray to transform
@@ -1106,11 +1105,13 @@ ph_circle_t ph_transform_circle(const pt2* transform,
 ph_ray_t ph_transform_ray(const pt2* transform, const ph_ray_t* ray)
 {
     pv2 p1 = ray->origin;
-    pv2 p2 = ph_ray_at(ray, 1.f);
+    pv2 p2 = ph_ray_at(ray, ray->len);
     p1 = pt2_map(transform, p1);
     p2 = pt2_map(transform, p2);
-    pv2 dir = pv2_normalize(pv2_sub(p2, p1));
-    return ph_make_ray(p1, dir, ray->len);
+    pv2 diff = pv2_sub(p2, p1);
+    pv2 dir = pv2_normalize(diff);
+    pfloat len = pv2_len(diff);
+    return ph_make_ray(p1, dir, len);
 }
 
 pb2 ph_poly_to_aabb(const ph_poly_t* poly)
