@@ -11,7 +11,8 @@ SRCS   = main.c \
 		 sat_circle_circle.c \
 		 sat_poly_poly.c \
 		 sat_poly_circle.c \
-		 contacts.c
+		 contacts.c \
+		 transforms.c
 
 DEPS   = ../pico_hit.h
 OBJS   = $(SRCS:.c=.o)

@@ -6,6 +6,7 @@ TEST_SUITE(suite_poly_poly);
 TEST_SUITE(suite_poly_circle);
 TEST_SUITE(suite_circle_circle);
 TEST_SUITE(suite_ray);
+TEST_SUITE(suite_transforms);
 
 int main()
 {
@@ -15,6 +16,7 @@ int main()
     RUN_TEST_SUITE(suite_poly_circle);
     RUN_TEST_SUITE(suite_circle_circle);
     RUN_TEST_SUITE(suite_ray);
+    RUN_TEST_SUITE(suite_transforms);
     pu_print_stats();
     return pu_test_failed();
 }
