@@ -36,6 +36,73 @@ TEST_CASE(test_transform_circle)
     return true;
 }
 
+TEST_CASE(test_transform_ray_identity)
+{
+    ph_ray_t r = ph_make_ray(pv2_make(1, 2), pv2_make(1, 0), 5.f);
+
+    pt2 t = pt2_identity();
+
+    ph_ray_t res = ph_transform_ray(&t, &r);
+
+    REQUIRE(pv2_equal(res.origin, pv2_make(1, 2)));
+    REQUIRE(pv2_equal(res.dir, pv2_make(1, 0)));
+    REQUIRE(pf_equal(res.len, 5.f));
+
+    return true;
+}
+
+TEST_CASE(test_transform_ray_translate)
+{
+    // Translation shifts the origin but leaves the direction unchanged
+    ph_ray_t r = ph_make_ray(pv2_make(0, 0), pv2_make(1, 0), 10.f);
+
+    pt2 t = pt2_identity();
+    pt2_translate(&t, pv2_make(3, 4));
+
+    ph_ray_t res = ph_transform_ray(&t, &r);
+
+    REQUIRE(pv2_equal(res.origin, pv2_make(3, 4)));
+    REQUIRE(pv2_equal(res.dir, pv2_make(1, 0)));
+    REQUIRE(pf_equal(res.len, 10.f));
+
+    return true;
+}
+
+TEST_CASE(test_transform_ray_rotate)
+{
+    // Rotating by 90 degrees rotates both origin and direction
+    ph_ray_t r = ph_make_ray(pv2_make(1, 0), pv2_make(1, 0), 7.f);
+
+    pt2 t = pt2_identity();
+    pt2_rotate(&t, PM_PI / 2.0f);
+
+    ph_ray_t res = ph_transform_ray(&t, &r);
+
+    REQUIRE(pv2_equal(res.origin, pv2_make(0, 1)));
+    REQUIRE(pv2_equal(res.dir, pv2_make(0, 1)));
+    REQUIRE(pf_equal(res.len, 7.f));
+
+    return true;
+}
+
+TEST_CASE(test_transform_ray_rotate_translate)
+{
+    // Combined rotate-then-translate transform
+    ph_ray_t r = ph_make_ray(pv2_make(1, 0), pv2_make(1, 0), 3.f);
+
+    pt2 t = pt2_identity();
+    pt2_rotate(&t, PM_PI / 2.0f);
+    pt2_translate(&t, pv2_make(0, 1));
+
+    ph_ray_t res = ph_transform_ray(&t, &r);
+
+    REQUIRE(pv2_equal(res.origin, pv2_make(0, 2)));
+    REQUIRE(pv2_equal(res.dir, pv2_make(0, 1)));
+    REQUIRE(pf_equal(res.len, 3.f));
+
+    return true;
+}
+
 TEST_CASE(test_circle_to_aabb)
 {
     ph_circle_t c = ph_make_circle(pv2_make(0, 0), 1);
@@ -71,6 +138,10 @@ TEST_SUITE(suite_transforms)
 {
     RUN_TEST_CASE(test_transform_poly);
     RUN_TEST_CASE(test_transform_circle);
-    RUN_TEST_CASE(test_transform_poly);
-    RUN_TEST_CASE(test_transform_circle);
+    RUN_TEST_CASE(test_transform_ray_identity);
+    RUN_TEST_CASE(test_transform_ray_translate);
+    RUN_TEST_CASE(test_transform_ray_rotate);
+    RUN_TEST_CASE(test_transform_ray_rotate_translate);
+    RUN_TEST_CASE(test_circle_to_aabb);
+    RUN_TEST_CASE(test_poly_to_aabb);
 }

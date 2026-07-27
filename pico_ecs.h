@@ -885,6 +885,12 @@ static void ecs_sync_add_remove(ecs_t* ecs, ecs_id_t entity_id, ecs_id_t comp_id
 static void ecs_sync_destroy(ecs_t* ecs, ecs_id_t entity_id);
 
 /*=============================================================================
+ * Component destructor functions
+ *============================================================================*/
+static void ecs_remove_comps(ecs_t* ecs, ecs_id_t entity_id);
+static void ecs_remove_all_comps(ecs_t* ecs);
+
+/*=============================================================================
  * ID array functions
  *============================================================================*/
 static void   ecs_id_array_init(ecs_t* ecs, ecs_id_array_t* pool, size_t capacity);
@@ -955,9 +961,50 @@ ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx)
     return ecs;
 }
 
+// Runs the on_remove callback for every component the entity holds. Shared by
+// entity destruction and by the whole-ECS teardowns, so that a component
+// owning resources outside its component data is always given the chance to
+// release them
+static void ecs_remove_comps(ecs_t* ecs, ecs_id_t entity_id)
+{
+    ecs_bitset_t comp_bits = ecs->entities[entity_id].comp_bits;
+
+    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
+    {
+        if (!ecs_bitset_test(&comp_bits, comp_id))
+            continue;
+
+        ecs_comp_data_t* comp_data = &ecs->comps[comp_id];
+
+        if (comp_data->on_remove)
+        {
+            comp_data->on_remove(ecs,
+                                 ecs_make_entity(entity_id),
+                                 ecs_make_comp(comp_id),
+                                 comp_data->udata);
+        }
+    }
+}
+
+// Tears down every entity still holding components. Entities whose destroy
+// was deferred by a running system are included: the command was never
+// flushed, so their components are still live
+static void ecs_remove_all_comps(ecs_t* ecs)
+{
+    for (ecs_id_t entity_id = 0; entity_id < ecs->entity_capacity; entity_id++)
+    {
+        if (ecs->entities[entity_id].active)
+            ecs_remove_comps(ecs, entity_id);
+    }
+}
+
 void ecs_free(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
+
+    // Destructors run first, while the component data they are handed is
+    // still intact
+    ecs_remove_all_comps(ecs);
 
     ecs_id_array_free(ecs, &ecs->entity_pool);
     ecs_cmd_array_free(ecs, &ecs->cmd_queue);
@@ -992,6 +1039,10 @@ void ecs_free(ecs_t* ecs)
 void ecs_reset(ecs_t* ecs)
 {
     ECS_ASSERT(ecs_is_not_null(ecs));
+
+    // Removing the entities has to run their destructors, exactly as
+    // destroying them one by one would
+    ecs_remove_all_comps(ecs);
 
     ecs->entity_pool.size = 0;
 
@@ -1282,7 +1333,6 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         return;
 
     ecs_entity_data_t* entity_data = &ecs->entities[entity.id];
-    ecs_bitset_t comp_bits = entity_data->comp_bits;
 
     if (ecs->system_active)
     {
@@ -1293,19 +1343,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity)
         return;
     }
 
-    for (ecs_id_t comp_id = 0; comp_id < ecs->comp_count; comp_id++)
-    {
-        if (ecs_bitset_test(&comp_bits, comp_id))
-        {
-            ecs_comp_data_t* comp_data = &ecs->comps[comp_id];
-
-            if (comp_data->on_remove)
-            {
-                ecs_comp_t comp = ecs_make_comp(comp_id);
-                comp_data->on_remove(ecs, entity, comp, comp_data->udata);
-            }
-        }
-    }
+    ecs_remove_comps(ecs, entity.id);
 
     ecs_sync_destroy(ecs, entity.id);
 

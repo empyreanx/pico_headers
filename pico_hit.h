@@ -317,6 +317,18 @@ ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly);
 ph_circle_t ph_transform_circle(const pt2* transform, const ph_circle_t* circle);
 
 /**
+ * @brief Transforms a ray using an affine transform
+ *
+ * The origin is mapped by the full affine transform while the direction is
+ * mapped by the transform's linear part and renormalized.
+ *
+ * @param transform The transform
+ * @param ray The ray to transform
+ * @returns A new ray
+ */
+ph_ray_t ph_transform_ray(const pt2* transform, const ph_ray_t* ray);
+
+/**
  * @brief Returns the bounding box for the given polygon
  */
 pb2 ph_poly_to_aabb(const ph_poly_t* poly);
@@ -1088,6 +1100,18 @@ ph_circle_t ph_transform_circle(const pt2* transform,
                                 const ph_circle_t* circle)
 {
     return ph_make_circle(pt2_map(transform, circle->center), circle->radius);
+}
+
+ph_ray_t ph_transform_ray(const pt2* transform, const ph_ray_t* ray)
+{
+    pv2 p1 = ray->origin;
+    pv2 p2 = ph_ray_at(ray, ray->len);
+    p1 = pt2_map(transform, p1);
+    p2 = pt2_map(transform, p2);
+    pv2 diff = pv2_sub(p2, p1);
+    pv2 dir = pv2_normalize(diff);
+    pfloat len = pv2_len(diff);
+    return ph_make_ray(p1, dir, len);
 }
 
 pb2 ph_poly_to_aabb(const ph_poly_t* poly)
