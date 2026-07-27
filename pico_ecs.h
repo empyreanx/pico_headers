@@ -576,7 +576,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param comp   The component
  * @param data   Pointer to the data to copy into the component
  */
-void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* data);
+void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, void* data);
 
 /**
  * @brief Destroys an entity
