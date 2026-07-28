@@ -157,17 +157,26 @@ void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value);
 bool qt_remove(qt_t* qt, qt_value_t value);
 
 /**
- * @brief Returns all values associated with items that are either overlapping
+ * @brief Callback invoked once for every value found by \ref qt_query
+ *
+ * @param value The value of a matching item
+ * @param ctx   The user supplied context passed to \ref qt_query
+ */
+typedef void (*qt_query_cb)(qt_value_t value, void* ctx);
+
+/**
+ * @brief Reports all values associated with items that are either overlapping
  * or contained within the search area
+ *
+ * The callback is invoked once per matching item. Values are not deduplicated
+ * and are reported in unspecified order.
  *
  * @param qt   The quadtree instance
  * @param area The search area
- * @param size The number of values returned
- *
- * @returns The values of items contained within the search area. This array is
- * dynamically allocated and should be deallocated by using `qt_free` after use
+ * @param cb   The callback invoked for each matching value
+ * @param ctx  User data passed unmodified to the callback
  */
-qt_value_t* qt_query(const qt_t* qt, qt_rect_t area, int* size);
+void qt_query(const qt_t* qt, qt_rect_t area, qt_query_cb cb, void* ctx);
 
 /**
  * @brief Returns all bounds associated with the quadtree's recursive grid
@@ -273,10 +282,6 @@ void qt_clean(qt_t* qt);
  * Internal data structures
  *============================================================================*/
 
-// An optional empty macro used to markup dynamic arrays. This is useful to help remind
-// us that a particular pointer is a dynamic array, and not merely a pointer.
-#define qt_array
-
 typedef struct qt_node_t qt_node_t;
 
 typedef struct qt_array_header_t
@@ -299,7 +304,7 @@ struct qt_node_t
     int        max_depth;
     qt_rect_t  bounds[4];
     qt_node_t* nodes[4];
-    qt_array qt_item_t* items;
+    qt_item_t* items;
 };
 
 typedef union qt_unode_t
@@ -311,7 +316,7 @@ typedef union qt_unode_t
 typedef struct qt_node_allocator_t
 {
     qt_unode_t* free_list;
-    qt_array qt_unode_t** blocks;
+    qt_unode_t** blocks;
 } qt_node_allocator_t;
 
 struct qt_t
@@ -392,12 +397,12 @@ static void qt_node_destroy(qt_t* qt, qt_node_t* node);
 static void qt_node_insert(qt_t* qt, qt_node_t* node, const qt_rect_t* bounds, qt_value_t value);
 static bool qt_node_remove(qt_node_t* node, qt_value_t value);
 
-static qt_array qt_value_t* qt_node_query(const qt_t* qt, const qt_node_t* node, const qt_rect_t* area, qt_array qt_value_t* values);
+static void qt_node_query(const qt_t* qt, const qt_node_t* node, const qt_rect_t* area, qt_query_cb cb, void* ctx);
 static void qt_node_clear(qt_node_t* node);
 
-static qt_array qt_item_t* qt_node_all_items(const qt_t* qt, const qt_node_t* node, qt_array qt_item_t* items);
-static qt_array qt_value_t* qt_node_all_values(const qt_t* qt, const qt_node_t* node, qt_array qt_value_t* values);
-static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_t* qt, const qt_node_t* node, qt_array qt_rect_t* rects);
+static qt_item_t* qt_node_all_items(const qt_t* qt, const qt_node_t* node, qt_item_t* items);
+static void qt_node_all_values(const qt_t* qt, const qt_node_t* node, qt_query_cb cb, void* ctx);
+static qt_rect_t* qt_node_all_grid_rects(const qt_t* qt, const qt_node_t* node, qt_rect_t* rects);
 
 /*=============================================================================
  * Public API implementation
@@ -458,29 +463,11 @@ bool qt_remove(qt_t* qt, qt_value_t value)
     return qt_node_remove(qt->root, value);
 }
 
-qt_value_t* qt_query(const qt_t* qt, qt_rect_t area, int* size)
+void qt_query(const qt_t* qt, qt_rect_t area, qt_query_cb cb, void* ctx)
 {
     QT_ASSERT(qt);
-    QT_ASSERT(size);
-
-    // Size must be valid
-    if (!size)
-        return NULL;
-
     // Start query the root node
-    qt_array qt_value_t* values = qt_node_query(qt, qt->root, &area, NULL);
-
-    // If no results then return NULL
-    if (!values)
-    {
-        *size = 0;
-        return NULL;
-    }
-
-    // Set size and return
-    *size = qt_array_size(values);
-
-    return values;
+    qt_node_query(qt, qt->root, &area, cb, ctx);
 }
 
 qt_rect_t* qt_grid_rects(const qt_t* qt, int* size)
@@ -492,7 +479,7 @@ qt_rect_t* qt_grid_rects(const qt_t* qt, int* size)
     if (!size)
         return NULL;
 
-    qt_array qt_rect_t* rects = qt_node_all_grid_rects(qt, qt->root, NULL);
+    qt_rect_t* rects = qt_node_all_grid_rects(qt, qt->root, NULL);
 
     // If no results then return NULL
     if (!rects)
@@ -527,7 +514,7 @@ void qt_clean(qt_t* qt)
 {
     QT_ASSERT(qt);
 
-    qt_array qt_item_t* items = qt_node_all_items(qt, qt->root, NULL);
+    qt_item_t* items = qt_node_all_items(qt, qt->root, NULL);
 
     qt_reset(qt);
 
@@ -737,7 +724,7 @@ static bool qt_node_remove(qt_node_t* node, qt_value_t value)
     return false;
 }
 
-static qt_array qt_item_t* qt_node_all_items(const qt_t* qt, const qt_node_t* node, qt_array qt_item_t* items)
+static qt_item_t* qt_node_all_items(const qt_t* qt, const qt_node_t* node, qt_item_t* items)
 {
     QT_ASSERT(node);
 
@@ -757,27 +744,25 @@ static qt_array qt_item_t* qt_node_all_items(const qt_t* qt, const qt_node_t* no
     return items;
 }
 
-static qt_array qt_value_t* qt_node_all_values(const qt_t* qt, const qt_node_t* node, qt_array qt_value_t* values)
+static void qt_node_all_values(const qt_t* qt, const qt_node_t* node, qt_query_cb cb, void* ctx)
 {
     QT_ASSERT(node);
 
     // Add all values in this node into the array
     for (int i = 0; i < qt_array_size(node->items); i++)
     {
-        qt_array_push(qt->mem_ctx, values, node->items[i].value);
+        cb(node->items[i].value, ctx);
     }
 
     // Recursively add all values found in the subtrees
     for (int i = 0; i < 4; i++)
     {
         if (node->nodes[i])
-            values = qt_node_all_values(qt, node->nodes[i], values);
+            qt_node_all_values(qt, node->nodes[i], cb, ctx);
     }
-
-    return values;
 }
 
-static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_t* qt, const qt_node_t* node, qt_array qt_rect_t* rects)
+static qt_rect_t* qt_node_all_grid_rects(const qt_t* qt, const qt_node_t* node, qt_rect_t* rects)
 {
     QT_ASSERT(node);
 
@@ -798,7 +783,7 @@ static qt_array qt_rect_t* qt_node_all_grid_rects(const qt_t* qt, const qt_node_
     return rects;
 }
 
-static qt_array qt_value_t* qt_node_query(const qt_t* qt, const qt_node_t* node, const qt_rect_t* area, qt_array qt_value_t* values)
+static void qt_node_query(const qt_t* qt, const qt_node_t* node, const qt_rect_t* area, qt_query_cb cb, void* ctx)
 {
     QT_ASSERT(node);
     QT_ASSERT(area);
@@ -810,7 +795,9 @@ static qt_array qt_value_t* qt_node_query(const qt_t* qt, const qt_node_t* node,
         const qt_item_t* item = &node->items[i];
 
         if (qt_rect_overlaps(area, &item->bounds))
-            qt_array_push(qt->mem_ctx, values, node->items[i].value);
+        {
+            cb(node->items[i].value, ctx);
+        }
     }
 
     // Loop over subtrees
@@ -822,7 +809,7 @@ static qt_array qt_value_t* qt_node_query(const qt_t* qt, const qt_node_t* node,
             // subtree match and are recursively added to the array
             if (qt_rect_contains(area, &node->bounds[i]))
             {
-                values = qt_node_all_values(qt, node->nodes[i], values);
+                qt_node_all_values(qt, node->nodes[i], cb, ctx);
             }
             else
             {
@@ -831,13 +818,11 @@ static qt_array qt_value_t* qt_node_query(const qt_t* qt, const qt_node_t* node,
                 // or contained within the area
                 if (qt_rect_overlaps(area, &node->bounds[i]))
                 {
-                    values = qt_node_query(qt, node->nodes[i], area, values);
+                    qt_node_query(qt, node->nodes[i], area, cb, ctx);
                 }
             }
         }
     }
-
-    return values;
 }
 
 static void qt_node_clear(qt_node_t* node)

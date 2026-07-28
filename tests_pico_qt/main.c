@@ -8,38 +8,37 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define MAX_VALUES 64
+
 // Helper functions
 static int cmp_values(const void * a, const void * b);
 static void sort_values(qt_value_t* values, int size);
 static int random_int(int min, int max);
 
+// Collects the values reported by `qt_query` into `values`, returning the
+// number of values collected
+static int query(qt_rect_t area);
+
 static qt_t* qt;
-static qt_value_t* values;
+static qt_value_t values[MAX_VALUES];
 
 TEST_CASE(test_insert_single)
 {
     qt_insert(qt, qt_make_rect(-5, -5, 10, 10), 0);
 
-    int size;
-
     // Found
     {
-        values = qt_query(qt, qt_make_rect(-7, -7, 5, 5), &size);
+        int size = query(qt_make_rect(-7, -7, 5, 5));
 
         REQUIRE(size == 1);
         REQUIRE(values[0] == 0);
-
-        qt_free(qt, values);
     }
 
     // Not found
     {
-        values = qt_query(qt, qt_make_rect(6, 6, 5, 5), &size);
+        int size = query(qt_make_rect(6, 6, 5, 5));
 
         REQUIRE(size == 0);
-        REQUIRE(values == NULL);
-
-        qt_free(qt, values);
     }
 
     return true;
@@ -49,26 +48,19 @@ TEST_CASE(test_insert_single_contained)
 {
     qt_insert(qt, qt_make_rect(-5, -5, 3, 3), 0);
 
-    int size;
-
     // Found
     {
-        values = qt_query(qt, qt_make_rect(-7, -7, 7, 7), &size);
+        int size = query(qt_make_rect(-7, -7, 7, 7));
 
         REQUIRE(size == 1);
         REQUIRE(values[0] == 0);
-
-        qt_free(qt, values);
     }
 
     // Not found
     {
-        values = qt_query(qt, qt_make_rect(5, 5, 5, 5), &size);
+        int size = query(qt_make_rect(5, 5, 5, 5));
 
         REQUIRE(size == 0);
-        REQUIRE(values == NULL);
-
-        qt_free(qt, values);
     }
 
     return true;
@@ -81,9 +73,7 @@ TEST_CASE(test_insert_multiple)
     qt_insert(qt, qt_make_rect(-3, -5, 4, 4), 2);
     qt_insert(qt, qt_make_rect( 3,  3, 3, 5), 3);
 
-    int size;
-
-    values = qt_query(qt, qt_make_rect(-6, -6, 5, 5), &size);
+    int size = query(qt_make_rect(-6, -6, 5, 5));
 
     REQUIRE(size == 3);
 
@@ -92,8 +82,6 @@ TEST_CASE(test_insert_multiple)
     REQUIRE(values[0] == 0);
     REQUIRE(values[1] == 1);
     REQUIRE(values[2] == 2);
-
-    qt_free(qt, values);
 
     return true;
 }
@@ -111,9 +99,7 @@ TEST_CASE(test_insert_multiple_random)
         qt_insert(qt, qt_make_rect(x, y, w, h), i);
     }
 
-    int size;
-
-    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    int size = query(qt_make_rect(-10, -10, 20, 20));
 
     REQUIRE(size == 32);
 
@@ -123,8 +109,6 @@ TEST_CASE(test_insert_multiple_random)
     {
         REQUIRE(values[i] == (qt_value_t)i);
     }
-
-    qt_free(qt, values);
 
     return true;
 }
@@ -142,11 +126,9 @@ TEST_CASE(test_insert_multiple_random_contained)
         qt_insert(qt, qt_make_rect(x, y, w, h), i);
     }
 
-    int size;
-
     // Found
     {
-        values = qt_query(qt, qt_make_rect(-1, -1, 11, 11), &size);
+        int size = query(qt_make_rect(-1, -1, 11, 11));
 
         REQUIRE(size == 8);
 
@@ -156,18 +138,13 @@ TEST_CASE(test_insert_multiple_random_contained)
         {
             REQUIRE(values[i] == (qt_value_t)i);
         }
-
-        qt_free(qt, values);
     }
 
     // Not found
     {
-        values = qt_query(qt, qt_make_rect(-7, -7, 3, 3), &size);
+        int size = query(qt_make_rect(-7, -7, 3, 3));
 
         REQUIRE(size == 0);
-        REQUIRE(values == NULL);
-
-        qt_free(qt, values);
     }
 
     return true;
@@ -183,22 +160,16 @@ TEST_CASE(test_remove)
     qt_remove(qt, 0);
     qt_remove(qt, 1);
 
-    int size;
-
-    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
-    qt_free(qt, values);
+    int size = query(qt_make_rect(-10, -10, 20, 20));
 
     REQUIRE(size == 2);
 
     qt_remove(qt, 2);
     qt_remove(qt, 3);
 
-    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    size = query(qt_make_rect(-10, -10, 20, 20));
 
     REQUIRE(size == 0);
-    REQUIRE(values == NULL);
-
-    qt_free(qt, values);
 
     return true;
 }
@@ -216,22 +187,15 @@ TEST_CASE(test_reset)
         qt_insert(qt, qt_make_rect(x, y, w, h), i);
     }
 
-    int size;
-
-    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    int size = query(qt_make_rect(-10, -10, 20, 20));
 
     REQUIRE(size == 32);
 
-    qt_free(qt, values);
-
     qt_reset(qt);
 
-    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    size = query(qt_make_rect(-10, -10, 20, 20));
 
     REQUIRE(size == 0);
-    REQUIRE(values == NULL);
-
-    qt_free(qt, values);
 
     return true;
 }
@@ -249,22 +213,15 @@ TEST_CASE(test_clear)
         qt_insert(qt, qt_make_rect(x, y, w, h), i);
     }
 
-    int size;
-
-    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    int size = query(qt_make_rect(-10, -10, 20, 20));
 
     REQUIRE(size == 32);
 
-    qt_free(qt, values);
-
     qt_clear(qt);
 
-    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    size = query(qt_make_rect(-10, -10, 20, 20));
 
     REQUIRE(size == 0);
-    REQUIRE(values == NULL);
-
-    qt_free(qt, values);
 
     return true;
 }
@@ -282,21 +239,15 @@ TEST_CASE(test_clean)
         qt_insert(qt, qt_make_rect(x, y, w, h), i);
     }
 
-    int size;
-
-    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    int size = query(qt_make_rect(-10, -10, 20, 20));
 
     REQUIRE(size == 32);
-
-    qt_free(qt, values);
 
     qt_clean(qt);
 
-    values = qt_query(qt, qt_make_rect(-10, -10, 20, 20), &size);
+    size = query(qt_make_rect(-10, -10, 20, 20));
 
     REQUIRE(size == 32);
-
-    qt_free(qt, values);
 
     return true;
 }
@@ -383,6 +334,21 @@ int main()
     return pu_test_failed();
 }
 
+static void collect_value(qt_value_t value, void* ctx)
+{
+    int* size = (int*)ctx;
+
+    if (*size < MAX_VALUES)
+        values[(*size)++] = value;
+}
+
+static int query(qt_rect_t area)
+{
+    int size = 0;
+    qt_query(qt, area, collect_value, &size);
+    return size;
+}
+
 static int cmp_values(const void * a, const void * b)
 {
    return (int)( *(qt_value_t*)a - *(qt_value_t*)b );
@@ -397,4 +363,3 @@ static int random_int(int min, int max)
 {
     return rand() % (max + 1 - min) + min;
 }
-
