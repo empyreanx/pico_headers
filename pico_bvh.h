@@ -72,6 +72,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifndef BVH_API
+#define BVH_API
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // --- User Data Type Override -------------------------------------------------
 
 #ifndef PICO_BVH_UDATA_TYPE
@@ -133,7 +141,7 @@ typedef struct bvh_t bvh_t;
  * @param h Height added to y to form max.y.
  * @return Constructed AABB.
  */
-bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h);
+BVH_API bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h);
 
 // --- Lifecycle ---------------------------------------------------------------
 
@@ -141,13 +149,13 @@ bvh_aabb_t bvh_make_aabb(float x, float y, float w, float h);
  * @brief Allocates and initializes a BVH instances
  * @return New BVH instance, or NULL on allocation failure.
  */
-bvh_t* bvh_create(void);
+BVH_API bvh_t* bvh_create(void);
 
 /**
  * @brief Destroys and deallocates a BVH instance
  * @param tree BVH instance to destroy.
  */
-void bvh_destroy(bvh_t* tree);
+BVH_API void bvh_destroy(bvh_t* tree);
 
 // --- Modification ------------------------------------------------------------
 
@@ -162,14 +170,14 @@ void bvh_destroy(bvh_t* tree);
  * @param udata User payload associated with the leaf.
  * @return A stable ID for future move/remove calls.
  */
-int bvh_insert(bvh_t* tree, bvh_aabb_t aabb, float padding, bvh_udata_t udata);
+BVH_API int bvh_insert(bvh_t* tree, bvh_aabb_t aabb, float padding, bvh_udata_t udata);
 
 /**
  * @brief Remove a leaf.
  * @param tree BVH instance to modify.
  * @param leaf_id ID previously returned by bvh_insert.
  */
-void bvh_remove(bvh_t* tree, int leaf_id);
+BVH_API void bvh_remove(bvh_t* tree, int leaf_id);
 
 /**
  * @brief Update a leaf's AABB.
@@ -180,7 +188,7 @@ void bvh_remove(bvh_t* tree, int leaf_id);
  * @return true if the tree was restructured (the old padded AABB no longer
  * contained the new tight one).
  */
-bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
+BVH_API bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
 
 // --- Queries -----------------------------------------------------------------
 
@@ -191,8 +199,8 @@ bool bvh_move(bvh_t* tree, int leaf_id, bvh_aabb_t new_aabb, float padding);
  * @param cb Callback invoked for each overlapping leaf.
  * @param ctx User-provided context pointer passed to cb.
  */
-void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
-                    bvh_query_cb cb, void* ctx);
+BVH_API void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
+                            bvh_query_cb cb, void* ctx);
 /**
  * @brief Queries the tree against a ray
  *
@@ -204,9 +212,9 @@ void bvh_query_aabb(const bvh_t* tree, bvh_aabb_t query,
  * @param cb Callback invoked for each overlapping leaf.
  * @param ctx User-provided context pointer passed to cb.
  */
-void bvh_query_ray(const bvh_t* tree,
-                   bvh_vec2_t origin, bvh_vec2_t dir, float t_max,
-                   bvh_query_cb cb, void* ctx);
+BVH_API void bvh_query_ray(const bvh_t* tree,
+                           bvh_vec2_t origin, bvh_vec2_t dir, float t_max,
+                           bvh_query_cb cb, void* ctx);
 
 // --- Accessors ---------------------------------------------------------------
 
@@ -216,7 +224,7 @@ void bvh_query_ray(const bvh_t* tree,
  * @param leaf_id ID previously returned by bvh_insert.
  * @return User payload stored in that leaf.
  */
-bvh_udata_t bvh_get_udata(const bvh_t* tree, int leaf_id);
+BVH_API bvh_udata_t bvh_get_udata(const bvh_t* tree, int leaf_id);
 
 /**
  * @brief Returns the enlarged bounds from the specified leaf node
@@ -224,14 +232,14 @@ bvh_udata_t bvh_get_udata(const bvh_t* tree, int leaf_id);
  * @param leaf_id ID previously returned by bvh_insert.
  * @return Stored padded AABB for that leaf.
  */
-bvh_aabb_t bvh_get_padded_aabb(const bvh_t* tree, int leaf_id);
+BVH_API bvh_aabb_t bvh_get_padded_aabb(const bvh_t* tree, int leaf_id);
 
 /**
  * @brief Returns number of leaves in the tree
  * @param tree BVH instance to read from.
  * @return Number of currently allocated leaves.
  */
-int bvh_get_leaf_count(const bvh_t* tree);
+BVH_API int bvh_get_leaf_count(const bvh_t* tree);
 
 /**
  * @brief Depth-first walk over every node (internal + leaf).
@@ -239,14 +247,18 @@ int bvh_get_leaf_count(const bvh_t* tree);
  * @param cb Callback invoked once per node.
  * @param ctx User-provided context pointer passed to cb.
  */
-void  bvh_walk(const bvh_t* tree, bvh_walk_cb cb, void* ctx);
+BVH_API void  bvh_walk(const bvh_t* tree, bvh_walk_cb cb, void* ctx);
 
 /**
  * @brief Total surface-area cost (lower = better balanced).
  * @param tree BVH instance to evaluate.
  * @return Sum of node perimeters in the tree.
  */
-float bvh_get_cost(const bvh_t* tree);
+BVH_API float bvh_get_cost(const bvh_t* tree);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // PICO_BVH_H
 

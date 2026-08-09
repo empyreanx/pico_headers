@@ -94,6 +94,10 @@
 #include <stdbool.h> // bool, true, false
 #include <stddef.h>  // NULL
 
+#ifndef EM_API
+#define EM_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -120,14 +124,14 @@ typedef struct emitter_s emitter_t;
  *
  * @returns A pointer to the new emitter, or NULL if allocation failed.
  */
-emitter_t* emitter_create(int num_events);
+EM_API emitter_t* emitter_create(int num_events);
 
 /**
  * @brief Destroys the emitter and frees all associated memory.
  *
  * @param emitter The emitter to destroy. Must not be NULL.
  */
-void emitter_destroy(emitter_t* emitter);
+EM_API void emitter_destroy(emitter_t* emitter);
 
 /**
  * @brief Resizes the emitter to support a different number of event types.
@@ -144,7 +148,7 @@ void emitter_destroy(emitter_t* emitter);
  * @returns true on success, or false if reallocation failed (in which case the
  *          emitter is left unchanged).
  */
-bool emitter_resize(emitter_t* emitter, int num_events);
+EM_API bool emitter_resize(emitter_t* emitter, int num_events);
 
 /**
  * @brief Subscribes a listener to an event.
@@ -157,7 +161,7 @@ bool emitter_resize(emitter_t* emitter, int num_events);
  * @param listener Callback to invoke. Must not be NULL.
  * @param udata    Arbitrary pointer forwarded to the callback. May be NULL.
  */
-void emitter_on(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata);
+EM_API void emitter_on(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata);
 
 /**
  * @brief Subscribes a listener that fires exactly once, then unsubscribes.
@@ -170,7 +174,7 @@ void emitter_on(emitter_t* emitter, int event, emitter_listener_fn listener, voi
  * @param listener Callback to invoke. Must not be NULL.
  * @param udata    Arbitrary pointer forwarded to the callback. May be NULL.
  */
-void emitter_once(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata);
+EM_API void emitter_once(emitter_t* emitter, int event, emitter_listener_fn listener, void* udata);
 
 /**
  * @brief Unsubscribes the first listener whose function pointer matches.
@@ -182,7 +186,7 @@ void emitter_once(emitter_t* emitter, int event, emitter_listener_fn listener, v
  * @param event    Event ID in [0, num_events).
  * @param listener The function pointer to remove. Must not be NULL.
  */
-void emitter_off(emitter_t* emitter, int event, emitter_listener_fn listener);
+EM_API void emitter_off(emitter_t* emitter, int event, emitter_listener_fn listener);
 
 /**
  * @brief Removes all listeners subscribed to an event.
@@ -190,7 +194,7 @@ void emitter_off(emitter_t* emitter, int event, emitter_listener_fn listener);
  * @param emitter The emitter. Must not be NULL.
  * @param event   Event ID in [0, num_events).
  */
-void emitter_off_all(emitter_t* emitter, int event);
+EM_API void emitter_off_all(emitter_t* emitter, int event);
 
 /**
  * @brief Emits an event, invoking all registered listeners in order.
@@ -203,7 +207,7 @@ void emitter_off_all(emitter_t* emitter, int event);
  * @param event   Event ID in [0, num_events).
  * @param data    Optional event payload forwarded to each listener. May be NULL.
  */
-void emitter_emit(emitter_t* emitter, int event, const void* data);
+EM_API void emitter_emit(emitter_t* emitter, int event, const void* data);
 
 /**
  * @brief Returns the number of listeners currently subscribed to an event.
@@ -213,7 +217,7 @@ void emitter_emit(emitter_t* emitter, int event, const void* data);
  *
  * @returns The listener count for the given event.
  */
-int emitter_count(const emitter_t* emitter, int event);
+EM_API int emitter_count(const emitter_t* emitter, int event);
 
 /* --------------------------------------------------------------------------
  * Queued emitter
@@ -236,14 +240,14 @@ typedef struct queued_emitter_s queued_emitter_t;
  *
  * @returns A pointer to the new queued emitter, or NULL if allocation failed.
  */
-queued_emitter_t* queued_emitter_create(int num_events);
+EM_API queued_emitter_t* queued_emitter_create(int num_events);
 
 /**
  * @brief Destroys the queued emitter and discards any unflushed events.
  *
  * @param qe The queued emitter. Must not be NULL.
  */
-void queued_emitter_destroy(queued_emitter_t* qe);
+EM_API void queued_emitter_destroy(queued_emitter_t* qe);
 
 /**
  * @brief Resizes the queued emitter to support a different number of event types.
@@ -260,7 +264,7 @@ void queued_emitter_destroy(queued_emitter_t* qe);
  * @returns true on success, or false if reallocation failed (in which case the
  *          queued emitter is left unchanged).
  */
-bool queued_emitter_resize(queued_emitter_t* qe, int num_events);
+EM_API bool queued_emitter_resize(queued_emitter_t* qe, int num_events);
 
 /**
  * @brief Subscribes a persistent listener to an event.
@@ -270,7 +274,7 @@ bool queued_emitter_resize(queued_emitter_t* qe, int num_events);
  * @param listener Callback to invoke. Must not be NULL.
  * @param udata    Arbitrary pointer forwarded to the callback. May be NULL.
  */
-void queued_emitter_on(queued_emitter_t* qe, int event, emitter_listener_fn listener, void* udata);
+EM_API void queued_emitter_on(queued_emitter_t* qe, int event, emitter_listener_fn listener, void* udata);
 
 /**
  * @brief Subscribes a listener that fires exactly once, then unsubscribes.
@@ -280,7 +284,7 @@ void queued_emitter_on(queued_emitter_t* qe, int event, emitter_listener_fn list
  * @param listener Callback to invoke. Must not be NULL.
  * @param udata    Arbitrary pointer forwarded to the callback. May be NULL.
  */
-void queued_emitter_once(queued_emitter_t* qe, int event, emitter_listener_fn listener, void* udata);
+EM_API void queued_emitter_once(queued_emitter_t* qe, int event, emitter_listener_fn listener, void* udata);
 
 /**
  * @brief Unsubscribes the first listener whose function pointer matches.
@@ -289,7 +293,7 @@ void queued_emitter_once(queued_emitter_t* qe, int event, emitter_listener_fn li
  * @param event    Event ID in [0, num_events).
  * @param listener The function pointer to remove. Must not be NULL.
  */
-void queued_emitter_off(queued_emitter_t* qe, int event, emitter_listener_fn listener);
+EM_API void queued_emitter_off(queued_emitter_t* qe, int event, emitter_listener_fn listener);
 
 /**
  * @brief Removes all listeners subscribed to an event.
@@ -297,7 +301,7 @@ void queued_emitter_off(queued_emitter_t* qe, int event, emitter_listener_fn lis
  * @param qe    The queued emitter. Must not be NULL.
  * @param event Event ID in [0, num_events).
  */
-void queued_emitter_off_all(queued_emitter_t* qe, int event);
+EM_API void queued_emitter_off_all(queued_emitter_t* qe, int event);
 
 /**
  * @brief Emits an event immediately, bypassing the queue.
@@ -311,7 +315,7 @@ void queued_emitter_off_all(queued_emitter_t* qe, int event);
  * @param event Event ID in [0, num_events).
  * @param data  Optional event payload forwarded to each listener. May be NULL.
  */
-void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data);
+EM_API void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data);
 
 /**
  * @brief Enqueues an event for deferred dispatch.
@@ -327,7 +331,7 @@ void queued_emitter_emit(queued_emitter_t* qe, int event, const void* data);
  *                  when data is NULL or when a pointer-only reference is
  *                  intentionally stored without copying.
  */
-void queued_emitter_enqueue_raw(queued_emitter_t* qe, int event, const void* data, size_t data_size);
+EM_API void queued_emitter_enqueue_raw(queued_emitter_t* qe, int event, const void* data, size_t data_size);
 
 /**
  * @brief Convenience macro that enqueues a typed event without an explicit size argument.
@@ -359,7 +363,7 @@ void queued_emitter_enqueue_raw(queued_emitter_t* qe, int event, const void* dat
  *
  * @param qe The queued emitter. Must not be NULL.
  */
-void queued_emitter_flush(queued_emitter_t* qe);
+EM_API void queued_emitter_flush(queued_emitter_t* qe);
 
 /**
  * @brief Returns the number of listeners currently subscribed to an event.
@@ -369,7 +373,7 @@ void queued_emitter_flush(queued_emitter_t* qe);
  *
  * @returns The listener count for the given event.
  */
-int queued_emitter_count(const queued_emitter_t* qe, int event);
+EM_API int queued_emitter_count(const queued_emitter_t* qe, int event);
 
 #ifdef __cplusplus
 }

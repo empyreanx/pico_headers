@@ -50,6 +50,10 @@
 
 #include <stdint.h>
 
+#ifndef PT_API
+#define PT_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -62,7 +66,7 @@ typedef uint64_t ptime_t;
 /**
  * @brief Returns the present high-res clock time
  */
-ptime_t pt_now(void);
+PT_API ptime_t pt_now(void);
 
 /**
  * @brief Sleeps for at least the specified duration
@@ -70,37 +74,37 @@ ptime_t pt_now(void);
  * Note: On most platforms this function has microsecond resolution, except on
  * Windows where it only has millisecond resoultion.
  */
-void pt_sleep(ptime_t duration);
+PT_API void pt_sleep(ptime_t duration);
 
 /**
  * @brief Converts time to microseconds
  */
-int64_t pt_to_usec(ptime_t time);
+PT_API int64_t pt_to_usec(ptime_t time);
 
 /**
  * @brief Converts time to milliseconds
  */
-int32_t pt_to_msec(ptime_t time);
+PT_API int32_t pt_to_msec(ptime_t time);
 
 /**
  * @brief Converts time to seconds
  */
-double  pt_to_sec(ptime_t time);
+PT_API double  pt_to_sec(ptime_t time);
 
 /**
  * @brief Make time from microseconds
  */
-ptime_t pt_from_usec(int64_t usec);
+PT_API ptime_t pt_from_usec(int64_t usec);
 
 /**
  * @brief Make time from miliseconds
  */
-ptime_t pt_from_msec(int32_t msec);
+PT_API ptime_t pt_from_msec(int32_t msec);
 
 /**
  * @brief Make time from seconds
  */
-ptime_t pt_from_sec(double sec);
+PT_API ptime_t pt_from_sec(double sec);
 
 #ifdef __cplusplus
 }

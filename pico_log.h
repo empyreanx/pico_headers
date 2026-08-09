@@ -74,6 +74,10 @@
 #include <stddef.h>  // NULL
 #include <stdio.h>   // FILE
 
+#ifndef LOG_API
+#define LOG_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -115,17 +119,17 @@ typedef int log_appender_t;
 /**
   * @brief Converts a string to the corresponding log level
   */
-bool log_str_to_level(const char* str, log_level_t* level);
+LOG_API bool log_str_to_level(const char* str, log_level_t* level);
 
 /**
  * @brief Enables logging. NOTE: Logging is enabled by default.
  */
-void log_enable(void);
+LOG_API void log_enable(void);
 
 /**
  * @brief Disables logging.
  */
-void log_disable(void);
+LOG_API void log_disable(void);
 
 /**
  * @brief Registers an appender
@@ -147,9 +151,9 @@ void log_disable(void);
  * @return            An identifier for the appender. This ID is valid until the
  *                    appender is unregistered.
  */
-log_appender_t log_add_appender(log_appender_fn appender_fp,
-                                log_level_t level,
-                                void* udata);
+LOG_API log_appender_t log_add_appender(log_appender_fn appender_fp,
+                                        log_level_t level,
+                                        void* udata);
 
 /**
  * @brief Registers an output stream appender.
@@ -160,14 +164,14 @@ log_appender_t log_add_appender(log_appender_fn appender_fp,
  * @return       An identifier for the appender. This ID is valid until the
  *               appender is unregistered.
  */
-log_appender_t log_add_stream(FILE* stream, log_level_t level);
+LOG_API log_appender_t log_add_stream(FILE* stream, log_level_t level);
 
 /**
  * @brief Unregisters appender (removes the appender from the logger).
  *
  * @param id The appender to unregister
  */
-void log_remove_appender(log_appender_t id);
+LOG_API void log_remove_appender(log_appender_t id);
 
 /**
  * @brief Enables the specified appender. NOTE: Appenders are enabled by default
@@ -175,14 +179,14 @@ void log_remove_appender(log_appender_t id);
  *
  * @param id The appender to enable.
  */
-void log_enable_appender(log_appender_t id);
+LOG_API void log_enable_appender(log_appender_t id);
 
 /**
  * @brief Disables the specified appender.
  *
  * @param id The appender to disable
  */
-void log_disable_appender(log_appender_t id);
+LOG_API void log_disable_appender(log_appender_t id);
 
 /**
  * @brief Sets the lock function for a given appender
@@ -190,7 +194,7 @@ void log_disable_appender(log_appender_t id);
  ^ @param lock_fp The lock function pointer
  * @param id      The appender to hold the lock
  */
-void log_set_lock(log_appender_t id, log_appender_lock_fn lock_fp, void* udata);
+LOG_API void log_set_lock(log_appender_t id, log_appender_lock_fn lock_fp, void* udata);
 
 /**
  * @brief Sets the logging level
@@ -201,7 +205,7 @@ void log_set_lock(log_appender_t id, log_appender_lock_fn lock_fp, void* udata);
  * @param id    The appender
  * @param level The new appender logging threshold.
  */
-void log_set_level(log_appender_t id, log_level_t level);
+LOG_API void log_set_level(log_appender_t id, log_level_t level);
 
 /**
  * @brief Set the appender timestamp.
@@ -212,7 +216,7 @@ void log_set_level(log_appender_t id, log_level_t level);
  * @param id The appender id
  * @param fmt The time format
  */
-void log_set_time_fmt(log_appender_t id, const char* fmt);
+LOG_API void log_set_time_fmt(log_appender_t id, const char* fmt);
 
 /**
  * @brief Turns colors ouput on or off for the specified appender.
@@ -221,7 +225,7 @@ void log_set_time_fmt(log_appender_t id, const char* fmt);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_colors(log_appender_t id, bool enabled);
+LOG_API void log_display_colors(log_appender_t id, bool enabled);
 
 /**
  * @brief Turns timestamp reporting on/off for the specified appender.
@@ -230,7 +234,7 @@ void log_display_colors(log_appender_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_timestamp(log_appender_t id, bool enabled);
+LOG_API void log_display_timestamp(log_appender_t id, bool enabled);
 
 /**
  * @brief Turns log level reporting on/off for the specified appender.
@@ -239,7 +243,7 @@ void log_display_timestamp(log_appender_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_level(log_appender_t id, bool enabled);
+LOG_API void log_display_level(log_appender_t id, bool enabled);
 
 /**
  * @brief Turns filename and line number reporting on/off for the specified
@@ -249,7 +253,7 @@ void log_display_level(log_appender_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_file(log_appender_t id, bool enabled);
+LOG_API void log_display_file(log_appender_t id, bool enabled);
 
 /**
  * @brief Turns function reporting on/off for the specified appender.
@@ -258,7 +262,7 @@ void log_display_file(log_appender_t id, bool enabled);
  * @param id      The appender id
  * @param enabled On if true
  */
-void log_display_function(log_appender_t id, bool enabled);
+LOG_API void log_display_function(log_appender_t id, bool enabled);
 
 /**
  * @brief Logs a TRACE an INFO message
@@ -351,11 +355,11 @@ void log_display_function(log_appender_t id, bool enabled);
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__((format(printf, 5, 6)))
 #endif
-void log_write(log_level_t level,
-               const char* file,
-               unsigned line,
-               const char* func,
-               const char* fmt, ...);
+LOG_API void log_write(log_level_t level,
+                       const char* file,
+                       unsigned line,
+                       const char* func,
+                       const char* fmt, ...);
 
 
 #ifdef __cplusplus

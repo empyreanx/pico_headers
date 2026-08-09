@@ -94,6 +94,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef PF_API
+#define PF_API
+#endif
+
 // ---- Types ------------------------------------------------------------------
 
 #ifdef __cplusplus
@@ -189,14 +193,14 @@ typedef bool (*pf_upload_callback_fn)(size_t page, const unsigned char* pixels,
  * @param max_page_height  Maximum height each page may grow to in pixels.
  * @return A new atlas, or NULL on allocation failure.
  */
-pf_atlas_t* pf_create_atlas(int page_width, int max_page_height);
+PF_API pf_atlas_t* pf_create_atlas(int page_width, int max_page_height);
 
 /**
  * @brief Destroys a font atlas and frees all associated pages and glyphs.
  *
  * @param atlas  Atlas to destroy. May be NULL (no-op).
  */
-void pf_destroy_atlas(pf_atlas_t* atlas);
+PF_API void pf_destroy_atlas(pf_atlas_t* atlas);
 
 /**
  * @brief Create a font face at a given pixel height.
@@ -212,10 +216,10 @@ void pf_destroy_atlas(pf_atlas_t* atlas);
  * @param pixel_height  Desired font height in pixels.
  * @return A new face, or NULL on failure.
  */
-pf_face_t* pf_create_face(pf_atlas_t* atlas,
-                          const unsigned char* ttf_data,
-                          size_t ttf_data_size,
-                          float pixel_height);
+PF_API pf_face_t* pf_create_face(pf_atlas_t* atlas,
+                                 const unsigned char* ttf_data,
+                                 size_t ttf_data_size,
+                                 float pixel_height);
 
 /**
  * @brief Destroys a font face and frees the TTF data it owns.
@@ -224,7 +228,7 @@ pf_face_t* pf_create_face(pf_atlas_t* atlas,
  *
  * @param face  Face to destroy. May be NULL (no-op).
  */
-void pf_destroy_face(pf_face_t* face);
+PF_API void pf_destroy_face(pf_face_t* face);
 
 /**
  * @brief Get (or rasterize) a single glyph.
@@ -236,7 +240,7 @@ void pf_destroy_face(pf_face_t* face);
  * @param codepoint  Unicode codepoint.
  * @return Pointer into the atlas glyph array, or NULL on failure.
  */
-const pf_glyph_t* pf_get_glyph(pf_face_t* face, uint32_t codepoint);
+PF_API const pf_glyph_t* pf_get_glyph(pf_face_t* face, uint32_t codepoint);
 
 /**
  * @brief Lay out and emit quads for a UTF-8 string.
@@ -253,9 +257,9 @@ const pf_glyph_t* pf_get_glyph(pf_face_t* face, uint32_t codepoint);
  * @param cb    Callback invoked for each visible glyph quad. May be NULL.
  * @param user  Opaque pointer forwarded to @p cb.
  */
-void pf_draw_text(pf_face_t* face, const char* text,
-                  float* x, float* y,
-                  pf_draw_callback_fn cb, void* user);
+PF_API void pf_draw_text(pf_face_t* face, const char* text,
+                         float* x, float* y,
+                         pf_draw_callback_fn cb, void* user);
 
 /**
  * @brief Iterate over dirty pages and invoke the callback for each one.
@@ -268,7 +272,7 @@ void pf_draw_text(pf_face_t* face, const char* text,
  * @param cb     Callback invoked once per dirty page.
  * @param user   Opaque pointer forwarded to @p cb.
  */
-void pf_upload_atlas(pf_atlas_t* atlas, pf_upload_callback_fn cb, void* user);
+PF_API void pf_upload_atlas(pf_atlas_t* atlas, pf_upload_callback_fn cb, void* user);
 
 /**
  * @brief Measure a UTF-8 string without drawing.
@@ -280,8 +284,8 @@ void pf_upload_atlas(pf_atlas_t* atlas, pf_upload_callback_fn cb, void* user);
  * @param out_width   Receives the bounding-box width. May be NULL.
  * @param out_height  Receives the bounding-box height. May be NULL.
  */
-void pf_measure_text(pf_face_t* face, const char* text,
-                     float* out_width, float* out_height);
+PF_API void pf_measure_text(pf_face_t* face, const char* text,
+                            float* out_width, float* out_height);
 
 /**
  * @brief Retrieve vertical font metrics for a face.
@@ -289,7 +293,7 @@ void pf_measure_text(pf_face_t* face, const char* text,
  * @param face     Face to query.
  * @param metrics  Receives the metrics. Must not be NULL.
  */
-void pf_get_metrics(const pf_face_t* face, pf_metrics_t* metrics);
+PF_API void pf_get_metrics(const pf_face_t* face, pf_metrics_t* metrics);
 
 /**
  * @brief Get the horizontal kerning adjustment between two codepoints.
@@ -299,7 +303,7 @@ void pf_get_metrics(const pf_face_t* face, pf_metrics_t* metrics);
  * @param cp2   Right codepoint.
  * @return Kerning offset in pixels (typically negative for tighter pairs).
  */
-float pf_get_kerning(const pf_face_t* face, uint32_t cp1, uint32_t cp2);
+PF_API float pf_get_kerning(const pf_face_t* face, uint32_t cp1, uint32_t cp2);
 
 #ifdef __cplusplus
 }

@@ -85,6 +85,10 @@
 #include <stdbool.h> // bool, true, false
 #include <stdint.h>  // uint32_t
 
+#ifndef PM_API
+#define PM_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -242,7 +246,7 @@ PM_INLINE pfloat pf_lerp(pfloat a, pfloat b, pfloat alpha)
  * @param angle2 The second endpoint
  * @param alpha The normalized distance between angle1 and angle2
  */
-pfloat pf_lerp_angle(pfloat angle1, pfloat angle2, pfloat alpha);
+PM_API pfloat pf_lerp_angle(pfloat angle1, pfloat angle2, pfloat alpha);
 
 /**
  * @brief Clamps the angle to be in [0, 2 * PI]
@@ -483,7 +487,7 @@ PM_INLINE pt2 pt2_identity(void)
 /**
  * @brief Returns true if the transforms are equal (within epsilon)
  */
-bool pt2_equal(const pt2* t1, const pt2* t2);
+PM_API bool pt2_equal(const pt2* t1, const pt2* t2);
 
 /**
  * @brief Gets the translation components of the transform
@@ -523,7 +527,7 @@ PM_INLINE pfloat pt2_get_angle(const pt2* t)
  * @param t The transform
  * @param scale The vector containing scale factors in the x/y directions
  */
-void pt2_set_scale(pt2* t, pv2 scale);
+PM_API void pt2_set_scale(pt2* t, pv2 scale);
 
 /**
  * @brief Gets the scale of the transform
@@ -534,12 +538,12 @@ void pt2_set_scale(pt2* t, pv2 scale);
  *
  * @param t The transform
  */
-pv2 pt2_get_scale(const pt2* t);
+PM_API pv2 pt2_get_scale(const pt2* t);
 
 /**
  * @brief Sets the angle of the transform
  */
-void pt2_set_angle(pt2* t, pfloat angle);
+PM_API void pt2_set_angle(pt2* t, pfloat angle);
 
 /**
  * @brief Transforms a vector
@@ -566,17 +570,17 @@ PM_INLINE pfloat pt2_det(const pt2* t)
  * @brief Calculates the inverse of the transform
  * @param t The transform to invert
  */
-pt2 pt2_inv(const pt2* t);
+PM_API pt2 pt2_inv(const pt2* t);
 
 /**
  * @brief Composes two transformations
  */
-pt2 pt2_mult(const pt2* t1, const pt2* t2);
+PM_API pt2 pt2_mult(const pt2* t1, const pt2* t2);
 
 /**
  * @brief Linearly interpolates two transforms
  */
-pt2 pt2_lerp(const pt2* t1, const pt2* t2, pfloat alpha);
+PM_API pt2 pt2_lerp(const pt2* t1, const pt2* t2, pfloat alpha);
 
 /**
  * @brief Constructs a scaling transform
@@ -701,17 +705,17 @@ PM_INLINE void pb2_set_size(pb2* b, pv2 size)
 /**
  * @brief Returns `true` if the bounding boxes are equal (within epsilon)
  */
-bool pb2_equal(const pb2* b1, const pb2* b2);
+PM_API bool pb2_equal(const pb2* b1, const pb2* b2);
 
 /**
  * @brief Computes the union of `b1` and `b2
  */
-pb2 pb2_combine(const pb2* b1, const pb2* b2);
+PM_API pb2 pb2_combine(const pb2* b1, const pb2* b2);
 
 /**
  * @brief Computes the intersection of `b1` and `b2`
  */
-pb2 pb2_overlap(const pb2* b1, const pb2* b2);
+PM_API pb2 pb2_overlap(const pb2* b1, const pb2* b2);
 
 /**
  * @brief Return `true` if the two bounding boxes intersect
@@ -771,13 +775,13 @@ PM_INLINE pv2 pb2_center(const pb2* b)
  * @param verts The vertices
  * @param count The number of vertices
  */
-pb2 pb2_enclosing(const pv2 verts[], int count);
+PM_API pb2 pb2_enclosing(const pv2 verts[], int count);
 
 /**
  * @brief Computes the minimum AABB obtained by transforming the vertices of
  * the specified AABB
  */
-pb2 pb2_transform(const pt2* t, const pb2* b);
+PM_API pb2 pb2_transform(const pt2* t, const pb2* b);
 
 /**
  * @brief The pseudo random number generator (RNG) state
@@ -792,18 +796,18 @@ typedef struct prng_t
  * @param rng A reference to the RNG
  * @param seed The seed (choosing the same seed will yield identical sequences)
  */
-void prng_seed(prng_t* rng, uint64_t seed);
+PM_API void prng_seed(prng_t* rng, uint64_t seed);
 
 /**
  * @brief Generates a pseudo random number in [0, UINT32_MAX]
  * @param rng A reference to the RNG
  */
-uint32_t prng_random(prng_t* rng);
+PM_API uint32_t prng_random(prng_t* rng);
 
 /**
  * @brief Generates a psuedo random number in [0, 1]
  */
-pfloat pf_random(prng_t* rng);
+PM_API pfloat pf_random(prng_t* rng);
 
 #ifdef __cplusplus
 }

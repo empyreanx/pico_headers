@@ -160,6 +160,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifndef PG_API
+#define PG_API
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define PG_MAX_VERTEX_ATTRIBUTES SG_MAX_VERTEX_ATTRIBUTES
 #define PG_MAX_VERTEX_BUFFERS    SG_MAX_VERTEXBUFFER_BINDSLOTS
 #define PG_MAX_TEXTURE_SLOTS     SG_MAX_VIEW_BINDSLOTS
@@ -273,31 +281,31 @@ typedef struct pg_buffer_t pg_buffer_t;
  *
  * NOTE: This function calls `sg_setup`.
  */
-void pg_init(void);
+PG_API void pg_init(void);
 
 /**
  *  @brief Tears down pico_gfx and sokol_gfx
  *
  * NOTE: This function calls `sg_shutdown`
  */
-void pg_shutdown(void);
+PG_API void pg_shutdown(void);
 
 /**
  * @brief Creates a graphics context
  * @param window_width The window width
  * @param window_height The window height
  */
-pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx);
+PG_API pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx);
 
 /**
  * @brief Destroys a graphics context
  */
-void pg_destroy_context(pg_ctx_t* ctx);
+PG_API void pg_destroy_context(pg_ctx_t* ctx);
 
 /**
  * @brief Returns the backend in use at runtime
 */
-pg_backend_t pg_backend(void);
+PG_API pg_backend_t pg_backend(void);
 
 /**
  * @brief Sets the window dimensions
@@ -306,12 +314,12 @@ pg_backend_t pg_backend(void);
  * @param height The window height
  * @param reset Resets the viewport and scissor if true
  */
-void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset);
+PG_API void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset);
 
 /**
  * @brief Gets the window size
  */
-void pg_get_window_size(pg_ctx_t* ctx, int* width, int* height);
+PG_API void pg_get_window_size(pg_ctx_t* ctx, int* width, int* height);
 
 /**
  * @brief Starts a render pass (mandatory)
@@ -322,19 +330,19 @@ void pg_get_window_size(pg_ctx_t* ctx, int* width, int* height);
  * @param pass The render pass (NULL for the default pass)
  * @param clear Clears the render target or window
  */
-void pg_begin_pass(pg_ctx_t* ctx, pg_texture_t* target, bool clear);
+PG_API void pg_begin_pass(pg_ctx_t* ctx, pg_texture_t* target, bool clear);
 
 /**
  * @brief Ends a render pass (mandatory)
  */
-void pg_end_pass(pg_ctx_t* ctx);
+PG_API void pg_end_pass(pg_ctx_t* ctx);
 
 /**
  * @brief Flush commands
  *
  * Must be called at the end of a frame (after `pg_end_pass`).
 */
-void pg_flush(pg_ctx_t* ctx);
+PG_API void pg_flush(pg_ctx_t* ctx);
 
 /**
  * @brief Pushes the active state onto the stack.
@@ -342,76 +350,76 @@ void pg_flush(pg_ctx_t* ctx);
  * State consists of the pipeline, draw color, scissor, viewport, and default
  * MVP transform, buffers, textures, and samplers
  */
-void pg_push_state(pg_ctx_t* ctx);
+PG_API void pg_push_state(pg_ctx_t* ctx);
 
 /**
  * @brief Pops a state off the stack and makes it the active state
  */
-void pg_pop_state(pg_ctx_t* ctx);
+PG_API void pg_pop_state(pg_ctx_t* ctx);
 
 /**
  * @brief Sets the clear color state to be placed at the top of the state stack
  */
-void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a);
+PG_API void pg_set_clear_color(pg_ctx_t* ctx, float r, float g, float b, float a);
 
 /**
  * Resets the clear color
  */
-void pg_reset_clear_color(pg_ctx_t* ctx);
+PG_API void pg_reset_clear_color(pg_ctx_t* ctx);
 
 /**
  * @brief Sets the viewport state to be placed at the top of the state stack
  */
-void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h);
+PG_API void pg_set_viewport(pg_ctx_t* ctx, int x, int y, int w, int h);
 
 /**
  * Resets the viewport
  */
-void pg_reset_viewport(pg_ctx_t* ctx);
+PG_API void pg_reset_viewport(pg_ctx_t* ctx);
 
 /**
  * @brief Sets the scissor state to be placed at the top of the state stack
  */
-void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h);
+PG_API void pg_set_scissor(pg_ctx_t* ctx, int x, int y, int w, int h);
 
 /**
  * Resets the scissor
  */
-void pg_reset_scissor(pg_ctx_t* ctx);
+PG_API void pg_reset_scissor(pg_ctx_t* ctx);
 
 /**
  * @brief Sets the pipeline state
  * @param ctx The graphics context
  * @param pipeline The pipeline to be activated
  */
-void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
+PG_API void pg_set_pipeline(pg_ctx_t* ctx, pg_pipeline_t* pipeline);
 
 /**
  * Resets the pipeline
  */
-void pg_reset_pipeline(pg_ctx_t* ctx);
+PG_API void pg_reset_pipeline(pg_ctx_t* ctx);
 
 /**
  * @brief Binds a buffer to the specified slot
  */
-void pg_bind_buffer(pg_ctx_t* ctx, int slot, pg_buffer_t* buffer);
+PG_API void pg_bind_buffer(pg_ctx_t* ctx, int slot, pg_buffer_t* buffer);
 
 /**
  * @brief Clears buffer bindings
  */
-void pg_reset_buffers(pg_ctx_t* ctx);
+PG_API void pg_reset_buffers(pg_ctx_t* ctx);
 
 /**
  * @brief Sets the active index buffer
  *
  * If an index buffer is set, pg_draw will use indexing.
  */
-void pg_set_index_buffer(pg_ctx_t* ctx, pg_buffer_t* buffer);
+PG_API void pg_set_index_buffer(pg_ctx_t* ctx, pg_buffer_t* buffer);
 
 /**
  *  @brief Disables indexed rednering
  */
-void pg_reset_index_buffer(pg_ctx_t* ctx);
+PG_API void pg_reset_index_buffer(pg_ctx_t* ctx);
 
 /**
  * @brief Binds a texture to a slot in the current state
@@ -419,12 +427,12 @@ void pg_reset_index_buffer(pg_ctx_t* ctx);
  * @param slot The binding slot
  * @param texture The texture to bind
  */
-void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* texture);
+PG_API void pg_bind_texture(pg_shader_t* shader, const char* name, pg_texture_t* texture);
 
 /**
  * @brief Resets the texture bindings for the current state
  */
-void pg_reset_textures(pg_shader_t* shader);
+PG_API void pg_reset_textures(pg_shader_t* shader);
 
 /**
  * @brief Binds a sampler to a slot in the current state
@@ -432,17 +440,17 @@ void pg_reset_textures(pg_shader_t* shader);
  * @param slot The binding slot
  * @param sampler The sampler to bind
  */
-void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sampler);
+PG_API void pg_bind_sampler(pg_shader_t* shader, const char* name, pg_sampler_t* sampler);
 
 /**
  * @brief Resets the sampler bindings for the current state
  */
-void pg_reset_samplers(pg_shader_t* shader);
+PG_API void pg_reset_samplers(pg_shader_t* shader);
 
 /**
  * @brief Resets the active state to defaults
  */
-void pg_reset_state(pg_ctx_t* ctx);
+PG_API void pg_reset_state(pg_ctx_t* ctx);
 
 /**
  * @brief Creates the shader with the given prefix
@@ -467,12 +475,12 @@ void pg_reset_state(pg_ctx_t* ctx);
 /**
  * @brief Destroys a shader
  */
-void pg_destroy_shader(pg_shader_t* shader);
+PG_API void pg_destroy_shader(pg_shader_t* shader);
 
 /**
  * @brief Returns a shader ID
  */
-uint32_t pg_get_shader_id(const pg_shader_t* shader);
+PG_API uint32_t pg_get_shader_id(const pg_shader_t* shader);
 
 /**
  * @brief Sets a uniform block (UB)
@@ -480,7 +488,7 @@ uint32_t pg_get_shader_id(const pg_shader_t* shader);
  * @param name The name of the UB as supplied by `sokol_shdc`
  * @param data The data to set (must be the whole UB)
  */
-void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
+PG_API void pg_set_uniform_block(pg_shader_t* shader, const char* name, const void* data);
 
 /**
  * @brief Vertex attribute pixel formats
@@ -567,24 +575,24 @@ typedef struct pg_pipeline_opts_t
  * @param opts Pipeline creation options (required!)
  * @returns A render pipeline object
  */
-pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
-                                  pg_shader_t* shader,
-                                  const pg_pipeline_opts_t* opts);
+PG_API pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
+                                         pg_shader_t* shader,
+                                         const pg_pipeline_opts_t* opts);
 
 /**
  * @brief Destroys a render pipeline
 */
-void pg_destroy_pipeline(pg_pipeline_t* pipeline);
+PG_API void pg_destroy_pipeline(pg_pipeline_t* pipeline);
 
 /**
  * @brief Returns the shader associated with the pipeline
  */
-pg_shader_t* pg_get_shader(const pg_pipeline_t* pipeline);
+PG_API pg_shader_t* pg_get_shader(const pg_pipeline_t* pipeline);
 
 /**
  * @brief Returns the blend mode associated with the pipeline
  */
-const pg_blend_mode_t* pg_get_blend_mode(const pg_pipeline_t* pipeline);
+PG_API const pg_blend_mode_t* pg_get_blend_mode(const pg_pipeline_t* pipeline);
 
 /**
  * @brief Texture creation options
@@ -606,11 +614,11 @@ typedef struct pg_texture_opts_t
  * @param opts Texture creation options (NULL for defaults)
  * @returns A texture created from a bitmap
  */
-pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
-                                int width, int height,
-                                pg_pixel_format_t format,
-                                const uint8_t* data,
-                                const pg_texture_opts_t* opts);
+PG_API pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
+                                       int width, int height,
+                                       pg_pixel_format_t format,
+                                       const uint8_t* data,
+                                       const pg_texture_opts_t* opts);
 
 /**
  * @brief Creates a render target
@@ -619,32 +627,32 @@ pg_texture_t* pg_create_texture(pg_ctx_t* ctx,
  * @param opts Texture creation options (NULL for defaults)
  * @returns A render texture
  */
-pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
-                                       int width, int height,
-                                       pg_pixel_format_t format,
-                                       const pg_texture_opts_t* opts);
+PG_API pg_texture_t* pg_create_render_texture(pg_ctx_t* ctx,
+                                              int width, int height,
+                                              pg_pixel_format_t format,
+                                              const pg_texture_opts_t* opts);
 
 /**
  * @brief Destroys a texture
  */
-void pg_destroy_texture(pg_texture_t* texture);
+PG_API void pg_destroy_texture(pg_texture_t* texture);
 
 /**
  * @brief Returns a texture ID
  */
-uint32_t pg_get_texture_id(const pg_texture_t* texture);
+PG_API uint32_t pg_get_texture_id(const pg_texture_t* texture);
 
 /**
  * @brief Gets a texture's dimensions
  */
-void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height);
+PG_API void pg_get_texture_size(const pg_texture_t* texture, int* width, int* height);
 
 /**
  * @brief Updates a texture with the given data, which must cover the whole
  * texture. The texture must have been created with the dynamic option, and
  * can only be updated once per frame
  */
-void pg_update_texture(pg_texture_t* texture, char* data);
+PG_API void pg_update_texture(pg_texture_t* texture, char* data);
 
 /**
  * @brief Sampler options
@@ -661,12 +669,12 @@ typedef struct
  * transform and filter texture resource data.
  * @param opts Sampler options
  */
-pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts);
+PG_API pg_sampler_t* pg_create_sampler(pg_ctx_t* ctx, const pg_sampler_opts_t* opts);
 
 /**
  * @brief Destroys a sampler object
  */
-void pg_destroy_sampler(pg_sampler_t* sampler);
+PG_API void pg_destroy_sampler(pg_sampler_t* sampler);
 
 /**
  *  @brief Buffer update criteria
@@ -686,12 +694,12 @@ typedef enum
  * @param max_elements The maximum number of elements in the buffer
  * @param element_size The size (in bytes) of each individual element
  */
-pg_buffer_t* pg_create_vertex_buffer(pg_ctx_t* ctx,
-                                     pg_buffer_usage_t usage,
-                                     const void* data,
-                                     size_t count,
-                                     size_t max_elements,
-                                     size_t element_size);
+PG_API pg_buffer_t* pg_create_vertex_buffer(pg_ctx_t* ctx,
+                                            pg_buffer_usage_t usage,
+                                            const void* data,
+                                            size_t count,
+                                            size_t max_elements,
+                                            size_t element_size);
 
 /**
  * @brief Creates a vertex buffer
@@ -700,43 +708,43 @@ pg_buffer_t* pg_create_vertex_buffer(pg_ctx_t* ctx,
  * @param count The number of indices (can be zero)
  * @param max_elements The maximum number of indices in the buffer
  */
-pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
-                                    pg_buffer_usage_t usage,
-                                    const void* data,
-                                    size_t count,
-                                    size_t max_elements);
+PG_API pg_buffer_t* pg_create_index_buffer(pg_ctx_t* ctx,
+                                           pg_buffer_usage_t usage,
+                                           const void* data,
+                                           size_t count,
+                                           size_t max_elements);
 
 /**
  * @brief Destroys a vertex or index buffer
  */
-void pg_destroy_buffer(pg_buffer_t* buffer);
+PG_API void pg_destroy_buffer(pg_buffer_t* buffer);
 
 /**
  * Replaces the data in a buffer. This may only happen once per frame and cannot
  * happen after appending data
  */
-void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count);
+PG_API void pg_update_buffer(pg_buffer_t* buffer, void* data, size_t count);
 
 /**
  * @brief Appends data to a buffer. This can happen more than once per frame,
  * and cannot happen after an update.
  */
-int pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count);
+PG_API int pg_append_buffer(pg_buffer_t* buffer, void* data, size_t count);
 
 /**
  * @brief Returns the buffer offset
  */
-int pg_get_buffer_offset(pg_buffer_t* buffer);
+PG_API int pg_get_buffer_offset(pg_buffer_t* buffer);
 
 /**
  * @brief Sets the buffer offset
  */
-void pg_set_buffer_offset(pg_buffer_t* buffer, int offset);
+PG_API void pg_set_buffer_offset(pg_buffer_t* buffer, int offset);
 
 /**
  * @brief Destroys and recreates buffer
  */
-void pg_reset_buffer(pg_buffer_t* buffer);
+PG_API void pg_reset_buffer(pg_buffer_t* buffer);
 
 /**
  * @brief Draws from the buffers that are bound to the current state
@@ -745,7 +753,7 @@ void pg_reset_buffer(pg_buffer_t* buffer);
  * @param count The number of elements to draw
  * @param instances The number of instances
  */
-void pg_draw(const pg_ctx_t* ctx, size_t start, size_t count, size_t instances);
+PG_API void pg_draw(const pg_ctx_t* ctx, size_t start, size_t count, size_t instances);
 
 /*=============================================================================
  * Internals
@@ -761,7 +769,11 @@ typedef struct
 	size_t (*get_uniformblock_size)(const char* ub_name);
 } pg_shader_internal_t;
 
-pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal);
+PG_API pg_shader_t* pg_create_shader_internal(pg_ctx_t* ctx, pg_shader_internal_t internal);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // PICO_GFX_H
 

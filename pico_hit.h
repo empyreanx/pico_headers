@@ -66,6 +66,10 @@
 
 #include "pico_math.h"
 
+#ifndef PH_API
+#define PH_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -150,7 +154,7 @@ typedef struct
  * @param center Circle center
  * @param radius Circle radius
  */
-ph_circle_t ph_make_circle(pv2 center, pfloat radius);
+PH_API ph_circle_t ph_make_circle(pv2 center, pfloat radius);
 
 /**
  * @brief Initializes a polygon
@@ -159,7 +163,7 @@ ph_circle_t ph_make_circle(pv2 center, pfloat radius);
  * @param reverse Converts a polygon with CW winding to CCW
  * @returns The polygon with the given vertices
  */
-ph_poly_t ph_make_poly(const pv2 vertices[], int count, bool reverse);
+PH_API ph_poly_t ph_make_poly(const pv2 vertices[], int count, bool reverse);
 
 /**
  * @brief Constructs a ray
@@ -167,14 +171,14 @@ ph_poly_t ph_make_poly(const pv2 vertices[], int count, bool reverse);
  * @param dir The direction of the ray (normalized)
  * @param len The length of the ray
  */
-ph_ray_t ph_make_ray(pv2 origin, pv2 dir, pfloat len);
+PH_API ph_ray_t ph_make_ray(pv2 origin, pv2 dir, pfloat len);
 
 /**
  * @brief Converts an axis-aligned bounding box (AABB) to a polygon
  * @brief aabb The AABB
  * @returns the AABB as a polygon
  */
-ph_poly_t ph_aabb_to_poly(const pb2* aabb);
+PH_API ph_poly_t ph_aabb_to_poly(const pb2* aabb);
 
 /**
  * @brief Tests to see if one convex polygon overlaps with another
@@ -183,9 +187,9 @@ ph_poly_t ph_aabb_to_poly(const pb2* aabb);
  * @param result The collision result to populate (or NULL)
  * @returns True if the polygons overlap and false otherwise
  */
-bool ph_sat_poly_poly(const ph_poly_t* poly_a,
-                      const ph_poly_t* poly_b,
-                      ph_sat_t* result);
+PH_API bool ph_sat_poly_poly(const ph_poly_t* poly_a,
+                             const ph_poly_t* poly_b,
+                             ph_sat_t* result);
 
 /**
  * @brief Tests to see if a convex polygon overlaps a circle
@@ -194,9 +198,9 @@ bool ph_sat_poly_poly(const ph_poly_t* poly_a,
  * @param result The collision result to populate (or NULL)
  * @returns True if the polygon and circle overlap, and false otherwise
  */
-bool ph_sat_poly_circle(const ph_poly_t* poly,
-                        const ph_circle_t* circle,
-                        ph_sat_t* result);
+PH_API bool ph_sat_poly_circle(const ph_poly_t* poly,
+                               const ph_circle_t* circle,
+                               ph_sat_t* result);
 
 /**
  * @brief Tests to see if a circle overlaps a polygon
@@ -205,9 +209,9 @@ bool ph_sat_poly_circle(const ph_poly_t* poly,
  * @param result The collision result to populate (or NULL)
  * @returns True if the circle overlaps the polygon, and false otherwise
  */
-bool ph_sat_circle_poly(const ph_circle_t* circle,
-                        const ph_poly_t* poly,
-                        ph_sat_t* result);
+PH_API bool ph_sat_circle_poly(const ph_circle_t* circle,
+                               const ph_poly_t* poly,
+                               ph_sat_t* result);
 
 /**
  * @brief Tests to see if two circles overlap
@@ -216,9 +220,9 @@ bool ph_sat_circle_poly(const ph_circle_t* circle,
  * @param result The collision result to populate (or NULL)
  * @returns True if the circle and the other circle, and false otherwise
  */
-bool ph_sat_circle_circle(const ph_circle_t* circle_a,
-                          const ph_circle_t* circle_b,
-                          ph_sat_t* result);
+PH_API bool ph_sat_circle_circle(const ph_circle_t* circle_a,
+                                 const ph_circle_t* circle_b,
+                                 ph_sat_t* result);
 
 /**
  * @brief Tests if a polygon collides with another polygon and generates contact information
@@ -227,9 +231,9 @@ bool ph_sat_circle_circle(const ph_circle_t* circle_a,
  * @param manifold The contact manifold to populate
  * @returns True if contacts are generated successfully, and false otherwise
  */
-bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
-                           const ph_poly_t* poly_b,
-                           ph_manifold_t* manifold);
+PH_API bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
+                                  const ph_poly_t* poly_b,
+                                  ph_manifold_t* manifold);
 
 /**
  * @brief Tests if a polygon and circle collide and generates contact information
@@ -238,9 +242,9 @@ bool ph_manifold_poly_poly(const ph_poly_t* poly_a,
  * @param manifold The contact manifold to populate
  * @returns True if contacts are generated successfully, and false otherwise
  */
-bool ph_manifold_poly_circle(const ph_poly_t *poly,
-                             const ph_circle_t *circle,
-                             ph_manifold_t* manifold);
+PH_API bool ph_manifold_poly_circle(const ph_poly_t *poly,
+                                    const ph_circle_t *circle,
+                                    ph_manifold_t* manifold);
 
 /**
  * @brief Tests if a circle and polygon collide and generates contact information
@@ -249,9 +253,9 @@ bool ph_manifold_poly_circle(const ph_poly_t *poly,
  * @param manifold The contact manifold to populate
  * @returns True if contacts are generated successfully, and false otherwise
  */
-bool ph_manifold_circle_poly(const ph_circle_t *circle,
-                             const ph_poly_t *poly,
-                             ph_manifold_t* manifold);
+PH_API bool ph_manifold_circle_poly(const ph_circle_t *circle,
+                                    const ph_poly_t *poly,
+                                    ph_manifold_t* manifold);
 
 /**
  * @brief Tests if two circles collide and generates contact information
@@ -260,9 +264,9 @@ bool ph_manifold_circle_poly(const ph_circle_t *circle,
  * @param manifold The contact manifold to populate
  * @returns True if contacts are generated successfully, and false otherwise
  */
-bool ph_manifold_circle_circle(const ph_circle_t* circle_a,
-                               const ph_circle_t* circle_b,
-                               ph_manifold_t* manifold);
+PH_API bool ph_manifold_circle_circle(const ph_circle_t* circle_a,
+                                      const ph_circle_t* circle_b,
+                                      ph_manifold_t* manifold);
 
 /**
  * @brief Tests if ray intersects a (directed) line segment
@@ -273,7 +277,7 @@ bool ph_manifold_circle_circle(const ph_circle_t* circle_a,
  * @param raycast Normal and distance of impact (or NULL)
  * @returns True if the ray collides with the line segment and false otherwise
  */
-bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast);
+PH_API bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast);
 
 /**
  * @brief Tests if ray intersects a polygon
@@ -283,7 +287,7 @@ bool ph_ray_line(const ph_ray_t* ray, pv2 s1, pv2 s2, ph_raycast_t* raycast);
  * @param raycast Normal and distance of impact (or NULL). May terminate early if NULL
  * @returns True if the ray collides with the polygon and false otherwise
  */
-bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast);
+PH_API bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* raycast);
 
 /**
  * @brief Tests if ray intersects a circle
@@ -293,12 +297,12 @@ bool ph_ray_poly(const ph_ray_t* ray, const ph_poly_t* poly, ph_raycast_t* rayca
  * @param raycast Normal and distance of impact (if not NULL).
  * @returns True if the ray collides with the circle and false otherwise
  */
-bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast);
+PH_API bool ph_ray_circle(const ph_ray_t* ray, const ph_circle_t* circle, ph_raycast_t* raycast);
 
 /**
  * @brief Finds the point along the ray at the specified distance from the origin
  */
-pv2 ph_ray_at(const ph_ray_t* ray, pfloat dist);
+PH_API pv2 ph_ray_at(const ph_ray_t* ray, pfloat dist);
 
 /**
  * @brief Transforms a polygon using an affine transform
@@ -306,7 +310,7 @@ pv2 ph_ray_at(const ph_ray_t* ray, pfloat dist);
  * @param poly The polygon to transform
  * @returns A new polygon
  */
-ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly);
+PH_API ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly);
 
 /**
  * @brief Transforms a circle using an affine transform
@@ -314,7 +318,7 @@ ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly);
  * @param poly The circle to transform
  * @returns A new circle
  */
-ph_circle_t ph_transform_circle(const pt2* transform, const ph_circle_t* circle);
+PH_API ph_circle_t ph_transform_circle(const pt2* transform, const ph_circle_t* circle);
 
 /**
  * @brief Transforms a ray using an affine transform
@@ -326,17 +330,17 @@ ph_circle_t ph_transform_circle(const pt2* transform, const ph_circle_t* circle)
  * @param ray The ray to transform
  * @returns A new ray
  */
-ph_ray_t ph_transform_ray(const pt2* transform, const ph_ray_t* ray);
+PH_API ph_ray_t ph_transform_ray(const pt2* transform, const ph_ray_t* ray);
 
 /**
  * @brief Returns the bounding box for the given polygon
  */
-pb2 ph_poly_to_aabb(const ph_poly_t* poly);
+PH_API pb2 ph_poly_to_aabb(const ph_poly_t* poly);
 
 /**
  * @brief Returns the bounding box for the given circle
  */
-pb2 ph_circle_to_aabb(const ph_circle_t* circle);
+PH_API pb2 ph_circle_to_aabb(const ph_circle_t* circle);
 
 #ifdef __cplusplus
 }

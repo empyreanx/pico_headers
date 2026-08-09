@@ -47,6 +47,10 @@
 
 #include <stddef.h>
 
+#ifndef B64_API
+#define B64_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,7 +61,7 @@ extern "C" {
  *
  * @param len The length of the array of bytes
  */
-size_t b64_encoded_size(size_t len);
+B64_API size_t b64_encoded_size(size_t len);
 
 /**
  * @brief Returns the decoded size of a Base64 string (NOTE: This does not
@@ -67,7 +71,7 @@ size_t b64_encoded_size(size_t len);
  * traversed
  * @param len The length of the encoded (`src`) string
  */
-size_t b64_decoded_size(const char* src, size_t len);
+B64_API size_t b64_decoded_size(const char* src, size_t len);
 
 /**
  * @brief Encodes an array of bytes into a Base64 encoded string (NOTE: A null
@@ -78,7 +82,7 @@ size_t b64_decoded_size(const char* src, size_t len);
  * @param len Length of `src` in bytes
  * @returns Number of encoded characters
  */
-size_t b64_encode(char* dst, const unsigned char* src, size_t len);
+B64_API size_t b64_encode(char* dst, const unsigned char* src, size_t len);
 
 /**
  * @brief Decodes a Base64 encoded string into an array of bytes (NOTE: A null
@@ -89,7 +93,7 @@ size_t b64_encode(char* dst, const unsigned char* src, size_t len);
  * @param len Length of `src` in bytes
  * @returns Number of decoded bytes
  */
-size_t b64_decode(unsigned char* dst, const char* src, size_t len);
+B64_API size_t b64_decode(unsigned char* dst, const char* src, size_t len);
 
 #ifdef __cplusplus
 }

@@ -69,6 +69,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifndef QT_API
+#define QT_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -111,7 +115,7 @@ typedef struct
 /**
  * @brief Utility function for creating a rectangle
  */
-qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
+QT_API qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
 
 /**
  * @brief Creates a quadtree with the specified global bounds
@@ -121,19 +125,19 @@ qt_rect_t qt_make_rect(qt_float x, qt_float y, qt_float w, qt_float h);
  *
  * @returns A quadtree instance
  */
-qt_t* qt_create(qt_rect_t bounds, int max_depth, void* mem_ctx);
+QT_API qt_t* qt_create(qt_rect_t bounds, int max_depth, void* mem_ctx);
 
 /**
  * @brief Destroys a quadtree
  * @param qt The quadtree instance to destroy
  */
-void qt_destroy(qt_t* qt);
+QT_API void qt_destroy(qt_t* qt);
 
 /**
  * @brief Removes all nodes in the tree
  * @param qt The quadtree instance
  */
-void qt_reset(qt_t* qt);
+QT_API void qt_reset(qt_t* qt);
 
 /**
  * @brief Inserts a value with the specified bounds into a quadtree
@@ -142,7 +146,7 @@ void qt_reset(qt_t* qt);
  * @param bounds The bounds associated with the value
  * @param value  The value to store in the tree
  */
-void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value);
+QT_API void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value);
 
 /**
  * @brief Searches for and removes a value in a quadtree
@@ -154,7 +158,7 @@ void qt_insert(qt_t* qt, qt_rect_t bounds, qt_value_t value);
  * @param value The value to remove
  * @returns True if the item was found, and false otherwise
  */
-bool qt_remove(qt_t* qt, qt_value_t value);
+QT_API bool qt_remove(qt_t* qt, qt_value_t value);
 
 /**
  * @brief Callback invoked once for every value found by \ref qt_query
@@ -176,7 +180,7 @@ typedef void (*qt_query_cb)(qt_value_t value, void* ctx);
  * @param cb   The callback invoked for each matching value
  * @param ctx  User data passed unmodified to the callback
  */
-void qt_query(const qt_t* qt, qt_rect_t area, qt_query_cb cb, void* ctx);
+QT_API void qt_query(const qt_t* qt, qt_rect_t area, qt_query_cb cb, void* ctx);
 
 /**
  * @brief Returns all bounds associated with the quadtree's recursive grid
@@ -191,7 +195,7 @@ void qt_query(const qt_t* qt, qt_rect_t area, qt_query_cb cb, void* ctx);
  * @returns For each node in the quadtree there are four bounds associated. All
  * bounds are collated into a single dynamically allocated array.
  */
-qt_rect_t* qt_grid_rects(const qt_t* qt, int* size);
+QT_API qt_rect_t* qt_grid_rects(const qt_t* qt, int* size);
 
 /**
  * @brief Function for deallocating arrays.
@@ -199,7 +203,7 @@ qt_rect_t* qt_grid_rects(const qt_t* qt, int* size);
  * This function can deallocate arrays returned from \ref qt_query or from
  * \ref qt_grid_rects.
  */
-void qt_free(qt_t* qt, void* array);
+QT_API void qt_free(qt_t* qt, void* array);
 
 /**
  * @brief Removes all items in the tree
@@ -211,7 +215,7 @@ void qt_free(qt_t* qt, void* array);
  *
  * @param qt The quadtree instance
  */
-void qt_clear(qt_t* qt);
+QT_API void qt_clear(qt_t* qt);
 
 /**
  * @brief Resets the tree and reinserts all items
@@ -223,7 +227,7 @@ void qt_clear(qt_t* qt);
  *
  * @param qt The quadtree instance
  */
-void qt_clean(qt_t* qt);
+QT_API void qt_clean(qt_t* qt);
 
 #ifdef __cplusplus
 }

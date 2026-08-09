@@ -167,6 +167,10 @@
 #include <stdint.h>  // uint32_t, uint64_t
 #include <limits.h>  // SIZE_MAX
 
+#ifndef ECS_API
+#define ECS_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -251,19 +255,19 @@ typedef struct ecs_system_t { ecs_id_t id; } ecs_system_t;
  *
  * @returns An ECS context or NULL if out of memory
  */
-ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx);
+ECS_API ecs_t* ecs_new(size_t entity_capacity, void* mem_ctx);
 
 /**
  * @brief Destroys an ECS context
  *
  * @param ecs The ECS context
  */
-void ecs_free(ecs_t* ecs);
+ECS_API void ecs_free(ecs_t* ecs);
 
 /**
  * @brief Removes all entities from the ECS, preserving systems and components.
  */
-void ecs_reset(ecs_t* ecs);
+ECS_API void ecs_reset(ecs_t* ecs);
 
 /**
  * @brief Called when a component is created (via ecs_add)
@@ -339,9 +343,9 @@ typedef struct
  * @param def   Optional parameters for callbacks and user data (can be NULL)
  * @returns     A component handle
  */
-ecs_comp_t ecs_define_component(ecs_t* ecs,
-                                size_t size,
-                                const ecs_comp_desc_t* desc);
+ECS_API ecs_comp_t ecs_define_component(ecs_t* ecs,
+                                        size_t size,
+                                        const ecs_comp_desc_t* desc);
 
 /**
  * @brief System callback
@@ -405,9 +409,9 @@ typedef struct
  * @param def       Optional parameters for mask, join/leave callbacks, and user data (can be NULL)
  * @returns         A system handle
  */
-ecs_system_t ecs_define_system(ecs_t* ecs,
-                               ecs_system_fn system_cb,
-                               const ecs_sys_desc_t* desc);
+ECS_API ecs_system_t ecs_define_system(ecs_t* ecs,
+                                       ecs_system_fn system_cb,
+                                       const ecs_sys_desc_t* desc);
 
 
 /**
@@ -418,7 +422,7 @@ ecs_system_t ecs_define_system(ecs_t* ecs,
  * @param sys  The target system
  * @param comp A component to require
  */
-void ecs_require(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
+ECS_API void ecs_require(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
 
 /**
  * @brief Excludes entities having the specified component from being added to
@@ -428,7 +432,7 @@ void ecs_require(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
  * @param sys  The target system
  * @param comp A component to exclude
  */
-void ecs_exclude(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
+ECS_API void ecs_exclude(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
 
 /**
  * @brief Enables a system
@@ -436,7 +440,7 @@ void ecs_exclude(ecs_t* ecs, ecs_system_t sys, ecs_comp_t comp);
  * @param ecs    The ECS context
  * @param sys_id The specified system
  */
-void ecs_enable_system(ecs_t* ecs, ecs_system_t sys);
+ECS_API void ecs_enable_system(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Disables a system
@@ -444,7 +448,7 @@ void ecs_enable_system(ecs_t* ecs, ecs_system_t sys);
  * @param ecs The ECS context
  * @param sys The specified system
  */
-void ecs_disable_system(ecs_t* ecs, ecs_system_t sys);
+ECS_API void ecs_disable_system(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Updates the callbacks for an existing system
@@ -455,11 +459,11 @@ void ecs_disable_system(ecs_t* ecs, ecs_system_t sys);
  * @param add_cb    Called when an entity is added to the system (can be NULL)
  * @param remove_cb Called when an entity is removed from the system (can be NULL)
  */
-void ecs_set_system_callbacks(ecs_t* ecs,
-                              ecs_system_t sys,
-                              ecs_system_fn system_cb,
-                              ecs_on_join_fn on_join,
-                              ecs_on_leave_fn on_leave);
+ECS_API void ecs_set_system_callbacks(ecs_t* ecs,
+                                      ecs_system_t sys,
+                                      ecs_system_fn system_cb,
+                                      ecs_on_join_fn on_join,
+                                      ecs_on_leave_fn on_leave);
 
 /**
  * @brief Sets the user data for a system
@@ -468,7 +472,7 @@ void ecs_set_system_callbacks(ecs_t* ecs,
  * @param sys   The system
  * @param udata The user data to set
  */
-void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata);
+ECS_API void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata);
 
 /**
  * @brief Gets the user data from a system
@@ -477,7 +481,7 @@ void ecs_set_system_udata(ecs_t* ecs, ecs_system_t sys, void* udata);
  * @param sys The system
  * @return    The system's user data
  */
-void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys);
+ECS_API void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Sets the system's mask
@@ -486,7 +490,7 @@ void* ecs_get_system_udata(ecs_t* ecs, ecs_system_t sys);
  * @param sys  The system
  * @param mask The mask to set
  */
-void ecs_set_system_mask(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
+ECS_API void ecs_set_system_mask(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
 
 /**
  * @brief Returns the system mask
@@ -495,17 +499,17 @@ void ecs_set_system_mask(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
  * @param sys The system
  * @return    The system's mask
  */
-ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys);
+ECS_API ecs_mask_t ecs_get_system_mask(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Returns the entities associated with the specified system
  */
-ecs_entity_t* ecs_get_entity_array(ecs_t* ecs, ecs_system_t sys);
+ECS_API ecs_entity_t* ecs_get_entity_array(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Returns the number of entities assigned to the specified system
  */
-size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys);
+ECS_API size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys);
 
 /**
  * @brief Creates an entity
@@ -514,7 +518,7 @@ size_t ecs_get_entity_count(ecs_t* ecs, ecs_system_t sys);
  *
  * @returns The new entity
  */
-ecs_entity_t ecs_create(ecs_t* ecs);
+ECS_API ecs_entity_t ecs_create(ecs_t* ecs);
 
 /**
  * @brief Returns true if the entity is currently active and has not been queued
@@ -523,7 +527,7 @@ ecs_entity_t ecs_create(ecs_t* ecs);
  * @param ecs The ECS context
  * @param entity The target entity
  */
-bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity);
+ECS_API bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity);
 
 /**
  * @brief Test if entity has the specified component
@@ -534,7 +538,7 @@ bool ecs_is_ready(ecs_t* ecs, ecs_entity_t entity);
  *
  * @returns True if the entity has the component
  */
-bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
+ECS_API bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Adds a component instance to an entity
@@ -551,7 +555,7 @@ bool ecs_has(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  *
  * @returns The component data
  */
-void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* args);
+ECS_API void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* args);
 
 /**
  * @brief Gets a component instance associated with an entity
@@ -562,7 +566,7 @@ void ecs_add(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* args)
  *
  * @returns The component data
  */
-void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
+ECS_API void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Copies data into a component instance associated with an entity
@@ -576,7 +580,7 @@ void* ecs_get(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param comp   The component
  * @param data   Pointer to the data to copy into the component
  */
-void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* data);
+ECS_API void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* data);
 
 /**
  * @brief Destroys an entity
@@ -586,7 +590,7 @@ void ecs_set(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp, const void* data)
  * @param ecs    The ECS context
  * @param entity The entity to destroy
  */
-void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
+ECS_API void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
 
 /**
  * @brief Removes a component instance from an entity
@@ -595,7 +599,7 @@ void ecs_destroy(ecs_t* ecs, ecs_entity_t entity);
  * @param entity The entity
  * @param comp   The component
  */
-void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
+ECS_API void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
 
 /**
  * @brief Update an individual system
@@ -606,7 +610,7 @@ void ecs_remove(ecs_t* ecs, ecs_entity_t entity, ecs_comp_t comp);
  * @param sys The system to update
  * @param mask Bitmask that determines which systems run based on category.
  */
-ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
+ECS_API ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
 
 /**
  * @brief Updates all systems
@@ -618,7 +622,7 @@ ecs_ret_t ecs_run_system(ecs_t* ecs, ecs_system_t sys, ecs_mask_t mask);
  * @param ecs The ECS context
  * @param mask Bitmask that determines which systems run based on category.
  */
-ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
+ECS_API ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 
 #ifdef __cplusplus
 }
