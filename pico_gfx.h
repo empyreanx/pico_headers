@@ -112,6 +112,7 @@
     #define PICO_GFX_D3D
     #define PICO_GFX_METAL
     #define PICO_GFX_WEBGPU
+    #define PICO_GFX_VULKAN
 
     before including pico_gfx.h
 
@@ -150,6 +151,8 @@
     #define SOKOL_METAL
 #elif defined (PICO_GFX_WEBGPU)
     #define SOKOL_WGPU
+#elif defined (PICO_GFX_VULKAN)
+    #define SOKOL_VULKAN
 #else
     #error "GFX backend must be specified"
 #endif
@@ -174,7 +177,8 @@ typedef enum
     PG_BACKEND_GLES,
     PG_BACKEND_D3D,
     PG_BACKEND_METAL,
-    PG_BACKEND_WGPU
+    PG_BACKEND_WGPU,
+    PG_BACKEND_VULKAN
 } pg_backend_t;
 
 /**
@@ -274,6 +278,42 @@ typedef struct pg_buffer_t pg_buffer_t;
  * NOTE: This function calls `sg_setup`.
  */
 void pg_init(void);
+
+/**
+ * @brief Vulkan device handles required by `pg_init_vulkan`
+ *
+ * All handles must remain valid until after `pg_shutdown` has been called.
+ * The queue must support both graphics and present operations.
+ */
+typedef struct pg_vulkan_env_t
+{
+    const void* instance;         //!< VkInstance
+    const void* physical_device;  //!< VkPhysicalDevice
+    const void* device;           //!< VkDevice
+    const void* queue;            //!< VkQueue (graphics + present)
+    uint32_t queue_family_index;  //!< Queue family index of `queue`
+    sg_pixel_format color_format; //!< Swapchain color format (0 defaults to SG_PIXELFORMAT_RGBA8)
+} pg_vulkan_env_t;
+
+/**
+ * @brief Loads pico_gfx and sokol_gfx using an externally created Vulkan device
+ *
+ * Only valid when the backend is PG_BACKEND_VULKAN. Use in place of `pg_init`.
+ *
+ * NOTE: This function calls `sg_setup`.
+ */
+void pg_init_vulkan(const pg_vulkan_env_t* env);
+
+/**
+ * @brief Supplies the swapchain surfaces and semaphores for the current frame
+ *
+ * Only required when the backend is PG_BACKEND_VULKAN. Must be called once per
+ * frame, after acquiring the next swapchain image and before `pg_begin_pass`.
+ *
+ * @param ctx The graphics context
+ * @param swapchain The sokol_gfx swapchain state for the acquired frame
+ */
+void pg_set_swapchain(pg_ctx_t* ctx, const sg_swapchain* swapchain);
 
 /**
  *  @brief Tears down pico_gfx and sokol_gfx
@@ -932,6 +972,7 @@ struct pg_ctx_t
     int window_height;
     bool indexed;
     bool pass_active;
+    bool swapchain_pass_done;
     pg_texture_t* target;
     sg_pass default_pass;
     pg_state_t state;
@@ -1000,7 +1041,7 @@ struct pg_buffer_t
     size_t offset;
 };
 
-void pg_init(void)
+static void pg_setup_sg(const sg_environment* env)
 {
     sg_setup(&(sg_desc)
     {
@@ -1011,7 +1052,39 @@ void pg_init(void)
             .free_fn = pg_free,
             .user_data = NULL,
         },
-        .environment.defaults.color_format = SG_PIXELFORMAT_RGBA8,
+        .environment = *env,
+    });
+}
+
+void pg_init(void)
+{
+    pg_setup_sg(&(sg_environment)
+    {
+        .defaults.color_format = SG_PIXELFORMAT_RGBA8,
+    });
+}
+
+void pg_init_vulkan(const pg_vulkan_env_t* env)
+{
+    PICO_GFX_ASSERT(env);
+    PICO_GFX_ASSERT(pg_backend() == PG_BACKEND_VULKAN);
+
+    sg_pixel_format color_format = env->color_format;
+
+    if (color_format == _SG_PIXELFORMAT_DEFAULT)
+        color_format = SG_PIXELFORMAT_RGBA8;
+
+    pg_setup_sg(&(sg_environment)
+    {
+        .defaults.color_format = color_format,
+        .vulkan =
+        {
+            .instance = env->instance,
+            .physical_device = env->physical_device,
+            .device = env->device,
+            .queue = env->queue,
+            .queue_family_index = env->queue_family_index,
+        },
     });
 }
 
@@ -1061,9 +1134,25 @@ pg_backend_t pg_backend(void)
         return PG_BACKEND_METAL;
     #elif defined (PICO_GFX_WEBGPU)
         return PG_BACKEND_WGPU;
+    #elif defined (PICO_GFX_VULKAN)
+        return PG_BACKEND_VULKAN;
     #else
         #error "Unknown GFX backend"
     #endif
+}
+
+void pg_set_swapchain(pg_ctx_t* ctx, const sg_swapchain* swapchain)
+{
+    PICO_GFX_ASSERT(ctx);
+    PICO_GFX_ASSERT(swapchain);
+
+    ctx->swapchain = *swapchain;
+
+    if (!swapchain->invalid)
+    {
+        ctx->window_width  = swapchain->width;
+        ctx->window_height = swapchain->height;
+    }
 }
 
 void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset)
@@ -1114,8 +1203,8 @@ void pg_begin_pass(pg_ctx_t* ctx, pg_texture_t* target, bool clear)
     }
     else
     {
-        //TODO: Do more research on swapchains
         pass.swapchain = ctx->swapchain;
+        ctx->swapchain_pass_done = true;
     }
 
     sg_begin_pass(&pass);
@@ -1135,7 +1224,20 @@ void pg_end_pass(pg_ctx_t* ctx)
 
 void pg_flush(pg_ctx_t* ctx)
 {
-    (void)ctx;
+    // The Vulkan backend requires exactly one swapchain pass between acquiring
+    // and presenting an image (the pass registers the semaphores that
+    // sg_commit's queue submission signals; presenting without it deadlocks).
+    // If nothing was rendered this frame, record an empty clear pass
+    if (pg_backend() == PG_BACKEND_VULKAN &&
+        !ctx->swapchain_pass_done &&
+        !ctx->swapchain.invalid)
+    {
+        pg_begin_pass(ctx, NULL, true);
+        pg_end_pass(ctx);
+    }
+
+    ctx->swapchain_pass_done = false;
+
     sg_commit();
 }
 
@@ -1373,7 +1475,12 @@ pg_pipeline_t* pg_create_pipeline(pg_ctx_t* ctx,
         desc.colors[0].blend.op_alpha = pg_map_blend_eq(blend_mode->alpha_eq);
     }
 
-    desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+    // Offscreen targets are always RGBA8; swapchain passes must match the
+    // color format passed to sg_setup (may differ from RGBA8 on Vulkan)
+    if (opts->target)
+        desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+    else
+        desc.colors[0].pixel_format = sg_query_desc().environment.defaults.color_format;
 
     if (opts->indexed)
         desc.index_type = SG_INDEXTYPE_UINT32;
