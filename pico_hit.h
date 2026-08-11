@@ -1086,7 +1086,7 @@ pv2 ph_ray_at(const ph_ray_t* ray, pfloat dist)
 
 ph_poly_t ph_transform_poly(const pt2* transform, const ph_poly_t* poly)
 {
-    pv2 vertices[poly->count];
+    pv2 vertices[PICO_HIT_MAX_POLY_VERTS];
 
     for (int i = 0; i < poly->count; i++)
     {
