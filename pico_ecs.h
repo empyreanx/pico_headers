@@ -668,6 +668,14 @@ ecs_ret_t ecs_run_systems(ecs_t* ecs, ecs_mask_t mask);
 
 #include <stdalign.h>
 
+// MSVC declares max_align_t for C++ but not in C mode. A union of the widest
+// scalar types has the same alignment by construction.
+#if defined(_MSC_VER)
+typedef union { long double ld; long long ll; void* p; } ecs_max_align_t;
+#else
+typedef max_align_t ecs_max_align_t;
+#endif
+
 /*=============================================================================
  *  Aliases>
  *============================================================================*/
@@ -1917,7 +1925,7 @@ static void* ecs_arena_alloc_align(ecs_t* ecs, ecs_arena_t* arena, size_t size, 
 
 static void* ecs_arena_alloc(ecs_t* ecs, ecs_arena_t* arena, size_t size)
 {
-    return ecs_arena_alloc_align(ecs, arena, size, alignof(max_align_t));
+    return ecs_arena_alloc_align(ecs, arena, size, alignof(ecs_max_align_t));
 }
 
 static void ecs_arena_reset(ecs_t* ecs, ecs_arena_t* arena)
