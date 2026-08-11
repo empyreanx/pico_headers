@@ -305,10 +305,31 @@ typedef struct pg_vulkan_env_t
 void pg_init_vulkan(const pg_vulkan_env_t* env);
 
 /**
- * @brief Supplies the swapchain surfaces and semaphores for the current frame
+ * @brief Metal device handles required by `pg_init_metal`
  *
- * Only required when the backend is PG_BACKEND_VULKAN. Must be called once per
- * frame, after acquiring the next swapchain image and before `pg_begin_pass`.
+ * The device must remain valid until after `pg_shutdown` has been called.
+ */
+typedef struct pg_metal_env_t
+{
+    const void* device;           //!< MTLDevice (bridged to a C pointer)
+    sg_pixel_format color_format; //!< Drawable color format (0 defaults to SG_PIXELFORMAT_BGRA8)
+} pg_metal_env_t;
+
+/**
+ * @brief Loads pico_gfx and sokol_gfx using an externally created Metal device
+ *
+ * Only valid when the backend is PG_BACKEND_METAL. Use in place of `pg_init`.
+ *
+ * NOTE: This function calls `sg_setup`.
+ */
+void pg_init_metal(const pg_metal_env_t* env);
+
+/**
+ * @brief Supplies the swapchain surfaces for the current frame
+ *
+ * Only required when the backend is PG_BACKEND_VULKAN or PG_BACKEND_METAL.
+ * Must be called once per frame, after acquiring the next swapchain image (or
+ * drawable) and before `pg_begin_pass`.
  *
  * @param ctx The graphics context
  * @param swapchain The sokol_gfx swapchain state for the acquired frame
@@ -1088,6 +1109,28 @@ void pg_init_vulkan(const pg_vulkan_env_t* env)
     });
 }
 
+void pg_init_metal(const pg_metal_env_t* env)
+{
+    PICO_GFX_ASSERT(env);
+    PICO_GFX_ASSERT(pg_backend() == PG_BACKEND_METAL);
+
+    sg_pixel_format color_format = env->color_format;
+
+    // A CAMetalLayer is BGRA8 by default, so that is the format the drawable
+    // is handed to sokol_gfx in unless the caller says otherwise
+    if (color_format == _SG_PIXELFORMAT_DEFAULT)
+        color_format = SG_PIXELFORMAT_BGRA8;
+
+    pg_setup_sg(&(sg_environment)
+    {
+        .defaults.color_format = color_format,
+        .metal =
+        {
+            .device = env->device,
+        },
+    });
+}
+
 void pg_shutdown(void)
 {
     sg_shutdown();
@@ -1227,8 +1270,13 @@ void pg_flush(pg_ctx_t* ctx)
     // The Vulkan backend requires exactly one swapchain pass between acquiring
     // and presenting an image (the pass registers the semaphores that
     // sg_commit's queue submission signals; presenting without it deadlocks).
+    // Metal has the same requirement for a different reason: it schedules the
+    // present at the end of the swapchain pass, so a frame without one strands
+    // the acquired drawable and the pool runs dry a few frames later.
     // If nothing was rendered this frame, record an empty clear pass
-    if (pg_backend() == PG_BACKEND_VULKAN &&
+    pg_backend_t backend = pg_backend();
+
+    if ((backend == PG_BACKEND_VULKAN || backend == PG_BACKEND_METAL) &&
         !ctx->swapchain_pass_done &&
         !ctx->swapchain.invalid)
     {
