@@ -383,6 +383,14 @@ int queued_emitter_count(const queued_emitter_t* qe, int event);
 #include <stdint.h>   // uint8_t
 #include <string.h>   // memset, memcpy
 
+// MSVC declares max_align_t for C++ but not in C mode. A union of the widest
+// scalar types has the same alignment by construction.
+#if defined(_MSC_VER)
+typedef union { long double ld; long long ll; void* p; } emitter_max_align_t;
+#else
+typedef max_align_t emitter_max_align_t;
+#endif
+
 /* --------------------------------------------------------------------------
  * Configuration
  * -------------------------------------------------------------------------- */
@@ -1081,7 +1089,7 @@ static void* arena_alloc_align(arena_t* arena, size_t size, size_t align)
 
 static void* arena_alloc(arena_t* arena, size_t size)
 {
-    return arena_alloc_align(arena, size, alignof(max_align_t));
+    return arena_alloc_align(arena, size, alignof(emitter_max_align_t));
 }
 
 static void arena_reset(arena_t* arena)
