@@ -345,10 +345,10 @@ void pg_shutdown(void);
 
 /**
  * @brief Creates a graphics context
- * @param window_width The window width
- * @param window_height The window height
+ * @param pixel_width The framebuffer width
+ * @param pixel_height The framebuffer height
  */
-pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx);
+pg_ctx_t* pg_create_context(int pixel_width, int pixel_height, void* mem_ctx);
 
 /**
  * @brief Destroys a graphics context
@@ -361,18 +361,18 @@ void pg_destroy_context(pg_ctx_t* ctx);
 pg_backend_t pg_backend(void);
 
 /**
- * @brief Sets the window dimensions
+ * @brief Sets the framebuffer's dimensions
  * @param ctx The graphics context
- * @param width The window width
- * @param height The window height
+ * @param width The framebuffer width
+ * @param height The framebuffer height
  * @param reset Resets the viewport and scissor if true
  */
-void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset);
+void pg_set_pixel_size(pg_ctx_t* ctx, int width, int height, bool reset);
 
 /**
  * @brief Gets the window size
  */
-void pg_get_window_size(pg_ctx_t* ctx, int* width, int* height);
+void pg_get_pixel_size(pg_ctx_t* ctx, int* width, int* height);
 
 /**
  * @brief Starts a render pass (mandatory)
@@ -989,8 +989,8 @@ struct pg_ctx_t
 {
     void* mem_ctx;
     sg_swapchain swapchain;
-    int window_width;
-    int window_height;
+    int pixel_width;
+    int pixel_height;
     bool indexed;
     bool pass_active;
     bool swapchain_pass_done;
@@ -1136,7 +1136,7 @@ void pg_shutdown(void)
     sg_shutdown();
 }
 
-pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx)
+pg_ctx_t* pg_create_context(int pixel_width, int pixel_height, void* mem_ctx)
 {
     pg_ctx_t* ctx = PICO_GFX_MALLOC(sizeof(pg_ctx_t), mem_ctx);
 
@@ -1145,15 +1145,15 @@ pg_ctx_t* pg_create_context(int window_width, int window_height, void* mem_ctx)
     memset(ctx, 0, sizeof(pg_ctx_t));
 
     ctx->mem_ctx = mem_ctx;
-    ctx->window_width  = window_width;
-    ctx->window_height = window_height;
+    ctx->pixel_width  = pixel_width;
+    ctx->pixel_height = pixel_height;
 
     pg_reset_state(ctx);
 
     ctx->swapchain = (sg_swapchain)
     {
-        .width = window_width,
-        .height = window_height,
+        .width = pixel_width,
+        .height = pixel_height,
     };
 
     return ctx;
@@ -1193,15 +1193,15 @@ void pg_set_swapchain(pg_ctx_t* ctx, const sg_swapchain* swapchain)
 
     if (!swapchain->invalid)
     {
-        ctx->window_width  = swapchain->width;
-        ctx->window_height = swapchain->height;
+        ctx->pixel_width  = swapchain->width;
+        ctx->pixel_height = swapchain->height;
     }
 }
 
-void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset)
+void pg_set_pixel_size(pg_ctx_t* ctx, int width, int height, bool reset)
 {
-    ctx->swapchain.width  = ctx->window_width  = width;
-    ctx->swapchain.height = ctx->window_height = height;
+    ctx->swapchain.width  = ctx->pixel_width  = width;
+    ctx->swapchain.height = ctx->pixel_height = height;
 
     if (reset)
     {
@@ -1210,13 +1210,13 @@ void pg_set_window_size(pg_ctx_t* ctx, int width, int height, bool reset)
     }
 }
 
-void pg_get_window_size(pg_ctx_t* ctx, int* width, int* height)
+void pg_get_pixel_size(pg_ctx_t* ctx, int* width, int* height)
 {
     if (width)
-        *width = ctx->window_width;
+        *width = ctx->pixel_width;
 
     if (height)
-        *height = ctx->window_height;
+        *height = ctx->pixel_height;
 }
 
 void pg_begin_pass(pg_ctx_t* ctx, pg_texture_t* target, bool clear)
@@ -1336,7 +1336,7 @@ void pg_reset_viewport(pg_ctx_t* ctx)
     }
     else
     {
-        pg_set_viewport(ctx, 0, 0, ctx->window_width, ctx->window_height);
+        pg_set_viewport(ctx, 0, 0, ctx->pixel_width, ctx->pixel_height);
     }
 }
 
@@ -1357,7 +1357,7 @@ void pg_reset_scissor(pg_ctx_t* ctx)
     }
     else
     {
-        pg_set_scissor(ctx, 0, 0, ctx->window_width, ctx->window_height);
+        pg_set_scissor(ctx, 0, 0, ctx->pixel_width, ctx->pixel_height);
     }
 }
 
