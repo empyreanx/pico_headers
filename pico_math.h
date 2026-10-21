@@ -1068,7 +1068,7 @@ uint32_t prng_random(prng_t* rng)
 {
 	uint32_t *s = rng->s;
 	uint32_t const result = rng_rol32(s[1] * 5, 7) * 9;
-	uint32_t const t = s[1] << 17;
+	uint32_t const t = s[1] << 9;
 
 	s[2] ^= s[0];
 	s[3] ^= s[1];
@@ -1076,7 +1076,7 @@ uint32_t prng_random(prng_t* rng)
 	s[0] ^= s[3];
 
 	s[2] ^= t;
-	s[3] = rng_rol32(s[3], 45);
+	s[3] = rng_rol32(s[3], 11);
 
 	return result;
 }
